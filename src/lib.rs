@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 
 #[non_exhaustive]
 pub enum Instruction {
@@ -18,6 +19,9 @@ pub enum Instruction {
     #[value = 0b00_101_000]
     Bitwise(BitwiseOp),
 
+    #[value = 0b00_110_000]
+    Bytes(BytesOp),
+
 
     #[value = 0b01_000_000]
     Digest(DigestOp),
@@ -27,6 +31,12 @@ pub enum Instruction {
 
     #[value = 0b01_001_100]
     Ed25519(Ed25519Op),
+
+    #[value = 0b10_000_000]
+    ExtensionCodes,
+
+    #[value = 0b11_111_111]
+    Nop
 }
 
 pub enum ControlFlowOp {
@@ -113,6 +123,7 @@ pub enum CmpOp {
 
 pub enum ArithmeticOp {
     Neg(RegA, Reg32), // 3 + 5 = 8 bits
+    Inc(Arithmetics, RegA, Reg32, u5), // Increases value on a given step
     Add(Arithmetics, RegA, Reg32, Reg32), // 3 + 3 + 5 + 5  => 16 bits
     Sub(Arithmetics, RegA, Reg32, Reg32),
     Mul(Arithmetics, RegA, Reg32, Reg32),
@@ -134,6 +145,42 @@ pub enum BitwiseOp {
     Scl(RegA, Reg32, Reg32, Reg8),
     /// Shift-cycle right
     Scr(RegA, Reg32, Reg32, Reg8),
+}
+
+pub enum BytesOp {
+    Puts(u8 /** `s` register index */, u16, Box<[u8]>),
+
+    Movs(u8 /** `s` register index */, u8 /** `s` register index */),
+
+    Swps(u8 /** `s` register index */, u8 /** `s` register index */),
+
+    Fill(u8 /** `s` register index */, u16 /** from */, u16 /** to */, u8 /** value */),
+
+    /// Returns length of the string
+    Lens(u8 /** `s` register index */),
+
+    /// Counts number of byte occurrences within the string
+    Counts(u8 /** `s` register index */, u8 /** byte to count */),
+
+    /// Compares two strings from two registers, putting result into `cm0`
+    Cmps(u8, u8),
+
+    /// Computes length of the fragment shared between two strings
+    Common(u8, u8),
+
+    /// Counts number of occurrences of one string within another putting result to `a16[0]`
+    Find(u8 /** `s` register with string */, u8 /** `s` register with matching fragment */),
+
+    /// Extracts value into a register
+    Exta(RegA, Reg32, u8 /** `s` register index */, u16 /** offset */),
+    Extr(RegR, Reg32, u8 /** `s` register index */, u16 /** offset */),
+
+    Join(u8 /** Source 1 */, u8 /** Source 2 */, u8 /** Destination */),
+    Split(u8 /** Source */, u16 /** Offset */, u8 /** Destination 1 */, u8 /** Destination 2 */),
+    Ins(u8 /** Insert from register */, u8 /** Insert to register */, u16 /** Offset for insert place */),
+    Del(u8 /** Register index */, u16 /** Delete from */, u16 /** Delete to */),
+    /// Translocates fragment of bytestring into a register
+    Transl(u8 /** Source */, u16 /** Start from */, u16 /** End at */, u8 /** Index to put translocated portion */),
 }
 
 #[non_exhaustive]
@@ -196,6 +243,42 @@ pub enum Ed25519Op {
         Reg32 /** Register hilding EC point to negate */,
         Reg8 /** Destination register */,
     ),
+}
+
+/// Example extension set of operations which are required for RGB
+// TODO: Move to RGB Core Library
+pub enum RgbOp {
+    /// Counts number of metatdata of specific type
+    CountMeta(u16, RegA, Reg32),
+    CountState(u16, RegA, Reg32),
+    CountRevealed(u16, RegA, Reg32),
+    CountPublic(u16, RegA, Reg32),
+    PullMeta(
+        u16 /** State type */,
+        Reg32 /** Value index from `a16` register */,
+        Reg32 /** Destination start index */,
+        Reg32 /** Destination end index. If smaller that start, indexes are switched */,
+        bool /** Confidential or revealed */
+    ),
+    PullState(
+        u16 /** State type */,
+        Reg32 /** Value index from `a16` register */,
+        Reg32 /** Destination start index */,
+        Reg32 /** Destination end index. If smaller that start, indexes are switched */,
+        bool /** Confidential or revealed */
+    ),
+    // We do not need the last two ops since they can be replaced with a library
+    // operations utilizing AluVM byte string opcodes
+    MatchMiniscript(
+        u16 /** State type */,
+        u16 /** Miniscript string length */,
+        Box<[u8]> /** Miniscript template in strict encoded format */
+    ),
+    MatchPsbt(
+        u16 /** State type */,
+        u16 /** Psbt string length */,
+        Box<[u8]> /** Psbt template in strict encoded format */
+    )
 }
 
 #[derive(Debug, Display)]
@@ -314,7 +397,7 @@ struct Registers {
     r8192: [Option<[u8; 1024]>; 32],
 
     /// String and bytestring registers
-    s16: [Option<[u8; u16::MAX as usize]>; 32],
+    s16: BTreeMap<u8, (u16, [u8; u16::MAX as usize])>,
 
     /// Control flow register which stores result of comparison operations. Initialized with `0`
     cm0: Ordering,
