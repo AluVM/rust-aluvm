@@ -8,6 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use alure::registers::{Reg32, RegA};
 
 /// Example extension set of operations which are required for RGB
 // TODO: Move to RGB Core Library
@@ -18,33 +19,36 @@ pub enum RgbOp {
     CountRevealed(u16, RegA, Reg32),
     CountPublic(u16, RegA, Reg32),
     PullMeta(
-        u16 /** State type */,
-        Reg32 /** Value index from `a16` register */,
-        Reg32 /** Destination start index */,
-        Reg32 /** Destination end index. If smaller that start, indexes are switched */,
-        bool /** Confidential or revealed */
+        /** State type */ u16,
+        /** Value index from `a16` register */ Reg32,
+        /** Destination start index */ Reg32,
+        /** Destination end index. If smaller that start, indexes are
+         * switched */
+        Reg32,
+        /** Confidential or revealed */ bool,
     ),
     PullState(
-        u16 /** State type */,
-        Reg32 /** Value index from `a16` register */,
-        Reg32 /** Destination start index */,
-        Reg32 /** Destination end index. If smaller that start, indexes are switched */,
-        bool /** Confidential or revealed */
+        /** State type */ u16,
+        /** Value index from `a16` register */ Reg32,
+        /** Destination start index */ Reg32,
+        /** Destination end index. If smaller that start, indexes are
+         * switched */
+        Reg32,
+        /** Confidential or revealed */ bool,
     ),
-    // We do not need the last two ops since they can be replaced with a library
-    // operations utilizing AluVM byte string opcodes
+    // We do not need the last two ops since they can be replaced with a
+    // library operations utilizing AluVM byte string opcodes
     MatchMiniscript(
-        u16 /** State type */,
-        u16 /** Miniscript string length */,
-        Box<[u8]> /** Miniscript template in strict encoded format */
+        /** State type */ u16,
+        /** Miniscript string length */ u16,
+        /** Miniscript template in strict encoded format */
+        [u8; u64::MAX as usize],
     ),
     MatchPsbt(
-        u16 /** State type */,
-        u16 /** Psbt string length */,
-        Box<[u8]> /** Psbt template in strict encoded format */
-    )
+        /** State type */ u16,
+        /** Psbt string length */ u16,
+        /** Psbt template in strict encoded format */ [u8; u64::MAX as usize],
+    ),
 }
 
-fn main() {
-
-}
+fn main() {}

@@ -13,5 +13,5 @@
 #[cfg_attr(feature = "std", macro_use)]
 extern crate amplify;
 
-mod instruction;
-mod registers;
+pub mod instruction;
+pub mod registers;

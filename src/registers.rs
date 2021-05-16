@@ -152,7 +152,8 @@ impl Default for Reg32 {
     }
 }
 
-/// All possible register indexes for `a` and `r` register sets
+/// Short version of register indexes for `a` and `r` register sets covering
+/// initial 8 registers only
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display))]
 #[repr(u8)]
@@ -196,41 +197,99 @@ impl Default for Reg8 {
     }
 }
 
-#[derive(Debug)]
-#[cfg_attr(feature = "std", derive(Display), display(Debug))]
+/// Enumeration of the `a` set of registers (arithmetic registers)
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
+#[repr(u8)]
 pub enum RegA {
+    /// Arbitrary-precision register
+    #[display("ap")]
     AP,
+
+    /// 8-bit arithmetics register
+    #[display("a8")]
     A8,
+
+    /// 16-bit arithmetics register
+    #[display("a16")]
     A16,
+
+    /// 32-bit arithmetics register
+    #[display("a32")]
     A32,
+
+    /// 64-bit arithmetics register
+    #[display("a64")]
     A64,
+
+    /// 128-bit arithmetics register
+    #[display("a128")]
     A128,
+
+    /// 256-bit arithmetics register
+    #[display("a256")]
     A256,
+
+    /// 512-bit arithmetics register
+    #[display("a512")]
     A512,
 }
 
-#[derive(Debug)]
+/// Enumeration of the `r` set of registers (non-arithmetic registers, mostly
+/// used for cryptography)
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display), display(Debug))]
 pub enum RegR {
+    /// 128-bit non-arithmetics register
+    #[display("r128")]
     R128,
+
+    /// 160-bit non-arithmetics register
+    #[display("r160")]
     R160,
+
+    /// 256-bit non-arithmetics register
+    #[display("r256")]
     R256,
+
+    /// 512-bit non-arithmetics register
+    #[display("r512")]
     R512,
+
+    /// 1024-bit non-arithmetics register
+    #[display("r1024")]
     R1024,
+
+    /// 2048-bit non-arithmetics register
+    #[display("r2048")]
     R2048,
+
+    /// 4096-bit non-arithmetics register
+    #[display("r4096")]
     R4096,
+
+    /// 8192-bit non-arithmetics register
+    #[display("r8192")]
     R8192,
 }
 
-#[derive(Debug)]
-#[cfg_attr(feature = "std", derive(Display), display(Debug))]
+/// All non-string registers directly accessible by AluVM instructions,
+/// consisting of `a` and `r` sets of registers
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display), display(inner))]
 pub enum Reg {
+    /// Arithmetic registers (`a` registers)
     A(RegA),
+
+    /// Non-arithmetic (generic) registers (`a` registers)
     R(RegR),
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct Registers {
+    /// Arbitrary-precision arithmetics registers
+    ap: [Option<[u8; 1024]>; 32],
+
     // Arithmetic registers:
     a8: [Option<u8>; 32],
     a16: [Option<u16>; 32],
@@ -239,9 +298,6 @@ pub struct Registers {
     a128: [Option<u128>; 32],
     a256: [Option<u256>; 32],
     a512: [Option<u512>; 32],
-
-    /// Arbitrary-precision arithmetics registers
-    ap: [Option<[u8; 1024]>; 32],
 
     // Non-arithmetic registers:
     r128: [Option<[u8; 16]>; 32],
@@ -277,15 +333,42 @@ pub struct Registers {
 }
 
 impl Default for Registers {
+    #[inline]
     fn default() -> Self {
         Registers {
+            ap: Default::default(),
+            a8: Default::default(),
+            a16: Default::default(),
+            a32: Default::default(),
+            a64: Default::default(),
+            a128: Default::default(),
+            a256: Default::default(),
+            a512: Default::default(),
+
+            r128: Default::default(),
+            r160: Default::default(),
+            r256: Default::default(),
+            r512: Default::default(),
+            r1024: Default::default(),
+            r2048: Default::default(),
+            r4096: Default::default(),
+            r8192: Default::default(),
+
             st0: true,
+            cy0: 0,
+            cs0: [(None, 0); u16::MAX as usize],
             cm0: Ordering::Equal,
-            ..Default::default()
+            s16: [None; u8::MAX as usize],
+            cp0: 0,
         }
     }
 }
 
 impl Registers {
-    pub fn execute(&mut self, code: &[u8]) {}
+    #[inline]
+    pub fn new() -> Registers {
+        Registers::default()
+    }
+
+    pub fn execute(&mut self, _code: &[u8]) {}
 }

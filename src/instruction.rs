@@ -9,85 +9,154 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use amplify::num::u5;
+#[cfg(feature = "std")]
+use std::fmt::{self, Formatter, LowerHex, UpperHex};
 
 use crate::registers::{Reg, Reg32, Reg8, RegA, RegR};
 
+/// Library reference: a hash of the library code
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+#[cfg_attr(feature = "std", derive(Display), display(LowerHex))]
+#[derive(Wrapper, From)]
+pub struct LibHash([u8; 32]);
+
+#[cfg(feature = "std")]
+impl LowerHex for LibHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use amplify::hex::ToHex;
+        if f.alternate() {
+            write!(
+                f,
+                "{}..{}",
+                self.0[..4].to_hex(),
+                self.0[(self.0.len() - 4)..].to_hex()
+            )
+        } else {
+            f.write_str(&self.0.to_hex())
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl UpperHex for LibHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use amplify::hex::ToHex;
+        if f.alternate() {
+            write!(
+                f,
+                "{}..{}",
+                self.0[..4].to_hex().to_ascii_uppercase(),
+                self.0[(self.0.len() - 4)..].to_hex().to_ascii_uppercase()
+            )
+        } else {
+            f.write_str(&self.0.to_hex().to_ascii_uppercase())
+        }
+    }
+}
+
+/// Full set of instructions
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+// #[cfg_attr(feature = "std", derive(Display), display(inner))]
 #[non_exhaustive]
 pub enum Instruction {
+    /// Control-flow instructions
     // #[value = 0b00_000_000]
     ControlFlow(ControlFlowOp),
 
+    /// Instructions operating register values
     // #[value = 0b00_001_000]
     Register(RegisterOp),
 
+    /// Instructions comparing register values
     // #[value = 0b00_010_000]
     Cmp(CmpOp),
 
+    /// Arithmetic instructions
     // #[value = 0b00_100_000]
     Arithmetic(ArithmeticOp),
 
+    /// Bit operations & boolean algebra instructions
     // #[value = 0b00_101_000]
     Bitwise(BitwiseOp),
 
+    /// Operations on byte strings
     // #[value = 0b00_110_000]
     Bytes(BytesOp),
 
+    /// Cryptographic hashing functions
     // #[value = 0b01_000_000]
     Digest(DigestOp),
 
+    /// Operations on Secp256k1 elliptic curve
     // #[value = 0b01_001_000]
     Secp256k1(SecpOp),
 
+    /// Operations on Curve25519 elliptic curve
     // #[value = 0b01_001_100]
-    Ed25519(Ed25519Op),
+    Curve25519(Curve25519Op),
 
+    /// Reserved operations which can be provided by a host environment
     // #[value = 0b10_000_000]
     ExtensionCodes,
 
+    /// No-operation instruction
     // #[value = 0b11_111_111]
     Nop,
 }
 
+/// Control-flow instructions
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
 pub enum ControlFlowOp {
     /// Completes program execution writing `false` to `st0` (indicating
     /// program failure)
+    #[display("fail")]
     // #[value = 0b000]
     Fail,
 
     /// Completes program execution writing `true` to `st0` (indicating program
     /// success)
+    #[display("succ")]
     // #[value = 0b001]
     Succ,
 
     /// Unconditionally jumps to an offset. Increments `cy0`.
+    #[display("jmp\t{0:#06X}")]
     // #[value = 0b010]
     Jmp(u16),
 
     /// Jumps to an offset if `st0` == true, otherwise does nothing. Increments
     /// `cy0`.
+    #[display("jif\t{0:#06X}")]
     // #[value = 0b011]
     Jif(u16),
 
     /// Jumps to other location in the current code with ability to return
     /// back (calls a subroutine). Increments `cy0` and pushes offset of the
     /// instruction which follows current one to `cs0`.
+    #[display("routine\t{0:#06X}")]
     Routine(u16),
 
     /// Calls code from an external library identified by the hash of its code.
     /// Increments `cy0` and `cp0` and pushes offset of the instruction which
     /// follows current one to `cs0`.
-    Call([u8; 32], u16),
+    #[display("call\t{1:#06X}@{0}")]
+    Call(LibHash, u16),
 
     /// Passes execution to other library without an option to return.
     /// Does not increments `cy0` and `cp0` counters and does not add anything
     /// to the call stack `cs0`.
-    Exec([u8; 32], u16),
+    #[display("exec\t{1:#06X}@{0}")]
+    Exec(LibHash, u16),
 
     /// Returns execution flow to the previous location from the top of `cs0`.
     /// Does not change value in `cy0`. Decrements `cp0`.
+    #[display("ret")]
     Ret,
 }
 
+/// Instructions operating register values
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum RegisterOp {
     /// Swap operation. If the value does not fit destination bit dimensions
     /// truncates the most significant bits until they fit.
@@ -123,6 +192,8 @@ pub enum RegisterOp {
     Putr(RegR, Reg32, u16, [u8; 1024]),
 }
 
+/// Instructions comparing register values
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum CmpOp {
     /// Compares value of two arithmetic (`A`) registers putting result into
     /// `cm0`
@@ -155,6 +226,8 @@ pub enum CmpOp {
     Cntr(RegR, Reg32, Reg32),
 }
 
+/// Variants of arithmetic operations
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Arithmetics {
     IntChecked(bool),
     IntUnchecked(bool),
@@ -163,6 +236,8 @@ pub enum Arithmetics {
     FloatArbitraryPrecision,
 }
 
+/// Arithmetic instructions
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ArithmeticOp {
     Neg(RegA, Reg32),                     // 3 + 5 = 8 bits
     Inc(Arithmetics, RegA, Reg32, u5),    // Increases value on a given step
@@ -174,6 +249,8 @@ pub enum ArithmeticOp {
     Abs(RegA, Reg32, RegA, Reg32), // 3 + 5 + 3 + 5 => 16 bits
 }
 
+/// Bit operations & boolean algebra instructions
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum BitwiseOp {
     And(
         RegA,
@@ -195,6 +272,8 @@ pub enum BitwiseOp {
     Scr(RegA, Reg32, Reg32, Reg8),
 }
 
+/// Operations on byte strings
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum BytesOp {
     Puts(/** `s` register index */ u8, u16, [u8; u16::MAX as usize]),
 
@@ -262,6 +341,8 @@ pub enum BytesOp {
     ),
 }
 
+/// Cryptographic hashing functions
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[non_exhaustive]
 pub enum DigestOp {
     Ripemd(
@@ -278,6 +359,8 @@ pub enum DigestOp {
     ),
 }
 
+/// Operations on Secp256k1 elliptic curve
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum SecpOp {
     Gen(
         /** Register containing scalar */ Reg32,
@@ -301,7 +384,9 @@ pub enum SecpOp {
     ),
 }
 
-pub enum Ed25519Op {
+/// Operations on Curve25519 elliptic curve
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum Curve25519Op {
     Gen(
         /** Register containing scalar */ Reg32,
         /** Destination register to put G * scalar */ Reg8,
