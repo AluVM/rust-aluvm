@@ -36,7 +36,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: std
+          args: --features std
   platforms:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -63,7 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: [ nightly, beta, stable, 1.32.0 ]
+        toolchain: [ nightly, beta, stable ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust ${{ matrix.toolchain }}
@@ -76,6 +76,22 @@ jobs:
         with:
           command: check
           args: --workspace --all-targets --all-features
+  ancient:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install rust 1.36.0
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.36.0
+          override: true
+      - name: Clean Cargo.lock
+        run: rm -f Cargo.lock
+      - name: 1.36.0
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all --all-targets --all-features
   dependency:
     runs-on: ubuntu-latest
     steps:

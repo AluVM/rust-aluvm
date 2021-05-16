@@ -110,48 +110,48 @@ pub enum Instruction {
 pub enum ControlFlowOp {
     /// Completes program execution writing `false` to `st0` (indicating
     /// program failure)
-    #[display("fail")]
+    #[cfg_attr(feature = "std", display("fail"))]
     // #[value = 0b000]
     Fail,
 
     /// Completes program execution writing `true` to `st0` (indicating program
     /// success)
-    #[display("succ")]
+    #[cfg_attr(feature = "std", display("succ"))]
     // #[value = 0b001]
     Succ,
 
     /// Unconditionally jumps to an offset. Increments `cy0`.
-    #[display("jmp\t{0:#06X}")]
+    #[cfg_attr(feature = "std", display("jmp\t{0:#06X}"))]
     // #[value = 0b010]
     Jmp(u16),
 
     /// Jumps to an offset if `st0` == true, otherwise does nothing. Increments
     /// `cy0`.
-    #[display("jif\t{0:#06X}")]
+    #[cfg_attr(feature = "std", display("jif\t{0:#06X}"))]
     // #[value = 0b011]
     Jif(u16),
 
     /// Jumps to other location in the current code with ability to return
     /// back (calls a subroutine). Increments `cy0` and pushes offset of the
     /// instruction which follows current one to `cs0`.
-    #[display("routine\t{0:#06X}")]
+    #[cfg_attr(feature = "std", display("routine\t{0:#06X}"))]
     Routine(u16),
 
     /// Calls code from an external library identified by the hash of its code.
     /// Increments `cy0` and `cp0` and pushes offset of the instruction which
     /// follows current one to `cs0`.
-    #[display("call\t{1:#06X}@{0}")]
+    #[cfg_attr(feature = "std", display("call\t{1:#06X}@{0}"))]
     Call(LibHash, u16),
 
     /// Passes execution to other library without an option to return.
     /// Does not increments `cy0` and `cp0` counters and does not add anything
     /// to the call stack `cs0`.
-    #[display("exec\t{1:#06X}@{0}")]
+    #[cfg_attr(feature = "std", display("exec\t{1:#06X}@{0}"))]
     Exec(LibHash, u16),
 
     /// Returns execution flow to the previous location from the top of `cs0`.
     /// Does not change value in `cy0`. Decrements `cp0`.
-    #[display("ret")]
+    #[cfg_attr(feature = "std", display("ret"))]
     Ret,
 }
 

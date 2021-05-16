@@ -204,35 +204,35 @@ impl Default for Reg8 {
 #[repr(u8)]
 pub enum RegA {
     /// Arbitrary-precision register
-    #[display("ap")]
+    #[cfg_attr(feature = "std", display("ap"))]
     AP,
 
     /// 8-bit arithmetics register
-    #[display("a8")]
+    #[cfg_attr(feature = "std", display("a8"))]
     A8,
 
     /// 16-bit arithmetics register
-    #[display("a16")]
+    #[cfg_attr(feature = "std", display("a16"))]
     A16,
 
     /// 32-bit arithmetics register
-    #[display("a32")]
+    #[cfg_attr(feature = "std", display("a32"))]
     A32,
 
     /// 64-bit arithmetics register
-    #[display("a64")]
+    #[cfg_attr(feature = "std", display("a64"))]
     A64,
 
     /// 128-bit arithmetics register
-    #[display("a128")]
+    #[cfg_attr(feature = "std", display("a128"))]
     A128,
 
     /// 256-bit arithmetics register
-    #[display("a256")]
+    #[cfg_attr(feature = "std", display("a256"))]
     A256,
 
     /// 512-bit arithmetics register
-    #[display("a512")]
+    #[cfg_attr(feature = "std", display("a512"))]
     A512,
 }
 
@@ -242,35 +242,35 @@ pub enum RegA {
 #[cfg_attr(feature = "std", derive(Display), display(Debug))]
 pub enum RegR {
     /// 128-bit non-arithmetics register
-    #[display("r128")]
+    #[cfg_attr(feature = "std", display("r128"))]
     R128,
 
     /// 160-bit non-arithmetics register
-    #[display("r160")]
+    #[cfg_attr(feature = "std", display("r160"))]
     R160,
 
     /// 256-bit non-arithmetics register
-    #[display("r256")]
+    #[cfg_attr(feature = "std", display("r256"))]
     R256,
 
     /// 512-bit non-arithmetics register
-    #[display("r512")]
+    #[cfg_attr(feature = "std", display("r512"))]
     R512,
 
     /// 1024-bit non-arithmetics register
-    #[display("r1024")]
+    #[cfg_attr(feature = "std", display("r1024"))]
     R1024,
 
     /// 2048-bit non-arithmetics register
-    #[display("r2048")]
+    #[cfg_attr(feature = "std", display("r2048"))]
     R2048,
 
     /// 4096-bit non-arithmetics register
-    #[display("r4096")]
+    #[cfg_attr(feature = "std", display("r4096"))]
     R4096,
 
     /// 8192-bit non-arithmetics register
-    #[display("r8192")]
+    #[cfg_attr(feature = "std", display("r8192"))]
     R8192,
 }
 
