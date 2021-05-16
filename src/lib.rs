@@ -59,19 +59,22 @@ pub enum ControlFlowOp {
 }
 
 pub enum RegisterOp {
-    Split,
-    Join,
-    /// Puts a value into a register
-    Put(RegA, Reg32),
+    /// Swap operation. If the value does not fit destination bit dimensions
+    /// truncates the most significant bits until they fit.
+    Swp(Reg, Reg32, Reg, Reg32, bool /** Fill extra bits with highest bit for first value */, bool /** Fill extra bits with highest bit for second value */),
+    /// Duplicates value from low 16 registers to high 16 registers
+    Mov(Reg, Reg32, Reg, Reg32, bool /** Duplicate or move */, bool /** Fill extra bits with highest bit */),
 
-    Mova,
-    Movr,
+    /// Sets register value to zero
+    Zeroa(RegA, Reg32),
+    Zeror(RegR, Reg32),
 
-    Swpa,
-    Swpr,
+    /// Cleans a value of a register (sets it to undefined state)
+    Cleana(RegA, Reg32),
+    Cleanr(RegR, Reg32),
 
-    /// Cleans register value
-    Cln,
+    Puta(RegA, Reg32, u16, Box<[u8]>),
+    Putr(RegR, Reg32, u16, Box<[u8]>),
 }
 
 pub enum ArithmeticOp {
@@ -116,30 +119,49 @@ pub enum DigestOp {
 }
 
 pub enum SecpOp {
-    Gen(Reg8),
+    Gen(
+        Reg32 /** Register containing scalar */,
+        Reg8 /** Destination register to put G * scalar */
+    ),
     Mul(
-        bool, /** Use `a` or `r` register as scalar source */
-        Reg32, /** Scalar register index */
-        Reg32, /** Source `r` register index containing EC point */
-        Reg32, /** Destination `r` register index */
+        bool /** Use `a` or `r` register as scalar source */,
+        Reg32 /** Scalar register index */,
+        Reg32 /** Source `r` register index containing EC point */,
+        Reg32 /** Destination `r` register index */,
     ),
     Add(
-        bool, /** Allow overflows */
-        Reg32, /** Source 1 */
-        Reg32, /** Source 2 */
-        Reg32, /** Source 3 */
+        bool /** Allow overflows */,
+        Reg32 /** Source 1 */,
+        Reg32 /** Source 2 */,
+        Reg32 /** Source 3 */,
     ),
     Neg(
-        Reg32,
-        Reg8,
+        Reg32 /** Register hilding EC point to negate */,
+        Reg8 /** Destination register */,
     ),
 }
 
 pub enum Ed25519Op {
-    Gen,
-    Mul,
-    Add,
-    Neg,
+    Gen(
+        Reg32 /** Register containing scalar */,
+        Reg8 /** Destination register to put G * scalar */
+    ),
+    Mul(
+        bool /** Use `a` or `r` register as scalar source */,
+        Reg32 /** Scalar register index */,
+        Reg32 /** Source `r` register index containing EC point */,
+        Reg32 /** Destination `r` register index */,
+    ),
+    Add(
+        bool /** Allow overflows */,
+        Reg32 /** Source 1 */,
+        Reg32 /** Source 2 */,
+        Reg32 /** Source 3 */,
+    ),
+    Neg(
+        Reg32 /** Register hilding EC point to negate */,
+        Reg8 /** Destination register */,
+    ),
 }
 
 #[derive(Debug, Display)]
@@ -181,6 +203,19 @@ pub enum Reg32 {
 
 #[derive(Debug, Display)]
 #[display(Debug)]
+pub enum Reg8 {
+    Reg1,
+    Reg2,
+    Reg3,
+    Reg4,
+    Reg5,
+    Reg6,
+    Reg7,
+    Reg8,
+}
+
+#[derive(Debug, Display)]
+#[display(Debug)]
 pub enum RegA {
     AP,
     A8,
@@ -203,6 +238,13 @@ pub enum RegR {
     R2048,
     R4096,
     R8192,
+}
+
+#[derive(Debug, Display)]
+#[display(Debug)]
+pub enum Reg {
+    A(RegA),
+    R(RegR),
 }
 
 pub enum Arithmetics {
