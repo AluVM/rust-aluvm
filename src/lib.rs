@@ -15,3 +15,6 @@ extern crate amplify;
 
 pub mod instruction;
 pub mod registers;
+mod types;
+
+pub use types::{Blob, LibHash, LibSite};

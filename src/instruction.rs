@@ -9,66 +9,61 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use amplify::num::u5;
-#[cfg(feature = "std")]
-use std::fmt::{self, Formatter, LowerHex, UpperHex};
 
-use crate::registers::{Reg, Reg32, Reg8, RegA, RegR};
+use crate::registers::{Reg, Reg32, Reg8, RegA, RegR, Registers};
+use crate::{Blob, LibSite};
 
-/// Library reference: a hash of the library code
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
-#[cfg_attr(feature = "std", derive(Display), display(LowerHex))]
-#[derive(Wrapper, From)]
-pub struct LibHash([u8; 32]);
+/// Turing machine movement after instruction execution
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum ExecStep {
+    /// Stop program execution
+    Stop,
 
-#[cfg(feature = "std")]
-impl LowerHex for LibHash {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify::hex::ToHex;
-        if f.alternate() {
-            write!(
-                f,
-                "{}..{}",
-                self.0[..4].to_hex(),
-                self.0[(self.0.len() - 4)..].to_hex()
-            )
-        } else {
-            f.write_str(&self.0.to_hex())
-        }
-    }
+    /// Move to the next instruction
+    Next,
+
+    /// Jump to the offset from the origin
+    Jump(u16),
+
+    /// Jump to another code fragment
+    Call(LibSite),
 }
 
-#[cfg(feature = "std")]
-impl UpperHex for LibHash {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify::hex::ToHex;
-        if f.alternate() {
-            write!(
-                f,
-                "{}..{}",
-                self.0[..4].to_hex().to_ascii_uppercase(),
-                self.0[(self.0.len() - 4)..].to_hex().to_ascii_uppercase()
-            )
-        } else {
-            f.write_str(&self.0.to_hex().to_ascii_uppercase())
-        }
-    }
+/// Trait for instructions
+pub trait Instruction {
+    /// Executes given instruction taking all registers as input and output.
+    /// The method is provided with the current code position which may be
+    /// used by the instruction for constructing call stack.
+    ///
+    /// Returns whether further execution should be stopped.
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep;
+
+    /// Returns length of the instruction block in bytes
+    fn len(self) -> u16;
 }
 
 /// Full set of instructions
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 // #[cfg_attr(feature = "std", derive(Display), display(inner))]
 #[non_exhaustive]
-pub enum Instruction {
+pub enum Instr<Extension>
+where
+    Extension: Instruction,
+{
     /// Control-flow instructions
     // #[value = 0b00_000_000]
     ControlFlow(ControlFlowOp),
 
-    /// Instructions operating register values
+    /// Instructions setting register values
     // #[value = 0b00_001_000]
-    Register(RegisterOp),
+    Put(PutOp),
+
+    /// Instructions moving and swapping register values
+    // #[value = 0b00_010_000]
+    Move(MoveOp),
 
     /// Instructions comparing register values
-    // #[value = 0b00_010_000]
+    // #[value = 0b00_011_000]
     Cmp(CmpOp),
 
     /// Arithmetic instructions
@@ -97,11 +92,50 @@ pub enum Instruction {
 
     /// Reserved operations which can be provided by a host environment
     // #[value = 0b10_000_000]
-    ExtensionCodes,
+    ExtensionCodes(Extension),
 
     /// No-operation instruction
     // #[value = 0b11_111_111]
     Nop,
+}
+
+impl<Extension> Instruction for Instr<Extension>
+where
+    Extension: Instruction,
+{
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        match self {
+            Instr::ControlFlow(instr) => instr.exec(regs, site),
+            Instr::Put(instr) => instr.exec(regs, site),
+            Instr::Move(instr) => instr.exec(regs, site),
+            Instr::Cmp(instr) => instr.exec(regs, site),
+            Instr::Arithmetic(instr) => instr.exec(regs, site),
+            Instr::Bitwise(instr) => instr.exec(regs, site),
+            Instr::Bytes(instr) => instr.exec(regs, site),
+            Instr::Digest(instr) => instr.exec(regs, site),
+            Instr::Secp256k1(instr) => instr.exec(regs, site),
+            Instr::Curve25519(instr) => instr.exec(regs, site),
+            Instr::ExtensionCodes(instr) => instr.exec(regs, site),
+            Instr::Nop => ExecStep::Next,
+        }
+    }
+
+    fn len(self) -> u16 {
+        match self {
+            Instr::ControlFlow(instr) => instr.len(),
+            Instr::Put(instr) => instr.len(),
+            Instr::Move(instr) => instr.len(),
+            Instr::Cmp(instr) => instr.len(),
+            Instr::Arithmetic(instr) => instr.len(),
+            Instr::Bitwise(instr) => instr.len(),
+            Instr::Bytes(instr) => instr.len(),
+            Instr::Digest(instr) => instr.len(),
+            Instr::Secp256k1(instr) => instr.len(),
+            Instr::Curve25519(instr) => instr.len(),
+            Instr::ExtensionCodes(instr) => instr.len(),
+            Instr::Nop => 1,
+        }
+    }
 }
 
 /// Control-flow instructions
@@ -140,14 +174,14 @@ pub enum ControlFlowOp {
     /// Calls code from an external library identified by the hash of its code.
     /// Increments `cy0` and `cp0` and pushes offset of the instruction which
     /// follows current one to `cs0`.
-    #[cfg_attr(feature = "std", display("call\t{1:#06X}@{0}"))]
-    Call(LibHash, u16),
+    #[cfg_attr(feature = "std", display("call\t{0}"))]
+    Call(LibSite),
 
     /// Passes execution to other library without an option to return.
     /// Does not increments `cy0` and `cp0` counters and does not add anything
     /// to the call stack `cs0`.
-    #[cfg_attr(feature = "std", display("exec\t{1:#06X}@{0}"))]
-    Exec(LibHash, u16),
+    #[cfg_attr(feature = "std", display("exec\t{0}"))]
+    Exec(LibSite),
 
     /// Returns execution flow to the previous location from the top of `cs0`.
     /// Does not change value in `cy0`. Decrements `cp0`.
@@ -155,55 +189,232 @@ pub enum ControlFlowOp {
     Ret,
 }
 
-/// Instructions operating register values
+impl Instruction for ControlFlowOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        match self {
+            ControlFlowOp::Fail => {
+                regs.st0 = false;
+                ExecStep::Stop
+            }
+            ControlFlowOp::Succ => {
+                regs.st0 = true;
+                ExecStep::Stop
+            }
+            ControlFlowOp::Jmp(offset) => regs
+                .jmp()
+                .map(|_| ExecStep::Jump(offset))
+                .unwrap_or(ExecStep::Stop),
+            ControlFlowOp::Jif(offset) => {
+                if regs.st0 == true {
+                    regs.jmp()
+                        .map(|_| ExecStep::Jump(offset))
+                        .unwrap_or(ExecStep::Stop)
+                } else {
+                    ExecStep::Next
+                }
+            }
+            ControlFlowOp::Routine(offset) => regs
+                .call(site)
+                .map(|_| ExecStep::Jump(offset))
+                .unwrap_or(ExecStep::Stop),
+            ControlFlowOp::Call(site) => regs
+                .call(site)
+                .map(|_| ExecStep::Call(site))
+                .unwrap_or(ExecStep::Stop),
+            ControlFlowOp::Exec(site) => regs
+                .jmp()
+                .map(|_| ExecStep::Call(site))
+                .unwrap_or(ExecStep::Stop),
+            ControlFlowOp::Ret => {
+                regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop)
+            }
+        }
+    }
+
+    fn len(self) -> u16 {
+        match self {
+            ControlFlowOp::Fail => 1,
+            ControlFlowOp::Succ => 1,
+            ControlFlowOp::Jmp(_) => 3,
+            ControlFlowOp::Jif(_) => 3,
+            ControlFlowOp::Routine(_) => 3,
+            ControlFlowOp::Call(_) => 3 + 32,
+            ControlFlowOp::Exec(_) => 3 + 32,
+            ControlFlowOp::Ret => 1,
+        }
+    }
+}
+
+/// Instructions setting register values
+#[cfg_attr(feature = "std", derive(Display))]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub enum RegisterOp {
+pub enum PutOp {
+    /// Sets `a` register value to zero
+    #[display("zero\t{0}{1}")]
+    ZeroA(RegA, Reg32),
+
+    /// Sets `r` register value to zero
+    #[display("zero\t{0}{1}")]
+    ZeroR(RegR, Reg32),
+
+    /// Cleans a value of `a` register (sets it to undefined state)
+    #[display("cl\t{0}{1}")]
+    ClA(RegA, Reg32),
+
+    /// Cleans a value of `r` register (sets it to undefined state)
+    #[display("cl\t{0}{1}")]
+    ClR(RegR, Reg32),
+
+    /// Unconditionally assigns a value to `a` register
+    #[display("put\t{0}{1}, {2}")]
+    PutA(RegA, Reg32, Blob),
+
+    /// Unconditionally assigns a value to `r` register
+    #[display("put\t{0}{1}, {2}")]
+    PutR(RegR, Reg32, Blob),
+
+    /// Conditionally assigns a value to `a` register if the register is in
+    /// uninitialized state
+    #[display("putif\t{0}{1}, {2}")]
+    PutAIf(RegA, Reg32, Blob),
+
+    /// Conditionally assigns a value to `r` register if the register is in
+    /// uninitialized state
+    #[display("putif\t{0}{1}, {2}")]
+    PutRIf(RegR, Reg32, Blob),
+}
+
+impl Instruction for PutOp {
+    fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
+        match self {
+            PutOp::ZeroA(reg, index) => {
+                regs.set(Reg::A(reg), index, Some(0.into()))
+            }
+            PutOp::ZeroR(reg, index) => {
+                regs.set(Reg::R(reg), index, Some(0.into()))
+            }
+            PutOp::ClA(reg, index) => regs.set(Reg::A(reg), index, None),
+            PutOp::ClR(reg, index) => regs.set(Reg::R(reg), index, None),
+            PutOp::PutA(reg, index, blob) => {
+                regs.set(Reg::A(reg), index, Some(blob))
+            }
+            PutOp::PutR(reg, index, blob) => {
+                regs.set(Reg::R(reg), index, Some(blob))
+            }
+            PutOp::PutAIf(reg, index, blob) => {
+                regs.get(Reg::A(reg), index).or_else(|| {
+                    regs.set(Reg::A(reg), index, Some(blob));
+                    Some(blob)
+                });
+            }
+            PutOp::PutRIf(reg, index, blob) => {
+                regs.get(Reg::R(reg), index).or_else(|| {
+                    regs.set(Reg::R(reg), index, Some(blob));
+                    Some(blob)
+                });
+            }
+        }
+        ExecStep::Next
+    }
+
+    fn len(self) -> u16 {
+        match self {
+            PutOp::ZeroA(_, _)
+            | PutOp::ZeroR(_, _)
+            | PutOp::ClA(_, _)
+            | PutOp::ClR(_, _) => 2,
+            PutOp::PutA(_, _, Blob { len, .. })
+            | PutOp::PutR(_, _, Blob { len, .. })
+            | PutOp::PutAIf(_, _, Blob { len, .. })
+            | PutOp::PutRIf(_, _, Blob { len, .. }) => 4u16.saturating_add(len),
+        }
+    }
+}
+
+/// Integer arithmetic types
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
+pub enum NumType {
+    /// Unsigned integer
+    #[display("u")]
+    Unsigned,
+
+    /// Signed integer
+    #[display("s")]
+    Signed,
+
+    /// Float number with 23-bit mantissa
+    #[display("f")]
+    Float23,
+
+    /// Float number with 52 bit mantissa
+    #[display("d")]
+    Float52,
+}
+
+/// Instructions moving and swapping register values
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+// #[cfg_attr(feature = "std", derive(Display))]
+pub enum MoveOp {
     /// Swap operation. If the value does not fit destination bit dimensions
     /// truncates the most significant bits until they fit.
-    Swp(
-        Reg,
-        Reg32,
-        Reg,
-        Reg32,
-        /** Fill extra bits with highest bit for first value */ bool,
-        /** Fill extra bits with highest bit for second value */ bool,
-    ),
-    /// Duplicates value from low 16 registers to high 16 registers
-    Mov(
-        Reg,
-        Reg32,
-        Reg,
-        Reg32,
-        /// Flag indicating whether the register value should be duplicated
-        /// (`true`) or just moved (`false`)
-        bool,
-        /** Fill extra bits with highest bit */ bool,
-    ),
+    SwpA(RegA, Reg32, RegA, Reg32),
+    SwpR(RegR, Reg32, RegR, Reg32),
+    Swp(RegA, Reg32, RegR, Reg32),
 
-    /// Sets register value to zero
-    Zeroa(RegA, Reg32),
-    Zeror(RegR, Reg32),
+    /// Duplicates values of all register set into another set
+    Mov(RegA, RegA, NumType),
 
-    /// Cleans a value of a register (sets it to undefined state)
-    Cleana(RegA, Reg32),
-    Cleanr(RegR, Reg32),
+    /// Duplicates value of one of the registers into another register
+    MovA(RegA, Reg32, RegA, Reg32),
+    MovR(RegA, Reg32, RegA, Reg32),
+    MovAR(RegA, Reg32, RegR, Reg32),
+    MovRA(RegR, Reg32, RegA, Reg32),
+}
 
-    Puta(RegA, Reg32, u16, [u8; 1024]),
-    Putr(RegR, Reg32, u16, [u8; 1024]),
+impl Instruction for MoveOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        match self {
+            MoveOp::SwpA(_, _, _, _) => {}
+            MoveOp::SwpR(_, _, _, _) => {}
+            MoveOp::Swp(_, _, _, _) => {}
+            MoveOp::Mov(_, _, _) => {}
+            MoveOp::MovA(_, _, _, _) => {}
+            MoveOp::MovR(_, _, _, _) => {}
+            MoveOp::MovAR(_, _, _, _) => {}
+            MoveOp::MovRA(_, _, _, _) => {}
+        }
+        ExecStep::Next
+    }
+
+    fn len(self) -> u16 {
+        match self {
+            MoveOp::SwpA(_, _, _, _)
+            | MoveOp::SwpR(_, _, _, _)
+            | MoveOp::Swp(_, _, _, _) => 3,
+            MoveOp::Mov(_, _, _) => 2,
+            MoveOp::MovA(_, _, _, _)
+            | MoveOp::MovR(_, _, _, _)
+            | MoveOp::MovAR(_, _, _, _)
+            | MoveOp::MovRA(_, _, _, _) => 3,
+        }
+    }
 }
 
 /// Instructions comparing register values
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum CmpOp {
-    /// Compares value of two arithmetic (`A`) registers putting result into
-    /// `cm0`
+    /// Compares value of two arithmetic (`A`) registers setting `st0` to
+    /// `true` if the first parameter is greater (and not equal) than the
+    /// second one
     // #[value = 0b110] // 3 + 5 + 3 + 5 => 16 bits
-    Cmpa(RegA, Reg32, RegA, Reg32),
+    Gt(RegA, Reg32, RegA, Reg32),
 
-    /// Compares value of two non-arithmetic (`R`) registers putting result
-    /// into `cm0`
+    /// Compares value of two non-arithmetic (`R`) registers setting `st0` to
+    /// `true` if the first parameter is less (and not equal) than the second
+    /// one
     // #[value = 0b111]
-    Cmpr(RegR, Reg32, RegR, Reg32),
+    Lt(RegR, Reg32, RegR, Reg32),
 
     /// Checks equality of value in two arithmetic (`A`) registers putting
     /// result into `st0`
@@ -217,13 +428,27 @@ pub enum CmpOp {
 
     /// Measures bit length of a value in one fo the registers putting result
     /// to `a16[0]`
-    Lena(RegA, Reg32, Reg32),
-    Lenr(RegA, Reg32, Reg32),
+    Len(RegA, Reg32),
 
     /// Counts number of `1` bits in register putting result to `a16[0]`
-    /// register
-    Cnta(RegA, Reg32, Reg32),
-    Cntr(RegR, Reg32, Reg32),
+    /// register.
+    Cnt(RegA, Reg32),
+
+    /// Assigns value of `a8[0]` register to `st0`
+    St2A,
+
+    /// `st0` value of `st0` register to the result of `a8[0] == 1`
+    A2St,
+}
+
+impl Instruction for CmpOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        todo!()
+    }
+
+    fn len(self) -> u16 {
+        todo!()
+    }
 }
 
 /// Variants of arithmetic operations
@@ -249,6 +474,16 @@ pub enum ArithmeticOp {
     Abs(RegA, Reg32, RegA, Reg32), // 3 + 5 + 3 + 5 => 16 bits
 }
 
+impl Instruction for ArithmeticOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        todo!()
+    }
+
+    fn len(self) -> u16 {
+        todo!()
+    }
+}
+
 /// Bit operations & boolean algebra instructions
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum BitwiseOp {
@@ -270,6 +505,16 @@ pub enum BitwiseOp {
     Scl(RegA, Reg32, Reg32, Reg8),
     /// Shift-cycle right
     Scr(RegA, Reg32, Reg32, Reg8),
+}
+
+impl Instruction for BitwiseOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        todo!()
+    }
+
+    fn len(self) -> u16 {
+        todo!()
+    }
 }
 
 /// Operations on byte strings
@@ -341,6 +586,16 @@ pub enum BytesOp {
     ),
 }
 
+impl Instruction for BytesOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        todo!()
+    }
+
+    fn len(self) -> u16 {
+        todo!()
+    }
+}
+
 /// Cryptographic hashing functions
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[non_exhaustive]
@@ -357,6 +612,16 @@ pub enum DigestOp {
         /** Index of `r160` register to save result to */ Reg32,
         /** Clear string register after operation */ bool,
     ),
+}
+
+impl Instruction for DigestOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        todo!()
+    }
+
+    fn len(self) -> u16 {
+        todo!()
+    }
 }
 
 /// Operations on Secp256k1 elliptic curve
@@ -384,6 +649,16 @@ pub enum SecpOp {
     ),
 }
 
+impl Instruction for SecpOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        todo!()
+    }
+
+    fn len(self) -> u16 {
+        todo!()
+    }
+}
+
 /// Operations on Curve25519 elliptic curve
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Curve25519Op {
@@ -407,4 +682,14 @@ pub enum Curve25519Op {
         /** Register hilding EC point to negate */ Reg32,
         /** Destination register */ Reg8,
     ),
+}
+
+impl Instruction for Curve25519Op {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        todo!()
+    }
+
+    fn len(self) -> u16 {
+        todo!()
+    }
 }

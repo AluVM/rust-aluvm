@@ -8,10 +8,9 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use core::cmp::Ordering;
-
-use crate::instruction::LibHash;
 use amplify::num::{u256, u512};
+
+use crate::{Blob, LibSite};
 
 /// All possible register indexes for `a` and `r` register sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -313,13 +312,9 @@ pub struct Registers {
     /// String and bytestring registers
     pub(crate) s16: [Option<(u16, [u8; u16::MAX as usize])>; u8::MAX as usize],
 
-    /// Control flow register which stores result of comparison operations.
-    /// Initialized with `0`
-    cm0: Ordering,
-
     /// Control flow register which stores result of equality and other types
     /// of boolean checks. Initialized with `true`
-    st0: bool,
+    pub(crate) st0: bool,
 
     /// Counts number of jumps (possible cycles). The number of jumps is
     /// limited by 2^16 per script.
@@ -327,7 +322,7 @@ pub struct Registers {
 
     /// Call stack. Maximal size is `u16::MAX` (limited by `cy0` mechanics and
     /// `cp0`)
-    cs0: [(Option<LibHash>, u16); u16::MAX as usize],
+    cs0: [LibSite; u16::MAX as usize],
 
     /// Defines "top" of the call stack
     cp0: u16,
@@ -357,8 +352,7 @@ impl Default for Registers {
 
             st0: true,
             cy0: 0,
-            cs0: [(None, 0); u16::MAX as usize],
-            cm0: Ordering::Equal,
+            cs0: [LibSite::default(); u16::MAX as usize],
             s16: [None; u8::MAX as usize],
             cp0: 0,
         }
@@ -380,11 +374,7 @@ impl Registers {
             .map(|_| ())
     }
 
-    pub(crate) fn call(
-        &mut self,
-        lib: Option<LibHash>,
-        offset: u16,
-    ) -> Result<(), ()> {
+    pub(crate) fn call(&mut self, site: LibSite) -> Result<(), ()> {
         self.cy0
             .checked_add(1)
             .ok_or_else(|| {
@@ -396,22 +386,71 @@ impl Registers {
                 })
             })
             .map(|_| {
-                self.cs0[self.cp0 as usize - 1] = (lib, offset);
+                self.cs0[self.cp0 as usize - 1] = site;
             })
     }
 
-    pub(crate) fn ret(&mut self) -> Option<(Option<LibHash>, u16)> {
+    pub(crate) fn ret(&mut self) -> Option<LibSite> {
         if self.cp0 == 0 {
             None
         } else {
-            self.cs0[self.cp0 as usize] = (None, 0);
+            self.cs0[self.cp0 as usize] = LibSite::default();
             self.cp0 -= 1;
             Some(self.cs0[self.cp0 as usize])
         }
     }
 
-    pub(crate) fn ordering(&self) -> Ordering {
-        return self.cm0;
+    pub fn get(&self, reg: Reg, index: Reg32) -> Option<Blob> {
+        let index = index as usize;
+        match reg {
+            Reg::A(a) => match a {
+                RegA::AP => self.ap[index].map(Blob::from),
+                RegA::A8 => self.a8[index].map(Blob::from),
+                RegA::A16 => self.a16[index].map(Blob::from),
+                RegA::A32 => self.a32[index].map(Blob::from),
+                RegA::A64 => self.a64[index].map(Blob::from),
+                RegA::A128 => self.a128[index].map(Blob::from),
+                RegA::A256 => self.a256[index].map(Blob::from),
+                RegA::A512 => self.a512[index].map(Blob::from),
+            },
+
+            Reg::R(r) => match r {
+                RegR::R128 => self.r128[index].map(Blob::from),
+                RegR::R160 => self.r160[index].map(Blob::from),
+                RegR::R256 => self.r256[index].map(Blob::from),
+                RegR::R512 => self.r512[index].map(Blob::from),
+                RegR::R1024 => self.r1024[index].map(Blob::from),
+                RegR::R2048 => self.r2048[index].map(Blob::from),
+                RegR::R4096 => self.r4096[index].map(Blob::from),
+                RegR::R8192 => self.r8192[index].map(Blob::from),
+            },
+        }
+    }
+
+    pub fn set(&mut self, reg: Reg, index: Reg32, value: Option<Blob>) {
+        let index = index as usize;
+        match reg {
+            Reg::A(a) => match a {
+                RegA::AP => self.ap[index] = value.map(Blob::into),
+                RegA::A8 => self.a8[index] = value.map(Blob::into),
+                RegA::A16 => self.a16[index] = value.map(Blob::into),
+                RegA::A32 => self.a32[index] = value.map(Blob::into),
+                RegA::A64 => self.a64[index] = value.map(Blob::into),
+                RegA::A128 => self.a128[index] = value.map(Blob::into),
+                RegA::A256 => self.a256[index] = value.map(Blob::into),
+                RegA::A512 => self.a512[index] = value.map(Blob::into),
+            },
+            Reg::R(r) => match r {
+                RegR::R128 => self.r128[index] = value.map(Blob::into),
+                RegR::R160 => self.r160[index] = value.map(Blob::into),
+                RegR::R256 => self.r256[index] = value.map(Blob::into),
+                RegR::R512 => self.r512[index] = value.map(Blob::into),
+                RegR::R1024 => self.r1024[index] = value.map(Blob::into),
+                RegR::R2048 => self.r2048[index] = value.map(Blob::into),
+                RegR::R4096 => self.r4096[index] = value.map(Blob::into),
+                RegR::R8192 => self.r8192[index] = value.map(Blob::into),
+            },
+        }
     }
 
     pub fn status(&self) -> bool {
