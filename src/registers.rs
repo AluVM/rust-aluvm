@@ -10,6 +10,7 @@
 
 use core::cmp::Ordering;
 
+use crate::instruction::LibHash;
 use amplify::num::{u256, u512};
 
 /// All possible register indexes for `a` and `r` register sets
@@ -288,29 +289,29 @@ pub enum Reg {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct Registers {
     /// Arbitrary-precision arithmetics registers
-    ap: [Option<[u8; 1024]>; 32],
+    pub(crate) ap: [Option<[u8; 1024]>; 32],
 
     // Arithmetic registers:
-    a8: [Option<u8>; 32],
-    a16: [Option<u16>; 32],
-    a32: [Option<u32>; 32],
-    a64: [Option<u64>; 32],
-    a128: [Option<u128>; 32],
-    a256: [Option<u256>; 32],
-    a512: [Option<u512>; 32],
+    pub(crate) a8: [Option<u8>; 32],
+    pub(crate) a16: [Option<u16>; 32],
+    pub(crate) a32: [Option<u32>; 32],
+    pub(crate) a64: [Option<u64>; 32],
+    pub(crate) a128: [Option<u128>; 32],
+    pub(crate) a256: [Option<u256>; 32],
+    pub(crate) a512: [Option<u512>; 32],
 
     // Non-arithmetic registers:
-    r128: [Option<[u8; 16]>; 32],
-    r160: [Option<[u8; 20]>; 32],
-    r256: [Option<[u8; 32]>; 32],
-    r512: [Option<[u8; 64]>; 32],
-    r1024: [Option<[u8; 128]>; 32],
-    r2048: [Option<[u8; 256]>; 32],
-    r4096: [Option<[u8; 512]>; 32],
-    r8192: [Option<[u8; 1024]>; 32],
+    pub(crate) r128: [Option<[u8; 16]>; 32],
+    pub(crate) r160: [Option<[u8; 20]>; 32],
+    pub(crate) r256: [Option<[u8; 32]>; 32],
+    pub(crate) r512: [Option<[u8; 64]>; 32],
+    pub(crate) r1024: [Option<[u8; 128]>; 32],
+    pub(crate) r2048: [Option<[u8; 256]>; 32],
+    pub(crate) r4096: [Option<[u8; 512]>; 32],
+    pub(crate) r8192: [Option<[u8; 1024]>; 32],
 
     /// String and bytestring registers
-    s16: [Option<(u16, [u8; u16::MAX as usize])>; u8::MAX as usize],
+    pub(crate) s16: [Option<(u16, [u8; u16::MAX as usize])>; u8::MAX as usize],
 
     /// Control flow register which stores result of comparison operations.
     /// Initialized with `0`
@@ -326,7 +327,7 @@ pub struct Registers {
 
     /// Call stack. Maximal size is `u16::MAX` (limited by `cy0` mechanics and
     /// `cp0`)
-    cs0: [(Option<[u8; 32]>, u16); u16::MAX as usize],
+    cs0: [(Option<LibHash>, u16); u16::MAX as usize],
 
     /// Defines "top" of the call stack
     cp0: u16,
@@ -370,5 +371,50 @@ impl Registers {
         Registers::default()
     }
 
-    pub fn execute(&mut self, _code: &[u8]) {}
+    pub(crate) fn jmp(&mut self) -> Result<(), ()> {
+        self.cy0
+            .checked_add(1)
+            .ok_or_else(|| {
+                self.st0 = false;
+            })
+            .map(|_| ())
+    }
+
+    pub(crate) fn call(
+        &mut self,
+        lib: Option<LibHash>,
+        offset: u16,
+    ) -> Result<(), ()> {
+        self.cy0
+            .checked_add(1)
+            .ok_or_else(|| {
+                self.st0 = false;
+            })
+            .and_then(|_| {
+                self.cp0.checked_add(1).ok_or_else(|| {
+                    self.st0 = false;
+                })
+            })
+            .map(|_| {
+                self.cs0[self.cp0 as usize - 1] = (lib, offset);
+            })
+    }
+
+    pub(crate) fn ret(&mut self) -> Option<(Option<LibHash>, u16)> {
+        if self.cp0 == 0 {
+            None
+        } else {
+            self.cs0[self.cp0 as usize] = (None, 0);
+            self.cp0 -= 1;
+            Some(self.cs0[self.cp0 as usize])
+        }
+    }
+
+    pub(crate) fn ordering(&self) -> Ordering {
+        return self.cm0;
+    }
+
+    pub fn status(&self) -> bool {
+        return self.st0;
+    }
 }
