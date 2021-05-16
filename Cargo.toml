@@ -4,10 +4,21 @@ description = "AluVM runtime environment"
 version = "0.1.0"
 authors = ["Dr Maxim Orlovsky <orlovsky@pandoracore.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+repository = "https://github.com/internet2-org/alure"
+homepage = "https://lnp-bp.org"
+keywords = ["virtual-machine", "eemulator", "functional-programming", "risc"]
+categories = ["no-std", "embedded", "compilers", "cryptography", "emulators"]
+readme = "README.md"
+exclude = [".github", "test"]
 
 [lib]
 name = "alure"
 
 [dependencies]
+amplify = "3.6"
+
+[features]
+default = []
+all = ["std"]
+std = []
