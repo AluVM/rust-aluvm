@@ -9,18 +9,23 @@ pub enum Instruction {
     Register(RegisterOp),
 
     #[value = 0b00_010_000]
-    Arithmetic(ArithmeticOp),
+    Cmp(CmpOp),
 
-    #[value = 0b00_011_000]
-    Bitwise(BitwiseOp),
 
     #[value = 0b00_100_000]
-    Digest(DigestOp),
+    Arithmetic(ArithmeticOp),
 
     #[value = 0b00_101_000]
+    Bitwise(BitwiseOp),
+
+
+    #[value = 0b01_000_000]
+    Digest(DigestOp),
+
+    #[value = 0b01_001_000]
     Secp256k1(SecpOp),
 
-    #[value = 0b00_101_100]
+    #[value = 0b01_001_100]
     Ed25519(Ed25519Op),
 }
 
@@ -33,22 +38,6 @@ pub enum ControlFlowOp {
     #[value = 0b001]
     Succ,
 
-    /// Compares value of two arithmetic (`A`) registers putting result into `cm0`
-    #[value = 0b110] // 3 + 5 + 3 + 5 => 16 bits
-    Cmpa(RegA, Reg32, RegA, Reg32),
-
-    /// Compares value of two non-arithmetic (`R`) registers putting result into `cm0`
-    #[value = 0b111]
-    Cmpr(RegR, Reg32, RegR, Reg32),
-
-    /// Checks equality of value in two arithmetic (`A`) registers putting result into `st0`
-    #[value = 0b100]
-    Eqa(RegA, Reg32, RegA, Reg32),
-
-    /// Checks equality of value in two non-arithmetic (`R`) registers putting result into `st0`
-    #[value = 0b101]
-    Eqr(RegR, Reg32, RegR, Reg32),
-
     /// Unconditionally jumps to an offset. Increments `cy0`.
     #[value = 0b010]
     Jmp(u16),
@@ -56,6 +45,25 @@ pub enum ControlFlowOp {
     /// Jumps to an offset if `st0` == true, otherwise does nothing. Increments `cy0`.
     #[value = 0b011]
     Jif(u16),
+
+    /// Jumps to other location in the current code with ability to return
+    /// back (calls a subroutine). Increments `cy0` and pushes offset of the
+    /// instruction which follows current one to `cs0`.
+    Routine(u16),
+
+    /// Calls code from an external library identified by the hash of its code.
+    /// Increments `cy0` and `cp0` and pushes offset of the instruction which
+    /// follows current one to `cs0`.
+    Call([u8; 32], u16),
+
+    /// Passes execution to other library without an option to return.
+    /// Does not increments `cy0` and `cp0` counters and does not add anything
+    /// to the call stack `cs0`.
+    Exec([u8; 32], u16),
+
+    /// Returns execution flow to the previous location from the top of `cs0`.
+    /// Does not change value in `cy0`. Decrements `cp0`.
+    Ret,
 }
 
 pub enum RegisterOp {
@@ -75,6 +83,32 @@ pub enum RegisterOp {
 
     Puta(RegA, Reg32, u16, Box<[u8]>),
     Putr(RegR, Reg32, u16, Box<[u8]>),
+}
+
+pub enum CmpOp {
+    /// Compares value of two arithmetic (`A`) registers putting result into `cm0`
+    #[value = 0b110] // 3 + 5 + 3 + 5 => 16 bits
+    Cmpa(RegA, Reg32, RegA, Reg32),
+
+    /// Compares value of two non-arithmetic (`R`) registers putting result into `cm0`
+    #[value = 0b111]
+    Cmpr(RegR, Reg32, RegR, Reg32),
+
+    /// Checks equality of value in two arithmetic (`A`) registers putting result into `st0`
+    #[value = 0b100]
+    Eqa(RegA, Reg32, RegA, Reg32),
+
+    /// Checks equality of value in two non-arithmetic (`R`) registers putting result into `st0`
+    #[value = 0b101]
+    Eqr(RegR, Reg32, RegR, Reg32),
+
+    /// Measures bit length of a value in one fo the registers putting result to `a16[0]`
+    Lena(RegA, Reg32, Reg32),
+    Lenr(RegA, Reg32, Reg32),
+
+    /// Counts number of `1` bits in register putting result to `a16[0]` register
+    Cnta(RegA, Reg32, Reg32),
+    Cntr(RegR, Reg32, Reg32),
 }
 
 pub enum ArithmeticOp {
@@ -290,6 +324,12 @@ struct Registers {
 
     /// Counts number of jumps (possible cycles). The number of jumps is limited by 2^16 per script.
     cy0: u16,
+
+    /// Call stack. Maximal size is `u16::MAX` (limited by `cy0` mechanics and `cp0`)
+    cs0: [(Option<[u8; 32]>, u16); u16::MAX as usize],
+
+    /// Defines "top" of the call stack
+    cp0: u16,
 }
 
 impl Default for Registers {
