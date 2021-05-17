@@ -20,15 +20,20 @@ extern crate paste;
 use alure::instr::{
     ArithmeticOp, CmpOp, ControlFlowOp, Instr, MoveOp, Nop, PutOp,
 };
-use alure::registers::{Reg32, RegA};
+use alure::registers::{Reg32, RegA, RegR};
+use alure::Value;
+use std::str::FromStr;
 
 trace_macros!(true);
 
 fn main() {
     let code = aluasm! {
-        zero    a8[1];
-        ret;
-        jmp     0;
+        zero    a8[1]                           ;
+        cl      r1024[5]                        ;
+        put     a16[8] <- 378                   ;
+        putif   r1024[5] <- 0xaf67937b5498dc    ;
+        ret                                     ;
+        jmp     0                               ;
     };
 
     println!("\n\nentry:\n{}\n", code);

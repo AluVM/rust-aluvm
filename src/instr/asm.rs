@@ -8,29 +8,6 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#[doc(hidden)]
-#[cfg(feature = "std")]
-#[macro_export]
-macro_rules! aluasm_inner {
-    { $code:ident => } => { };
-    { $code:ident => $op:ident ; $($tt:tt)* } => {
-        $code.push(instr!{ $op });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $( $arg:literal ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg ),+ });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $( $arg:ident ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg ),+ });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ });
-        aluasm_inner! { $code => $( $tt )* }
-    }
-}
-
 #[cfg(feature = "std")]
 #[macro_export]
 macro_rules! aluasm {
@@ -40,18 +17,6 @@ macro_rules! aluasm {
         ::alure::Lib(code)
     } }
 }
-
-/*
-macro_rules! args {
-    ($arg:expr) => {};
-
-    ($arg:expr , $($tt:tt)*) => {};
-
-    ($reg:ident [ $idx:literal ]) => {};
-
-    ($reg:ident [ $idx:literal ] , $($tt:tt)*) => {};
-}
- */
 
 #[macro_export]
 macro_rules! instr {
@@ -81,24 +46,120 @@ macro_rules! instr {
     };
 
     (zero $reg:ident [ $idx:literal ]) => {
-        Instr::Put(reg_suffix!(PutOp, Zero, $reg)(
-            reg_ext!(Reg, $reg),
-            reg_idx!($idx),
+        Instr::Put(_reg_sfx!(PutOp, Zero, $reg)(
+            _reg_ty!(Reg, $reg),
+            _reg_idx!($idx),
+        ))
+    };
+
+    (cl $reg:ident [ $idx:literal ]) => {
+        Instr::Put(_reg_sfx!(PutOp, Cl, $reg)(
+            _reg_ty!(Reg, $reg),
+            _reg_idx!($idx),
+        ))
+    };
+
+    (put $reg:ident [ $idx:literal ], $val:tt) => {
+        Instr::Put(_reg_sfx!(PutOp, Put, $reg)(
+            _reg_ty!(Reg, $reg),
+            _reg_idx!($idx),
+            Value::from_str(stringify!($val)).expect("invalid hex literal"),
+        ))
+    };
+
+    (putif $reg:ident [ $idx:literal ], $val:tt) => {
+        Instr::Put(_reg_sfx!(PutOp, PutIf, $reg)(
+            _reg_ty!(Reg, $reg),
+            _reg_idx!($idx),
+            Value::from_str(stringify!($val)).expect("invalid hex literal"),
         ))
     };
 }
 
 #[doc(hidden)]
+#[cfg(feature = "std")]
 #[macro_export]
-macro_rules! reg_suffix {
+macro_rules! aluasm_inner {
+    { $code:ident => } => { };
+    { $code:ident => $op:ident ; $($tt:tt)* } => {
+        $code.push(instr!{ $op });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:literal ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:ident ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $arg:ident [ $idx:literal ] <- $arglit:tt ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $arg [ $idx ], $arglit });
+        aluasm_inner! { $code => $( $tt )* }
+    }
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_sfx {
+    ($a:ident, $b:ident, ap) => {
+        paste! { $a :: [<$b A>] }
+    };
     ($a:ident, $b:ident, a8) => {
         paste! { $a :: [<$b A>] }
+    };
+    ($a:ident, $b:ident, a16) => {
+        paste! { $a :: [<$b A>] }
+    };
+    ($a:ident, $b:ident, a32) => {
+        paste! { $a :: [<$b A>] }
+    };
+    ($a:ident, $b:ident, a64) => {
+        paste! { $a :: [<$b A>] }
+    };
+    ($a:ident, $b:ident, a128) => {
+        paste! { $a :: [<$b A>] }
+    };
+    ($a:ident, $b:ident, a256) => {
+        paste! { $a :: [<$b A>] }
+    };
+    ($a:ident, $b:ident, a512) => {
+        paste! { $a :: [<$b A>] }
+    };
+
+    ($a:ident, $b:ident, r128) => {
+        paste! { $a :: [<$b R>] }
+    };
+    ($a:ident, $b:ident, r160) => {
+        paste! { $a :: [<$b R>] }
+    };
+    ($a:ident, $b:ident, r256) => {
+        paste! { $a :: [<$b R>] }
+    };
+    ($a:ident, $b:ident, r512) => {
+        paste! { $a :: [<$b R>] }
+    };
+    ($a:ident, $b:ident, r1024) => {
+        paste! { $a :: [<$b R>] }
+    };
+    ($a:ident, $b:ident, r2048) => {
+        paste! { $a :: [<$b R>] }
+    };
+    ($a:ident, $b:ident, r4096) => {
+        paste! { $a :: [<$b R>] }
+    };
+    ($a:ident, $b:ident, r8192) => {
+        paste! { $a :: [<$b R>] }
     };
 }
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! reg_ext {
+macro_rules! _reg_ty {
     ($ident:ident, ap) => {
         paste! { [<$ident A>] :: AP }
     };
@@ -152,7 +213,7 @@ macro_rules! reg_ext {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! reg_idx {
+macro_rules! _reg_idx {
     ($idx:literal) => {
         paste! { Reg32::[<Reg $idx>] }
     };

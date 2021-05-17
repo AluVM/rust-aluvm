@@ -20,4 +20,4 @@ mod types;
 pub use instr::{Instr, Instruction};
 #[cfg(feature = "std")]
 pub use types::Lib;
-pub use types::{Blob, LibHash, LibSite, Value};
+pub use types::{Blob, LibHash, LibSite, LiteralParseError, Value};

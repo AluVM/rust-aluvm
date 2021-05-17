@@ -17,132 +17,132 @@ use crate::{LibSite, Value};
 #[cfg_attr(feature = "std", derive(Display))]
 #[repr(u8)]
 pub enum Reg32 {
-    /// Register with index `[0]`
-    #[cfg_attr(feature = "std", display("[0]"))]
-    Reg1 = 0,
-
     /// Register with index `[1]`
     #[cfg_attr(feature = "std", display("[1]"))]
-    Reg2 = 1,
+    Reg1 = 0,
 
     /// Register with index `[2]`
     #[cfg_attr(feature = "std", display("[2]"))]
-    Reg3 = 2,
+    Reg2 = 1,
 
     /// Register with index `[3]`
     #[cfg_attr(feature = "std", display("[3]"))]
-    Reg4 = 3,
+    Reg3 = 2,
 
     /// Register with index `[4]`
     #[cfg_attr(feature = "std", display("[4]"))]
-    Reg5 = 4,
+    Reg4 = 3,
 
     /// Register with index `[5]`
     #[cfg_attr(feature = "std", display("[5]"))]
-    Reg6 = 5,
+    Reg5 = 4,
 
     /// Register with index `[6]`
     #[cfg_attr(feature = "std", display("[6]"))]
-    Reg7 = 6,
+    Reg6 = 5,
 
     /// Register with index `[7]`
     #[cfg_attr(feature = "std", display("[7]"))]
-    Reg8 = 7,
+    Reg7 = 6,
 
     /// Register with index `[8]`
     #[cfg_attr(feature = "std", display("[8]"))]
-    Reg9 = 8,
+    Reg8 = 7,
 
     /// Register with index `[9]`
     #[cfg_attr(feature = "std", display("[9]"))]
-    Reg10 = 9,
+    Reg9 = 8,
 
     /// Register with index `[10]`
     #[cfg_attr(feature = "std", display("[10]"))]
-    Reg11 = 10,
+    Reg10 = 9,
 
     /// Register with index `[11]`
     #[cfg_attr(feature = "std", display("[11]"))]
-    Reg12 = 11,
+    Reg11 = 10,
 
     /// Register with index `[12]`
     #[cfg_attr(feature = "std", display("[12]"))]
-    Reg13 = 12,
+    Reg12 = 11,
 
     /// Register with index `[13]`
     #[cfg_attr(feature = "std", display("[13]"))]
-    Reg14 = 13,
+    Reg13 = 12,
 
     /// Register with index `[14]`
     #[cfg_attr(feature = "std", display("[14]"))]
-    Reg15 = 14,
+    Reg14 = 13,
 
     /// Register with index `[15]`
     #[cfg_attr(feature = "std", display("[15]"))]
-    Reg16 = 15,
+    Reg15 = 14,
 
     /// Register with index `[16]`
     #[cfg_attr(feature = "std", display("[16]"))]
-    Reg17 = 16,
+    Reg16 = 15,
 
     /// Register with index `[17]`
     #[cfg_attr(feature = "std", display("[17]"))]
-    Reg18 = 17,
+    Reg17 = 16,
 
     /// Register with index `[18]`
     #[cfg_attr(feature = "std", display("[18]"))]
-    Reg19 = 18,
+    Reg18 = 17,
 
     /// Register with index `[19]`
     #[cfg_attr(feature = "std", display("[19]"))]
-    Reg20 = 19,
+    Reg19 = 18,
 
     /// Register with index `[20]`
-    #[cfg_attr(feature = "std", display("[20]"))]
-    Reg21 = 20,
+    #[cfg_attr(feature = "std", display("[10]"))]
+    Reg20 = 19,
 
     /// Register with index `[21]`
     #[cfg_attr(feature = "std", display("[21]"))]
-    Reg22 = 21,
+    Reg21 = 20,
 
     /// Register with index `[22]`
     #[cfg_attr(feature = "std", display("[22]"))]
-    Reg23 = 22,
+    Reg22 = 21,
 
     /// Register with index `[23]`
     #[cfg_attr(feature = "std", display("[23]"))]
-    Reg24 = 23,
+    Reg23 = 22,
 
     /// Register with index `[24]`
     #[cfg_attr(feature = "std", display("[24]"))]
-    Reg25 = 24,
+    Reg24 = 23,
 
     /// Register with index `[25]`
     #[cfg_attr(feature = "std", display("[25]"))]
-    Reg26 = 25,
+    Reg25 = 24,
 
     /// Register with index `[26]`
     #[cfg_attr(feature = "std", display("[26]"))]
-    Reg27 = 26,
+    Reg26 = 25,
 
     /// Register with index `[27]`
     #[cfg_attr(feature = "std", display("[27]"))]
-    Reg28 = 27,
+    Reg27 = 26,
 
     /// Register with index `[28]`
     #[cfg_attr(feature = "std", display("[28]"))]
-    Reg29 = 28,
+    Reg28 = 27,
 
     /// Register with index `[29]`
     #[cfg_attr(feature = "std", display("[29]"))]
-    Reg30 = 29,
+    Reg29 = 28,
 
     /// Register with index `[30]`
     #[cfg_attr(feature = "std", display("[30]"))]
-    Reg31 = 30,
+    Reg30 = 29,
 
     /// Register with index `[31]`
     #[cfg_attr(feature = "std", display("[31]"))]
+    Reg31 = 30,
+
+    /// Register with index `[32]`
+    #[cfg_attr(feature = "std", display("[32]"))]
     Reg32 = 31,
 }
 
@@ -158,36 +158,36 @@ impl Default for Reg32 {
 #[cfg_attr(feature = "std", derive(Display))]
 #[repr(u8)]
 pub enum Reg8 {
-    /// Register with index `[0]`
-    #[cfg_attr(feature = "std", display("[0]"))]
-    Reg1 = 0,
-
     /// Register with index `[1]`
     #[cfg_attr(feature = "std", display("[1]"))]
-    Reg2 = 1,
+    Reg1 = 0,
 
     /// Register with index `[2]`
     #[cfg_attr(feature = "std", display("[2]"))]
-    Reg3 = 2,
+    Reg2 = 1,
 
     /// Register with index `[3]`
     #[cfg_attr(feature = "std", display("[3]"))]
-    Reg4 = 3,
+    Reg3 = 2,
 
     /// Register with index `[4]`
     #[cfg_attr(feature = "std", display("[4]"))]
-    Reg5 = 4,
+    Reg4 = 3,
 
     /// Register with index `[5]`
     #[cfg_attr(feature = "std", display("[5]"))]
-    Reg6 = 5,
+    Reg5 = 4,
 
     /// Register with index `[6]`
     #[cfg_attr(feature = "std", display("[6]"))]
-    Reg7 = 6,
+    Reg6 = 5,
 
     /// Register with index `[7]`
     #[cfg_attr(feature = "std", display("[7]"))]
+    Reg7 = 6,
+
+    /// Register with index `[8]`
+    #[cfg_attr(feature = "std", display("[8]"))]
     Reg8 = 7,
 }
 

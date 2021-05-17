@@ -10,6 +10,8 @@
 
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter, LowerHex, UpperHex};
+#[cfg(feature = "std")]
+use std::str::FromStr;
 
 use amplify::num::{u1024, u256, u512};
 
@@ -155,10 +157,84 @@ impl Default for Value {
     }
 }
 
+impl Value {
+    #[cfg(feature = "std")]
+    pub fn from_hex(s: &str) -> Result<Value, amplify::hex::Error> {
+        use amplify::hex::FromHex;
+        let s = s.trim_start_matches("0x");
+        let len = s.len() / 2;
+        if len > 1024 {
+            return Err(amplify::hex::Error::InvalidLength(1024, len));
+        }
+        let mut bytes = [0u8; 1024];
+        let hex = Vec::<u8>::from_hex(&s)?;
+        bytes[0..len].copy_from_slice(&hex);
+        Ok(Value {
+            len: hex.len() as u16,
+            bytes,
+        })
+    }
+
+    #[cfg(feature = "std")]
+    pub fn to_hex(&self) -> String {
+        use std::fmt::Write;
+        let mut ret = String::with_capacity(2usize * self.len as usize + 2);
+        write!(ret, "0x");
+        for ch in &self.bytes {
+            write!(ret, "{:02x}", ch).expect("writing to string");
+        }
+        ret
+    }
+}
+
+/// Errors parsing literal values in AluVM assembly code
+#[derive(Clone, Eq, PartialEq, Debug)]
+#[cfg(feature = "std")]
+#[derive(Display, Error, From)]
+#[display(inner)]
+pub enum LiteralParseError {
+    /// Error parsing hexadecimal literal
+    #[from]
+    Hex(amplify::hex::Error),
+
+    /// Error parsing decimal literal
+    #[from]
+    Int(std::num::ParseIntError),
+
+    /// Unknown literal
+    #[display("unknown token `{0}` while parsing AluVM assembly literal")]
+    UnknownLiteral(String),
+}
+
+#[cfg(feature = "std")]
+impl FromStr for Value {
+    type Err = LiteralParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.starts_with("0x") {
+            Value::from_hex(s).map_err(LiteralParseError::from)
+        } else if s.starts_with("-") {
+            // TODO: use arbitrary-precision type `FromStr`
+            Ok(Value::from(i128::from_str(s)?))
+        } else {
+            // TODO: use arbitrary-precision type `FromStr`
+            let val = u128::from_str(s)?;
+            Ok(match val {
+                0..=0xFF => Value::from(val as u8),
+                0..=0xFFFF => Value::from(val as u16),
+                0..=0xFFFFFFFF => Value::from(val as u32),
+                0..=0xFFFFFFFFFFFFFFFF => Value::from(val as u64),
+                _ => Value::from(val),
+            })
+        }
+    }
+}
+
 #[cfg(feature = "std")]
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify::hex::ToHex;
+        f.write_str("0x")?;
         if f.alternate() && self.len > 4 {
             write!(
                 f,

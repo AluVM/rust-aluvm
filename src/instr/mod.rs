@@ -190,13 +190,13 @@ pub enum ControlFlowOp {
     Succ,
 
     /// Unconditionally jumps to an offset. Increments `cy0`.
-    #[cfg_attr(feature = "std", display("jmp\t{0:#06X}"))]
+    #[cfg_attr(feature = "std", display("jmp\t\t{0:#06X}"))]
     // #[value = 0b010]
     Jmp(u16),
 
     /// Jumps to an offset if `st0` == true, otherwise does nothing. Increments
     /// `cy0`.
-    #[cfg_attr(feature = "std", display("jif\t{0:#06X}"))]
+    #[cfg_attr(feature = "std", display("jif\t\t{0:#06X}"))]
     // #[value = 0b011]
     Jif(u16),
 
@@ -285,38 +285,38 @@ impl Instruction for ControlFlowOp {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum PutOp {
     /// Sets `a` register value to zero
-    #[cfg_attr(feature = "std", display("zero\ta{0}{1}"))]
+    #[cfg_attr(feature = "std", display("zero\t{0}{1}"))]
     ZeroA(RegA, Reg32),
 
     /// Sets `r` register value to zero
-    #[cfg_attr(feature = "std", display("zero\tr{0}{1}"))]
+    #[cfg_attr(feature = "std", display("zero\t{0}{1}"))]
     ZeroR(RegR, Reg32),
 
     /// Cleans a value of `a` register (sets it to undefined state)
-    #[cfg_attr(feature = "std", display("cl\ta{0}{1}"))]
+    #[cfg_attr(feature = "std", display("cl\t\t{0}{1}"))]
     ClA(RegA, Reg32),
 
     /// Cleans a value of `r` register (sets it to undefined state)
-    #[cfg_attr(feature = "std", display("cl\tr{0}{1}"))]
+    #[cfg_attr(feature = "std", display("cl\t\t{0}{1}"))]
     ClR(RegR, Reg32),
 
     /// Unconditionally assigns a value to `a` register
-    #[cfg_attr(feature = "std", display("put\ta{0}{1}, {2}"))]
+    #[cfg_attr(feature = "std", display("put\t\t{0}{1}, {2}"))]
     PutA(RegA, Reg32, Value),
 
     /// Unconditionally assigns a value to `r` register
-    #[cfg_attr(feature = "std", display("put\tr{0}{1}, {2}"))]
+    #[cfg_attr(feature = "std", display("put\t\t{0}{1}, {2}"))]
     PutR(RegR, Reg32, Value),
 
     /// Conditionally assigns a value to `a` register if the register is in
     /// uninitialized state
-    #[cfg_attr(feature = "std", display("putif\ta{0}{1}, {2}"))]
-    PutAIf(RegA, Reg32, Value),
+    #[cfg_attr(feature = "std", display("putif\t{0}{1}, {2}"))]
+    PutIfA(RegA, Reg32, Value),
 
     /// Conditionally assigns a value to `r` register if the register is in
     /// uninitialized state
-    #[cfg_attr(feature = "std", display("putif\tr{0}{1}, {2}"))]
-    PutRIf(RegR, Reg32, Value),
+    #[cfg_attr(feature = "std", display("putif\t{0}{1}, {2}"))]
+    PutIfR(RegR, Reg32, Value),
 }
 
 impl Instruction for PutOp {
@@ -336,13 +336,13 @@ impl Instruction for PutOp {
             PutOp::PutR(reg, index, blob) => {
                 regs.set(Reg::R(reg), index, Some(blob))
             }
-            PutOp::PutAIf(reg, index, blob) => {
+            PutOp::PutIfA(reg, index, blob) => {
                 regs.get(Reg::A(reg), index).or_else(|| {
                     regs.set(Reg::A(reg), index, Some(blob));
                     Some(blob)
                 });
             }
-            PutOp::PutRIf(reg, index, blob) => {
+            PutOp::PutIfR(reg, index, blob) => {
                 regs.get(Reg::R(reg), index).or_else(|| {
                     regs.set(Reg::R(reg), index, Some(blob));
                     Some(blob)
@@ -360,8 +360,8 @@ impl Instruction for PutOp {
             | PutOp::ClR(_, _) => 2,
             PutOp::PutA(_, _, Value { len, .. })
             | PutOp::PutR(_, _, Value { len, .. })
-            | PutOp::PutAIf(_, _, Value { len, .. })
-            | PutOp::PutRIf(_, _, Value { len, .. }) => {
+            | PutOp::PutIfA(_, _, Value { len, .. })
+            | PutOp::PutIfR(_, _, Value { len, .. }) => {
                 4u16.saturating_add(len)
             }
         }
@@ -396,19 +396,19 @@ pub enum MoveOp {
     /// Swap operation for arithmetic registers. If the value does not fit
     /// destination bit dimensions truncates the most significant bits until
     /// they fit.
-    #[cfg_attr(feature = "std", display("swp\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("swp\t\t{0}{1},{2}{3}"))]
     SwpA(RegA, Reg32, RegA, Reg32),
 
     /// Swap operation for non-arithmetic registers. If the value does not fit
     /// destination bit dimensions truncates the most significant bits until
     /// they fit.
-    #[cfg_attr(feature = "std", display("swp\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("swp\t\t{0}{1},{2}{3}"))]
     SwpR(RegR, Reg32, RegR, Reg32),
 
     /// Swap operation between arithmetic and non-arithmetic registers. If the
     /// value does not fit destination bit dimensions truncates the most
     /// significant bits until they fit.
-    #[cfg_attr(feature = "std", display("swp\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("swp\t\t{0}{1},{2}{3}"))]
     Swp(RegA, Reg32, RegR, Reg32),
 
     /// Array move operation: duplicates values of all register set into
@@ -418,22 +418,22 @@ pub enum MoveOp {
 
     /// Move operation: duplicates value of one of the arithmetic registers
     /// into another arithmetic register
-    #[cfg_attr(feature = "std", display("mov\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("mov\t\t{0}{1},{2}{3}"))]
     MovA(RegA, Reg32, RegA, Reg32),
 
     /// Move operation: duplicates value of one of the non-arithmetic registers
     /// into another non-arithmetic register
-    #[cfg_attr(feature = "std", display("mov\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("mov\t\t{0}{1},{2}{3}"))]
     MovR(RegR, Reg32, RegR, Reg32),
 
     /// Move operation: duplicates value of one of the arithmetic registers
     /// into non-arithmetic register
-    #[cfg_attr(feature = "std", display("mov\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("mov\t\t{0}{1},{2}{3}"))]
     MovAR(RegA, Reg32, RegR, Reg32),
 
     /// Move operation: duplicates value of one of the n on-arithmetic
     /// registers into arithmetic register
-    #[cfg_attr(feature = "std", display("mov\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("mov\t\t{0}{1},{2}{3}"))]
     MovRA(RegR, Reg32, RegA, Reg32),
 }
 
@@ -499,36 +499,36 @@ pub enum CmpOp {
     /// `true` if the first parameter is greater (and not equal) than the
     /// second one
     // #[value = 0b110] // 3 + 5 + 3 + 5 => 16 bits
-    #[cfg_attr(feature = "std", display("gt\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("gt\t\t{0}{1},{2}{3}"))]
     Gt(RegA, Reg32, RegA, Reg32),
 
     /// Compares value of two non-arithmetic (`R`) registers setting `st0` to
     /// `true` if the first parameter is less (and not equal) than the second
     /// one
     // #[value = 0b111]
-    #[cfg_attr(feature = "std", display("lt\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("lt\t\t{0}{1},{2}{3}"))]
     Lt(RegR, Reg32, RegR, Reg32),
 
     /// Checks equality of value in two arithmetic (`A`) registers putting
     /// result into `st0`
     // #[value = 0b100]
-    #[cfg_attr(feature = "std", display("eq\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("eq\t\t{0}{1},{2}{3}"))]
     Eqa(RegA, Reg32, RegA, Reg32),
 
     /// Checks equality of value in two non-arithmetic (`R`) registers putting
     /// result into `st0`
     // #[value = 0b101]
-    #[cfg_attr(feature = "std", display("eq\t{0}{1},{2}{3}"))]
+    #[cfg_attr(feature = "std", display("eq\t\t{0}{1},{2}{3}"))]
     Eqr(RegR, Reg32, RegR, Reg32),
 
     /// Measures bit length of a value in one fo the registers putting result
     /// to `a16[0]`
-    #[cfg_attr(feature = "std", display("len\t{0}{1}"))]
+    #[cfg_attr(feature = "std", display("len\t\t{0}{1}"))]
     Len(RegA, Reg32),
 
     /// Counts number of `1` bits in register putting result to `a16[0]`
     /// register.
-    #[cfg_attr(feature = "std", display("cnt\t{0}{1}"))]
+    #[cfg_attr(feature = "std", display("cnt\t\t{0}{1}"))]
     Cnt(RegA, Reg32),
 
     /// Assigns value of `a8[0]` register to `st0`
@@ -601,7 +601,7 @@ impl Display for Arithmetics {
 #[cfg_attr(feature = "std", derive(Display))]
 pub enum ArithmeticOp {
     /// Negates most significant bit
-    #[cfg_attr(feature = "std", display("neg\t{0}{1}"))]
+    #[cfg_attr(feature = "std", display("neg\t\t{0}{1}"))]
     Neg(RegA, Reg32),
 
     /// Increases register value on a given step.
@@ -633,11 +633,11 @@ pub enum ArithmeticOp {
     Div(Arithmetics, RegA, Reg32, Reg32),
 
     /// Modulo division
-    #[cfg_attr(feature = "std", display("mod\t{0}{1},{2}{3},{4}{5}"))]
+    #[cfg_attr(feature = "std", display("mod\t\t{0}{1},{2}{3},{4}{5}"))]
     Mod(RegA, Reg32, RegA, Reg32, RegA, Reg32),
 
     /// Puts absolute value of register into `a8[0]`
-    #[cfg_attr(feature = "std", display("abs\t{0}{1}"))]
+    #[cfg_attr(feature = "std", display("abs\t\t{0}{1}"))]
     Abs(RegA, Reg32),
 }
 
@@ -801,7 +801,7 @@ impl Instruction for ArithmeticOp {
 #[cfg_attr(feature = "std", derive(Display))]
 pub enum BitwiseOp {
     /// Bitwise AND operation
-    #[cfg_attr(feature = "std", display("and\t{0}{1},{0}{2},{0}{3}"))]
+    #[cfg_attr(feature = "std", display("and\t\t{0}{1},{0}{2},{0}{3}"))]
     And(
         RegA,
         Reg32,
@@ -811,33 +811,33 @@ pub enum BitwiseOp {
     ),
 
     /// Bitwise OR operation
-    #[cfg_attr(feature = "std", display("or\t{0}{1},{0}{2},{0}{3}"))]
+    #[cfg_attr(feature = "std", display("or\t\t{0}{1},{0}{2},{0}{3}"))]
     Or(RegA, Reg32, Reg32, Reg8),
 
     /// Bitwise XOR operation
-    #[cfg_attr(feature = "std", display("xor\t{0}{1},{0}{2},{0}{3}"))]
+    #[cfg_attr(feature = "std", display("xor\t\t{0}{1},{0}{2},{0}{3}"))]
     Xor(RegA, Reg32, Reg32, Reg8),
 
     /// Bitwise inversion
-    #[cfg_attr(feature = "std", display("not\t{0}{1}"))]
+    #[cfg_attr(feature = "std", display("not\t\t{0}{1}"))]
     Not(RegA, Reg32),
 
     /// Left bit shift, filling added bits values with zeros
-    #[cfg_attr(feature = "std", display("shl\t{0}{1},a8{2},{0}{3}"))]
+    #[cfg_attr(feature = "std", display("shl\t\t{0}{1},a8{2},{0}{3}"))]
     Shl(RegA, Reg32, Reg32 /* Always `a8` */, Reg8),
 
     /// Right bit shift, filling added bits values with zeros
-    #[cfg_attr(feature = "std", display("shr\t{0}{1},a8{2},{0}{3}"))]
+    #[cfg_attr(feature = "std", display("shr\t\t{0}{1},a8{2},{0}{3}"))]
     Shr(RegA, Reg32, Reg32, Reg8),
 
     /// Left bit shift, cycling the shifted values (most significant bit
     /// becomes least significant)
-    #[cfg_attr(feature = "std", display("scl\t{0}{1},a8{2},{0}{3}"))]
+    #[cfg_attr(feature = "std", display("scl\t\t{0}{1},a8{2},{0}{3}"))]
     Scl(RegA, Reg32, Reg32, Reg8),
 
     /// Right bit shift, cycling the shifted values (least significant bit
     /// becomes nost significant)
-    #[cfg_attr(feature = "std", display("scr\t{0}{1},a8{2},{0}{3}"))]
+    #[cfg_attr(feature = "std", display("scr\t\t{0}{1},a8{2},{0}{3}"))]
     Scr(RegA, Reg32, Reg32, Reg8),
 }
 
@@ -865,15 +865,15 @@ impl Instruction for BitwiseOp {
 #[cfg_attr(feature = "std", derive(Display))]
 pub enum BytesOp {
     /// Put bytestring into a byte string register
-    #[cfg_attr(feature = "std", display("put\ts16[{0}],{1}"))]
+    #[cfg_attr(feature = "std", display("put\t\ts16[{0}],{1}"))]
     Put(/** `s` register index */ u8, Blob),
 
     /// Move bytestring value between registers
-    #[cfg_attr(feature = "std", display("mov\ts16[{0}],s16[{1}]"))]
+    #[cfg_attr(feature = "std", display("mov\t\ts16[{0}],s16[{1}]"))]
     Mov(/** `s` register index */ u8, /** `s` register index */ u8),
 
     /// Swap bytestring value between registers
-    #[cfg_attr(feature = "std", display("swp\ts16[{0}],s16[{1}]"))]
+    #[cfg_attr(feature = "std", display("swp\t\ts16[{0}],s16[{1}]"))]
     Swp(/** `s` register index */ u8, /** `s` register index */ u8),
 
     /// Fill segment of bytestring with specific byte value
@@ -886,7 +886,7 @@ pub enum BytesOp {
     ),
 
     /// Put length of the string into `a16[0]` register
-    #[cfg_attr(feature = "std", display("len\ts16[{0}],a16[0]"))]
+    #[cfg_attr(feature = "std", display("len\t\ts16[{0}],a16[0]"))]
     Len(/** `s` register index */ u8),
 
     /// Count number of byte occurrences within the string and stores
@@ -895,7 +895,7 @@ pub enum BytesOp {
     Count(/** `s` register index */ u8, /** byte to count */ u8),
 
     /// Compare two strings from two registers, putting result into `cm0`
-    #[cfg_attr(feature = "std", display("cmp\ts16[{0}],s16[{0}]"))]
+    #[cfg_attr(feature = "std", display("cmp\t\ts16[{0}],s16[{0}]"))]
     Cmp(u8, u8),
 
     /// Compute length of the fragment shared between two strings
@@ -942,7 +942,7 @@ pub enum BytesOp {
     /// bytestring register, shifting string bytes. If destination register
     /// does not fits the length of the new string, its final bytes are
     /// removed.
-    #[cfg_attr(feature = "std", display("ins\ts16[{0}],s16[{1}],{2}"))]
+    #[cfg_attr(feature = "std", display("ins\t\ts16[{0}],s16[{1}],{2}"))]
     Ins(
         /** Insert from register */ u8,
         /** Insert to register */ u8,
@@ -950,7 +950,7 @@ pub enum BytesOp {
     ),
 
     /// Delete bytes in a given range, shifting the remaining bytes
-    #[cfg_attr(feature = "std", display("ins\ts16[{0}],{1}..{2}"))]
+    #[cfg_attr(feature = "std", display("ins\t\ts16[{0}],{1}..{2}"))]
     Del(
         /** Register index */ u8,
         /** Delete from */ u16,
