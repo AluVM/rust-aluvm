@@ -44,6 +44,19 @@ pub trait Instruction {
     fn len(self) -> u16;
 }
 
+/// Default instruction extension which treats any operation as NOP
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum Nop {}
+impl Instruction for Nop {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        ExecStep::Next
+    }
+
+    fn len(self) -> u16 {
+        1
+    }
+}
+
 /// Full set of instructions
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 // #[cfg_attr(feature = "std", derive(Display), display(inner))]

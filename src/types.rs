@@ -16,19 +16,8 @@ use amplify::num::{u1024, u256, u512};
 /// Library reference: a hash of the library code
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
 #[cfg_attr(feature = "std", derive(Display), display(LowerHex))]
-#[derive(Wrapper, From)]
+#[cfg_attr(feature = "std", derive(Wrapper, From))]
 pub struct LibHash([u8; 32]);
-
-/// Location within a library
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
-#[cfg_attr(feature = "std", derive(Display), display("{pos:#06X}@{lib}"))]
-pub struct LibSite {
-    /// Library hash
-    lib: LibHash,
-
-    /// Offset from the beginning of the code, in bytes
-    pos: u16,
-}
 
 #[cfg(feature = "std")]
 impl LowerHex for LibHash {
@@ -61,6 +50,23 @@ impl UpperHex for LibHash {
         } else {
             f.write_str(&self.0.to_hex().to_ascii_uppercase())
         }
+    }
+}
+
+/// Location within a library
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+#[cfg_attr(feature = "std", derive(Display), display("{pos:#06X}@{lib}"))]
+pub struct LibSite {
+    /// Library hash
+    lib: LibHash,
+
+    /// Offset from the beginning of the code, in bytes
+    pos: u16,
+}
+
+impl LibSite {
+    fn with(pos: u16, lib: LibHash) -> LibSite {
+        LibSite { lib, pos }
     }
 }
 
