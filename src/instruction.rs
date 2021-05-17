@@ -8,10 +8,12 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify::num::u5;
+use amplify::num::{u1024, u5, u512};
+#[cfg(feature = "std")]
+use std::fmt::{self, Display, Formatter};
 
 use crate::registers::{Reg, Reg32, Reg8, RegA, RegR, Registers};
-use crate::{Blob, LibSite};
+use crate::{LibSite, Value};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -250,38 +252,38 @@ impl Instruction for ControlFlowOp {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum PutOp {
     /// Sets `a` register value to zero
-    #[display("zero\t{0}{1}")]
+    #[cfg_attr(feature = "std", display("zero\t{0}{1}"))]
     ZeroA(RegA, Reg32),
 
     /// Sets `r` register value to zero
-    #[display("zero\t{0}{1}")]
+    #[cfg_attr(feature = "std", display("zero\t{0}{1}"))]
     ZeroR(RegR, Reg32),
 
     /// Cleans a value of `a` register (sets it to undefined state)
-    #[display("cl\t{0}{1}")]
+    #[cfg_attr(feature = "std", display("cl\t{0}{1}"))]
     ClA(RegA, Reg32),
 
     /// Cleans a value of `r` register (sets it to undefined state)
-    #[display("cl\t{0}{1}")]
+    #[cfg_attr(feature = "std", display("cl\t{0}{1}"))]
     ClR(RegR, Reg32),
 
     /// Unconditionally assigns a value to `a` register
-    #[display("put\t{0}{1}, {2}")]
-    PutA(RegA, Reg32, Blob),
+    #[cfg_attr(feature = "std", display("put\t{0}{1}, {2}"))]
+    PutA(RegA, Reg32, Value),
 
     /// Unconditionally assigns a value to `r` register
-    #[display("put\t{0}{1}, {2}")]
-    PutR(RegR, Reg32, Blob),
+    #[cfg_attr(feature = "std", display("put\t{0}{1}, {2}"))]
+    PutR(RegR, Reg32, Value),
 
     /// Conditionally assigns a value to `a` register if the register is in
     /// uninitialized state
-    #[display("putif\t{0}{1}, {2}")]
-    PutAIf(RegA, Reg32, Blob),
+    #[cfg_attr(feature = "std", display("putif\t{0}{1}, {2}"))]
+    PutAIf(RegA, Reg32, Value),
 
     /// Conditionally assigns a value to `r` register if the register is in
     /// uninitialized state
-    #[display("putif\t{0}{1}, {2}")]
-    PutRIf(RegR, Reg32, Blob),
+    #[cfg_attr(feature = "std", display("putif\t{0}{1}, {2}"))]
+    PutRIf(RegR, Reg32, Value),
 }
 
 impl Instruction for PutOp {
@@ -323,10 +325,12 @@ impl Instruction for PutOp {
             | PutOp::ZeroR(_, _)
             | PutOp::ClA(_, _)
             | PutOp::ClR(_, _) => 2,
-            PutOp::PutA(_, _, Blob { len, .. })
-            | PutOp::PutR(_, _, Blob { len, .. })
-            | PutOp::PutAIf(_, _, Blob { len, .. })
-            | PutOp::PutRIf(_, _, Blob { len, .. }) => 4u16.saturating_add(len),
+            PutOp::PutA(_, _, Value { len, .. })
+            | PutOp::PutR(_, _, Value { len, .. })
+            | PutOp::PutAIf(_, _, Value { len, .. })
+            | PutOp::PutRIf(_, _, Value { len, .. }) => {
+                4u16.saturating_add(len)
+            }
         }
     }
 }
@@ -336,53 +340,106 @@ impl Instruction for PutOp {
 #[cfg_attr(feature = "std", derive(Display))]
 pub enum NumType {
     /// Unsigned integer
-    #[display("u")]
+    #[cfg_attr(feature = "std", display("u"))]
     Unsigned,
 
     /// Signed integer
-    #[display("s")]
+    #[cfg_attr(feature = "std", display("s"))]
     Signed,
 
     /// Float number with 23-bit mantissa
-    #[display("f")]
+    #[cfg_attr(feature = "std", display("f"))]
     Float23,
 
     /// Float number with 52 bit mantissa
-    #[display("d")]
+    #[cfg_attr(feature = "std", display("d"))]
     Float52,
 }
 
 /// Instructions moving and swapping register values
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-// #[cfg_attr(feature = "std", derive(Display))]
+#[cfg_attr(feature = "std", derive(Display))]
 pub enum MoveOp {
-    /// Swap operation. If the value does not fit destination bit dimensions
-    /// truncates the most significant bits until they fit.
+    /// Swap operation for arithmetic registers. If the value does not fit
+    /// destination bit dimensions truncates the most significant bits until
+    /// they fit.
+    #[cfg_attr(feature = "std", display("swp\t{0}{1},{2}{3}"))]
     SwpA(RegA, Reg32, RegA, Reg32),
+
+    /// Swap operation for non-arithmetic registers. If the value does not fit
+    /// destination bit dimensions truncates the most significant bits until
+    /// they fit.
+    #[cfg_attr(feature = "std", display("swp\t{0}{1},{2}{3}"))]
     SwpR(RegR, Reg32, RegR, Reg32),
+
+    /// Swap operation between arithmetic and non-arithmetic registers. If the
+    /// value does not fit destination bit dimensions truncates the most
+    /// significant bits until they fit.
+    #[cfg_attr(feature = "std", display("swp\t{0}{1},{2}{3}"))]
     Swp(RegA, Reg32, RegR, Reg32),
 
-    /// Duplicates values of all register set into another set
-    Mov(RegA, RegA, NumType),
+    /// Array move operation: duplicates values of all register set into
+    /// another set
+    #[cfg_attr(feature = "std", display("amov{2}\t{0},{1}"))]
+    AMov(RegA, RegA, NumType),
 
-    /// Duplicates value of one of the registers into another register
+    /// Move operation: duplicates value of one of the arithmetic registers
+    /// into another arithmetic register
+    #[cfg_attr(feature = "std", display("mov\t{0}{1},{2}{3}"))]
     MovA(RegA, Reg32, RegA, Reg32),
-    MovR(RegA, Reg32, RegA, Reg32),
+
+    /// Move operation: duplicates value of one of the non-arithmetic registers
+    /// into another non-arithmetic register
+    #[cfg_attr(feature = "std", display("mov\t{0}{1},{2}{3}"))]
+    MovR(RegR, Reg32, RegR, Reg32),
+
+    /// Move operation: duplicates value of one of the arithmetic registers
+    /// into non-arithmetic register
+    #[cfg_attr(feature = "std", display("mov\t{0}{1},{2}{3}"))]
     MovAR(RegA, Reg32, RegR, Reg32),
+
+    /// Move operation: duplicates value of one of the n on-arithmetic
+    /// registers into arithmetic register
+    #[cfg_attr(feature = "std", display("mov\t{0}{1},{2}{3}"))]
     MovRA(RegR, Reg32, RegA, Reg32),
 }
 
 impl Instruction for MoveOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+    fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            MoveOp::SwpA(_, _, _, _) => {}
-            MoveOp::SwpR(_, _, _, _) => {}
-            MoveOp::Swp(_, _, _, _) => {}
-            MoveOp::Mov(_, _, _) => {}
-            MoveOp::MovA(_, _, _, _) => {}
-            MoveOp::MovR(_, _, _, _) => {}
-            MoveOp::MovAR(_, _, _, _) => {}
-            MoveOp::MovRA(_, _, _, _) => {}
+            MoveOp::SwpA(reg1, index1, reg2, index2) => {
+                let val1 = regs.get(Reg::A(reg1), index1);
+                let val2 = regs.get(Reg::A(reg2), index2);
+                regs.set(Reg::A(reg1), index1, val2);
+                regs.set(Reg::A(reg2), index2, val1);
+            }
+            MoveOp::SwpR(reg1, index1, reg2, index2) => {
+                let val1 = regs.get(Reg::R(reg1), index1);
+                let val2 = regs.get(Reg::R(reg2), index2);
+                regs.set(Reg::R(reg1), index1, val2);
+                regs.set(Reg::R(reg2), index2, val1);
+            }
+            MoveOp::Swp(reg1, index1, reg2, index2) => {
+                let val1 = regs.get(Reg::A(reg1), index1);
+                let val2 = regs.get(Reg::R(reg2), index2);
+                regs.set(Reg::A(reg1), index1, val2);
+                regs.set(Reg::R(reg2), index2, val1);
+            }
+            MoveOp::AMov(reg1, reg2, ty) => {
+                todo!("Array move operation")
+            }
+            MoveOp::MovA(sreg, sidx, dreg, didx) => {
+                regs.set(Reg::A(dreg), didx, regs.get(Reg::A(sreg), sidx));
+            }
+            MoveOp::MovR(sreg, sidx, dreg, didx) => {
+                regs.set(Reg::R(dreg), didx, regs.get(Reg::R(sreg), sidx));
+            }
+            MoveOp::MovAR(sreg, sidx, dreg, didx) => {
+                regs.set(Reg::R(dreg), didx, regs.get(Reg::A(sreg), sidx));
+            }
+            MoveOp::MovRA(sreg, sidx, dreg, didx) => {
+                regs.set(Reg::A(dreg), didx, regs.get(Reg::R(sreg), sidx));
+            }
         }
         ExecStep::Next
     }
@@ -392,7 +449,7 @@ impl Instruction for MoveOp {
             MoveOp::SwpA(_, _, _, _)
             | MoveOp::SwpR(_, _, _, _)
             | MoveOp::Swp(_, _, _, _) => 3,
-            MoveOp::Mov(_, _, _) => 2,
+            MoveOp::AMov(_, _, _) => 2,
             MoveOp::MovA(_, _, _, _)
             | MoveOp::MovR(_, _, _, _)
             | MoveOp::MovAR(_, _, _, _)
@@ -403,41 +460,50 @@ impl Instruction for MoveOp {
 
 /// Instructions comparing register values
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
 pub enum CmpOp {
     /// Compares value of two arithmetic (`A`) registers setting `st0` to
     /// `true` if the first parameter is greater (and not equal) than the
     /// second one
     // #[value = 0b110] // 3 + 5 + 3 + 5 => 16 bits
+    #[cfg_attr(feature = "std", display("gt\t{0}{1},{2}{3}"))]
     Gt(RegA, Reg32, RegA, Reg32),
 
     /// Compares value of two non-arithmetic (`R`) registers setting `st0` to
     /// `true` if the first parameter is less (and not equal) than the second
     /// one
     // #[value = 0b111]
+    #[cfg_attr(feature = "std", display("lt\t{0}{1},{2}{3}"))]
     Lt(RegR, Reg32, RegR, Reg32),
 
     /// Checks equality of value in two arithmetic (`A`) registers putting
     /// result into `st0`
     // #[value = 0b100]
+    #[cfg_attr(feature = "std", display("eq\t{0}{1},{2}{3}"))]
     Eqa(RegA, Reg32, RegA, Reg32),
 
     /// Checks equality of value in two non-arithmetic (`R`) registers putting
     /// result into `st0`
     // #[value = 0b101]
+    #[cfg_attr(feature = "std", display("eq\t{0}{1},{2}{3}"))]
     Eqr(RegR, Reg32, RegR, Reg32),
 
     /// Measures bit length of a value in one fo the registers putting result
     /// to `a16[0]`
+    #[cfg_attr(feature = "std", display("len\t{0}{1}"))]
     Len(RegA, Reg32),
 
     /// Counts number of `1` bits in register putting result to `a16[0]`
     /// register.
+    #[cfg_attr(feature = "std", display("cnt\t{0}{1}"))]
     Cnt(RegA, Reg32),
 
     /// Assigns value of `a8[0]` register to `st0`
+    #[cfg_attr(feature = "std", display("st2a"))]
     St2A,
 
     /// `st0` value of `st0` register to the result of `a8[0] == 1`
+    #[cfg_attr(feature = "std", display("a2st"))]
     A2St,
 }
 
@@ -447,46 +513,262 @@ impl Instruction for CmpOp {
     }
 
     fn len(self) -> u16 {
-        todo!()
+        match self {
+            CmpOp::Gt(_, _, _, _)
+            | CmpOp::Lt(_, _, _, _)
+            | CmpOp::Eqa(_, _, _, _)
+            | CmpOp::Eqr(_, _, _, _) => 3,
+            CmpOp::Len(_, _) | CmpOp::Cnt(_, _) => 2,
+            CmpOp::St2A | CmpOp::A2St => 1,
+        }
     }
 }
 
 /// Variants of arithmetic operations
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Arithmetics {
-    IntChecked(bool),
-    IntUnchecked(bool),
-    IntArbitraryPrecision(bool),
+    IntChecked {
+        /// Indicates the need to use signed integer arithmetics
+        signed: bool,
+    },
+    IntUnchecked {
+        /// Indicates the need to use signed integer arithmetics
+        signed: bool,
+    },
+    IntArbitraryPrecision {
+        /// Indicates the need to use signed integer arithmetics
+        signed: bool,
+    },
     Float,
     FloatArbitraryPrecision,
 }
 
+#[cfg(feature = "std")]
+impl Display for Arithmetics {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Arithmetics::IntChecked { signed: false } => f.write_str("c"),
+            Arithmetics::IntUnchecked { signed: false } => f.write_str(""),
+            Arithmetics::IntArbitraryPrecision { signed: false } => {
+                f.write_str("a")
+            }
+            Arithmetics::IntChecked { signed: true } => f.write_str("cs"),
+            Arithmetics::IntUnchecked { signed: true } => f.write_str("s"),
+            Arithmetics::IntArbitraryPrecision { signed: true } => {
+                f.write_str("as")
+            }
+            Arithmetics::Float => f.write_str("f"),
+            Arithmetics::FloatArbitraryPrecision => f.write_str("af"),
+        }
+    }
+}
+
 /// Arithmetic instructions
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
 pub enum ArithmeticOp {
-    Neg(RegA, Reg32),                     // 3 + 5 = 8 bits
-    Inc(Arithmetics, RegA, Reg32, u5),    // Increases value on a given step
-    Add(Arithmetics, RegA, Reg32, Reg32), // 3 + 3 + 5 + 5  => 16 bits
+    /// Negates most significant bit
+    #[cfg_attr(feature = "std", display("neg\t{0}{1}"))]
+    Neg(RegA, Reg32),
+
+    /// Increases register value on a given step.
+    #[cfg_attr(feature = "std", display("add{0}\t{1}{2},{3}"))]
+    Inc(Arithmetics, RegA, Reg32, u5),
+
+    /// Adds two registers. Puts result to `a_[0]` or `ap[0]`, if
+    /// [`Arithmetics::IntArbitraryPrecision`] or
+    /// [`Arithmetics::FloatArbitraryPrecision`] is used
+    #[cfg_attr(feature = "std", display("add{0}\t{1}{2},{1}{3}"))]
+    Add(Arithmetics, RegA, Reg32, Reg32),
+
+    /// Subtracts two registers. Puts result to `a_[0]` or `ap[0]`, if
+    /// [`Arithmetics::IntArbitraryPrecision`] or
+    /// [`Arithmetics::FloatArbitraryPrecision`] is used
+    #[cfg_attr(feature = "std", display("sub{0}\t{1}{2},{1}{3}"))]
     Sub(Arithmetics, RegA, Reg32, Reg32),
+
+    /// Multiplies two registers. Puts result to `a_[0]` or `ap[0]`, if
+    /// [`Arithmetics::IntArbitraryPrecision`] or
+    /// [`Arithmetics::FloatArbitraryPrecision`] is used
+    #[cfg_attr(feature = "std", display("mul{0}\t{1}{2},{1}{3}"))]
     Mul(Arithmetics, RegA, Reg32, Reg32),
+
+    /// Divides two registers. Puts result to `a_[0]` or `ap[0]`, if
+    /// [`Arithmetics::IntArbitraryPrecision`] or
+    /// [`Arithmetics::FloatArbitraryPrecision`] is used
+    #[cfg_attr(feature = "std", display("div{0}\t{1}{2},{1}{3}"))]
     Div(Arithmetics, RegA, Reg32, Reg32),
-    Mod(RegA, Reg32),              // 3 + 5 = 8 bits
-    Abs(RegA, Reg32, RegA, Reg32), // 3 + 5 + 3 + 5 => 16 bits
+
+    /// Modulo division
+    #[cfg_attr(feature = "std", display("mod\t{0}{1},{2}{3},{4}{5}"))]
+    Mod(RegA, Reg32, RegA, Reg32, RegA, Reg32),
+
+    /// Puts absolute value of register into `a8[0]`
+    #[cfg_attr(feature = "std", display("abs\t{0}{1}"))]
+    Abs(RegA, Reg32),
 }
 
 impl Instruction for ArithmeticOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        todo!()
+    fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
+        match self {
+            ArithmeticOp::Neg(reg, index) => {
+                regs.get(Reg::A(reg), index).map(|mut blob| {
+                    blob.bytes[reg as usize] = 0xFF ^ blob.bytes[reg as usize];
+                    regs.set(Reg::A(reg), index, Some(blob));
+                });
+            }
+            ArithmeticOp::Inc(arithm, reg, index, step) => {
+                regs.get(Reg::A(reg), index).map(|value| {
+                    let u512_max = u512::from_le_bytes([0xFF; 64]);
+                    let res = match arithm {
+                        Arithmetics::IntChecked { signed: false } => {
+                            let step = u512::from_u64(*step as u64).unwrap();
+                            let mut val: u512 = value.into();
+                            if step >= u512_max - val {
+                                None
+                            } else {
+                                val = val + step;
+                                Some(Value::from(val))
+                            }
+                        }
+                        Arithmetics::IntUnchecked { signed: false } => {
+                            let step = u512::from_u64(*step as u64).unwrap();
+                            let mut val: u512 = value.into();
+                            if step >= u512_max - val {
+                                Some(Value::from(step - (u512_max - val)))
+                            } else {
+                                val = val + step;
+                                Some(Value::from(val))
+                            }
+                        }
+                        Arithmetics::IntArbitraryPrecision {
+                            signed: false,
+                        } => {
+                            todo!("Arbitrary precision increment")
+                        }
+                        Arithmetics::IntChecked { signed: true } => {
+                            todo!("Signed increment")
+                        }
+                        Arithmetics::IntUnchecked { signed: true } => {
+                            todo!("Signed increment")
+                        }
+                        Arithmetics::IntArbitraryPrecision { signed: true } => {
+                            todo!("Arbitrary precision signed increment")
+                        }
+                        Arithmetics::Float => todo!("Float increment"),
+                        Arithmetics::FloatArbitraryPrecision => {
+                            todo!("Float increment")
+                        }
+                    };
+                    regs.set(Reg::A(reg), index, res);
+                });
+            }
+            ArithmeticOp::Add(arithm, reg, src, dst) => {
+                regs.get(Reg::A(reg), src).and_then(|value1| {
+                    regs.get(Reg::A(reg), dst).map(|value2| (value1, value2))
+                }).map(|(value1, value2)| {
+                    let mut dst_reg = Reg::A(reg);
+                    let res = match arithm {
+                        Arithmetics::IntChecked { signed: false } => {
+                            // TODO: Support source arbitrary precision registers
+                            let mut val: u1024 = value1.into();
+                            val = val + u1024::from(value2);
+                            Value::from(val)
+                        }
+                        Arithmetics::IntUnchecked { signed: false } => {
+                            // TODO: Support source arbitrary precision registers
+                            let mut val: u1024 = value1.into();
+                            val = val + u1024::from(value2);
+                            Value::from(val)
+                        }
+                        Arithmetics::IntArbitraryPrecision {
+                            signed: false,
+                        } => {
+                            dst_reg = Reg::A(RegA::AP);
+                            todo!("Unsigned int addition with arbitrary precision")
+                        }
+                        Arithmetics::IntChecked { signed: true } => todo!("Signed int addition"),
+                        Arithmetics::IntUnchecked { signed: true } => todo!("Signed int addition"),
+                        Arithmetics::IntArbitraryPrecision { signed: true } => {
+                            dst_reg = Reg::A(RegA::AP);
+                            todo!("Signed int addition with arbitrary precision")
+                        }
+                        Arithmetics::Float => todo!("Float addition"),
+                        Arithmetics::FloatArbitraryPrecision => {
+                            dst_reg = Reg::A(RegA::AP);
+                            todo!("Float addition with arbitrary precision")
+                        }
+                    };
+                    regs.set(dst_reg, Reg32::Reg1, Some(res));
+                });
+            }
+            ArithmeticOp::Sub(arithm, reg, src, dst) => {}
+            ArithmeticOp::Mul(arithm, reg, src, dst) => {
+                regs.get(Reg::A(reg), src).and_then(|value1| {
+                    regs.get(Reg::A(reg), dst).map(|value2| (value1, value2))
+                }).map(|(value1, value2)| {
+                    let mut dst_reg = Reg::A(reg);
+                    let res = match arithm {
+                        Arithmetics::IntChecked { signed: false } => {
+                            // TODO: Rewrite
+                            let mut val: u1024 = value1.into();
+                            val = val * u1024::from(value2);
+                            Value::from(val)
+                        }
+                        Arithmetics::IntUnchecked { signed: false } => {
+                            // TODO: Rewrite
+                            let mut val: u1024 = value1.into();
+                            val = val * u1024::from(value2);
+                            Value::from(val)
+                        }
+                        Arithmetics::IntArbitraryPrecision {
+                            signed: false,
+                        } => {
+                            dst_reg = Reg::A(RegA::AP);
+                            todo!("Unsigned int multiplication with arbitrary precision")
+                        }
+                        Arithmetics::IntChecked { signed: true } => todo!("Signed int multiplication"),
+                        Arithmetics::IntUnchecked { signed: true } => todo!("Signed int multiplication"),
+                        Arithmetics::IntArbitraryPrecision { signed: true } => {
+                            dst_reg = Reg::A(RegA::AP);
+                            todo!("Signed int multiplication with arbitrary precision")
+                        }
+                        Arithmetics::Float => todo!("Float addition"),
+                        Arithmetics::FloatArbitraryPrecision => {
+                            dst_reg = Reg::A(RegA::AP);
+                            todo!("Float multiplication with arbitrary precision")
+                        }
+                    };
+                    regs.set(dst_reg, Reg32::Reg1, Some(res));
+                });
+            }
+            ArithmeticOp::Div(arithm, reg, src, dst) => {}
+            ArithmeticOp::Mod(reg1, index1, reg2, index2, reg3, index3) => {}
+            ArithmeticOp::Abs(reg, index) => {}
+        }
+        ExecStep::Next
     }
 
     fn len(self) -> u16 {
-        todo!()
+        match self {
+            ArithmeticOp::Neg(_, _) => 2,
+            ArithmeticOp::Inc(_, _, _, _) => 3,
+            ArithmeticOp::Add(_, _, _, _)
+            | ArithmeticOp::Sub(_, _, _, _)
+            | ArithmeticOp::Mul(_, _, _, _)
+            | ArithmeticOp::Div(_, _, _, _) => 3,
+            ArithmeticOp::Mod(_, _, _, _, _, _) => 4,
+            ArithmeticOp::Abs(_, _) => 2,
+        }
     }
 }
 
 /// Bit operations & boolean algebra instructions
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
 pub enum BitwiseOp {
+    /// Bitwise AND operation
+    #[cfg_attr(feature = "std", display("and\t{0}{1},{0}{2},{0}{3}"))]
     And(
         RegA,
         Reg32,
@@ -494,16 +776,35 @@ pub enum BitwiseOp {
         /// Operation destination, only first 8 registers
         Reg8,
     ),
+
+    /// Bitwise OR operation
+    #[cfg_attr(feature = "std", display("or\t{0}{1},{0}{2},{0}{3}"))]
     Or(RegA, Reg32, Reg32, Reg8),
+
+    /// Bitwise XOR operation
+    #[cfg_attr(feature = "std", display("xor\t{0}{1},{0}{2},{0}{3}"))]
     Xor(RegA, Reg32, Reg32, Reg8),
 
+    /// Bitwise inversion
+    #[cfg_attr(feature = "std", display("not\t{0}{1}"))]
     Not(RegA, Reg32),
 
+    /// Left bit shift, filling added bits values with zeros
+    #[cfg_attr(feature = "std", display("shl\t{0}{1},a8{2},{0}{3}"))]
     Shl(RegA, Reg32, Reg32 /* Always `a8` */, Reg8),
+
+    /// Right bit shift, filling added bits values with zeros
+    #[cfg_attr(feature = "std", display("shr\t{0}{1},a8{2},{0}{3}"))]
     Shr(RegA, Reg32, Reg32, Reg8),
-    /// Shift-cycle left
+
+    /// Left bit shift, cycling the shifted values (most significant bit
+    /// becomes least significant)
+    #[cfg_attr(feature = "std", display("scl\t{0}{1},a8{2},{0}{3}"))]
     Scl(RegA, Reg32, Reg32, Reg8),
-    /// Shift-cycle right
+
+    /// Right bit shift, cycling the shifted values (least significant bit
+    /// becomes nost significant)
+    #[cfg_attr(feature = "std", display("scr\t{0}{1},a8{2},{0}{3}"))]
     Scr(RegA, Reg32, Reg32, Reg8),
 }
 
@@ -513,7 +814,16 @@ impl Instruction for BitwiseOp {
     }
 
     fn len(self) -> u16 {
-        todo!()
+        match self {
+            BitwiseOp::And(_, _, _, _)
+            | BitwiseOp::Or(_, _, _, _)
+            | BitwiseOp::Xor(_, _, _, _) => 3,
+            BitwiseOp::Not(_, _) => 2,
+            BitwiseOp::Shl(_, _, _, _)
+            | BitwiseOp::Shr(_, _, _, _)
+            | BitwiseOp::Scl(_, _, _, _)
+            | BitwiseOp::Scr(_, _, _, _) => 3,
+        }
     }
 }
 
@@ -592,7 +902,21 @@ impl Instruction for BytesOp {
     }
 
     fn len(self) -> u16 {
-        todo!()
+        match self {
+            BytesOp::Puts(_, len, _) => 4u16.saturating_add(len),
+            BytesOp::Movs(_, _) | BytesOp::Swps(_, _) => 3,
+            BytesOp::Fill(_, _, _, _) => 7,
+            BytesOp::Lens(_) => 2,
+            BytesOp::Counts(_, _) => 3,
+            BytesOp::Cmps(_, _) => 3,
+            BytesOp::Common(_, _) => 3,
+            BytesOp::Find(_, _) => 3,
+            BytesOp::Exta(_, _, _, _) | BytesOp::Extr(_, _, _, _) => 4,
+            BytesOp::Join(_, _, _) => 4,
+            BytesOp::Split(_, _, _, _) => 6,
+            BytesOp::Ins(_, _, _) | BytesOp::Del(_, _, _) => 5,
+            BytesOp::Transl(_, _, _, _) => 7,
+        }
     }
 }
 
@@ -620,7 +944,7 @@ impl Instruction for DigestOp {
     }
 
     fn len(self) -> u16 {
-        todo!()
+        3
     }
 }
 
@@ -655,7 +979,12 @@ impl Instruction for SecpOp {
     }
 
     fn len(self) -> u16 {
-        todo!()
+        match self {
+            SecpOp::Gen(_, _) => 2,
+            SecpOp::Mul(_, _, _, _) => 3,
+            SecpOp::Add(_, _, _, _) => 3,
+            SecpOp::Neg(_, _) => 2,
+        }
     }
 }
 
@@ -690,6 +1019,11 @@ impl Instruction for Curve25519Op {
     }
 
     fn len(self) -> u16 {
-        todo!()
+        match self {
+            Curve25519Op::Gen(_, _) => 2,
+            Curve25519Op::Mul(_, _, _, _) => 3,
+            Curve25519Op::Add(_, _, _, _) => 3,
+            Curve25519Op::Neg(_, _) => 2,
+        }
     }
 }

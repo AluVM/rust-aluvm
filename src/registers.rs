@@ -10,7 +10,7 @@
 
 use amplify::num::{u256, u512};
 
-use crate::{Blob, LibSite};
+use crate::{LibSite, Value};
 
 /// All possible register indexes for `a` and `r` register sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -400,55 +400,55 @@ impl Registers {
         }
     }
 
-    pub fn get(&self, reg: Reg, index: Reg32) -> Option<Blob> {
+    pub fn get(&self, reg: Reg, index: Reg32) -> Option<Value> {
         let index = index as usize;
         match reg {
             Reg::A(a) => match a {
-                RegA::AP => self.ap[index].map(Blob::from),
-                RegA::A8 => self.a8[index].map(Blob::from),
-                RegA::A16 => self.a16[index].map(Blob::from),
-                RegA::A32 => self.a32[index].map(Blob::from),
-                RegA::A64 => self.a64[index].map(Blob::from),
-                RegA::A128 => self.a128[index].map(Blob::from),
-                RegA::A256 => self.a256[index].map(Blob::from),
-                RegA::A512 => self.a512[index].map(Blob::from),
+                RegA::AP => self.ap[index].map(Value::from),
+                RegA::A8 => self.a8[index].map(Value::from),
+                RegA::A16 => self.a16[index].map(Value::from),
+                RegA::A32 => self.a32[index].map(Value::from),
+                RegA::A64 => self.a64[index].map(Value::from),
+                RegA::A128 => self.a128[index].map(Value::from),
+                RegA::A256 => self.a256[index].map(Value::from),
+                RegA::A512 => self.a512[index].map(Value::from),
             },
 
             Reg::R(r) => match r {
-                RegR::R128 => self.r128[index].map(Blob::from),
-                RegR::R160 => self.r160[index].map(Blob::from),
-                RegR::R256 => self.r256[index].map(Blob::from),
-                RegR::R512 => self.r512[index].map(Blob::from),
-                RegR::R1024 => self.r1024[index].map(Blob::from),
-                RegR::R2048 => self.r2048[index].map(Blob::from),
-                RegR::R4096 => self.r4096[index].map(Blob::from),
-                RegR::R8192 => self.r8192[index].map(Blob::from),
+                RegR::R128 => self.r128[index].map(Value::from),
+                RegR::R160 => self.r160[index].map(Value::from),
+                RegR::R256 => self.r256[index].map(Value::from),
+                RegR::R512 => self.r512[index].map(Value::from),
+                RegR::R1024 => self.r1024[index].map(Value::from),
+                RegR::R2048 => self.r2048[index].map(Value::from),
+                RegR::R4096 => self.r4096[index].map(Value::from),
+                RegR::R8192 => self.r8192[index].map(Value::from),
             },
         }
     }
 
-    pub fn set(&mut self, reg: Reg, index: Reg32, value: Option<Blob>) {
+    pub fn set(&mut self, reg: Reg, index: Reg32, value: Option<Value>) {
         let index = index as usize;
         match reg {
             Reg::A(a) => match a {
-                RegA::AP => self.ap[index] = value.map(Blob::into),
-                RegA::A8 => self.a8[index] = value.map(Blob::into),
-                RegA::A16 => self.a16[index] = value.map(Blob::into),
-                RegA::A32 => self.a32[index] = value.map(Blob::into),
-                RegA::A64 => self.a64[index] = value.map(Blob::into),
-                RegA::A128 => self.a128[index] = value.map(Blob::into),
-                RegA::A256 => self.a256[index] = value.map(Blob::into),
-                RegA::A512 => self.a512[index] = value.map(Blob::into),
+                RegA::AP => self.ap[index] = value.map(Value::into),
+                RegA::A8 => self.a8[index] = value.map(Value::into),
+                RegA::A16 => self.a16[index] = value.map(Value::into),
+                RegA::A32 => self.a32[index] = value.map(Value::into),
+                RegA::A64 => self.a64[index] = value.map(Value::into),
+                RegA::A128 => self.a128[index] = value.map(Value::into),
+                RegA::A256 => self.a256[index] = value.map(Value::into),
+                RegA::A512 => self.a512[index] = value.map(Value::into),
             },
             Reg::R(r) => match r {
-                RegR::R128 => self.r128[index] = value.map(Blob::into),
-                RegR::R160 => self.r160[index] = value.map(Blob::into),
-                RegR::R256 => self.r256[index] = value.map(Blob::into),
-                RegR::R512 => self.r512[index] = value.map(Blob::into),
-                RegR::R1024 => self.r1024[index] = value.map(Blob::into),
-                RegR::R2048 => self.r2048[index] = value.map(Blob::into),
-                RegR::R4096 => self.r4096[index] = value.map(Blob::into),
-                RegR::R8192 => self.r8192[index] = value.map(Blob::into),
+                RegR::R128 => self.r128[index] = value.map(Value::into),
+                RegR::R160 => self.r160[index] = value.map(Value::into),
+                RegR::R256 => self.r256[index] = value.map(Value::into),
+                RegR::R512 => self.r512[index] = value.map(Value::into),
+                RegR::R1024 => self.r1024[index] = value.map(Value::into),
+                RegR::R2048 => self.r2048[index] = value.map(Value::into),
+                RegR::R4096 => self.r4096[index] = value.map(Value::into),
+                RegR::R8192 => self.r8192[index] = value.map(Value::into),
             },
         }
     }

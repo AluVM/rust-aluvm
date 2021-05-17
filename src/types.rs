@@ -66,7 +66,7 @@ impl UpperHex for LibHash {
 
 /// Copy'able variable length slice
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct Blob {
+pub struct Value {
     /// Slice length
     pub len: u16,
 
@@ -74,9 +74,9 @@ pub struct Blob {
     pub bytes: [u8; 1024],
 }
 
-impl Default for Blob {
-    fn default() -> Blob {
-        Blob {
+impl Default for Value {
+    fn default() -> Value {
+        Value {
             len: 0,
             bytes: [0u8; 1024],
         }
@@ -84,7 +84,7 @@ impl Default for Blob {
 }
 
 #[cfg(feature = "std")]
-impl Display for Blob {
+impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify::hex::ToHex;
         if f.alternate() && self.len > 4 {
@@ -100,47 +100,47 @@ impl Display for Blob {
     }
 }
 
-macro_rules! impl_blob_bytes_conv {
+macro_rules! impl_value_bytes_conv {
     ($len:literal) => {
-        impl From<Blob> for [u8; $len] {
-            fn from(mut val: Blob) -> Self {
+        impl From<Value> for [u8; $len] {
+            fn from(mut val: Value) -> Self {
                 let mut bytes = [0u8; $len];
-                let clean = Blob::default();
+                let clean = Value::default();
                 val.bytes[$len..].copy_from_slice(&clean.bytes[$len..]);
                 bytes.copy_from_slice(&val.bytes[0..$len]);
                 bytes
             }
         }
 
-        impl From<[u8; $len]> for Blob {
-            fn from(val: [u8; $len]) -> Blob {
+        impl From<[u8; $len]> for Value {
+            fn from(val: [u8; $len]) -> Value {
                 let mut bytes = [0u8; 1024];
                 bytes[0..$len].copy_from_slice(&val[..]);
-                Blob { len: $len, bytes }
+                Value { len: $len, bytes }
             }
         }
     };
 }
 
-macro_rules! impl_blob_ty_conv {
+macro_rules! impl_value_ty_conv {
     ($ty:ident, $len:literal) => {
-        impl From<Blob> for $ty {
-            fn from(val: Blob) -> Self {
+        impl From<Value> for $ty {
+            fn from(val: Value) -> Self {
                 $ty::from_le_bytes(<[u8; $len]>::from(val))
             }
         }
 
-        impl From<$ty> for Blob {
+        impl From<$ty> for Value {
             fn from(val: $ty) -> Self {
-                Blob::from(&val)
+                Value::from(&val)
             }
         }
-        impl From<&$ty> for Blob {
+        impl From<&$ty> for Value {
             fn from(val: &$ty) -> Self {
                 let mut bytes = [0u8; 1024];
                 let le = val.to_le_bytes();
                 bytes[0..le.len()].copy_from_slice(&le[..]);
-                Blob {
+                Value {
                     len: le.len() as u16,
                     bytes,
                 }
@@ -149,30 +149,30 @@ macro_rules! impl_blob_ty_conv {
     };
 }
 
-impl_blob_bytes_conv!(1);
-impl_blob_bytes_conv!(2);
-impl_blob_bytes_conv!(4);
-impl_blob_bytes_conv!(8);
-impl_blob_bytes_conv!(16);
-impl_blob_bytes_conv!(20);
-impl_blob_bytes_conv!(32);
-impl_blob_bytes_conv!(64);
-impl_blob_bytes_conv!(128);
-impl_blob_bytes_conv!(256);
-impl_blob_bytes_conv!(512);
-impl_blob_bytes_conv!(1024);
+impl_value_bytes_conv!(1);
+impl_value_bytes_conv!(2);
+impl_value_bytes_conv!(4);
+impl_value_bytes_conv!(8);
+impl_value_bytes_conv!(16);
+impl_value_bytes_conv!(20);
+impl_value_bytes_conv!(32);
+impl_value_bytes_conv!(64);
+impl_value_bytes_conv!(128);
+impl_value_bytes_conv!(256);
+impl_value_bytes_conv!(512);
+impl_value_bytes_conv!(1024);
 
-impl_blob_ty_conv!(u8, 1);
-impl_blob_ty_conv!(u16, 2);
-impl_blob_ty_conv!(u32, 4);
-impl_blob_ty_conv!(u64, 8);
-impl_blob_ty_conv!(u128, 16);
-impl_blob_ty_conv!(u256, 32);
-impl_blob_ty_conv!(u512, 64);
-impl_blob_ty_conv!(u1024, 128);
+impl_value_ty_conv!(u8, 1);
+impl_value_ty_conv!(u16, 2);
+impl_value_ty_conv!(u32, 4);
+impl_value_ty_conv!(u64, 8);
+impl_value_ty_conv!(u128, 16);
+impl_value_ty_conv!(u256, 32);
+impl_value_ty_conv!(u512, 64);
+impl_value_ty_conv!(u1024, 128);
 
-impl_blob_ty_conv!(i8, 1);
-impl_blob_ty_conv!(i16, 2);
-impl_blob_ty_conv!(i32, 4);
-impl_blob_ty_conv!(i64, 8);
-impl_blob_ty_conv!(i128, 16);
+impl_value_ty_conv!(i8, 1);
+impl_value_ty_conv!(i16, 2);
+impl_value_ty_conv!(i32, 4);
+impl_value_ty_conv!(i64, 8);
+impl_value_ty_conv!(i128, 16);
