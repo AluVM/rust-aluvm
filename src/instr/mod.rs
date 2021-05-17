@@ -409,11 +409,11 @@ pub enum MoveOp {
     /// value does not fit destination bit dimensions truncates the most
     /// significant bits until they fit.
     #[cfg_attr(feature = "std", display("swp\t\t{0}{1},{2}{3}"))]
-    Swp(RegA, Reg32, RegR, Reg32),
+    SwpAR(RegA, Reg32, RegR, Reg32),
 
     /// Array move operation: duplicates values of all register set into
     /// another set
-    #[cfg_attr(feature = "std", display("amov{2}\t{0},{1}"))]
+    #[cfg_attr(feature = "std", display("amov:{2}\t{0},{1}"))]
     AMov(RegA, RegA, NumType),
 
     /// Move operation: duplicates value of one of the arithmetic registers
@@ -452,7 +452,7 @@ impl Instruction for MoveOp {
                 regs.set(Reg::R(reg1), index1, val2);
                 regs.set(Reg::R(reg2), index2, val1);
             }
-            MoveOp::Swp(reg1, index1, reg2, index2) => {
+            MoveOp::SwpAR(reg1, index1, reg2, index2) => {
                 let val1 = regs.get(Reg::A(reg1), index1);
                 let val2 = regs.get(Reg::R(reg2), index2);
                 regs.set(Reg::A(reg1), index1, val2);
@@ -481,7 +481,7 @@ impl Instruction for MoveOp {
         match self {
             MoveOp::SwpA(_, _, _, _)
             | MoveOp::SwpR(_, _, _, _)
-            | MoveOp::Swp(_, _, _, _) => 3,
+            | MoveOp::SwpAR(_, _, _, _) => 3,
             MoveOp::AMov(_, _, _) => 2,
             MoveOp::MovA(_, _, _, _)
             | MoveOp::MovR(_, _, _, _)

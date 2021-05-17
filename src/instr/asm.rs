@@ -74,6 +74,74 @@ macro_rules! instr {
             Value::from_str(stringify!($val)).expect("invalid hex literal"),
         ))
     };
+
+    (swp $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        match (_reg_block!($reg1), _reg_block!($reg2)) {
+            (RegBlock::A, RegBlock::A) => Instr::Move(MoveOp::SwpA(
+                Reg::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
+                _reg_idx!($idx1),
+                Reg::from(_reg_ty!(Reg, $reg2)).reg_a().unwrap(),
+                _reg_idx!($idx2),
+            )),
+            (RegBlock::R, RegBlock::R) => Instr::Move(MoveOp::SwpR(
+                Reg::from(_reg_ty!(Reg, $reg1)).reg_r().unwrap(),
+                _reg_idx!($idx1),
+                Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
+                _reg_idx!($idx2),
+            )),
+            (RegBlock::A, RegBlock::R) => Instr::Move(MoveOp::SwpAR(
+                Reg::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
+                _reg_idx!($idx1),
+                Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
+                _reg_idx!($idx2),
+            )),
+            (RegBlock::R, RegBlock::A) => panic!(
+                "Wrong order of registers in `swp` operation. Use A-register first"
+            ),
+        }
+    };
+
+    (mov $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        match (_reg_block!($reg1), _reg_block!($reg2)) {
+            (RegBlock::A, RegBlock::A) => Instr::Move(MoveOp::MovA(
+                Reg::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
+                _reg_idx!($idx1),
+                Reg::from(_reg_ty!(Reg, $reg2)).reg_a().unwrap(),
+                _reg_idx!($idx2),
+            )),
+            (RegBlock::R, RegBlock::R) => Instr::Move(MoveOp::MovR(
+                Reg::from(_reg_ty!(Reg, $reg1)).reg_r().unwrap(),
+                _reg_idx!($idx1),
+                Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
+                _reg_idx!($idx2),
+            )),
+            (RegBlock::A, RegBlock::R) => Instr::Move(MoveOp::MovAR(
+                Reg::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
+                _reg_idx!($idx1),
+                Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
+                _reg_idx!($idx2),
+            )),
+            (RegBlock::R, RegBlock::A) => Instr::Move(MoveOp::MovRA(
+                Reg::from(_reg_ty!(Reg, $reg1)).reg_r().unwrap(),
+                _reg_idx!($idx1),
+                Reg::from(_reg_ty!(Reg, $reg2)).reg_a().unwrap(),
+                _reg_idx!($idx2),
+            )),
+        }
+    };
+
+    (amov:u $reg1:ident , $reg2:ident) => {
+        Instr::Move(MoveOp::AMov(_reg_ty!(Reg, $reg1), _reg_ty!(Reg, $reg2), NumType::Unsigned))
+    };
+    (amov:s $reg1:ident , $reg2:ident) => {
+        Instr::Move(MoveOp::AMov(_reg_ty!(Reg, $reg1), _reg_ty!(Reg, $reg2), NumType::Signed))
+    };
+    (amov:f $reg1:ident , $reg2:ident) => {
+        Instr::Move(MoveOp::AMov(_reg_ty!(Reg, $reg1), _reg_ty!(Reg, $reg2), NumType::Float23))
+    };
+    (amov:d $reg1:ident , $reg2:ident) => {
+        Instr::Move(MoveOp::AMov(_reg_ty!(Reg, $reg1), _reg_ty!(Reg, $reg2), NumType::Float52))
+    };
 }
 
 #[doc(hidden)]
@@ -93,6 +161,10 @@ macro_rules! aluasm_inner {
         $code.push(instr!{ $op $( $arg ),+ });
         aluasm_inner! { $code => $( $tt )* }
     };
+    { $code:ident => $op:ident : $flag:ident $( $arg:ident ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op : $flag $( $arg ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
     { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
         $code.push(instr!{ $op $( $arg [ $idx ]  ),+ });
         aluasm_inner! { $code => $( $tt )* }
@@ -101,6 +173,60 @@ macro_rules! aluasm_inner {
         $code.push(instr!{ $op $arg [ $idx ], $arglit });
         aluasm_inner! { $code => $( $tt )* }
     }
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_block {
+    (ap) => {
+        RegBlock::A
+    };
+    (a8) => {
+        RegBlock::A
+    };
+    (a16) => {
+        RegBlock::A
+    };
+    (a32) => {
+        RegBlock::A
+    };
+    (a64) => {
+        RegBlock::A
+    };
+    (a128) => {
+        RegBlock::A
+    };
+    (a256) => {
+        RegBlock::A
+    };
+    (a512) => {
+        RegBlock::A
+    };
+
+    (r128) => {
+        RegBlock::R
+    };
+    (r160) => {
+        RegBlock::R
+    };
+    (r256) => {
+        RegBlock::R
+    };
+    (r512) => {
+        RegBlock::R
+    };
+    (r1024) => {
+        RegBlock::R
+    };
+    (r2048) => {
+        RegBlock::R
+    };
+    (r4096) => {
+        RegBlock::R
+    };
+    (r8192) => {
+        RegBlock::R
+    };
 }
 
 #[doc(hidden)]

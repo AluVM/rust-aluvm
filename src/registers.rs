@@ -276,13 +276,33 @@ pub enum RegR {
 /// All non-string registers directly accessible by AluVM instructions,
 /// consisting of `a` and `r` sets of registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display), display(inner))]
+#[cfg_attr(feature = "std", derive(Display, From), display(inner))]
 pub enum Reg {
     /// Arithmetic registers (`a` registers)
+    #[cfg_attr(feature = "std", from)]
     A(RegA),
 
     /// Non-arithmetic (generic) registers (`r` registers)
+    #[cfg_attr(feature = "std", from)]
     R(RegR),
+}
+
+impl Reg {
+    /// Returns inner A-register type, if any
+    pub fn reg_a(self) -> Option<RegA> {
+        match self {
+            Reg::A(a) => Some(a),
+            Reg::R(_) => None,
+        }
+    }
+
+    /// Returns inner R-register type, if any
+    pub fn reg_r(self) -> Option<RegR> {
+        match self {
+            Reg::A(_) => None,
+            Reg::R(r) => Some(r),
+        }
+    }
 }
 
 /// Block of registers, either arithmetic or non-arithmetic
