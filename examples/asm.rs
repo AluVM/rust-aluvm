@@ -8,52 +8,28 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use alure::instr::{ArithmeticOp, CmpOp, ControlFlowOp, Instr, MoveOp, Nop};
+#![feature(trace_macros)]
+#![feature(log_syntax)]
+
+#[macro_use]
+extern crate alure;
+
+#[macro_use]
+extern crate paste;
+
+use alure::instr::{
+    ArithmeticOp, CmpOp, ControlFlowOp, Instr, MoveOp, Nop, PutOp,
+};
 use alure::registers::{Reg32, RegA};
 
-macro_rules! aluasm {
-    ($( $op:ident $($arg:expr),* ;)+) => {
-        aluasm! { ::alure::instr::Nop => $( $op $($arg),* ;)+ }
-    };
-    ($ext:ty => $( $op:ident $($arg:expr),* ;)+) => { {
-        let mut code: Vec<Instr<$ext>> = vec![];
-        $( code.push(instr!( $op $( $arg ),* )); )+
-        ::alure::Lib(code)
-    } };
-}
-
-macro_rules! instr {
-    (fail) => {
-        Instr::ControlFlow(ControlFlowOp::Fail)
-    };
-    (succ) => {
-        Instr::ControlFlow(ControlFlowOp::Succ)
-    };
-    (jmp $offset:literal) => {
-        Instr::ControlFlow(ControlFlowOp::Jmp($offset))
-    };
-    (jif $offset:literal) => {
-        Instr::ControlFlow(ControlFlowOp::Jif($offset))
-    };
-    (routine $offset:literal) => {
-        Instr::ControlFlow(ControlFlowOp::Reutine($offset))
-    };
-    (call $offset:literal @ $lib:literal) => {
-        Instr::ControlFlow(ControlFlowOp::Call(LibSite::with($offset, $lib)))
-    };
-    (exec $offset:literal @ $lib:literal) => {
-        Instr::ControlFlow(ControlFlowOp::Exec(LibSite::with($offset, $lib)))
-    };
-    (ret) => {
-        Instr::ControlFlow(ControlFlowOp::Ret)
-    };
-}
+trace_macros!(true);
 
 fn main() {
     let code = aluasm! {
+        zero    a8[1];
         ret;
-        jmp 0;
+        jmp     0;
     };
 
-    println!("{}", code);
+    println!("\n\nentry:\n{}\n", code);
 }

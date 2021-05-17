@@ -8,6 +8,9 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+#[macro_use]
+mod asm;
+
 use amplify::num::{u1024, u5, u512};
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter};
@@ -282,37 +285,37 @@ impl Instruction for ControlFlowOp {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum PutOp {
     /// Sets `a` register value to zero
-    #[cfg_attr(feature = "std", display("zero\t{0}{1}"))]
+    #[cfg_attr(feature = "std", display("zero\ta{0}{1}"))]
     ZeroA(RegA, Reg32),
 
     /// Sets `r` register value to zero
-    #[cfg_attr(feature = "std", display("zero\t{0}{1}"))]
+    #[cfg_attr(feature = "std", display("zero\tr{0}{1}"))]
     ZeroR(RegR, Reg32),
 
     /// Cleans a value of `a` register (sets it to undefined state)
-    #[cfg_attr(feature = "std", display("cl\t{0}{1}"))]
+    #[cfg_attr(feature = "std", display("cl\ta{0}{1}"))]
     ClA(RegA, Reg32),
 
     /// Cleans a value of `r` register (sets it to undefined state)
-    #[cfg_attr(feature = "std", display("cl\t{0}{1}"))]
+    #[cfg_attr(feature = "std", display("cl\tr{0}{1}"))]
     ClR(RegR, Reg32),
 
     /// Unconditionally assigns a value to `a` register
-    #[cfg_attr(feature = "std", display("put\t{0}{1}, {2}"))]
+    #[cfg_attr(feature = "std", display("put\ta{0}{1}, {2}"))]
     PutA(RegA, Reg32, Value),
 
     /// Unconditionally assigns a value to `r` register
-    #[cfg_attr(feature = "std", display("put\t{0}{1}, {2}"))]
+    #[cfg_attr(feature = "std", display("put\tr{0}{1}, {2}"))]
     PutR(RegR, Reg32, Value),
 
     /// Conditionally assigns a value to `a` register if the register is in
     /// uninitialized state
-    #[cfg_attr(feature = "std", display("putif\t{0}{1}, {2}"))]
+    #[cfg_attr(feature = "std", display("putif\ta{0}{1}, {2}"))]
     PutAIf(RegA, Reg32, Value),
 
     /// Conditionally assigns a value to `r` register if the register is in
     /// uninitialized state
-    #[cfg_attr(feature = "std", display("putif\t{0}{1}, {2}"))]
+    #[cfg_attr(feature = "std", display("putif\tr{0}{1}, {2}"))]
     PutRIf(RegR, Reg32, Value),
 }
 

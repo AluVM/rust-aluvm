@@ -17,6 +17,7 @@ name = "alure"
 
 [dependencies]
 amplify = "3.6"
+paste = "1"
 
 [features]
 default = []
