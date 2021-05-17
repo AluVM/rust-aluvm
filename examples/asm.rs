@@ -43,6 +43,14 @@ fn main() {
         amov:s  a256,a128                       ;
         amov:f  a256,a128                       ;
         amov:d  a256,a128                       ;
+        gt      a8[5],a64[9]                    ;
+        lt      a8[5],a64[9]                    ;
+        eq      a8[5],a64[9]                    ;
+        eq      r160[5],r160[9]                 ;
+        len     a512[6]                         ;
+        cnt     a256[6]                         ;
+        st2a                                    ;
+        a2st                                    ;
         ret                                     ;
         jmp     0                               ;
     };

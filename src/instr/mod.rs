@@ -507,19 +507,19 @@ pub enum CmpOp {
     /// one
     // #[value = 0b111]
     #[cfg_attr(feature = "std", display("lt\t\t{0}{1},{2}{3}"))]
-    Lt(RegR, Reg32, RegR, Reg32),
+    Lt(RegA, Reg32, RegA, Reg32),
 
     /// Checks equality of value in two arithmetic (`A`) registers putting
     /// result into `st0`
     // #[value = 0b100]
     #[cfg_attr(feature = "std", display("eq\t\t{0}{1},{2}{3}"))]
-    Eqa(RegA, Reg32, RegA, Reg32),
+    EqA(RegA, Reg32, RegA, Reg32),
 
     /// Checks equality of value in two non-arithmetic (`R`) registers putting
     /// result into `st0`
     // #[value = 0b101]
     #[cfg_attr(feature = "std", display("eq\t\t{0}{1},{2}{3}"))]
-    Eqr(RegR, Reg32, RegR, Reg32),
+    EqR(RegR, Reg32, RegR, Reg32),
 
     /// Measures bit length of a value in one fo the registers putting result
     /// to `a16[0]`
@@ -549,8 +549,8 @@ impl Instruction for CmpOp {
         match self {
             CmpOp::Gt(_, _, _, _)
             | CmpOp::Lt(_, _, _, _)
-            | CmpOp::Eqa(_, _, _, _)
-            | CmpOp::Eqr(_, _, _, _) => 3,
+            | CmpOp::EqA(_, _, _, _)
+            | CmpOp::EqR(_, _, _, _) => 3,
             CmpOp::Len(_, _) | CmpOp::Cnt(_, _) => 2,
             CmpOp::St2A | CmpOp::A2St => 1,
         }

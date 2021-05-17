@@ -142,6 +142,54 @@ macro_rules! instr {
     (amov:d $reg1:ident , $reg2:ident) => {
         Instr::Move(MoveOp::AMov(_reg_ty!(Reg, $reg1), _reg_ty!(Reg, $reg2), NumType::Float52))
     };
+
+    (gt $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        Instr::Cmp(CmpOp::Gt(
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_ty!(Reg, $reg2),
+            _reg_idx!($idx2),
+        ))
+    };
+    (lt $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        Instr::Cmp(CmpOp::Gt(
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_ty!(Reg, $reg2),
+            _reg_idx!($idx2),
+        ))
+    };
+    (eq $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        match (_reg_block!($reg1), _reg_block!($reg2)) {
+            (RegBlock::A, RegBlock::A) => Instr::Cmp(CmpOp::EqA(
+                Reg::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
+                _reg_idx!($idx1),
+                Reg::from(_reg_ty!(Reg, $reg2)).reg_a().unwrap(),
+                _reg_idx!($idx2),
+            )),
+            (RegBlock::R, RegBlock::R) => Instr::Cmp(CmpOp::EqR(
+                Reg::from(_reg_ty!(Reg, $reg1)).reg_r().unwrap(),
+                _reg_idx!($idx1),
+                Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
+                _reg_idx!($idx2),
+            )),
+            _ => panic!(
+                "Wrong order of registers in `swp` operation. Use A-register first"
+            ),
+        }
+    };
+    (len $reg:ident [ $idx:literal ]) => {
+        Instr::Cmp(CmpOp::Len(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
+    };
+    (cnt $reg:ident [ $idx:literal ]) => {
+        Instr::Cmp(CmpOp::Cnt(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
+    };
+    (st2a) => {
+        Instr::Cmp(CmpOp::St2A)
+    };
+    (a2st) => {
+        Instr::Cmp(CmpOp::A2St)
+    };
 }
 
 #[doc(hidden)]
