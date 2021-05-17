@@ -18,10 +18,13 @@ extern crate alure;
 extern crate paste;
 
 use alure::instr::{
-    ArithmeticOp, CmpOp, ControlFlowOp, Instr, MoveOp, Nop, NumType, PutOp,
+    ArithmeticOp, Arithmetics, CmpOp, ControlFlowOp, IncDec, Instr, MoveOp,
+    Nop, NumType, PutOp,
 };
 use alure::registers::{Reg, Reg32, RegA, RegBlock, RegR};
 use alure::Value;
+use amplify::num::u4;
+use std::convert::TryFrom;
 use std::str::FromStr;
 
 trace_macros!(true);
@@ -51,6 +54,23 @@ fn main() {
         cnt     a256[6]                         ;
         st2a                                    ;
         a2st                                    ;
+        inc:c   a16[3]                          ;
+        inc:u   a16[4],5                        ;
+        dec:u   a16[3]                          ;
+        dec:c   a16[4],5                        ;
+        add:c   a32[12],a32[13]                 ;
+        add:u   a32[12],a32[13]                 ;
+        add:a   a32[12],a32[13]                 ;
+        add:cs  a32[12],a32[13]                 ;
+        add:us  a32[12],a32[13]                 ;
+        add:as  a32[12],a32[13]                 ;
+        add:f   a32[12],a32[13]                 ;
+        add:af  a32[12],a32[13]                 ;
+        sub:c   a32[12],a32[13]                 ;
+        mul:c   a32[12],a32[13]                 ;
+        div:c   a32[12],a32[13]                 ;
+        mod     a64[8],a8[2],a8[3]              ;
+        abs     a8[3]                           ;
         ret                                     ;
         jmp     0                               ;
     };

@@ -190,6 +190,117 @@ macro_rules! instr {
     (a2st) => {
         Instr::Cmp(CmpOp::A2St)
     };
+
+    (neg $reg:ident [ $idx:literal ]) => {
+        Instr::Arithmetic(ArithmeticOp::Neg(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
+    };
+    (inc : $flag:ident $reg:ident [ $idx:literal ]) => {
+        Instr::Arithmetic(ArithmeticOp::Stp(
+            IncDec::Inc,
+            _arithmetic_flag!($flag),
+            _reg_ty!(Reg, $reg),
+            _reg_idx!($idx),
+            u4::try_from(1).unwrap(),
+        ))
+    };
+    (inc : $flag:ident $reg:ident [ $idx:literal ], $step:expr) => {
+        Instr::Arithmetic(ArithmeticOp::Stp(
+            IncDec::Inc,
+            _arithmetic_flag!($flag),
+            _reg_ty!(Reg, $reg),
+            _reg_idx!($idx),
+            u4::try_from($step).expect("scalar value for increment must be in 0..16 range"),
+        ))
+    };
+    (dec : $flag:ident $reg:ident [ $idx:literal ]) => {
+        Instr::Arithmetic(ArithmeticOp::Stp(
+            IncDec::Dec,
+            _arithmetic_flag!($flag),
+            _reg_ty!(Reg, $reg),
+            _reg_idx!($idx),
+            u4::try_from(1).unwrap(),
+        ))
+    };
+    (dec : $flag:ident $reg:ident [ $idx:literal ], $step:expr) => {
+        Instr::Arithmetic(ArithmeticOp::Stp(
+            IncDec::Dec,
+            _arithmetic_flag!($flag),
+            _reg_ty!(Reg, $reg),
+            _reg_idx!($idx),
+            u4::try_from($step).expect("scalar value for decrement must be in 0..16 range"),
+        ))
+    };
+    (add : $flag:ident $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        if _reg_block!($reg1) != RegBlock::A ||
+            _reg_block!($reg2) != RegBlock::A {
+            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::Add(
+                _arithmetic_flag!($flag),
+                _reg_ty!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2)
+            ))
+        }
+    };
+    (sub : $flag:ident $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        if _reg_block!($reg1) != RegBlock::A ||
+            _reg_block!($reg2) != RegBlock::A {
+            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::Sub(
+                _arithmetic_flag!($flag),
+                _reg_ty!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2)
+            ))
+        }
+    };
+    (mul : $flag:ident $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        if _reg_block!($reg1) != RegBlock::A ||
+            _reg_block!($reg2) != RegBlock::A {
+            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::Mul(
+                _arithmetic_flag!($flag),
+                _reg_ty!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2)
+            ))
+        }
+    };
+    (div : $flag:ident $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        if _reg_block!($reg1) != RegBlock::A ||
+            _reg_block!($reg2) != RegBlock::A {
+            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::Div(
+                _arithmetic_flag!($flag),
+                _reg_ty!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2)
+            ))
+        }
+    };
+    (mod $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ] , $reg3:ident [ $idx3:literal ]) => {
+        if _reg_block!($reg1) != RegBlock::A ||
+            _reg_block!($reg2) != RegBlock::A ||
+            _reg_block!($reg3) != RegBlock::A {
+            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::Mod(
+                _reg_ty!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_ty!(Reg, $reg2),
+                _reg_idx!($idx2),
+                _reg_ty!(Reg, $reg3),
+                _reg_idx!($idx3),
+            ))
+        }
+    };
+    (abs $reg:ident [ $idx:literal ]) => {
+        Instr::Arithmetic(ArithmeticOp::Abs(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
+    };
 }
 
 #[doc(hidden)]
@@ -217,10 +328,47 @@ macro_rules! aluasm_inner {
         $code.push(instr!{ $op $( $arg [ $idx ]  ),+ });
         aluasm_inner! { $code => $( $tt )* }
     };
+    { $code:ident => $op:ident : $flag:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op : $flag $( $arg [ $idx ]  ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
     { $code:ident => $op:ident $arg:ident [ $idx:literal ] <- $arglit:tt ; $($tt:tt)* } => {
         $code.push(instr!{ $op $arg [ $idx ], $arglit });
         aluasm_inner! { $code => $( $tt )* }
-    }
+    };
+    { $code:ident => $op:ident : $flag:ident $arg:ident [ $idx:literal ], $arglit:expr ; $($tt:tt)* } => {
+        $code.push(instr!{ $op : $flag $arg [ $idx ], $arglit });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _arithmetic_flag {
+    (c) => {
+        Arithmetics::IntChecked { signed: false }
+    };
+    (u) => {
+        Arithmetics::IntUnchecked { signed: false }
+    };
+    (a) => {
+        Arithmetics::IntArbitraryPrecision { signed: false }
+    };
+    (cs) => {
+        Arithmetics::IntChecked { signed: true }
+    };
+    (us) => {
+        Arithmetics::IntUnchecked { signed: true }
+    };
+    (as) => {
+        Arithmetics::IntArbitraryPrecision { signed: true }
+    };
+    (f) => {
+        Arithmetics::Float
+    };
+    (af) => {
+        Arithmetics::FloatArbitraryPrecision
+    };
 }
 
 #[doc(hidden)]

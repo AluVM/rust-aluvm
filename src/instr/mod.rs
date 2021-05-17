@@ -11,7 +11,7 @@
 #[macro_use]
 mod asm;
 
-use amplify::num::{u1024, u5, u512};
+use amplify::num::{u1024, u4, u5, u512};
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter};
 
@@ -581,12 +581,12 @@ impl Display for Arithmetics {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Arithmetics::IntChecked { signed: false } => f.write_str("c"),
-            Arithmetics::IntUnchecked { signed: false } => f.write_str(""),
+            Arithmetics::IntUnchecked { signed: false } => f.write_str("u"),
             Arithmetics::IntArbitraryPrecision { signed: false } => {
                 f.write_str("a")
             }
             Arithmetics::IntChecked { signed: true } => f.write_str("cs"),
-            Arithmetics::IntUnchecked { signed: true } => f.write_str("s"),
+            Arithmetics::IntUnchecked { signed: true } => f.write_str("us"),
             Arithmetics::IntArbitraryPrecision { signed: true } => {
                 f.write_str("as")
             }
@@ -594,6 +594,19 @@ impl Display for Arithmetics {
             Arithmetics::FloatArbitraryPrecision => f.write_str("af"),
         }
     }
+}
+
+/// Selector between increment and decrement operation
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
+pub enum IncDec {
+    /// Increment operation
+    #[display("inc")]
+    Inc,
+
+    /// Decrement operation
+    #[display("dec")]
+    Dec,
 }
 
 /// Arithmetic instructions
@@ -605,31 +618,31 @@ pub enum ArithmeticOp {
     Neg(RegA, Reg32),
 
     /// Increases register value on a given step.
-    #[cfg_attr(feature = "std", display("add{0}\t{1}{2},{3}"))]
-    Inc(Arithmetics, RegA, Reg32, u5),
+    #[cfg_attr(feature = "std", display("{0}:{1}\t{2}{3},{4}"))]
+    Stp(IncDec, Arithmetics, RegA, Reg32, u4),
 
     /// Adds two registers. Puts result to `a_[0]` or `ap[0]`, if
     /// [`Arithmetics::IntArbitraryPrecision`] or
     /// [`Arithmetics::FloatArbitraryPrecision`] is used
-    #[cfg_attr(feature = "std", display("add{0}\t{1}{2},{1}{3}"))]
+    #[cfg_attr(feature = "std", display("add:{0}\t{1}{2},{1}{3}"))]
     Add(Arithmetics, RegA, Reg32, Reg32),
 
     /// Subtracts two registers. Puts result to `a_[0]` or `ap[0]`, if
     /// [`Arithmetics::IntArbitraryPrecision`] or
     /// [`Arithmetics::FloatArbitraryPrecision`] is used
-    #[cfg_attr(feature = "std", display("sub{0}\t{1}{2},{1}{3}"))]
+    #[cfg_attr(feature = "std", display("sub:{0}\t{1}{2},{1}{3}"))]
     Sub(Arithmetics, RegA, Reg32, Reg32),
 
     /// Multiplies two registers. Puts result to `a_[0]` or `ap[0]`, if
     /// [`Arithmetics::IntArbitraryPrecision`] or
     /// [`Arithmetics::FloatArbitraryPrecision`] is used
-    #[cfg_attr(feature = "std", display("mul{0}\t{1}{2},{1}{3}"))]
+    #[cfg_attr(feature = "std", display("mul:{0}\t{1}{2},{1}{3}"))]
     Mul(Arithmetics, RegA, Reg32, Reg32),
 
     /// Divides two registers. Puts result to `a_[0]` or `ap[0]`, if
     /// [`Arithmetics::IntArbitraryPrecision`] or
     /// [`Arithmetics::FloatArbitraryPrecision`] is used
-    #[cfg_attr(feature = "std", display("div{0}\t{1}{2},{1}{3}"))]
+    #[cfg_attr(feature = "std", display("div:{0}\t{1}{2},{1}{3}"))]
     Div(Arithmetics, RegA, Reg32, Reg32),
 
     /// Modulo division
@@ -650,7 +663,7 @@ impl Instruction for ArithmeticOp {
                     regs.set(Reg::A(reg), index, Some(blob));
                 });
             }
-            ArithmeticOp::Inc(arithm, reg, index, step) => {
+            ArithmeticOp::Stp(dir, arithm, reg, index, step) => {
                 regs.get(Reg::A(reg), index).map(|value| {
                     let u512_max = u512::from_le_bytes([0xFF; 64]);
                     let res = match arithm {
@@ -785,7 +798,7 @@ impl Instruction for ArithmeticOp {
     fn len(self) -> u16 {
         match self {
             ArithmeticOp::Neg(_, _) => 2,
-            ArithmeticOp::Inc(_, _, _, _) => 3,
+            ArithmeticOp::Stp(_, _, _, _, _) => 3,
             ArithmeticOp::Add(_, _, _, _)
             | ArithmeticOp::Sub(_, _, _, _)
             | ArithmeticOp::Mul(_, _, _, _)
