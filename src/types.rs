@@ -13,6 +13,31 @@ use std::fmt::{self, Display, Formatter, LowerHex, UpperHex};
 
 use amplify::num::{u1024, u256, u512};
 
+use crate::instr::{Instr, Instruction};
+
+#[cfg(feature = "std")]
+/// AluVM executable code library
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+pub struct Lib<Extension>(pub Vec<Instr<Extension>>)
+where
+    Extension: Instruction;
+
+#[cfg(feature = "std")]
+impl<Extension> Display for Lib<Extension>
+where
+    Extension: Instruction,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for instr in &self.0 {
+            write!(f, "\t\t{}\n", instr)?;
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "std")]
+impl<Extension> Lib<Extension> where Extension: Instruction {}
+
 /// Library reference: a hash of the library code
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
 #[cfg_attr(feature = "std", derive(Display), display(LowerHex))]
@@ -67,6 +92,47 @@ pub struct LibSite {
 impl LibSite {
     fn with(pos: u16, lib: LibHash) -> LibSite {
         LibSite { lib, pos }
+    }
+}
+
+/// Large binary bytestring object
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct Blob {
+    /// Slice length
+    pub len: u16,
+
+    /// Slice bytes
+    pub bytes: [u8; u16::MAX as usize],
+}
+
+impl Default for Blob {
+    fn default() -> Blob {
+        Blob {
+            len: 0,
+            bytes: [0u8; u16::MAX as usize],
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Display for Blob {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use amplify::hex::ToHex;
+        let vec = Vec::from(&self.bytes[..self.len as usize]);
+        if let Ok(s) = String::from_utf8(vec) {
+            f.write_str("\"")?;
+            f.write_str(&s)?;
+            f.write_str("\"")
+        } else if f.alternate() && self.len > 4 {
+            write!(
+                f,
+                "{}..{}",
+                self.bytes[..4].to_hex(),
+                self.bytes[(self.len as usize - 4)..].to_hex()
+            )
+        } else {
+            f.write_str(&self.bytes[0usize..(self.len as usize)].to_hex())
+        }
     }
 }
 

@@ -8,19 +8,17 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use alure::instruction::{
-    ArithmeticOp, CmpOp, ControlFlowOp, Instr, MoveOp, Nop,
-};
+use alure::instr::{ArithmeticOp, CmpOp, ControlFlowOp, Instr, MoveOp, Nop};
 use alure::registers::{Reg32, RegA};
 
 macro_rules! aluasm {
     ($( $op:ident $($arg:expr),* ;)+) => {
-        aluasm! { ::alure::instruction::Nop => $( $op $($arg),* ;)+ }
+        aluasm! { ::alure::instr::Nop => $( $op $($arg),* ;)+ }
     };
     ($ext:ty => $( $op:ident $($arg:expr),* ;)+) => { {
         let mut code: Vec<Instr<$ext>> = vec![];
         $( code.push(instr!( $op $( $arg ),* )); )+
-        code
+        ::alure::Lib(code)
     } };
 }
 
@@ -57,5 +55,5 @@ fn main() {
         jmp 0;
     };
 
-    println!("{:?}", code);
+    println!("{}", code);
 }

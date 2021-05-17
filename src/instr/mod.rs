@@ -12,7 +12,8 @@ use amplify::num::{u1024, u5, u512};
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter};
 
-use crate::registers::{Reg, Reg32, Reg8, RegA, RegR, Registers};
+use crate::registers::{Reg, Reg32, Reg8, RegA, RegBlock, RegR, Registers};
+use crate::types::Blob;
 use crate::{LibSite, Value};
 
 /// Turing machine movement after instruction execution
@@ -31,6 +32,7 @@ pub enum ExecStep {
     Call(LibSite),
 }
 
+#[cfg(not(feature = "std"))]
 /// Trait for instructions
 pub trait Instruction {
     /// Executes given instruction taking all registers as input and output.
@@ -44,8 +46,23 @@ pub trait Instruction {
     fn len(self) -> u16;
 }
 
+#[cfg(feature = "std")]
+/// Trait for instructions
+pub trait Instruction: Display {
+    /// Executes given instruction taking all registers as input and output.
+    /// The method is provided with the current code position which may be
+    /// used by the instruction for constructing call stack.
+    ///
+    /// Returns whether further execution should be stopped.
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep;
+
+    /// Returns length of the instruction block in bytes
+    fn len(self) -> u16;
+}
+
 /// Default instruction extension which treats any operation as NOP
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display), display("nop"))]
 pub enum Nop {}
 impl Instruction for Nop {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
@@ -59,7 +76,7 @@ impl Instruction for Nop {
 
 /// Full set of instructions
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-// #[cfg_attr(feature = "std", derive(Display), display(inner))]
+#[cfg_attr(feature = "std", derive(Display), display(inner))]
 #[non_exhaustive]
 pub enum Instr<Extension>
 where
@@ -842,13 +859,22 @@ impl Instruction for BitwiseOp {
 
 /// Operations on byte strings
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
 pub enum BytesOp {
-    Puts(/** `s` register index */ u8, u16, [u8; u16::MAX as usize]),
+    /// Put bytestring into a byte string register
+    #[cfg_attr(feature = "std", display("put\ts16[{0}],{1}"))]
+    Put(/** `s` register index */ u8, Blob),
 
-    Movs(/** `s` register index */ u8, /** `s` register index */ u8),
+    /// Move bytestring value between registers
+    #[cfg_attr(feature = "std", display("mov\ts16[{0}],s16[{1}]"))]
+    Mov(/** `s` register index */ u8, /** `s` register index */ u8),
 
-    Swps(/** `s` register index */ u8, /** `s` register index */ u8),
+    /// Swap bytestring value between registers
+    #[cfg_attr(feature = "std", display("swp\ts16[{0}],s16[{1}]"))]
+    Swp(/** `s` register index */ u8, /** `s` register index */ u8),
 
+    /// Fill segment of bytestring with specific byte value
+    #[cfg_attr(feature = "std", display("fill\ts16[{0}],{1}..{2},{3}"))]
     Fill(
         /** `s` register index */ u8,
         /** from */ u16,
@@ -856,51 +882,80 @@ pub enum BytesOp {
         /** value */ u8,
     ),
 
-    /// Returns length of the string
-    Lens(/** `s` register index */ u8),
+    /// Put length of the string into `a16[0]` register
+    #[cfg_attr(feature = "std", display("len\ts16[{0}],a16[0]"))]
+    Len(/** `s` register index */ u8),
 
-    /// Counts number of byte occurrences within the string
-    Counts(/** `s` register index */ u8, /** byte to count */ u8),
+    /// Count number of byte occurrences within the string and stores
+    /// that value in `a16[0]`
+    #[cfg_attr(feature = "std", display("count\ts16[{0}],{1},a16[0]"))]
+    Count(/** `s` register index */ u8, /** byte to count */ u8),
 
-    /// Compares two strings from two registers, putting result into `cm0`
-    Cmps(u8, u8),
+    /// Compare two strings from two registers, putting result into `cm0`
+    #[cfg_attr(feature = "std", display("cmp\ts16[{0}],s16[{0}]"))]
+    Cmp(u8, u8),
 
-    /// Computes length of the fragment shared between two strings
-    Common(u8, u8),
+    /// Compute length of the fragment shared between two strings
+    #[cfg_attr(feature = "std", display("comm\ts16[{0}],s16[{1}]"))]
+    Comm(u8, u8),
 
-    /// Counts number of occurrences of one string within another putting
+    /// Count number of occurrences of one string within another putting
     /// result to `a16[0]`
+    #[cfg_attr(feature = "std", display("find\ts16[{0}],s16[{1}],a16[0]"))]
     Find(
         /** `s` register with string */ u8,
         /** `s` register with matching fragment */ u8,
     ),
 
-    /// Extracts value into a register
-    Exta(RegA, Reg32, /** `s` register index */ u8, /** offset */ u16),
-    Extr(RegR, Reg32, /** `s` register index */ u8, /** offset */ u16),
+    /// Extract byte string slice into an arithmetic register
+    #[cfg_attr(feature = "std", display("extr\ts16[{0}],{1},a{2}{3}"))]
+    ExtrA(/** `s` register index */ u8, /** offset */ u16, RegA, Reg32),
 
+    /// Extract byte string slice into a non-arithmetic register
+    #[cfg_attr(feature = "std", display("extr\ts16[{0}],{1},r{2}{3}"))]
+    ExtrR(/** `s` register index */ u8, /** offset */ u16, RegR, Reg32),
+
+    /// Join bytestrings from two registers
+    #[cfg_attr(feature = "std", display("join\ts16[{0}],s16[{1}],s16[{2}]"))]
     Join(
         /** Source 1 */ u8,
         /** Source 2 */ u8,
         /** Destination */ u8,
     ),
+
+    /// Split bytestring at a given index into two registers
+    #[cfg_attr(
+        feature = "std",
+        display("split\ts16[{0}],{1},s16[{2}],s16[{3}]")
+    )]
     Split(
         /** Source */ u8,
         /** Offset */ u16,
         /** Destination 1 */ u8,
         /** Destination 2 */ u8,
     ),
+
+    /// Insert value from one of bytestring register at a given index of other
+    /// bytestring register, shifting string bytes. If destination register
+    /// does not fits the length of the new string, its final bytes are
+    /// removed.
+    #[cfg_attr(feature = "std", display("ins\ts16[{0}],s16[{1}],{2}"))]
     Ins(
         /** Insert from register */ u8,
         /** Insert to register */ u8,
         /** Offset for insert place */ u16,
     ),
+
+    /// Delete bytes in a given range, shifting the remaining bytes
+    #[cfg_attr(feature = "std", display("ins\ts16[{0}],{1}..{2}"))]
     Del(
         /** Register index */ u8,
         /** Delete from */ u16,
         /** Delete to */ u16,
     ),
-    /// Translocates fragment of bytestring into a register
+
+    /// Extract fragment of bytestring into a register
+    #[cfg_attr(feature = "std", display("transl\ts16[{0}],{1}..{2},s16[{3}]"))]
     Transl(
         /** Source */ u8,
         /** Start from */ u16,
@@ -916,15 +971,15 @@ impl Instruction for BytesOp {
 
     fn len(self) -> u16 {
         match self {
-            BytesOp::Puts(_, len, _) => 4u16.saturating_add(len),
-            BytesOp::Movs(_, _) | BytesOp::Swps(_, _) => 3,
+            BytesOp::Put(_, Blob { len, .. }) => 4u16.saturating_add(len),
+            BytesOp::Mov(_, _) | BytesOp::Swp(_, _) => 3,
             BytesOp::Fill(_, _, _, _) => 7,
-            BytesOp::Lens(_) => 2,
-            BytesOp::Counts(_, _) => 3,
-            BytesOp::Cmps(_, _) => 3,
-            BytesOp::Common(_, _) => 3,
+            BytesOp::Len(_) => 2,
+            BytesOp::Count(_, _) => 3,
+            BytesOp::Cmp(_, _) => 3,
+            BytesOp::Comm(_, _) => 3,
             BytesOp::Find(_, _) => 3,
-            BytesOp::Exta(_, _, _, _) | BytesOp::Extr(_, _, _, _) => 4,
+            BytesOp::ExtrA(_, _, _, _) | BytesOp::ExtrR(_, _, _, _) => 4,
             BytesOp::Join(_, _, _) => 4,
             BytesOp::Split(_, _, _, _) => 6,
             BytesOp::Ins(_, _, _) | BytesOp::Del(_, _, _) => 5,
@@ -935,18 +990,24 @@ impl Instruction for BytesOp {
 
 /// Cryptographic hashing functions
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
 #[non_exhaustive]
 pub enum DigestOp {
+    /// Computes RIPEMD160 hash value
+    #[cfg_attr(feature = "std", display("ripemd\ts16{0},r160{1},{2}"))]
     Ripemd(
-        /** Which of `a16` registers contain start offset */ Reg32,
         /** Index of string register */ Reg32,
+        /** Which of `a16` registers contain start offset */ Reg32,
         /** Index of `r160` register to save result to */ Reg32,
         /** Clear string register after operation */ bool,
     ),
+
+    /// Computes SHA256 hash value
+    #[cfg_attr(feature = "std", display("sha2\ts16{0},r256{1},{2}"))]
     Sha2(
-        /** Which of `a16` registers contain start offset */ Reg32,
         /** Index of string register */ Reg32,
-        /** Index of `r160` register to save result to */ Reg32,
+        /** Which of `a16` registers contain start offset */ Reg32,
+        /** Index of `r256` register to save result to */ Reg32,
         /** Clear string register after operation */ bool,
     ),
 }
@@ -963,23 +1024,40 @@ impl Instruction for DigestOp {
 
 /// Operations on Secp256k1 elliptic curve
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
 pub enum SecpOp {
+    /// Generates new elliptic curve point value saved into destination
+    /// register in `r512` set using scalar value from the source `r256`
+    /// register
+    #[cfg_attr(feature = "std", display("secpgen\tr256{0},r512{1}"))]
     Gen(
         /** Register containing scalar */ Reg32,
         /** Destination register to put G * scalar */ Reg8,
     ),
+
+    /// Multiplies elliptic curve point on a scalar
+    #[cfg_attr(feature = "std", display("secpmul\t{0}256{1},r512{2},r512{3}"))]
     Mul(
-        /** Use `a` or `r` register as scalar source */ bool,
+        /** Use `a` or `r` register as scalar source */ RegBlock,
         /** Scalar register index */ Reg32,
         /** Source `r` register index containing EC point */ Reg32,
         /** Destination `r` register index */ Reg32,
     ),
+
+    /// Adds two elliptic curve points
+    #[cfg_attr(
+        feature = "std",
+        display("secpadd\tr512{0},r512{1},r512{2},{3}")
+    )]
     Add(
-        /** Allow overflows */ bool,
         /** Source 1 */ Reg32,
         /** Source 2 */ Reg32,
         /** Source 3 */ Reg32,
+        /** Allow overflows */ bool,
     ),
+
+    /// Negates elliptic curve point
+    #[cfg_attr(feature = "std", display("secpneg\tr512{0},r512{1}"))]
     Neg(
         /** Register hilding EC point to negate */ Reg32,
         /** Destination register */ Reg8,
@@ -1003,23 +1081,37 @@ impl Instruction for SecpOp {
 
 /// Operations on Curve25519 elliptic curve
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
 pub enum Curve25519Op {
+    /// Generates new elliptic curve point value saved into destination
+    /// register in `r512` set using scalar value from the source `r256`
+    /// register
+    #[cfg_attr(feature = "std", display("edgen\tr256{0},r512{1}"))]
     Gen(
         /** Register containing scalar */ Reg32,
         /** Destination register to put G * scalar */ Reg8,
     ),
+
+    /// Multiplies elliptic curve point on a scalar
+    #[cfg_attr(feature = "std", display("edmul\t{0}256{1},r512{2},r512{3}"))]
     Mul(
-        /** Use `a` or `r` register as scalar source */ bool,
+        /** Use `a` or `r` register as scalar source */ RegBlock,
         /** Scalar register index */ Reg32,
         /** Source `r` register index containing EC point */ Reg32,
         /** Destination `r` register index */ Reg32,
     ),
+
+    /// Adds two elliptic curve points
+    #[cfg_attr(feature = "std", display("edadd\tr512{0},r512{1},r512{2},{3}"))]
     Add(
-        /** Allow overflows */ bool,
         /** Source 1 */ Reg32,
         /** Source 2 */ Reg32,
         /** Source 3 */ Reg32,
+        /** Allow overflows */ bool,
     ),
+
+    /// Negates elliptic curve point
+    #[cfg_attr(feature = "std", display("edneg\tr512{0},r512{1}"))]
     Neg(
         /** Register hilding EC point to negate */ Reg32,
         /** Destination register */ Reg8,

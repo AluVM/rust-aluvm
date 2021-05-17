@@ -281,8 +281,21 @@ pub enum Reg {
     /// Arithmetic registers (`a` registers)
     A(RegA),
 
-    /// Non-arithmetic (generic) registers (`a` registers)
+    /// Non-arithmetic (generic) registers (`r` registers)
     R(RegR),
+}
+
+/// Block of registers, either arithmetic or non-arithmetic
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
+pub enum RegBlock {
+    /// Arithmetic registers (`a` registers)
+    #[cfg_attr(feature = "std", display("a"))]
+    A,
+
+    /// Non-arithmetic (generic) registers (`r` registers)
+    #[cfg_attr(feature = "std", display("r"))]
+    R,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]

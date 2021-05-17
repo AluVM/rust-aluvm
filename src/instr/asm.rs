@@ -7,16 +7,3 @@
 // This software is licensed under the terms of MIT License.
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
-
-#![cfg_attr(not(feature = "std"), no_std)]
-
-#[cfg_attr(feature = "std", macro_use)]
-extern crate amplify;
-
-pub mod instr;
-pub mod registers;
-mod types;
-
-#[cfg(feature = "std")]
-pub use types::Lib;
-pub use types::{Blob, LibHash, LibSite, Value};
