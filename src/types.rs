@@ -15,19 +15,19 @@ use std::str::FromStr;
 
 use amplify::num::{u1024, u256, u512};
 
-use crate::instr::{Instr, Instruction};
+use crate::instr::{Instr, InstructionSet};
 
 #[cfg(feature = "std")]
 /// AluVM executable code library
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
 pub struct Lib<Extension>(pub Vec<Instr<Extension>>)
 where
-    Extension: Instruction;
+    Extension: InstructionSet;
 
 #[cfg(feature = "std")]
 impl<Extension> Display for Lib<Extension>
 where
-    Extension: Instruction,
+    Extension: InstructionSet,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         for instr in &self.0 {
@@ -38,7 +38,7 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<Extension> Lib<Extension> where Extension: Instruction {}
+impl<Extension> Lib<Extension> where Extension: InstructionSet {}
 
 /// Library reference: a hash of the library code
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]

@@ -10,8 +10,14 @@
 
 #[macro_use]
 mod asm;
+#[cfg(feature = "std")]
+mod encoding;
+mod instr;
 
-use amplify::num::{u1024, u4, u5, u512};
+pub use encoding::Bytecode;
+pub use instr::*;
+
+use amplify::num::{u1024, u4, u512};
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter};
 
@@ -37,43 +43,33 @@ pub enum ExecStep {
 
 #[cfg(not(feature = "std"))]
 /// Trait for instructions
-pub trait Instruction {
+pub trait Instruction: Bytecode {
     /// Executes given instruction taking all registers as input and output.
     /// The method is provided with the current code position which may be
     /// used by the instruction for constructing call stack.
     ///
     /// Returns whether further execution should be stopped.
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep;
-
-    /// Returns length of the instruction block in bytes
-    fn len(self) -> u16;
 }
 
 #[cfg(feature = "std")]
 /// Trait for instructions
-pub trait Instruction: Display {
+pub trait InstructionSet: Bytecode + Display {
     /// Executes given instruction taking all registers as input and output.
     /// The method is provided with the current code position which may be
     /// used by the instruction for constructing call stack.
     ///
     /// Returns whether further execution should be stopped.
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep;
-
-    /// Returns length of the instruction block in bytes
-    fn len(self) -> u16;
 }
 
 /// Default instruction extension which treats any operation as NOP
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display), display("nop"))]
 pub enum Nop {}
-impl Instruction for Nop {
+impl InstructionSet for Nop {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         ExecStep::Next
-    }
-
-    fn len(self) -> u16 {
-        1
     }
 }
 
@@ -83,60 +79,64 @@ impl Instruction for Nop {
 #[non_exhaustive]
 pub enum Instr<Extension>
 where
-    Extension: Instruction,
+    Extension: InstructionSet,
 {
     /// Control-flow instructions
-    // #[value = 0b00_000_000]
+    // 0b00_000_***
     ControlFlow(ControlFlowOp),
 
     /// Instructions setting register values
-    // #[value = 0b00_001_000]
+    // 0b00_001_***
     Put(PutOp),
 
     /// Instructions moving and swapping register values
-    // #[value = 0b00_010_000]
+    // 0b00_010_***
     Move(MoveOp),
 
     /// Instructions comparing register values
-    // #[value = 0b00_011_000]
+    // 0b00_011_***
     Cmp(CmpOp),
 
     /// Arithmetic instructions
-    // #[value = 0b00_100_000]
+    // 0b00_100_***
     Arithmetic(ArithmeticOp),
 
     /// Bit operations & boolean algebra instructions
-    // #[value = 0b00_101_000]
+    // 0b00_101_***
     Bitwise(BitwiseOp),
 
     /// Operations on byte strings
-    // #[value = 0b00_110_000]
+    // 0b00_110_***
     Bytes(BytesOp),
 
     /// Cryptographic hashing functions
-    // #[value = 0b01_000_000]
+    // 0b01_000_***
     Digest(DigestOp),
 
     /// Operations on Secp256k1 elliptic curve
-    // #[value = 0b01_001_000]
+    // 0b01_001_0**
     Secp256k1(SecpOp),
 
     /// Operations on Curve25519 elliptic curve
-    // #[value = 0b01_001_100]
+    // 0b01_001_1**
     Curve25519(Curve25519Op),
 
-    /// Reserved operations which can be provided by a host environment
-    // #[value = 0b10_000_000]
+    /// Extension operations which can be provided by a host environment
+    // 0b10_***_***
     ExtensionCodes(Extension),
 
+    // Reserved operations for future use.
+    //
+    // When such an opcode is met in the bytecode the decoder MUST fail.
+    // 0x11_***_***
     /// No-operation instruction
     // #[value = 0b11_111_111]
     Nop,
 }
 
-impl<Extension> Instruction for Instr<Extension>
+impl<Extension> InstructionSet for Instr<Extension>
 where
-    Extension: Instruction,
+    Extension: InstructionSet,
 {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         match self {
@@ -154,23 +154,6 @@ where
             Instr::Nop => ExecStep::Next,
         }
     }
-
-    fn len(self) -> u16 {
-        match self {
-            Instr::ControlFlow(instr) => instr.len(),
-            Instr::Put(instr) => instr.len(),
-            Instr::Move(instr) => instr.len(),
-            Instr::Cmp(instr) => instr.len(),
-            Instr::Arithmetic(instr) => instr.len(),
-            Instr::Bitwise(instr) => instr.len(),
-            Instr::Bytes(instr) => instr.len(),
-            Instr::Digest(instr) => instr.len(),
-            Instr::Secp256k1(instr) => instr.len(),
-            Instr::Curve25519(instr) => instr.len(),
-            Instr::ExtensionCodes(instr) => instr.len(),
-            Instr::Nop => 1,
-        }
-    }
 }
 
 /// Control-flow instructions
@@ -180,24 +163,20 @@ pub enum ControlFlowOp {
     /// Completes program execution writing `false` to `st0` (indicating
     /// program failure)
     #[cfg_attr(feature = "std", display("fail"))]
-    // #[value = 0b000]
     Fail,
 
     /// Completes program execution writing `true` to `st0` (indicating program
     /// success)
     #[cfg_attr(feature = "std", display("succ"))]
-    // #[value = 0b001]
     Succ,
 
     /// Unconditionally jumps to an offset. Increments `cy0`.
     #[cfg_attr(feature = "std", display("jmp\t\t{0:#06X}"))]
-    // #[value = 0b010]
     Jmp(u16),
 
     /// Jumps to an offset if `st0` == true, otherwise does nothing. Increments
     /// `cy0`.
     #[cfg_attr(feature = "std", display("jif\t\t{0:#06X}"))]
-    // #[value = 0b011]
     Jif(u16),
 
     /// Jumps to other location in the current code with ability to return
@@ -224,7 +203,7 @@ pub enum ControlFlowOp {
     Ret,
 }
 
-impl Instruction for ControlFlowOp {
+impl InstructionSet for ControlFlowOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         match self {
             ControlFlowOp::Fail => {
@@ -263,19 +242,6 @@ impl Instruction for ControlFlowOp {
             ControlFlowOp::Ret => {
                 regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop)
             }
-        }
-    }
-
-    fn len(self) -> u16 {
-        match self {
-            ControlFlowOp::Fail => 1,
-            ControlFlowOp::Succ => 1,
-            ControlFlowOp::Jmp(_) => 3,
-            ControlFlowOp::Jif(_) => 3,
-            ControlFlowOp::Routine(_) => 3,
-            ControlFlowOp::Call(_) => 3 + 32,
-            ControlFlowOp::Exec(_) => 3 + 32,
-            ControlFlowOp::Ret => 1,
         }
     }
 }
@@ -319,7 +285,7 @@ pub enum PutOp {
     PutIfR(RegR, Reg32, Value),
 }
 
-impl Instruction for PutOp {
+impl InstructionSet for PutOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
             PutOp::ZeroA(reg, index) => {
@@ -350,21 +316,6 @@ impl Instruction for PutOp {
             }
         }
         ExecStep::Next
-    }
-
-    fn len(self) -> u16 {
-        match self {
-            PutOp::ZeroA(_, _)
-            | PutOp::ZeroR(_, _)
-            | PutOp::ClA(_, _)
-            | PutOp::ClR(_, _) => 2,
-            PutOp::PutA(_, _, Value { len, .. })
-            | PutOp::PutR(_, _, Value { len, .. })
-            | PutOp::PutIfA(_, _, Value { len, .. })
-            | PutOp::PutIfR(_, _, Value { len, .. }) => {
-                4u16.saturating_add(len)
-            }
-        }
     }
 }
 
@@ -437,7 +388,7 @@ pub enum MoveOp {
     MovRA(RegR, Reg32, RegA, Reg32),
 }
 
-impl Instruction for MoveOp {
+impl InstructionSet for MoveOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
             MoveOp::SwpA(reg1, index1, reg2, index2) => {
@@ -475,19 +426,6 @@ impl Instruction for MoveOp {
             }
         }
         ExecStep::Next
-    }
-
-    fn len(self) -> u16 {
-        match self {
-            MoveOp::SwpA(_, _, _, _)
-            | MoveOp::SwpR(_, _, _, _)
-            | MoveOp::SwpAR(_, _, _, _) => 3,
-            MoveOp::AMov(_, _, _) => 2,
-            MoveOp::MovA(_, _, _, _)
-            | MoveOp::MovR(_, _, _, _)
-            | MoveOp::MovAR(_, _, _, _)
-            | MoveOp::MovRA(_, _, _, _) => 3,
-        }
     }
 }
 
@@ -540,20 +478,9 @@ pub enum CmpOp {
     A2St,
 }
 
-impl Instruction for CmpOp {
+impl InstructionSet for CmpOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         todo!()
-    }
-
-    fn len(self) -> u16 {
-        match self {
-            CmpOp::Gt(_, _, _, _)
-            | CmpOp::Lt(_, _, _, _)
-            | CmpOp::EqA(_, _, _, _)
-            | CmpOp::EqR(_, _, _, _) => 3,
-            CmpOp::Len(_, _) | CmpOp::Cnt(_, _) => 2,
-            CmpOp::St2A | CmpOp::A2St => 1,
-        }
     }
 }
 
@@ -654,7 +581,7 @@ pub enum ArithmeticOp {
     Abs(RegA, Reg32),
 }
 
-impl Instruction for ArithmeticOp {
+impl InstructionSet for ArithmeticOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
             ArithmeticOp::Neg(reg, index) => {
@@ -794,19 +721,6 @@ impl Instruction for ArithmeticOp {
         }
         ExecStep::Next
     }
-
-    fn len(self) -> u16 {
-        match self {
-            ArithmeticOp::Neg(_, _) => 2,
-            ArithmeticOp::Stp(_, _, _, _, _) => 3,
-            ArithmeticOp::Add(_, _, _, _)
-            | ArithmeticOp::Sub(_, _, _, _)
-            | ArithmeticOp::Mul(_, _, _, _)
-            | ArithmeticOp::Div(_, _, _, _) => 3,
-            ArithmeticOp::Mod(_, _, _, _, _, _) => 4,
-            ArithmeticOp::Abs(_, _) => 2,
-        }
-    }
 }
 
 /// Bit operations & boolean algebra instructions
@@ -854,22 +768,9 @@ pub enum BitwiseOp {
     Scr(RegA, Reg32, Reg32, Reg8),
 }
 
-impl Instruction for BitwiseOp {
+impl InstructionSet for BitwiseOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         todo!()
-    }
-
-    fn len(self) -> u16 {
-        match self {
-            BitwiseOp::And(_, _, _, _)
-            | BitwiseOp::Or(_, _, _, _)
-            | BitwiseOp::Xor(_, _, _, _) => 3,
-            BitwiseOp::Not(_, _) => 2,
-            BitwiseOp::Shl(_, _, _, _)
-            | BitwiseOp::Shr(_, _, _, _)
-            | BitwiseOp::Scl(_, _, _, _)
-            | BitwiseOp::Scr(_, _, _, _) => 3,
-        }
     }
 }
 
@@ -900,7 +801,7 @@ pub enum BytesOp {
 
     /// Put length of the string into `a16[0]` register
     #[cfg_attr(feature = "std", display("len\t\ts16[{0}],a16[0]"))]
-    Len(/** `s` register index */ u8),
+    LenS(/** `s` register index */ u8),
 
     /// Count number of byte occurrences within the string and stores
     /// that value in `a16[0]`
@@ -980,27 +881,9 @@ pub enum BytesOp {
     ),
 }
 
-impl Instruction for BytesOp {
+impl InstructionSet for BytesOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         todo!()
-    }
-
-    fn len(self) -> u16 {
-        match self {
-            BytesOp::Put(_, Blob { len, .. }) => 4u16.saturating_add(len),
-            BytesOp::Mov(_, _) | BytesOp::Swp(_, _) => 3,
-            BytesOp::Fill(_, _, _, _) => 7,
-            BytesOp::Len(_) => 2,
-            BytesOp::Count(_, _) => 3,
-            BytesOp::Cmp(_, _) => 3,
-            BytesOp::Comm(_, _) => 3,
-            BytesOp::Find(_, _) => 3,
-            BytesOp::ExtrA(_, _, _, _) | BytesOp::ExtrR(_, _, _, _) => 4,
-            BytesOp::Join(_, _, _) => 4,
-            BytesOp::Split(_, _, _, _) => 6,
-            BytesOp::Ins(_, _, _) | BytesOp::Del(_, _, _) => 5,
-            BytesOp::Transl(_, _, _, _) => 7,
-        }
     }
 }
 
@@ -1028,13 +911,9 @@ pub enum DigestOp {
     ),
 }
 
-impl Instruction for DigestOp {
+impl InstructionSet for DigestOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         todo!()
-    }
-
-    fn len(self) -> u16 {
-        3
     }
 }
 
@@ -1080,18 +959,9 @@ pub enum SecpOp {
     ),
 }
 
-impl Instruction for SecpOp {
+impl InstructionSet for SecpOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         todo!()
-    }
-
-    fn len(self) -> u16 {
-        match self {
-            SecpOp::Gen(_, _) => 2,
-            SecpOp::Mul(_, _, _, _) => 3,
-            SecpOp::Add(_, _, _, _) => 3,
-            SecpOp::Neg(_, _) => 2,
-        }
     }
 }
 
@@ -1134,17 +1004,8 @@ pub enum Curve25519Op {
     ),
 }
 
-impl Instruction for Curve25519Op {
+impl InstructionSet for Curve25519Op {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         todo!()
-    }
-
-    fn len(self) -> u16 {
-        match self {
-            Curve25519Op::Gen(_, _) => 2,
-            Curve25519Op::Mul(_, _, _, _) => 3,
-            Curve25519Op::Add(_, _, _, _) => 3,
-            Curve25519Op::Neg(_, _) => 2,
-        }
     }
 }
