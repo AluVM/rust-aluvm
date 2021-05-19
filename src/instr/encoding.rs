@@ -21,6 +21,7 @@ use crate::registers::Reg;
 use crate::{Blob, Instr, Value};
 #[cfg(feature = "std")]
 use crate::{InstructionSet, Lib};
+use std::ops::RangeInclusive;
 
 // I had an idea of putting Read/Write functionality into `amplify` crate,
 // but it is quire specific to the fact that it uses `u16`-sized underlying
@@ -31,6 +32,7 @@ pub enum ReadError {}
 
 // TODO: Make it sealed
 pub trait Read {
+    fn peek_u8(&self) -> u8;
     fn read_bool(&mut self) -> bool;
     fn read_u2(&mut self) -> u2;
     fn read_u3(&mut self) -> u3;
@@ -108,6 +110,14 @@ where
 }
 
 impl Read for Cursor<&[u8]> {
+    fn peek_u8(&self) -> u8 {
+        assert_eq!(
+            *self.bit_pos, 0,
+            "attempt to peek a byte at a non-byte aligned position"
+        );
+        self.bytecode[self.byte_pos as usize]
+    }
+
     fn read_bool(&mut self) -> bool {
         let byte = self.extract(u3::with(1));
         byte == 0x01
@@ -394,6 +404,9 @@ pub trait Bytecode {
     /// Returns number of bytes which instruction and its argument occupies
     fn byte_count(&self) -> u16;
 
+    /// Returns range of instruction btecodes covered by a set of operations
+    fn instr_range() -> RangeInclusive<u8>;
+
     /// Returns byte representing instruction code (without its arguments)
     fn instr_byte(&self) -> u8;
 
@@ -433,6 +446,10 @@ where
         }
     }
 
+    fn instr_range() -> RangeInclusive<u8> {
+        0..=u8::MAX
+    }
+
     fn instr_byte(&self) -> u8 {
         match self {
             Instr::ControlFlow(instr) => instr.instr_byte(),
@@ -468,7 +485,43 @@ where
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
-        todo!()
+        Ok(match reader.peek_u8() {
+            instr if ControlFlowOp::instr_range().contains(&instr) => {
+                Instr::ControlFlow(ControlFlowOp::read(reader)?)
+            }
+            instr if PutOp::instr_range().contains(&instr) => {
+                Instr::Put(PutOp::read(reader)?)
+            }
+            instr if MoveOp::instr_range().contains(&instr) => {
+                Instr::Move(MoveOp::read(reader)?)
+            }
+            instr if CmpOp::instr_range().contains(&instr) => {
+                Instr::Cmp(CmpOp::read(reader)?)
+            }
+            instr if ArithmeticOp::instr_range().contains(&instr) => {
+                Instr::Arithmetic(ArithmeticOp::read(reader)?)
+            }
+            instr if BitwiseOp::instr_range().contains(&instr) => {
+                Instr::Bitwise(BitwiseOp::read(reader)?)
+            }
+            instr if BytesOp::instr_range().contains(&instr) => {
+                Instr::Bytes(BytesOp::read(reader)?)
+            }
+            instr if DigestOp::instr_range().contains(&instr) => {
+                Instr::Digest(DigestOp::read(reader)?)
+            }
+            instr if SecpOp::instr_range().contains(&instr) => {
+                Instr::Secp256k1(SecpOp::read(reader)?)
+            }
+            instr if Curve25519Op::instr_range().contains(&instr) => {
+                Instr::Curve25519(Curve25519Op::read(reader)?)
+            }
+            instr if Extension::instr_range().contains(&instr) => {
+                Instr::ExtensionCodes(Extension::read(reader)?)
+            }
+            INSTR_NOP => Instr::Nop,
+            _ => unreachable!(),
+        })
     }
 }
 
@@ -482,6 +535,10 @@ impl Bytecode for ControlFlowOp {
             ControlFlowOp::Exec(_) => 3 + 32,
             ControlFlowOp::Ret => 1,
         }
+    }
+
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_FAIL..=INSTR_RET
     }
 
     fn instr_byte(&self) -> u8 {
@@ -533,6 +590,10 @@ impl Bytecode for PutOp {
                 reg.bits().map(|bits| bits / 8).unwrap_or(len + 2),
             ),
         }
+    }
+
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_ZEROA..=INSTR_PUTIFR
     }
 
     fn instr_byte(&self) -> u8 {
@@ -588,6 +649,10 @@ impl Bytecode for MoveOp {
             | MoveOp::MovAR(_, _, _, _)
             | MoveOp::MovRA(_, _, _, _) => 3,
         }
+    }
+
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_SWPA..=INSTR_MOVRA
     }
 
     fn instr_byte(&self) -> u8 {
@@ -657,6 +722,10 @@ impl Bytecode for CmpOp {
         }
     }
 
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_GT..=INSTR_A2ST
+    }
+
     fn instr_byte(&self) -> u8 {
         match self {
             CmpOp::Gt(_, _, _, _) => INSTR_GT,
@@ -714,6 +783,10 @@ impl Bytecode for ArithmeticOp {
         }
     }
 
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_NEG..=INSTR_ABS
+    }
+
     fn instr_byte(&self) -> u8 {
         match self {
             ArithmeticOp::Neg(_, _) => INSTR_NEG,
@@ -737,7 +810,7 @@ impl Bytecode for ArithmeticOp {
                 writer.write_u3(reg);
                 writer.write_u5(idx);
                 writer.write_u4(*step);
-                writer.write_bool(*op == IncDec::Inc);
+                writer.write_bool(op.into());
                 writer.write_u3(ar);
             }
             ArithmeticOp::Add(ar, reg, src1, src2)
@@ -761,7 +834,56 @@ impl Bytecode for ArithmeticOp {
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
-        todo!()
+        Ok(match reader.read_u8() {
+            INSTR_NEG => {
+                Self::Neg(reader.read_u3().into(), reader.read_u5().into())
+            }
+            INSTR_STP => {
+                let reg = reader.read_u3().into();
+                let idx = reader.read_u5().into();
+                let step = reader.read_u4();
+                let op = reader.read_bool().into();
+                let ar = reader.read_u3().into();
+                Self::Stp(op, ar, reg, idx, step)
+            }
+            INSTR_ADD => {
+                let reg = reader.read_u3().into();
+                let src1 = reader.read_u5().into();
+                let src2 = reader.read_u5().into();
+                let ar = reader.read_u3().into();
+                Self::Add(ar, reg, src1, src2)
+            }
+            INSTR_SUB => {
+                let reg = reader.read_u3().into();
+                let src1 = reader.read_u5().into();
+                let src2 = reader.read_u5().into();
+                let ar = reader.read_u3().into();
+                Self::Sub(ar, reg, src1, src2)
+            }
+            INSTR_MUL => {
+                let reg = reader.read_u3().into();
+                let src1 = reader.read_u5().into();
+                let src2 = reader.read_u5().into();
+                let ar = reader.read_u3().into();
+                Self::Mul(ar, reg, src1, src2)
+            }
+            INSTR_DIV => {
+                let reg = reader.read_u3().into();
+                let src1 = reader.read_u5().into();
+                let src2 = reader.read_u5().into();
+                let ar = reader.read_u3().into();
+                Self::Div(ar, reg, src1, src2)
+            }
+            INSTR_MOD => Self::Mod(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            _ => unreachable!(),
+        })
     }
 }
 
@@ -777,6 +899,10 @@ impl Bytecode for BitwiseOp {
             | BitwiseOp::Scl(_, _, _, _)
             | BitwiseOp::Scr(_, _, _, _) => 3,
         }
+    }
+
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_AND..=INSTR_SCR
     }
 
     fn instr_byte(&self) -> u8 {
@@ -837,6 +963,10 @@ impl Bytecode for BytesOp {
         }
     }
 
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_PUT..=INSTR_TRANSL
+    }
+
     fn instr_byte(&self) -> u8 {
         todo!()
     }
@@ -853,6 +983,10 @@ impl Bytecode for BytesOp {
 impl Bytecode for DigestOp {
     fn byte_count(&self) -> u16 {
         3
+    }
+
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_RIPEMD..=INSTR_HASH5
     }
 
     fn instr_byte(&self) -> u8 {
@@ -878,6 +1012,10 @@ impl Bytecode for SecpOp {
         }
     }
 
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_SECP_GEN..=INSTR_SECP_NEG
+    }
+
     fn instr_byte(&self) -> u8 {
         todo!()
     }
@@ -901,6 +1039,10 @@ impl Bytecode for Curve25519Op {
         }
     }
 
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_ED_GEN..=INSTR_ED_NEG
+    }
+
     fn instr_byte(&self) -> u8 {
         todo!()
     }
@@ -917,6 +1059,10 @@ impl Bytecode for Curve25519Op {
 impl Bytecode for Nop {
     fn byte_count(&self) -> u16 {
         1
+    }
+
+    fn instr_range() -> RangeInclusive<u8> {
+        INSTR_NOP..=INSTR_NOP
     }
 
     fn instr_byte(&self) -> u8 {

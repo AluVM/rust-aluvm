@@ -629,6 +629,28 @@ pub enum IncDec {
     Dec,
 }
 
+impl From<bool> for IncDec {
+    fn from(val: bool) -> IncDec {
+        if val {
+            IncDec::Dec
+        } else {
+            IncDec::Inc
+        }
+    }
+}
+
+impl From<&IncDec> for bool {
+    fn from(val: &IncDec) -> bool {
+        bool::from(*val)
+    }
+}
+
+impl From<IncDec> for bool {
+    fn from(val: IncDec) -> bool {
+        val == IncDec::Dec
+    }
+}
+
 /// Arithmetic instructions
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display))]
