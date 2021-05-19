@@ -9,13 +9,15 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use amplify::num::{u2, u3, u4, u5, u6, u7};
+use amplify::Wrapper;
 use core::convert::TryInto;
 
 use super::instr::*;
 use crate::instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op,
-    DigestOp, MoveOp, Nop, PutOp, SecpOp,
+    DigestOp, IncDec, MoveOp, Nop, PutOp, SecpOp,
 };
+use crate::registers::Reg;
 use crate::{Blob, Instr, Value};
 #[cfg(feature = "std")]
 use crate::{InstructionSet, Lib};
@@ -38,20 +40,24 @@ pub trait Read {
     fn read_u7(&mut self) -> u7;
     fn read_u8(&mut self) -> u8;
     fn read_u16(&mut self) -> u16;
-    fn read_bytes(&mut self) -> &[u8];
+    fn read_bytes32(&mut self) -> [u8; 32];
+    fn read_slice(&mut self) -> &[u8];
+    fn read_value(&mut self, reg: Reg) -> Value;
 }
 
 pub trait Write {
     fn write_bool(&mut self, data: bool);
-    fn write_u2(&mut self, data: u2);
-    fn write_u3(&mut self, data: u3);
-    fn write_u4(&mut self, data: u4);
-    fn write_u5(&mut self, data: u5);
-    fn write_u6(&mut self, data: u6);
-    fn write_u7(&mut self, data: u7);
-    fn write_u8(&mut self, data: u8);
-    fn write_u16(&mut self, data: u16);
-    fn write_bytes(&mut self, bytes: impl AsRef<[u8]>);
+    fn write_u2(&mut self, data: impl Into<u2>);
+    fn write_u3(&mut self, data: impl Into<u3>);
+    fn write_u4(&mut self, data: impl Into<u4>);
+    fn write_u5(&mut self, data: impl Into<u5>);
+    fn write_u6(&mut self, data: impl Into<u6>);
+    fn write_u7(&mut self, data: impl Into<u7>);
+    fn write_u8(&mut self, data: impl Into<u8>);
+    fn write_u16(&mut self, data: impl Into<u16>);
+    fn write_bytes32(&mut self, data: [u8; 32]);
+    fn write_slice(&mut self, bytes: impl AsRef<[u8]>);
+    fn write_value(&mut self, reg: Reg, value: &Value);
 }
 
 struct Cursor<T>
@@ -146,7 +152,7 @@ impl Read for Cursor<&[u8]> {
     fn read_u8(&mut self) -> u8 {
         assert_eq!(
             *self.bit_pos, 0,
-            "byte extraction at a non-byte aligned position"
+            "attempt to extract byte at a non-byte aligned position"
         );
         let byte = self.bytecode[self.byte_pos as usize];
         self.byte_pos += 1;
@@ -156,7 +162,7 @@ impl Read for Cursor<&[u8]> {
     fn read_u16(&mut self) -> u16 {
         assert_eq!(
             *self.bit_pos, 0,
-            "word extraction at a non-byte aligned position"
+            "attempt to extract word at a non-byte aligned position"
         );
         let pos = self.byte_pos as usize;
         let mut buf = [0u8; 2];
@@ -166,14 +172,39 @@ impl Read for Cursor<&[u8]> {
         word
     }
 
-    fn read_bytes(&mut self) -> &[u8] {
+    fn read_bytes32(&mut self) -> [u8; 32] {
         assert_eq!(
             *self.bit_pos, 0,
-            "multiple byte extraction at a non-byte aligned position"
+            "attempt to extract word at a non-byte aligned position"
+        );
+        let pos = self.byte_pos as usize;
+        let mut buf = [0u8; 32];
+        buf.copy_from_slice(&self.bytecode[pos..pos + 32]);
+        self.byte_pos += 32;
+        buf
+    }
+
+    fn read_slice(&mut self) -> &[u8] {
+        assert_eq!(
+            *self.bit_pos, 0,
+            "attempt to extract multiple bytes at a non-byte aligned position"
         );
         let len = self.read_u16() as usize;
         let pos = self.byte_pos as usize;
         &self.bytecode[pos..pos + len]
+    }
+
+    fn read_value(&mut self, reg: Reg) -> Value {
+        assert_eq!(
+            *self.bit_pos, 0,
+            "attempt to extract value at a non-byte aligned position"
+        );
+        let len = match reg.bits() {
+            Some(bits) => bits % 8,
+            None => self.read_u16(),
+        } as usize;
+        let pos = self.byte_pos as usize;
+        Value::with(&self.bytecode[pos..pos + len])
     }
 }
 
@@ -184,90 +215,101 @@ impl Write for Cursor<&mut [u8]> {
         self.inc(u3::with(1));
     }
 
-    fn write_u2(&mut self, data: u2) {
+    fn write_u2(&mut self, data: impl Into<u2>) {
         assert!(
-            *self.bit_pos > 6,
-            "instruction encoder writes 2 bits across byte boundary"
+            *self.bit_pos <= 6,
+            "an attempt to write 2 bits across byte boundary"
         );
-        let data = *data << *self.bit_pos;
+        let data = data.into().as_u8() << *self.bit_pos;
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc(u3::with(2));
     }
 
-    fn write_u3(&mut self, data: u3) {
+    fn write_u3(&mut self, data: impl Into<u3>) {
         assert!(
-            *self.bit_pos > 5,
-            "instruction encoder writes 33 bits across byte boundary"
+            *self.bit_pos <= 5,
+            "an attempt to write 3 bits across byte boundary"
         );
-        let data = *data << *self.bit_pos;
+        let data = data.into().as_u8() << *self.bit_pos;
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc(u3::with(3));
     }
 
-    fn write_u4(&mut self, data: u4) {
+    fn write_u4(&mut self, data: impl Into<u4>) {
         assert!(
-            *self.bit_pos > 4,
-            "instruction encoder writes 4 bits across byte boundary"
+            *self.bit_pos <= 4,
+            "an attempt to write 4 bits across byte boundary"
         );
-        let data = *data << *self.bit_pos;
+        let data = data.into().as_u8() << *self.bit_pos;
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc(u3::with(4));
     }
 
-    fn write_u5(&mut self, data: u5) {
+    fn write_u5(&mut self, data: impl Into<u5>) {
         assert!(
-            *self.bit_pos > 3,
-            "instruction encoder writes 5 bits across byte boundary"
+            *self.bit_pos <= 3,
+            "an attempt to write 5 bits across byte boundary"
         );
-        let data = *data << *self.bit_pos;
+        let data = data.into().as_u8() << *self.bit_pos;
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc(u3::with(5));
     }
 
-    fn write_u6(&mut self, data: u6) {
+    fn write_u6(&mut self, data: impl Into<u6>) {
         assert!(
-            *self.bit_pos > 2,
-            "instruction encoder writes 6 bits across byte boundary"
+            *self.bit_pos <= 2,
+            "an attempt to write 6 bits across byte boundary"
         );
-        let data = *data << *self.bit_pos;
+        let data = data.into().as_u8() << *self.bit_pos;
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc(u3::with(6));
     }
 
-    fn write_u7(&mut self, data: u7) {
+    fn write_u7(&mut self, data: impl Into<u7>) {
         assert!(
-            *self.bit_pos > 1,
-            "instruction encoder writes 7 bits across byte boundary"
+            *self.bit_pos <= 1,
+            "an attempt to write 7 bits across byte boundary"
         );
-        let data = *data << *self.bit_pos;
+        let data = data.into().as_u8() << *self.bit_pos;
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc(u3::with(7));
     }
 
-    fn write_u8(&mut self, data: u8) {
+    fn write_u8(&mut self, data: impl Into<u8>) {
         assert_eq!(
             *self.bit_pos, 0,
-            "instruction encoder writes byte at non-zero bit offset"
+            "an attempt to write byte at non-zero bit offset"
         );
-        self.bytecode[self.byte_pos as usize] = data;
+        self.bytecode[self.byte_pos as usize] = data.into();
         self.byte_pos += 1;
     }
 
-    fn write_u16(&mut self, data: u16) {
+    fn write_u16(&mut self, data: impl Into<u16>) {
         assert_eq!(
             *self.bit_pos, 0,
-            "instruction encoder writes word at non-zero bit offset"
+            "an attempt to write word at non-zero bit offset"
         );
-        let data = data.to_le_bytes();
+        let data = data.into().to_le_bytes();
         self.bytecode[self.byte_pos as usize] = data[0];
         self.bytecode[self.byte_pos as usize + 1] = data[1];
         self.byte_pos += 2;
     }
 
-    fn write_bytes(&mut self, bytes: impl AsRef<[u8]>) {
+    fn write_bytes32(&mut self, data: [u8; 32]) {
         assert_eq!(
             *self.bit_pos, 0,
-            "instruction encoder writes multiple bytes at non-zero bit offset"
+            "an attempt to write bytes at non-zero bit offset"
+        );
+        let from = self.byte_pos as usize;
+        let to = from + 32;
+        self.bytecode[from..to].copy_from_slice(&data);
+        self.byte_pos += 32;
+    }
+
+    fn write_slice(&mut self, bytes: impl AsRef<[u8]>) {
+        assert_eq!(
+            *self.bit_pos, 0,
+            "an attempt to write multiple bytes at non-zero bit offset"
         );
         // We control that `self.byte_pos + bytes.len() < u16` at buffer
         // allocation time, so if we panic here this means we have a bug in
@@ -277,6 +319,29 @@ impl Write for Cursor<&mut [u8]> {
         let to = from + len;
         self.bytecode[from..to].copy_from_slice(bytes.as_ref());
         self.byte_pos += len as u16;
+    }
+
+    fn write_value(&mut self, reg: Reg, value: &Value) {
+        assert_eq!(
+            *self.bit_pos, 0,
+            "an attempt to write value at non-zero bit offset"
+        );
+        let len = match reg.bits() {
+            Some(bits) => bits / 8,
+            None => {
+                self.write_u16(value.len);
+                value.len
+            }
+        };
+        assert!(
+            len >= value.len,
+            "value for the register has larger bit length than the register"
+        );
+        let value_len = value.len as usize;
+        let from = self.byte_pos as usize;
+        let to = from + value_len;
+        self.bytecode[from..to].copy_from_slice(&value.bytes[0..value_len]);
+        self.byte_pos += len;
     }
 }
 
@@ -433,7 +498,18 @@ impl Bytecode for ControlFlowOp {
     }
 
     fn write_args(&self, mut writer: &mut impl Write) {
-        todo!()
+        match self {
+            ControlFlowOp::Fail => {}
+            ControlFlowOp::Succ => {}
+            ControlFlowOp::Jmp(pos)
+            | ControlFlowOp::Jif(pos)
+            | ControlFlowOp::Routine(pos) => writer.write_u16(*pos),
+            ControlFlowOp::Call(lib) | ControlFlowOp::Exec(lib) => {
+                writer.write_bytes32(lib.lib.to_inner());
+                writer.write_u16(lib.pos);
+            }
+            ControlFlowOp::Ret => {}
+        }
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
@@ -448,21 +524,51 @@ impl Bytecode for PutOp {
             | PutOp::ZeroR(_, _)
             | PutOp::ClA(_, _)
             | PutOp::ClR(_, _) => 2,
-            PutOp::PutA(_, _, Value { len, .. })
-            | PutOp::PutR(_, _, Value { len, .. })
-            | PutOp::PutIfA(_, _, Value { len, .. })
-            | PutOp::PutIfR(_, _, Value { len, .. }) => {
-                4u16.saturating_add(*len)
-            }
+            PutOp::PutA(reg, _, Value { len, .. })
+            | PutOp::PutIfA(reg, _, Value { len, .. }) => 4u16.saturating_add(
+                reg.bits().map(|bits| bits / 8).unwrap_or(len + 2),
+            ),
+            PutOp::PutR(reg, _, Value { len, .. })
+            | PutOp::PutIfR(reg, _, Value { len, .. }) => 4u16.saturating_add(
+                reg.bits().map(|bits| bits / 8).unwrap_or(len + 2),
+            ),
         }
     }
 
     fn instr_byte(&self) -> u8 {
-        todo!()
+        match self {
+            PutOp::ZeroA(_, _) => INSTR_ZEROA,
+            PutOp::ZeroR(_, _) => INSTR_ZEROR,
+            PutOp::ClA(_, _) => INSTR_CLA,
+            PutOp::ClR(_, _) => INSTR_CLR,
+            PutOp::PutA(_, _, _) => INSTR_PUTA,
+            PutOp::PutR(_, _, _) => INSTR_PUTR,
+            PutOp::PutIfA(_, _, _) => INSTR_PUTIFA,
+            PutOp::PutIfR(_, _, _) => INSTR_PUTIFR,
+        }
     }
 
     fn write_args(&self, writer: &mut impl Write) {
-        todo!()
+        match self {
+            PutOp::ZeroA(reg, reg32) | PutOp::ClA(reg, reg32) => {
+                writer.write_u3(reg);
+                writer.write_u5(reg32);
+            }
+            PutOp::ZeroR(reg, reg32) | PutOp::ClR(reg, reg32) => {
+                writer.write_u3(reg);
+                writer.write_u5(reg32);
+            }
+            PutOp::PutA(reg, reg32, val) | PutOp::PutIfA(reg, reg32, val) => {
+                writer.write_u3(reg);
+                writer.write_u5(reg32);
+                writer.write_value(Reg::A(*reg), val);
+            }
+            PutOp::PutR(reg, reg32, val) | PutOp::PutIfR(reg, reg32, val) => {
+                writer.write_u3(reg);
+                writer.write_u5(reg32);
+                writer.write_value(Reg::R(*reg), val);
+            }
+        }
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
@@ -485,11 +591,53 @@ impl Bytecode for MoveOp {
     }
 
     fn instr_byte(&self) -> u8 {
-        todo!()
+        match self {
+            MoveOp::SwpA(_, _, _, _) => INSTR_SWPA,
+            MoveOp::SwpR(_, _, _, _) => INSTR_SWPR,
+            MoveOp::SwpAR(_, _, _, _) => INSTR_SWPAR,
+            MoveOp::AMov(_, _, _) => INSTR_AMOV,
+            MoveOp::MovA(_, _, _, _) => INSTR_MOVA,
+            MoveOp::MovR(_, _, _, _) => INSTR_MOVR,
+            MoveOp::MovAR(_, _, _, _) => INSTR_MOVAR,
+            MoveOp::MovRA(_, _, _, _) => INSTR_MOVRA,
+        }
     }
 
     fn write_args(&self, writer: &mut impl Write) {
-        todo!()
+        match self {
+            MoveOp::SwpA(reg1, idx1, reg2, idx2)
+            | MoveOp::MovA(reg1, idx1, reg2, idx2) => {
+                writer.write_u3(reg1);
+                writer.write_u5(idx1);
+                writer.write_u3(reg2);
+                writer.write_u5(idx2);
+            }
+            MoveOp::SwpR(reg1, idx1, reg2, idx2)
+            | MoveOp::MovR(reg1, idx1, reg2, idx2) => {
+                writer.write_u3(reg1);
+                writer.write_u5(idx1);
+                writer.write_u3(reg2);
+                writer.write_u5(idx2);
+            }
+            MoveOp::SwpAR(reg1, idx1, reg2, idx2)
+            | MoveOp::MovAR(reg1, idx1, reg2, idx2) => {
+                writer.write_u3(reg1);
+                writer.write_u5(idx1);
+                writer.write_u3(reg2);
+                writer.write_u5(idx2);
+            }
+            MoveOp::MovRA(reg1, idx1, reg2, idx2) => {
+                writer.write_u3(reg1);
+                writer.write_u5(idx1);
+                writer.write_u3(reg2);
+                writer.write_u5(idx2);
+            }
+            MoveOp::AMov(reg1, reg2, nt) => {
+                writer.write_u3(reg1);
+                writer.write_u3(reg2);
+                writer.write_u2(nt);
+            }
+        }
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
@@ -510,11 +658,41 @@ impl Bytecode for CmpOp {
     }
 
     fn instr_byte(&self) -> u8 {
-        todo!()
+        match self {
+            CmpOp::Gt(_, _, _, _) => INSTR_GT,
+            CmpOp::Lt(_, _, _, _) => INSTR_LT,
+            CmpOp::EqA(_, _, _, _) => INSTR_EQA,
+            CmpOp::EqR(_, _, _, _) => INSTR_EQR,
+            CmpOp::Len(_, _) => INSTR_LEN,
+            CmpOp::Cnt(_, _) => INSTR_CNT,
+            CmpOp::St2A => INSTR_ST2A,
+            CmpOp::A2St => INSTR_A2ST,
+        }
     }
 
     fn write_args(&self, writer: &mut impl Write) {
-        todo!()
+        match self {
+            CmpOp::Gt(reg1, idx1, reg2, idx2)
+            | CmpOp::Lt(reg1, idx1, reg2, idx2)
+            | CmpOp::EqA(reg1, idx1, reg2, idx2) => {
+                writer.write_u3(reg1);
+                writer.write_u5(idx1);
+                writer.write_u3(reg2);
+                writer.write_u5(idx2);
+            }
+            CmpOp::EqR(reg1, idx1, reg2, idx2) => {
+                writer.write_u3(reg1);
+                writer.write_u5(idx1);
+                writer.write_u3(reg2);
+                writer.write_u5(idx2);
+            }
+            CmpOp::Len(reg, idx) | CmpOp::Cnt(reg, idx) => {
+                writer.write_u3(reg);
+                writer.write_u5(idx);
+            }
+            CmpOp::St2A => {}
+            CmpOp::A2St => {}
+        }
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
@@ -537,11 +715,49 @@ impl Bytecode for ArithmeticOp {
     }
 
     fn instr_byte(&self) -> u8 {
-        todo!()
+        match self {
+            ArithmeticOp::Neg(_, _) => INSTR_NEG,
+            ArithmeticOp::Stp(_, _, _, _, _) => INSTR_STP,
+            ArithmeticOp::Add(_, _, _, _) => INSTR_ADD,
+            ArithmeticOp::Sub(_, _, _, _) => INSTR_SUB,
+            ArithmeticOp::Mul(_, _, _, _) => INSTR_MUL,
+            ArithmeticOp::Div(_, _, _, _) => INSTR_DIV,
+            ArithmeticOp::Mod(_, _, _, _, _, _) => INSTR_MOD,
+            ArithmeticOp::Abs(_, _) => INSTR_ABS,
+        }
     }
 
     fn write_args(&self, writer: &mut impl Write) {
-        todo!()
+        match self {
+            ArithmeticOp::Neg(reg, idx) | ArithmeticOp::Abs(reg, idx) => {
+                writer.write_u3(reg);
+                writer.write_u5(idx);
+            }
+            ArithmeticOp::Stp(op, ar, reg, idx, step) => {
+                writer.write_u3(reg);
+                writer.write_u5(idx);
+                writer.write_u4(*step);
+                writer.write_bool(*op == IncDec::Inc);
+                writer.write_u3(ar);
+            }
+            ArithmeticOp::Add(ar, reg, src1, src2)
+            | ArithmeticOp::Sub(ar, reg, src1, src2)
+            | ArithmeticOp::Mul(ar, reg, src1, src2)
+            | ArithmeticOp::Div(ar, reg, src1, src2) => {
+                writer.write_u3(reg);
+                writer.write_u5(src1);
+                writer.write_u5(src2);
+                writer.write_u3(ar);
+            }
+            ArithmeticOp::Mod(reg1, idx1, reg2, idx2, reg3, idx3) => {
+                writer.write_u3(reg1);
+                writer.write_u5(idx1);
+                writer.write_u3(reg2);
+                writer.write_u5(idx2);
+                writer.write_u3(reg3);
+                writer.write_u5(idx3);
+            }
+        }
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
@@ -564,11 +780,37 @@ impl Bytecode for BitwiseOp {
     }
 
     fn instr_byte(&self) -> u8 {
-        todo!()
+        match self {
+            BitwiseOp::And(_, _, _, _) => INSTR_AND,
+            BitwiseOp::Or(_, _, _, _) => INSTR_OR,
+            BitwiseOp::Xor(_, _, _, _) => INSTR_XOR,
+            BitwiseOp::Not(_, _) => INSTR_NOT,
+            BitwiseOp::Shl(_, _, _, _) => INSTR_SHL,
+            BitwiseOp::Shr(_, _, _, _) => INSTR_SHR,
+            BitwiseOp::Scl(_, _, _, _) => INSTR_SCL,
+            BitwiseOp::Scr(_, _, _, _) => INSTR_SCR,
+        }
     }
 
     fn write_args(&self, writer: &mut impl Write) {
-        todo!()
+        match self {
+            BitwiseOp::And(reg, idx1, idx2, idx3)
+            | BitwiseOp::Or(reg, idx1, idx2, idx3)
+            | BitwiseOp::Xor(reg, idx1, idx2, idx3)
+            | BitwiseOp::Shl(reg, idx1, idx2, idx3)
+            | BitwiseOp::Shr(reg, idx1, idx2, idx3)
+            | BitwiseOp::Scl(reg, idx1, idx2, idx3)
+            | BitwiseOp::Scr(reg, idx1, idx2, idx3) => {
+                writer.write_u3(reg);
+                writer.write_u5(idx1);
+                writer.write_u5(idx2);
+                writer.write_u3(idx3);
+            }
+            BitwiseOp::Not(reg, idx) => {
+                writer.write_u3(reg);
+                writer.write_u5(idx);
+            }
+        }
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {

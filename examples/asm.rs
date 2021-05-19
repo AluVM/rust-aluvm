@@ -23,6 +23,7 @@ use alure::instr::{
 };
 use alure::registers::{Reg, Reg32, RegA, RegBlock, RegR};
 use alure::Value;
+use amplify::hex::ToHex;
 use amplify::num::u4;
 use std::convert::TryFrom;
 use std::str::FromStr;
@@ -76,4 +77,6 @@ fn main() {
     };
 
     println!("\n\nentry:\n{}\n", code);
+
+    println!("Serialization:\n{}\n", code.encode().to_hex());
 }

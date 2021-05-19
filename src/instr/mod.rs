@@ -17,7 +17,7 @@ mod instr;
 pub use encoding::Bytecode;
 pub use instr::*;
 
-use amplify::num::{u1024, u4, u512};
+use amplify::num::{u1024, u2, u3, u4, u512};
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter};
 
@@ -340,6 +340,48 @@ pub enum NumType {
     Float52,
 }
 
+impl NumType {
+    /// Constructs numeric type from `u2` value (used in bytecode serialization)
+    pub fn from_u2(val: u2) -> NumType {
+        match *val {
+            0 => NumType::Unsigned,
+            1 => NumType::Signed,
+            2 => NumType::Float23,
+            3 => NumType::Float52,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Returns `u2` representation of numeric type (used in bytecode
+    /// serialization).
+    pub fn as_u2(self) -> u2 {
+        match self {
+            NumType::Unsigned => u2::with(0),
+            NumType::Signed => u2::with(1),
+            NumType::Float23 => u2::with(2),
+            NumType::Float52 => u2::with(3),
+        }
+    }
+}
+
+impl From<u2> for NumType {
+    fn from(val: u2) -> NumType {
+        NumType::from_u2(val)
+    }
+}
+
+impl From<&NumType> for u2 {
+    fn from(nt: &NumType) -> u2 {
+        nt.as_u2()
+    }
+}
+
+impl From<NumType> for u2 {
+    fn from(nt: NumType) -> u2 {
+        nt.as_u2()
+    }
+}
+
 /// Instructions moving and swapping register values
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display))]
@@ -501,6 +543,57 @@ pub enum Arithmetics {
     },
     Float,
     FloatArbitraryPrecision,
+}
+
+impl Arithmetics {
+    /// Constructs arithmetics variant from `u3` value (used in bytecode
+    /// serialization).
+    pub fn from_u3(val: u3) -> Arithmetics {
+        match *val {
+            0 => Arithmetics::IntChecked { signed: false },
+            1 => Arithmetics::IntUnchecked { signed: false },
+            2 => Arithmetics::IntArbitraryPrecision { signed: false },
+            3 => Arithmetics::IntChecked { signed: true },
+            4 => Arithmetics::IntUnchecked { signed: true },
+            5 => Arithmetics::IntArbitraryPrecision { signed: true },
+            6 => Arithmetics::Float,
+            7 => Arithmetics::FloatArbitraryPrecision,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Returns `u3` representation of arithmetics variant (used in bytecode
+    /// serialization).
+    pub fn as_u3(self) -> u3 {
+        match self {
+            Arithmetics::IntChecked { signed: false } => u3::with(0),
+            Arithmetics::IntUnchecked { signed: false } => u3::with(1),
+            Arithmetics::IntArbitraryPrecision { signed: false } => u3::with(2),
+            Arithmetics::IntChecked { signed: true } => u3::with(3),
+            Arithmetics::IntUnchecked { signed: true } => u3::with(4),
+            Arithmetics::IntArbitraryPrecision { signed: true } => u3::with(5),
+            Arithmetics::Float => u3::with(6),
+            Arithmetics::FloatArbitraryPrecision => u3::with(7),
+        }
+    }
+}
+
+impl From<u3> for Arithmetics {
+    fn from(val: u3) -> Arithmetics {
+        Arithmetics::from_u3(val)
+    }
+}
+
+impl From<&Arithmetics> for u3 {
+    fn from(ar: &Arithmetics) -> u3 {
+        ar.as_u3()
+    }
+}
+
+impl From<Arithmetics> for u3 {
+    fn from(ar: Arithmetics) -> u3 {
+        ar.as_u3()
+    }
 }
 
 #[cfg(feature = "std")]

@@ -12,9 +12,9 @@ dependencies = [
 
 [[package]]
 name = "amplify"
-version = "3.6.2"
+version = "3.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9284b3b3ef93b91eb2e10b6178ab9186e496d3474982d7727955f08cb76ea58e"
+checksum = "5fefcd4b9b40271f3d068df8e353575bbcbb9c8961ece518812f3d183f774cd5"
 dependencies = [
  "amplify_derive",
 ]

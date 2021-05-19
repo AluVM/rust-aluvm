@@ -16,7 +16,7 @@ exclude = [".github", "test"]
 name = "alure"
 
 [dependencies]
-amplify = "3.6.2"
+amplify = "3.6.3"
 paste = "1"
 
 [features]

@@ -85,10 +85,10 @@ impl UpperHex for LibHash {
 #[cfg_attr(feature = "std", derive(Display), display("{pos:#06X}@{lib}"))]
 pub struct LibSite {
     /// Library hash
-    lib: LibHash,
+    pub lib: LibHash,
 
     /// Offset from the beginning of the code, in bytes
-    pos: u16,
+    pub pos: u16,
 }
 
 impl LibSite {
@@ -158,6 +158,20 @@ impl Default for Value {
 }
 
 impl Value {
+    /// Constructs value from slice of bytes.
+    ///
+    /// Panics if the length of the slice is greater than 1024 bytes.
+    pub fn with(slice: impl AsRef<[u8]>) -> Value {
+        let len = slice.as_ref().len();
+        let mut bytes = [0u8; 1024];
+        bytes[0..len].copy_from_slice(slice.as_ref());
+        Value {
+            len: len as u16,
+            bytes,
+        }
+    }
+
+    /// Constructs value from hex string
     #[cfg(feature = "std")]
     pub fn from_hex(s: &str) -> Result<Value, amplify::hex::Error> {
         use amplify::hex::FromHex;
@@ -175,6 +189,7 @@ impl Value {
         })
     }
 
+    /// Serializes value in hexadecimal format to a string
     #[cfg(feature = "std")]
     pub fn to_hex(&self) -> String {
         use std::fmt::Write;
