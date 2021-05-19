@@ -32,6 +32,7 @@ pub enum ReadError {}
 
 // TODO: Make it sealed
 pub trait Read {
+    fn is_end(&self) -> bool;
     fn peek_u8(&self) -> u8;
     fn read_bool(&mut self) -> bool;
     fn read_u2(&mut self) -> u2;
@@ -86,7 +87,7 @@ where
     fn extract(&mut self, bit_count: u3) -> u8 {
         let byte = self.bytecode.as_ref()[self.byte_pos as usize];
         assert!(
-            *self.bit_pos + *bit_count > 8,
+            *self.bit_pos + *bit_count <= 8,
             "extraction of bit crosses byte boundary"
         );
         let mut mask = 0x00u8;
@@ -96,6 +97,7 @@ where
             mask |= 0x01;
             cnt -= 1;
         }
+        mask <<= *self.bit_pos;
         let val = (byte & mask) >> *self.bit_pos;
         self.inc(bit_count);
         val
@@ -110,6 +112,10 @@ where
 }
 
 impl Read for Cursor<&[u8]> {
+    fn is_end(&self) -> bool {
+        self.byte_pos as usize >= self.bytecode.len()
+    }
+
     fn peek_u8(&self) -> u8 {
         assert_eq!(
             *self.bit_pos, 0,
@@ -201,6 +207,7 @@ impl Read for Cursor<&[u8]> {
         );
         let len = self.read_u16() as usize;
         let pos = self.byte_pos as usize;
+        self.byte_pos += len as u16;
         &self.bytecode[pos..pos + len]
     }
 
@@ -210,10 +217,11 @@ impl Read for Cursor<&[u8]> {
             "attempt to extract value at a non-byte aligned position"
         );
         let len = match reg.bits() {
-            Some(bits) => bits % 8,
+            Some(bits) => bits / 8,
             None => self.read_u16(),
         } as usize;
         let pos = self.byte_pos as usize;
+        self.byte_pos += len as u16;
         Value::with(&self.bytecode[pos..pos + len])
     }
 }
@@ -378,8 +386,12 @@ where
         let mut buf =
             Vec::<Instr<Extension>>::with_capacity(bytecode.as_ref().len());
         let mut reader = Cursor::with(bytecode.as_ref());
-        while let Ok(instr) = Instr::read(&mut reader) {
-            buf.push(instr);
+        while !reader.is_end() {
+            match Instr::read(&mut reader) {
+                Ok(instr) => buf.push(instr),
+                // TODO: Handle errors
+                Err(err) => panic!(err),
+            }
         }
         Self(buf)
     }
@@ -519,8 +531,9 @@ where
             instr if Extension::instr_range().contains(&instr) => {
                 Instr::ExtensionCodes(Extension::read(reader)?)
             }
+            // TODO: Report unsupported instructions
             INSTR_NOP => Instr::Nop,
-            _ => unreachable!(),
+            x => unreachable!("unable to classify instruction {:#010b}", x),
         })
     }
 }
@@ -585,7 +598,10 @@ impl Bytecode for ControlFlowOp {
                 reader.read_bytes32().into(),
             )),
             INSTR_RET => Self::Ret,
-            _ => unreachable!(),
+            x => unreachable!(
+                "instruction {:#010b} classified as control flow operation",
+                x
+            ),
         })
     }
 }
@@ -598,12 +614,12 @@ impl Bytecode for PutOp {
             | PutOp::ClA(_, _)
             | PutOp::ClR(_, _) => 2,
             PutOp::PutA(reg, _, Value { len, .. })
-            | PutOp::PutIfA(reg, _, Value { len, .. }) => 4u16.saturating_add(
-                reg.bits().map(|bits| bits / 8).unwrap_or(len + 2),
+            | PutOp::PutIfA(reg, _, Value { len, .. }) => 2u16.saturating_add(
+                reg.bits().map(|bits| bits / 8).unwrap_or(*len),
             ),
             PutOp::PutR(reg, _, Value { len, .. })
-            | PutOp::PutIfR(reg, _, Value { len, .. }) => 4u16.saturating_add(
-                reg.bits().map(|bits| bits / 8).unwrap_or(len + 2),
+            | PutOp::PutIfR(reg, _, Value { len, .. }) => 2u16.saturating_add(
+                reg.bits().map(|bits| bits / 8).unwrap_or(*len),
             ),
         }
     }
@@ -656,6 +672,12 @@ impl Bytecode for PutOp {
             INSTR_ZEROR => {
                 Self::ZeroR(reader.read_u3().into(), reader.read_u5().into())
             }
+            INSTR_CLA => {
+                Self::ClA(reader.read_u3().into(), reader.read_u5().into())
+            }
+            INSTR_CLR => {
+                Self::ClR(reader.read_u3().into(), reader.read_u5().into())
+            }
             INSTR_PUTA => {
                 let reg = reader.read_u3().into();
                 Self::PutA(
@@ -688,7 +710,10 @@ impl Bytecode for PutOp {
                     reader.read_value(Reg::R(reg)),
                 )
             }
-            _ => unreachable!(),
+            x => unreachable!(
+                "instruction {:#010b} classified as put operation",
+                x
+            ),
         })
     }
 }
@@ -810,7 +835,10 @@ impl Bytecode for MoveOp {
                 reader.read_u3().into(),
                 reader.read_u2().into(),
             ),
-            _ => unreachable!(),
+            x => unreachable!(
+                "instruction {:#010b} classified as move operation",
+                x
+            ),
         })
     }
 }
@@ -903,7 +931,10 @@ impl Bytecode for CmpOp {
             }
             INSTR_ST2A => Self::St2A,
             INSTR_A2ST => Self::A2St,
-            _ => unreachable!(),
+            x => unreachable!(
+                "instruction {:#010b} classified as comparison operation",
+                x
+            ),
         })
     }
 }
@@ -1021,7 +1052,13 @@ impl Bytecode for ArithmeticOp {
                 reader.read_u3().into(),
                 reader.read_u5().into(),
             ),
-            _ => unreachable!(),
+            INSTR_ABS => {
+                Self::Abs(reader.read_u3().into(), reader.read_u5().into())
+            }
+            x => unreachable!(
+                "instruction {:#010b} classified as arithmetic operation",
+                x
+            ),
         })
     }
 }
@@ -1125,7 +1162,10 @@ impl Bytecode for BitwiseOp {
             INSTR_NOT => {
                 Self::Not(reader.read_u3().into(), reader.read_u5().into())
             }
-            _ => unreachable!(),
+            x => unreachable!(
+                "instruction {:#010b} classified as bitwise operation",
+                x
+            ),
         })
     }
 }

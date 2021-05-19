@@ -22,7 +22,7 @@ use alure::instr::{
     Nop, NumType, PutOp,
 };
 use alure::registers::{Reg, Reg32, RegA, RegBlock, RegR};
-use alure::Value;
+use alure::{Lib, Value};
 use amplify::hex::ToHex;
 use amplify::num::u4;
 use std::convert::TryFrom;
@@ -35,7 +35,7 @@ fn main() {
         zero    a8[1]                           ;
         cl      r1024[5]                        ;
         put     a16[8] <- 378                   ;
-        putif   r1024[5] <- 0xaf67937b5498dc    ;
+        putif   r128[5] <- 0xaf67937b5498dc     ;
         swp     a8[1], a16[2]                   ;
         swp     r256[8], r256[7]                ;
         swp     a256[1], r256[7]                ;
@@ -78,5 +78,8 @@ fn main() {
 
     println!("\n\nentry:\n{}\n", code);
 
-    println!("Serialization:\n{}\n", code.encode().to_hex());
+    let bytecode = code.encode();
+    println!("Serialization:\n{}\n", bytecode.to_hex());
+    let lib = Lib::<Nop>::decode(bytecode);
+    println!("Deerialization:\n{}\n", lib);
 }
