@@ -18,7 +18,7 @@ use crate::instr::{
     DigestOp, IncDec, MoveOp, Nop, PutOp, SecpOp,
 };
 use crate::registers::Reg;
-use crate::{Blob, Instr, Value};
+use crate::{Blob, Instr, LibHash, LibSite, Value};
 #[cfg(feature = "std")]
 use crate::{InstructionSet, Lib};
 use std::ops::RangeInclusive;
@@ -562,15 +562,31 @@ impl Bytecode for ControlFlowOp {
             | ControlFlowOp::Jif(pos)
             | ControlFlowOp::Routine(pos) => writer.write_u16(*pos),
             ControlFlowOp::Call(lib) | ControlFlowOp::Exec(lib) => {
-                writer.write_bytes32(lib.lib.to_inner());
                 writer.write_u16(lib.pos);
+                writer.write_bytes32(lib.lib.to_inner());
             }
             ControlFlowOp::Ret => {}
         }
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
-        todo!()
+        Ok(match reader.read_u8() {
+            INSTR_FAIL => Self::Fail,
+            INSTR_SUCC => Self::Succ,
+            INSTR_JMP => Self::Jmp(reader.read_u16()),
+            INSTR_JIF => Self::Jif(reader.read_u16()),
+            INSTR_ROUTINE => Self::Routine(reader.read_u16()),
+            INSTR_CALL => Self::Call(LibSite::with(
+                reader.read_u16(),
+                reader.read_bytes32().into(),
+            )),
+            INSTR_EXEC => Self::Exec(LibSite::with(
+                reader.read_u16(),
+                reader.read_bytes32().into(),
+            )),
+            INSTR_RET => Self::Ret,
+            _ => unreachable!(),
+        })
     }
 }
 
@@ -633,7 +649,47 @@ impl Bytecode for PutOp {
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
-        todo!()
+        Ok(match reader.read_u8() {
+            INSTR_ZEROA => {
+                Self::ZeroA(reader.read_u3().into(), reader.read_u5().into())
+            }
+            INSTR_ZEROR => {
+                Self::ZeroR(reader.read_u3().into(), reader.read_u5().into())
+            }
+            INSTR_PUTA => {
+                let reg = reader.read_u3().into();
+                Self::PutA(
+                    reg,
+                    reader.read_u5().into(),
+                    reader.read_value(Reg::A(reg)),
+                )
+            }
+            INSTR_PUTR => {
+                let reg = reader.read_u3().into();
+                Self::PutR(
+                    reg,
+                    reader.read_u5().into(),
+                    reader.read_value(Reg::R(reg)),
+                )
+            }
+            INSTR_PUTIFA => {
+                let reg = reader.read_u3().into();
+                Self::PutIfA(
+                    reg,
+                    reader.read_u5().into(),
+                    reader.read_value(Reg::A(reg)),
+                )
+            }
+            INSTR_PUTIFR => {
+                let reg = reader.read_u3().into();
+                Self::PutIfR(
+                    reg,
+                    reader.read_u5().into(),
+                    reader.read_value(Reg::R(reg)),
+                )
+            }
+            _ => unreachable!(),
+        })
     }
 }
 
@@ -706,7 +762,56 @@ impl Bytecode for MoveOp {
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
-        todo!()
+        Ok(match reader.read_u8() {
+            INSTR_SWPA => Self::SwpA(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_SWPR => Self::SwpR(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_SWPAR => Self::SwpAR(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_MOVA => Self::MovA(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_MOVR => Self::MovR(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_MOVAR => Self::MovAR(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_MOVRA => Self::MovRA(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_AMOV => Self::AMov(
+                reader.read_u3().into(),
+                reader.read_u3().into(),
+                reader.read_u2().into(),
+            ),
+            _ => unreachable!(),
+        })
     }
 }
 
@@ -765,7 +870,41 @@ impl Bytecode for CmpOp {
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
-        todo!()
+        Ok(match reader.read_u8() {
+            INSTR_GT => Self::Gt(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_LT => Self::Lt(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_EQA => Self::EqA(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_EQR => Self::EqR(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+            ),
+            INSTR_LEN => {
+                Self::Len(reader.read_u3().into(), reader.read_u5().into())
+            }
+            INSTR_CNT => {
+                Self::Cnt(reader.read_u3().into(), reader.read_u5().into())
+            }
+            INSTR_ST2A => Self::St2A,
+            INSTR_A2ST => Self::A2St,
+            _ => unreachable!(),
+        })
     }
 }
 
@@ -940,7 +1079,54 @@ impl Bytecode for BitwiseOp {
     }
 
     fn read(reader: &mut impl Read) -> Result<Self, ReadError> {
-        todo!()
+        Ok(match reader.read_u8() {
+            INSTR_AND => Self::And(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+            ),
+            INSTR_OR => Self::Or(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+            ),
+            INSTR_XOR => Self::Xor(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+            ),
+            INSTR_SHL => Self::Shl(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+            ),
+            INSTR_SHR => Self::Shr(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+            ),
+            INSTR_SCL => Self::Scl(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+            ),
+            INSTR_SCR => Self::Scr(
+                reader.read_u3().into(),
+                reader.read_u5().into(),
+                reader.read_u5().into(),
+                reader.read_u3().into(),
+            ),
+            INSTR_NOT => {
+                Self::Not(reader.read_u3().into(), reader.read_u5().into())
+            }
+            _ => unreachable!(),
+        })
     }
 }
 

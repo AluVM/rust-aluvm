@@ -92,7 +92,9 @@ pub struct LibSite {
 }
 
 impl LibSite {
-    fn with(pos: u16, lib: LibHash) -> LibSite {
+    /// Constricts library site reference from a given position and library hash
+    /// value
+    pub fn with(pos: u16, lib: LibHash) -> LibSite {
         LibSite { lib, pos }
     }
 }
