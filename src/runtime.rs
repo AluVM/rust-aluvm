@@ -10,7 +10,7 @@
 
 use std::collections::HashMap;
 
-use crate::instr::Nop;
+use crate::instr::NOp;
 use crate::registers::Registers;
 use crate::{InstructionSet, Lib, LibHash, LibSite};
 
@@ -24,7 +24,7 @@ pub struct NoLibraryError(LibHash);
 
 /// AluVM runtime execution environment
 #[derive(Getters, Debug, Default)]
-pub struct Runtime<E = Nop>
+pub struct Runtime<E = NOp>
 where
     E: InstructionSet,
 {

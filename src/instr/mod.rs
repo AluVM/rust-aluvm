@@ -66,8 +66,10 @@ pub trait InstructionSet: Bytecode + Display {
 /// Default instruction extension which treats any operation as NOP
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display), display("nop"))]
-pub enum Nop {}
-impl InstructionSet for Nop {
+pub enum NOp {
+    NOp,
+}
+impl InstructionSet for NOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         ExecStep::Next
     }
@@ -77,7 +79,7 @@ impl InstructionSet for Nop {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display), display(inner))]
 #[non_exhaustive]
-pub enum Instr<Extension = Nop>
+pub enum Instr<Extension = NOp>
 where
     Extension: InstructionSet,
 {
@@ -946,13 +948,24 @@ pub enum BytesOp {
         /** `s` register with matching fragment */ u8,
     ),
 
-    /// Extract byte string slice into an arithmetic register
-    #[cfg_attr(feature = "std", display("extr\ts16[{0}],{1},a{2}{3}"))]
-    ExtrA(/** `s` register index */ u8, /** offset */ u16, RegA, Reg32),
+    /// Extract byte string slice into `a` or `r` register
+    #[cfg_attr(feature = "std", display("extr\ts16{0},a16{1},{2}{3}"))]
+    Extr(
+        /** `s` register index */ Reg32,
+        /** `a16` register with offset */ Reg32,
+        RegBlock,
+        Reg32,
+    ),
 
-    /// Extract byte string slice into a non-arithmetic register
-    #[cfg_attr(feature = "std", display("extr\ts16[{0}],{1},r{2}{3}"))]
-    ExtrR(/** `s` register index */ u8, /** offset */ u16, RegR, Reg32),
+    /// Inject a `a` or `r` value at a given position to string register,
+    /// replacing value of the corresponding bytes.
+    #[cfg_attr(feature = "std", display("extr\ts16{0},a16{1},{2}{3}"))]
+    Inj(
+        /** `s` register index */ Reg32,
+        /** `a16` register with offset */ Reg32,
+        RegBlock,
+        Reg32,
+    ),
 
     /// Join bytestrings from two registers
     #[cfg_attr(feature = "std", display("join\ts16[{0}],s16[{1}],s16[{2}]"))]
@@ -1015,21 +1028,24 @@ impl InstructionSet for BytesOp {
 #[non_exhaustive]
 pub enum DigestOp {
     /// Computes RIPEMD160 hash value
-    #[cfg_attr(feature = "std", display("ripemd\ts16{0},r160{1},{2}"))]
+    #[cfg_attr(feature = "std", display("ripemd\ts16{0},r160{1}"))]
     Ripemd(
         /** Index of string register */ Reg32,
-        /** Which of `a16` registers contain start offset */ Reg32,
-        /** Index of `r160` register to save result to */ Reg32,
-        /** Clear string register after operation */ bool,
+        /** Index of `r160` register to save result to */ Reg8,
     ),
 
     /// Computes SHA256 hash value
-    #[cfg_attr(feature = "std", display("sha2\ts16{0},r256{1},{2}"))]
-    Sha2(
+    #[cfg_attr(feature = "std", display("sha256\ts16{0},r256{1}"))]
+    Sha256(
         /** Index of string register */ Reg32,
-        /** Which of `a16` registers contain start offset */ Reg32,
-        /** Index of `r256` register to save result to */ Reg32,
-        /** Clear string register after operation */ bool,
+        /** Index of `r256` register to save result to */ Reg8,
+    ),
+
+    /// Computes SHA256 hash value
+    #[cfg_attr(feature = "std", display("sha512\ts16{0},r512{1}"))]
+    Sha512(
+        /** Index of string register */ Reg32,
+        /** Index of `r512` register to save result to */ Reg8,
     ),
 }
 

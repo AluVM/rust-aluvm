@@ -20,7 +20,7 @@ extern crate paste;
 use alure::instr::encoding::disassemble;
 use alure::instr::{
     ArithmeticOp, Arithmetics, CmpOp, ControlFlowOp, IncDec, Instr, MoveOp,
-    Nop, NumType, PutOp,
+    NOp, NumType, PutOp,
 };
 use alure::registers::{Reg, Reg32, RegA, RegBlock, RegR};
 use alure::{Lib, Runtime, Value};
@@ -77,7 +77,7 @@ fn main() {
         jmp     0                               ;
     };
 
-    let lib = Lib::<Nop>::with(code).unwrap();
+    let lib = Lib::<NOp>::with(code).unwrap();
     println!("Serialization:\n{}\n", lib.bytecode().to_hex());
     let asm: Vec<Instr> = disassemble(lib.bytecode()).unwrap();
     println!("Assembly:");

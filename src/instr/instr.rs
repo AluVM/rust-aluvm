@@ -81,8 +81,8 @@ pub const INSTR_CMP: u8 = 0b00_110_110;
 pub const INSTR_COMM: u8 = 0b00_110_111;
 
 pub const INSTR_FIND: u8 = 0b00_111_000;
-pub const INSTR_EXTRA: u8 = 0b00_111_001;
-pub const INSTR_EXTRR: u8 = 0b00_111_010;
+pub const INSTR_EXTR: u8 = 0b00_111_001;
+pub const INSTR_INJ: u8 = 0b00_111_010;
 pub const INSTR_JOIN: u8 = 0b00_111_011;
 pub const INSTR_SPLIT: u8 = 0b00_111_100;
 pub const INSTR_INS: u8 = 0b00_111_101;
@@ -91,8 +91,8 @@ pub const INSTR_TRANSL: u8 = 0b00_111_111;
 
 // Cryptographic hashing functions
 pub const INSTR_RIPEMD: u8 = 0b01_000_000;
-pub const INSTR_SHA2: u8 = 0b01_000_001;
-pub const INSTR_SHA3: u8 = 0b01_000_010;
+pub const INSTR_SHA256: u8 = 0b01_000_001;
+pub const INSTR_SHA512: u8 = 0b01_000_010;
 pub const INSTR_HASH1: u8 = 0b01_000_011; // Reserved for future use
 pub const INSTR_HASH2: u8 = 0b01_000_100; // Reserved for future use
 pub const INSTR_HASH3: u8 = 0b01_000_101; // Reserved for future use

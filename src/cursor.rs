@@ -156,10 +156,6 @@ where
             return Err(CursorError::Eof);
         }
         let byte = self.bytecode.as_ref()[self.byte_pos as usize];
-        assert!(
-            *self.bit_pos + *bit_count <= 8,
-            "extraction of bit crosses byte boundary"
-        );
         let mut mask = 0x00u8;
         let mut cnt = *bit_count;
         while cnt > 0 {
@@ -173,10 +169,6 @@ where
     }
 
     fn inc_bits(&mut self, bit_count: u3) -> Result<(), CursorError> {
-        assert!(
-            *self.bit_pos + *bit_count <= 8,
-            "an attempt to access bits across byte boundary"
-        );
         if self.eof {
             return Err(CursorError::Eof);
         }
@@ -309,7 +301,7 @@ impl Read for Cursor<&[u8]> {
         }
         let len = self.read_u16()? as usize;
         let pos = self.byte_pos as usize;
-        self.inc_bytes(len as u16)
+        self.inc_bytes(2u16 + len as u16)
             .map(|_| &self.bytecode[pos..pos + len])
     }
 
@@ -399,10 +391,14 @@ impl Write for Cursor<&mut [u8]> {
         // allocation time, so if we panic here this means we have a bug in
         // out allocation code and has to kill the process and report this issue
         let len = bytes.as_ref().len();
+        if len >= u16::MAX as usize {
+            return Err(CursorError::OutOfBoundaries(len));
+        }
+        self.write_u16(len as u16);
         let from = self.byte_pos as usize;
         let to = from + len;
         self.bytecode[from..to].copy_from_slice(bytes.as_ref());
-        self.inc_bytes(len as u16)
+        self.inc_bytes(2u16 + len as u16)
     }
 
     fn write_value(

@@ -18,7 +18,7 @@ use bitcoin_hashes::Hash;
 
 use crate::cursor::Cursor;
 use crate::instr::encoding::{compile, EncodeError};
-use crate::instr::{Bytecode, ExecStep, Nop};
+use crate::instr::{Bytecode, ExecStep, NOp};
 use crate::registers::Registers;
 use crate::{Instr, InstructionSet};
 use std::marker::PhantomData;
@@ -43,7 +43,7 @@ sha256t_hash_newtype!(
     derive(Debug, Display),
     display("{bytecode}", alt = "{bytecode:#}")
 )]
-pub struct Lib<E = Nop>
+pub struct Lib<E = NOp>
 where
     E: InstructionSet,
 {
@@ -162,6 +162,21 @@ impl Default for Blob {
 impl AsRef<[u8]> for Blob {
     fn as_ref(&self) -> &[u8] {
         &self.bytes[..self.len as usize]
+    }
+}
+
+impl Blob {
+    /// Constructs blob from slice of bytes.
+    ///
+    /// Panics if the length of the slice is greater than `u16::MAX` bytes.
+    pub fn with(slice: impl AsRef<[u8]>) -> Blob {
+        let len = slice.as_ref().len();
+        let mut bytes = [0u8; u16::MAX as usize];
+        bytes[0..len].copy_from_slice(slice.as_ref());
+        Blob {
+            len: len as u16,
+            bytes,
+        }
     }
 }
 

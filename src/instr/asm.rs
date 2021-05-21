@@ -12,7 +12,7 @@
 #[macro_export]
 macro_rules! aluasm {
     ($( $tt:tt )+) => { {
-        let mut code: Vec<::alure::Instr<::alure::instr::Nop>> = vec![];
+        let mut code: Vec<::alure::Instr<::alure::instr::NOp>> = vec![];
         aluasm_inner! { code => $( $tt )+ };
         code
     } }
