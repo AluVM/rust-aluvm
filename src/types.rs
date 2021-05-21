@@ -258,7 +258,7 @@ impl Value {
     pub fn to_hex(&self) -> String {
         use std::fmt::Write;
         let mut ret = String::with_capacity(2usize * self.len as usize + 2);
-        write!(ret, "0x");
+        write!(ret, "0x").expect("writing to string");
         for ch in &self.bytes {
             write!(ret, "{:02x}", ch).expect("writing to string");
         }

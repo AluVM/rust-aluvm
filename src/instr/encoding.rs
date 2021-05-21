@@ -111,7 +111,7 @@ where
         W: Write,
         EncodeError: From<<W as Write>::Error>,
     {
-        writer.write_u8(self.instr_byte());
+        writer.write_u8(self.instr_byte())?;
         self.write_args(writer)
     }
 

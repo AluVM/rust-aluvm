@@ -11,12 +11,50 @@
 use amplify::num::{u1024, u512};
 
 use crate::instr::{
-    ArithmeticOp, Arithmetics, BitwiseOp, BytesOp, ControlFlowOp, Curve25519Op,
-    DigestOp, ExecStep, MoveOp, NumType, PutOp, SecpOp,
+    ArithmeticOp, Arithmetics, BitwiseOp, Bytecode, BytesOp, CmpOp,
+    ControlFlowOp, Curve25519Op, DigestOp, MoveOp, NOp, NumType, PutOp, SecpOp,
 };
 use crate::registers::{Reg, Reg32, RegA, Registers};
 use crate::types::Value;
-use crate::{Instr, InstructionSet, LibSite};
+use crate::{Instr, LibSite};
+
+/// Turing machine movement after instruction execution
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum ExecStep {
+    /// Stop program execution
+    Stop,
+
+    /// Move to the next instruction
+    Next,
+
+    /// Jump to the offset from the origin
+    Jump(u16),
+
+    /// Jump to another code fragment
+    Call(LibSite),
+}
+
+#[cfg(not(feature = "std"))]
+/// Trait for instructions
+pub trait Instruction: Bytecode {
+    /// Executes given instruction taking all registers as input and output.
+    /// The method is provided with the current code position which may be
+    /// used by the instruction for constructing call stack.
+    ///
+    /// Returns whether further execution should be stopped.
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep;
+}
+
+#[cfg(feature = "std")]
+/// Trait for instructions
+pub trait InstructionSet: Bytecode + std::fmt::Display {
+    /// Executes given instruction taking all registers as input and output.
+    /// The method is provided with the current code position which may be
+    /// used by the instruction for constructing call stack.
+    ///
+    /// Returns whether further execution should be stopped.
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep;
+}
 
 impl<Extension> InstructionSet for Instr<Extension>
 where
@@ -160,6 +198,13 @@ impl InstructionSet for MoveOp {
                 regs.set(Reg::A(dreg), didx, regs.get(Reg::R(sreg), sidx));
             }
         }
+        ExecStep::Next
+    }
+}
+
+impl InstructionSet for CmpOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        // TODO: Implement comparison operations
         ExecStep::Next
     }
 }
@@ -333,5 +378,11 @@ impl InstructionSet for SecpOp {
 impl InstructionSet for Curve25519Op {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         todo!()
+    }
+}
+
+impl InstructionSet for NOp {
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        ExecStep::Next
     }
 }

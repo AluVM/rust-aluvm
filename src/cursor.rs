@@ -394,7 +394,7 @@ impl Write for Cursor<&mut [u8]> {
         if len >= u16::MAX as usize {
             return Err(CursorError::OutOfBoundaries(len));
         }
-        self.write_u16(len as u16);
+        self.write_u16(len as u16)?;
         let from = self.byte_pos as usize;
         let to = from + len;
         self.bytecode[from..to].copy_from_slice(bytes.as_ref());
@@ -409,7 +409,7 @@ impl Write for Cursor<&mut [u8]> {
         let len = match reg.bits() {
             Some(bits) => bits / 8,
             None => {
-                self.write_u16(value.len);
+                self.write_u16(value.len)?;
                 value.len
             }
         };
