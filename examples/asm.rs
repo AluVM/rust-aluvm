@@ -85,7 +85,7 @@ fn main() {
         println!("\t\t{}", instr);
     }
 
-    print!("Executing the program ... ");
+    print!("\nExecuting the program ... ");
     let mut runtime = Runtime::with(lib);
     match runtime.main() {
         Ok(true) => println!("success"),

@@ -9,6 +9,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use amplify::num::{u256, u3, u4, u5, u512};
+use std::collections::BTreeMap;
 
 use crate::{LibSite, Value};
 
@@ -525,7 +526,7 @@ pub enum RegBlock {
     R,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct Registers {
     /// Arbitrary-precision arithmetics registers
     pub(crate) ap: [Option<[u8; 1024]>; 32],
@@ -550,7 +551,7 @@ pub struct Registers {
     pub(crate) r8192: [Option<[u8; 1024]>; 32],
 
     /// String and bytestring registers
-    pub(crate) s16: [Option<(u16, [u8; u16::MAX as usize])>; u8::MAX as usize],
+    pub(crate) s16: BTreeMap<u8, Vec<u8>>,
 
     /// Control flow register which stores result of equality and other types
     /// of boolean checks. Initialized with `true`
@@ -562,7 +563,7 @@ pub struct Registers {
 
     /// Call stack. Maximal size is `u16::MAX` (limited by `cy0` mechanics and
     /// `cp0`)
-    cs0: [LibSite; u16::MAX as usize],
+    cs0: Box<[LibSite; u16::MAX as usize]>,
 
     /// Defines "top" of the call stack
     cp0: u16,
@@ -592,8 +593,8 @@ impl Default for Registers {
 
             st0: true,
             cy0: 0,
-            cs0: [LibSite::default(); u16::MAX as usize],
-            s16: [None; u8::MAX as usize],
+            cs0: Box::new([LibSite::default(); u16::MAX as usize]),
+            s16: Default::default(),
             cp0: 0,
         }
     }

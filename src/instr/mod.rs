@@ -452,7 +452,13 @@ impl InstructionSet for MoveOp {
                 regs.set(Reg::R(reg2), index2, val1);
             }
             MoveOp::AMov(reg1, reg2, ty) => {
-                todo!("Array move operation")
+                match ty {
+                    NumType::Unsigned => {}
+                    NumType::Signed => {}
+                    NumType::Float23 => {}
+                    NumType::Float52 => {}
+                }
+                // TODO: array move operation
             }
             MoveOp::MovA(sreg, sidx, dreg, didx) => {
                 regs.set(Reg::A(dreg), didx, regs.get(Reg::A(sreg), sidx));
@@ -522,7 +528,8 @@ pub enum CmpOp {
 
 impl InstructionSet for CmpOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        todo!()
+        // TODO: Implement comparison operations
+        ExecStep::Next
     }
 }
 

@@ -52,6 +52,7 @@ where
 
     pub fn with(lib: Lib<E>) -> Runtime<E> {
         let mut runtime = Runtime::new();
+        runtime.entrypoint = LibSite::with(0, lib.lib_hash());
         runtime.add_lib(lib);
         runtime
     }

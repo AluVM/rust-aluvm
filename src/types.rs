@@ -99,10 +99,8 @@ where
         cursor.seek(entrypoint);
 
         while !cursor.is_eof() {
-            match Instr::<E>::read(&mut cursor)
-                .ok()?
-                .exec(registers, LibSite::with(cursor.pos(), lib_hash))
-            {
+            let instr = Instr::<E>::read(&mut cursor).ok()?;
+            match instr.exec(registers, LibSite::with(cursor.pos(), lib_hash)) {
                 ExecStep::Stop => return None,
                 ExecStep::Next => continue,
                 ExecStep::Jump(pos) => cursor.seek(pos),
