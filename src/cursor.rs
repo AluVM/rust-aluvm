@@ -141,8 +141,14 @@ where
         self.eof
     }
 
+    /// Returns current byte offset of the cursor. Does not accounts bits.
     pub fn pos(&self) -> u16 {
         self.byte_pos
+    }
+
+    /// Sets current cursor byte offset to the provided value
+    pub fn seek(&mut self, byte_pos: u16) {
+        self.byte_pos = byte_pos;
     }
 
     fn extract(&mut self, bit_count: u3) -> Result<u8, CursorError> {

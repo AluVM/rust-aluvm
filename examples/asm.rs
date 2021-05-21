@@ -23,7 +23,7 @@ use alure::instr::{
     Nop, NumType, PutOp,
 };
 use alure::registers::{Reg, Reg32, RegA, RegBlock, RegR};
-use alure::{Lib, Value};
+use alure::{Lib, Runtime, Value};
 use amplify::hex::ToHex;
 use amplify::num::u4;
 use std::convert::TryFrom;
@@ -77,11 +77,19 @@ fn main() {
         jmp     0                               ;
     };
 
-    let lib = Lib::with::<Nop, _>(code).unwrap();
+    let lib = Lib::<Nop>::with(code).unwrap();
     println!("Serialization:\n{}\n", lib.bytecode().to_hex());
     let asm: Vec<Instr> = disassemble(lib.bytecode()).unwrap();
     println!("Assembly:");
     for instr in asm {
         println!("\t\t{}", instr);
+    }
+
+    print!("Executing the program ... ");
+    let mut runtime = Runtime::with(lib);
+    match runtime.main() {
+        Ok(true) => println!("success"),
+        Ok(false) => println!("execution reported validation failure"),
+        Err(err) => eprintln!("{}", err),
     }
 }

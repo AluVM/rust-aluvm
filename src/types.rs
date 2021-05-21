@@ -18,8 +18,10 @@ use bitcoin_hashes::Hash;
 
 use crate::cursor::Cursor;
 use crate::instr::encoding::{compile, EncodeError};
-use crate::instr::Bytecode;
-use crate::InstructionSet;
+use crate::instr::{Bytecode, ExecStep, Nop};
+use crate::registers::Registers;
+use crate::{Instr, InstructionSet};
+use std::marker::PhantomData;
 
 const LIB_HASH_MIDSTATE: [u8; 32] = [
     156, 224, 228, 230, 124, 17, 108, 57, 56, 179, 202, 242, 195, 15, 80, 137,
@@ -41,21 +43,30 @@ sha256t_hash_newtype!(
     derive(Debug, Display),
     display("{bytecode}", alt = "{bytecode:#}")
 )]
-pub struct Lib {
+pub struct Lib<E = Nop>
+where
+    E: InstructionSet,
+{
     bytecode: Blob,
-    pub cursor: Cursor<[u8; u16::MAX as usize]>,
+    instruction_set: PhantomData<E>,
 }
 
-impl Lib {
-    pub fn with<E, I>(code: I) -> Result<Lib, EncodeError>
+impl<E> Lib<E>
+where
+    E: InstructionSet,
+{
+    /// Constructs library for the provided instructions by encoding them into
+    /// bytecode
+    pub fn with<I>(code: I) -> Result<Lib<E>, EncodeError>
     where
-        E: InstructionSet,
         I: IntoIterator,
         <I as IntoIterator>::Item: InstructionSet,
     {
         let bytecode = compile::<E, _>(code)?;
-        let cursor = Cursor::with(bytecode.bytes);
-        Ok(Lib { bytecode, cursor })
+        Ok(Lib {
+            bytecode,
+            instruction_set: PhantomData::<E>::default(),
+        })
     }
 
     /// Returns hash identifier [`LibHash`], representing the library in a
@@ -76,9 +87,37 @@ impl Lib {
     pub fn bytecode(&self) -> &[u8] {
         &self.bytecode.as_ref()
     }
+
+    /// Executes library code starting at entrypoint
+    pub fn run(
+        &self,
+        entrypoint: u16,
+        registers: &mut Registers,
+    ) -> Option<LibSite> {
+        let mut cursor = Cursor::with(&self.bytecode.bytes[..]);
+        let lib_hash = self.lib_hash();
+        cursor.seek(entrypoint);
+
+        while !cursor.is_eof() {
+            match Instr::<E>::read(&mut cursor)
+                .ok()?
+                .exec(registers, LibSite::with(cursor.pos(), lib_hash))
+            {
+                ExecStep::Stop => return None,
+                ExecStep::Next => continue,
+                ExecStep::Jump(pos) => cursor.seek(pos),
+                ExecStep::Call(site) => return Some(site),
+            }
+        }
+
+        return None;
+    }
 }
 
-impl AsRef<[u8]> for Lib {
+impl<E> AsRef<[u8]> for Lib<E>
+where
+    E: InstructionSet,
+{
     fn as_ref(&self) -> &[u8] {
         self.bytecode.as_ref()
     }
