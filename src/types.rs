@@ -16,7 +16,8 @@ use std::str::FromStr;
 use amplify::num::{u1024, u256, u512};
 use bitcoin_hashes::Hash;
 
-use crate::instr::encoding::{compile, Cursor, EncodeError};
+use crate::cursor::Cursor;
+use crate::instr::encoding::{compile, EncodeError};
 use crate::instr::Bytecode;
 use crate::InstructionSet;
 

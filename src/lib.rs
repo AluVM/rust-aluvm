@@ -15,6 +15,7 @@ extern crate amplify;
 #[macro_use]
 extern crate bitcoin_hashes;
 
+mod cursor;
 pub mod instr;
 pub mod registers;
 #[cfg(feature = "std")]
