@@ -9,74 +9,77 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 #[cfg(feature = "std")]
-use std::fmt::{self, Display, Formatter, LowerHex, UpperHex};
+use std::fmt::{self, Display, Formatter};
 #[cfg(feature = "std")]
 use std::str::FromStr;
 
 use amplify::num::{u1024, u256, u512};
+use bitcoin_hashes::Hash;
 
-use crate::instr::{Instr, InstructionSet};
+use crate::instr::encoding::{compile, Cursor, EncodeError};
+use crate::instr::Bytecode;
+use crate::InstructionSet;
 
-#[cfg(feature = "std")]
+const LIB_HASH_MIDSTATE: [u8; 32] = [
+    156, 224, 228, 230, 124, 17, 108, 57, 56, 179, 202, 242, 195, 15, 80, 137,
+    211, 243, 147, 108, 71, 99, 110, 96, 125, 179, 62, 234, 221, 198, 240, 201,
+];
+
+sha256t_hash_newtype!(
+    LibHash,
+    LibHashTag,
+    LIB_HASH_MIDSTATE,
+    64,
+    doc = "Library reference: a hash of the library code",
+    false
+);
+
 /// AluVM executable code library
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
-pub struct Lib<Extension>(pub Vec<Instr<Extension>>)
-where
-    Extension: InstructionSet;
+#[cfg_attr(
+    feature = "std",
+    derive(Debug, Display),
+    display("{bytecode}", alt = "{bytecode:#}")
+)]
+pub struct Lib {
+    bytecode: Blob,
+    pub cursor: Cursor<[u8; u16::MAX as usize]>,
+}
 
-#[cfg(feature = "std")]
-impl<Extension> Display for Lib<Extension>
-where
-    Extension: InstructionSet,
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        for instr in &self.0 {
-            write!(f, "\t\t{}\n", instr)?;
-        }
-        Ok(())
+impl Lib {
+    pub fn with<E, I>(code: I) -> Result<Lib, EncodeError>
+    where
+        E: InstructionSet,
+        I: IntoIterator,
+        <I as IntoIterator>::Item: InstructionSet,
+    {
+        let bytecode = compile::<E, _>(code)?;
+        let cursor = Cursor::with(bytecode.bytes);
+        Ok(Lib { bytecode, cursor })
+    }
+
+    /// Returns hash identifier [`LibHash`], representing the library in a
+    /// unique way.
+    ///
+    /// Lib hash is computed as SHA256 tagged hash of the serialized library
+    /// bytecode.
+    pub fn lib_hash(&self) -> LibHash {
+        LibHash::hash(&self.bytecode.bytes)
+    }
+
+    /// Calculates length of bytecode encoding in bytes
+    pub fn byte_count(&self) -> u16 {
+        self.bytecode.len
+    }
+
+    /// Returns bytecode reference
+    pub fn bytecode(&self) -> &[u8] {
+        &self.bytecode.as_ref()
     }
 }
 
-#[cfg(feature = "std")]
-impl<Extension> Lib<Extension> where Extension: InstructionSet {}
-
-/// Library reference: a hash of the library code
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
-#[cfg_attr(feature = "std", derive(Display), display(LowerHex))]
-#[cfg_attr(feature = "std", derive(Wrapper, From))]
-pub struct LibHash([u8; 32]);
-
-#[cfg(feature = "std")]
-impl LowerHex for LibHash {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify::hex::ToHex;
-        if f.alternate() {
-            write!(
-                f,
-                "{}..{}",
-                self.0[..4].to_hex(),
-                self.0[(self.0.len() - 4)..].to_hex()
-            )
-        } else {
-            f.write_str(&self.0.to_hex())
-        }
-    }
-}
-
-#[cfg(feature = "std")]
-impl UpperHex for LibHash {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify::hex::ToHex;
-        if f.alternate() {
-            write!(
-                f,
-                "{}..{}",
-                self.0[..4].to_hex().to_ascii_uppercase(),
-                self.0[(self.0.len() - 4)..].to_hex().to_ascii_uppercase()
-            )
-        } else {
-            f.write_str(&self.0.to_hex().to_ascii_uppercase())
-        }
+impl AsRef<[u8]> for Lib {
+    fn as_ref(&self) -> &[u8] {
+        self.bytecode.as_ref()
     }
 }
 
@@ -115,6 +118,12 @@ impl Default for Blob {
             len: 0,
             bytes: [0u8; u16::MAX as usize],
         }
+    }
+}
+
+impl AsRef<[u8]> for Blob {
+    fn as_ref(&self) -> &[u8] {
+        &self.bytes[..self.len as usize]
     }
 }
 

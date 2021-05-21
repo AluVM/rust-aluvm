@@ -17,6 +17,7 @@ extern crate alure;
 #[macro_use]
 extern crate paste;
 
+use alure::instr::encoding::disassemble;
 use alure::instr::{
     ArithmeticOp, Arithmetics, CmpOp, ControlFlowOp, IncDec, Instr, MoveOp,
     Nop, NumType, PutOp,
@@ -76,10 +77,11 @@ fn main() {
         jmp     0                               ;
     };
 
-    println!("\n\nentry:\n{}\n", code);
-
-    let bytecode = code.encode();
-    println!("Serialization:\n{}\n", bytecode.to_hex());
-    let lib = Lib::<Nop>::decode(bytecode);
-    println!("Deerialization:\n{}\n", lib);
+    let lib = Lib::with::<Nop, _>(code).unwrap();
+    println!("Serialization:\n{}\n", lib.bytecode().to_hex());
+    let asm: Vec<Instr> = disassemble(lib.bytecode()).unwrap();
+    println!("Assembly:");
+    for instr in asm {
+        println!("\t\t{}", instr);
+    }
 }

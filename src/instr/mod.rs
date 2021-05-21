@@ -11,7 +11,7 @@
 #[macro_use]
 mod asm;
 #[cfg(feature = "std")]
-mod encoding;
+pub mod encoding;
 mod instr;
 
 pub use encoding::Bytecode;
@@ -77,7 +77,7 @@ impl InstructionSet for Nop {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display), display(inner))]
 #[non_exhaustive]
-pub enum Instr<Extension>
+pub enum Instr<Extension = Nop>
 where
     Extension: InstructionSet,
 {

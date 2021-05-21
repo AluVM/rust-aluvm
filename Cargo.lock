@@ -7,6 +7,7 @@ name = "alure"
 version = "0.1.0"
 dependencies = [
  "amplify",
+ "bitcoin_hashes",
  "paste",
 ]
 
@@ -41,6 +42,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "bitcoin_hashes"
+version = "0.9.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e6d72ba9671cb0929b5620e1bc30cdf5e206ccb3dbaa8964d67f6efc1e16129"
 
 [[package]]
 name = "paste"

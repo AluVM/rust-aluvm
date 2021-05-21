@@ -14,7 +14,7 @@ macro_rules! aluasm {
     ($( $tt:tt )+) => { {
         let mut code: Vec<::alure::Instr<::alure::instr::Nop>> = vec![];
         aluasm_inner! { code => $( $tt )+ };
-        ::alure::Lib(code)
+        code
     } }
 }
 

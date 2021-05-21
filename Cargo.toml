@@ -18,6 +18,7 @@ name = "alure"
 [dependencies]
 amplify = "3.6.3"
 paste = "1"
+bitcoin_hashes = "0.9.6" # this is most well-maintained generic hash implementation library
 
 [features]
 default = []
