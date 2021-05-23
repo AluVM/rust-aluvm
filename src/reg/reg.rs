@@ -206,6 +206,119 @@ impl From<u5> for Reg32 {
     }
 }
 
+/// Shorter version of possible register indexes for `a` and `r` register sets
+/// covering initial 16 registers
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "std", derive(Display))]
+#[repr(u8)]
+pub enum Reg16 {
+    /// Register with index `[1]`
+    #[cfg_attr(feature = "std", display("[1]"))]
+    Reg1 = 0,
+
+    /// Register with index `[2]`
+    #[cfg_attr(feature = "std", display("[2]"))]
+    Reg2 = 1,
+
+    /// Register with index `[3]`
+    #[cfg_attr(feature = "std", display("[3]"))]
+    Reg3 = 2,
+
+    /// Register with index `[4]`
+    #[cfg_attr(feature = "std", display("[4]"))]
+    Reg4 = 3,
+
+    /// Register with index `[5]`
+    #[cfg_attr(feature = "std", display("[5]"))]
+    Reg5 = 4,
+
+    /// Register with index `[6]`
+    #[cfg_attr(feature = "std", display("[6]"))]
+    Reg6 = 5,
+
+    /// Register with index `[7]`
+    #[cfg_attr(feature = "std", display("[7]"))]
+    Reg7 = 6,
+
+    /// Register with index `[8]`
+    #[cfg_attr(feature = "std", display("[8]"))]
+    Reg8 = 7,
+
+    /// Register with index `[9]`
+    #[cfg_attr(feature = "std", display("[9]"))]
+    Reg9 = 8,
+
+    /// Register with index `[10]`
+    #[cfg_attr(feature = "std", display("[10]"))]
+    Reg10 = 9,
+
+    /// Register with index `[11]`
+    #[cfg_attr(feature = "std", display("[11]"))]
+    Reg11 = 10,
+
+    /// Register with index `[12]`
+    #[cfg_attr(feature = "std", display("[12]"))]
+    Reg12 = 11,
+
+    /// Register with index `[13]`
+    #[cfg_attr(feature = "std", display("[13]"))]
+    Reg13 = 12,
+
+    /// Register with index `[14]`
+    #[cfg_attr(feature = "std", display("[14]"))]
+    Reg14 = 13,
+
+    /// Register with index `[15]`
+    #[cfg_attr(feature = "std", display("[15]"))]
+    Reg15 = 14,
+
+    /// Register with index `[16]`
+    #[cfg_attr(feature = "std", display("[16]"))]
+    Reg16 = 15,
+}
+
+impl Default for Reg16 {
+    fn default() -> Self {
+        Reg16::Reg1
+    }
+}
+
+impl From<&Reg16> for u4 {
+    fn from(reg16: &Reg16) -> Self {
+        u4::with(*reg16 as u8)
+    }
+}
+
+impl From<Reg16> for u4 {
+    fn from(reg16: Reg16) -> Self {
+        u4::with(reg16 as u8)
+    }
+}
+
+impl From<u4> for Reg16 {
+    fn from(val: u4) -> Self {
+        match val {
+            v if v == Reg16::Reg1.into() => Reg16::Reg1,
+            v if v == Reg16::Reg2.into() => Reg16::Reg2,
+            v if v == Reg16::Reg3.into() => Reg16::Reg3,
+            v if v == Reg16::Reg4.into() => Reg16::Reg4,
+            v if v == Reg16::Reg5.into() => Reg16::Reg5,
+            v if v == Reg16::Reg6.into() => Reg16::Reg6,
+            v if v == Reg16::Reg7.into() => Reg16::Reg7,
+            v if v == Reg16::Reg8.into() => Reg16::Reg8,
+            v if v == Reg16::Reg9.into() => Reg16::Reg9,
+            v if v == Reg16::Reg10.into() => Reg16::Reg10,
+            v if v == Reg16::Reg11.into() => Reg16::Reg11,
+            v if v == Reg16::Reg12.into() => Reg16::Reg12,
+            v if v == Reg16::Reg13.into() => Reg16::Reg13,
+            v if v == Reg16::Reg14.into() => Reg16::Reg14,
+            v if v == Reg16::Reg15.into() => Reg16::Reg15,
+            v if v == Reg16::Reg16.into() => Reg16::Reg16,
+            _ => unreachable!(),
+        }
+    }
+}
+
 /// Short version of register indexes for `a` and `r` register sets covering
 /// initial 8 registers only
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]

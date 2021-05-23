@@ -22,7 +22,7 @@ use alure::instr::{
     ArithmeticOp, Arithmetics, CmpOp, ControlFlowOp, IncDec, Instr, MoveOp, NOp, NumType, PutOp,
 };
 use alure::{Lib, Runtime};
-use alure::{Reg, Reg32, RegA, RegBlock, RegR};
+use alure::{Reg, Reg16, Reg32, RegA, RegBlock, RegR};
 use amplify::hex::ToHex;
 use amplify::num::u4;
 use std::convert::TryFrom;
@@ -46,8 +46,10 @@ fn main() {
         amov:s  a256,a128                       ;
         amov:f  a256,a128                       ;
         amov:d  a256,a128                       ;
-        gt      a8[5],a64[9]                    ;
-        lt      a8[5],a64[9]                    ;
+        gt:u    a8[5],a64[9]                    ;
+        lt:s    a8[5],a64[9]                    ;
+        gt      r160[5],r256[9]                 ;
+        lt      r160[5],r256[9]                 ;
         eq      a8[5],a64[9]                    ;
         eq      r160[5],r160[9]                 ;
         len     a512[6]                         ;

@@ -12,7 +12,7 @@ use amplify::num::u4;
 
 use crate::instr::{Arithmetics, IncDec, NumType};
 use crate::reg::{Reg32, Reg8, RegA, RegBlock, RegR, Value};
-use crate::{Blob, InstructionSet, LibSite};
+use crate::{Blob, InstructionSet, LibSite, Reg16};
 
 /// Default instruction extension which treats any operation as NOP
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -220,33 +220,41 @@ pub enum MoveOp {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display))]
 pub enum CmpOp {
-    /// Compares value of two arithmetic (`A`) registers setting `st0` to
-    /// `true` if the first parameter is greater (and not equal) than the
-    /// second one
-    // #[value = 0b110] // 3 + 5 + 3 + 5 => 16 bits
-    #[cfg_attr(feature = "std", display("gt\t\t{0}{1},{2}{3}"))]
-    Gt(RegA, Reg32, RegA, Reg32),
+    /// Compares value of two registers setting `st0` to `true` if the first
+    /// parameter is greater (and not equal) than the second one. Ignores first
+    /// argument if `R` register is used.
+    #[cfg_attr(feature = "std", display("gt:{0}\t\t{1}{2},{1}{3}"))]
+    GtA(NumType, RegA, Reg32, Reg32),
 
-    /// Compares value of two non-arithmetic (`R`) registers setting `st0` to
-    /// `true` if the first parameter is less (and not equal) than the second
-    /// one
-    // #[value = 0b111]
+    /// Compares value of two registers setting `st0` to `true` if the first
+    /// parameter is greater (and not equal) than the second one. Treats both
+    /// values as unsigned integers
+    #[cfg_attr(feature = "std", display("gt\t\t{0}{1},{2}{3}"))]
+    GtR(RegR, Reg16, RegR, Reg32),
+
+    /// Compares value of two registers setting `st0` to `true` if the first
+    /// parameter is smaller (and not equal) than the second one. Ignores first
+    /// argument if `R` register is used.
+    #[cfg_attr(feature = "std", display("lt:{0}\t\t{1}{2},{1}{3}"))]
+    LtA(NumType, RegA, Reg32, Reg32),
+
+    /// Compares value of two registers setting `st0` to `true` if the first
+    /// parameter is smaller (and not equal) than the second one. Treats both
+    /// values as unsigned integers
     #[cfg_attr(feature = "std", display("lt\t\t{0}{1},{2}{3}"))]
-    Lt(RegA, Reg32, RegA, Reg32),
+    LtR(RegR, Reg16, RegR, Reg32),
 
     /// Checks equality of value in two arithmetic (`A`) registers putting
     /// result into `st0`
-    // #[value = 0b100]
     #[cfg_attr(feature = "std", display("eq\t\t{0}{1},{2}{3}"))]
     EqA(RegA, Reg32, RegA, Reg32),
 
     /// Checks equality of value in two non-arithmetic (`R`) registers putting
     /// result into `st0`
-    // #[value = 0b101]
     #[cfg_attr(feature = "std", display("eq\t\t{0}{1},{2}{3}"))]
     EqR(RegR, Reg32, RegR, Reg32),
 
-    /// Measures bit length of a value in one fo the registers putting result
+    /// Measures bit length of a value in one of the registers putting result
     /// to `a16[0]`
     #[cfg_attr(feature = "std", display("len\t\t{0}{1}"))]
     Len(RegA, Reg32),
@@ -433,10 +441,7 @@ pub enum BytesOp {
     ),
 
     /// Split bytestring at a given index into two registers
-    #[cfg_attr(
-        feature = "std",
-        display("split\ts16[{0}],{1},s16[{2}],s16[{3}]")
-    )]
+    #[cfg_attr(feature = "std", display("split\ts16[{0}],{1},s16[{2}],s16[{3}]"))]
     Split(
         /** Source */ u8,
         /** Offset */ u16,
@@ -523,10 +528,7 @@ pub enum SecpOp {
     ),
 
     /// Adds two elliptic curve points
-    #[cfg_attr(
-        feature = "std",
-        display("secpadd\tr512{0},r512{1},r512{2},{3}")
-    )]
+    #[cfg_attr(feature = "std", display("secpadd\tr512{0},r512{1},r512{2},{3}"))]
     Add(
         /** Source 1 */ Reg32,
         /** Source 2 */ Reg32,

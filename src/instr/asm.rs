@@ -95,9 +95,9 @@ macro_rules! instr {
                 Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
                 _reg_idx!($idx2),
             )),
-            (RegBlock::R, RegBlock::A) => panic!(
-                "Wrong order of registers in `swp` operation. Use A-register first"
-            ),
+            (RegBlock::R, RegBlock::A) => {
+                panic!("Wrong order of registers in `swp` operation. Use A-register first")
+            }
         }
     };
 
@@ -131,34 +131,150 @@ macro_rules! instr {
     };
 
     (amov:u $reg1:ident , $reg2:ident) => {
-        Instr::Move(MoveOp::AMov(_reg_ty!(Reg, $reg1), _reg_ty!(Reg, $reg2), NumType::Unsigned))
+        Instr::Move(MoveOp::AMov(
+            _reg_ty!(Reg, $reg1),
+            _reg_ty!(Reg, $reg2),
+            NumType::Unsigned,
+        ))
     };
     (amov:s $reg1:ident , $reg2:ident) => {
-        Instr::Move(MoveOp::AMov(_reg_ty!(Reg, $reg1), _reg_ty!(Reg, $reg2), NumType::Signed))
+        Instr::Move(MoveOp::AMov(
+            _reg_ty!(Reg, $reg1),
+            _reg_ty!(Reg, $reg2),
+            NumType::Signed,
+        ))
     };
     (amov:f $reg1:ident , $reg2:ident) => {
-        Instr::Move(MoveOp::AMov(_reg_ty!(Reg, $reg1), _reg_ty!(Reg, $reg2), NumType::Float23))
+        Instr::Move(MoveOp::AMov(
+            _reg_ty!(Reg, $reg1),
+            _reg_ty!(Reg, $reg2),
+            NumType::Float23,
+        ))
     };
     (amov:d $reg1:ident , $reg2:ident) => {
-        Instr::Move(MoveOp::AMov(_reg_ty!(Reg, $reg1), _reg_ty!(Reg, $reg2), NumType::Float52))
+        Instr::Move(MoveOp::AMov(
+            _reg_ty!(Reg, $reg1),
+            _reg_ty!(Reg, $reg2),
+            NumType::Float52,
+        ))
     };
 
-    (gt $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
-        Instr::Cmp(CmpOp::Gt(
-            _reg_ty!(Reg, $reg1),
-            _reg_idx!($idx1),
-            _reg_ty!(Reg, $reg2),
+    (gt $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`gt` operation may be applied only to the registers of the same family");
+        }
+        if _reg_block!($reg1) != RegBlock::R {
+            panic!("`gt` operation for arithmetic registers requires prefix specifying used arithmetics");
+        }
+        Instr::Cmp(CmpOp::GtR(
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx16!($idx1),
+            _reg_ty!(Reg, $reg2).into(),
             _reg_idx!($idx2),
         ))
-    };
-    (lt $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
-        Instr::Cmp(CmpOp::Gt(
-            _reg_ty!(Reg, $reg1),
+    }};
+    (gt:u $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`gt` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::GtA(
+            NumType::Unsigned,
+            _reg_ty!(Reg, $reg1).into(),
             _reg_idx!($idx1),
-            _reg_ty!(Reg, $reg2),
             _reg_idx!($idx2),
         ))
-    };
+    }};
+    (gt:s $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`gt` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::GtA(
+            NumType::Signed,
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (gt:f $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`gt` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::GtA(
+            NumType::Float23,
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (gt:d $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`lt` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::GtA(
+            NumType::Float52,
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (lt $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`gt` operation may be applied only to the registers of the same family");
+        }
+        if _reg_block!($reg1) != RegBlock::R {
+            panic!("`gt` operation for arithmetic registers requires prefix specifying used arithmetics");
+        }
+        Instr::Cmp(CmpOp::LtR(
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx16!($idx1),
+            _reg_ty!(Reg, $reg2).into(),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (lt:u $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`lt` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::LtA(
+            NumType::Unsigned,
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (lt:s $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`lt` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::LtA(
+            NumType::Signed,
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (lt:f $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`lt` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::LtA(
+            NumType::Float23,
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (lt:d $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`lt` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::LtA(
+            NumType::Float52,
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
     (eq $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
         match (_reg_block!($reg1), _reg_block!($reg2)) {
             (RegBlock::A, RegBlock::A) => Instr::Cmp(CmpOp::EqA(
@@ -173,9 +289,7 @@ macro_rules! instr {
                 Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
                 _reg_idx!($idx2),
             )),
-            _ => panic!(
-                "Wrong order of registers in `swp` operation. Use A-register first"
-            ),
+            _ => panic!("Wrong order of registers in `swp` operation. Use A-register first"),
         }
     };
     (len $reg:ident [ $idx:literal ]) => {
@@ -231,61 +345,58 @@ macro_rules! instr {
         ))
     };
     (add : $flag:ident $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
-        if _reg_block!($reg1) != RegBlock::A ||
-            _reg_block!($reg2) != RegBlock::A {
+        if _reg_block!($reg1) != RegBlock::A || _reg_block!($reg2) != RegBlock::A {
             panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
         } else {
             Instr::Arithmetic(ArithmeticOp::Add(
                 _arithmetic_flag!($flag),
                 _reg_ty!(Reg, $reg1),
                 _reg_idx!($idx1),
-                _reg_idx!($idx2)
+                _reg_idx!($idx2),
             ))
         }
     };
     (sub : $flag:ident $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
-        if _reg_block!($reg1) != RegBlock::A ||
-            _reg_block!($reg2) != RegBlock::A {
+        if _reg_block!($reg1) != RegBlock::A || _reg_block!($reg2) != RegBlock::A {
             panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
         } else {
             Instr::Arithmetic(ArithmeticOp::Sub(
                 _arithmetic_flag!($flag),
                 _reg_ty!(Reg, $reg1),
                 _reg_idx!($idx1),
-                _reg_idx!($idx2)
+                _reg_idx!($idx2),
             ))
         }
     };
     (mul : $flag:ident $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
-        if _reg_block!($reg1) != RegBlock::A ||
-            _reg_block!($reg2) != RegBlock::A {
+        if _reg_block!($reg1) != RegBlock::A || _reg_block!($reg2) != RegBlock::A {
             panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
         } else {
             Instr::Arithmetic(ArithmeticOp::Mul(
                 _arithmetic_flag!($flag),
                 _reg_ty!(Reg, $reg1),
                 _reg_idx!($idx1),
-                _reg_idx!($idx2)
+                _reg_idx!($idx2),
             ))
         }
     };
     (div : $flag:ident $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
-        if _reg_block!($reg1) != RegBlock::A ||
-            _reg_block!($reg2) != RegBlock::A {
+        if _reg_block!($reg1) != RegBlock::A || _reg_block!($reg2) != RegBlock::A {
             panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
         } else {
             Instr::Arithmetic(ArithmeticOp::Div(
                 _arithmetic_flag!($flag),
                 _reg_ty!(Reg, $reg1),
                 _reg_idx!($idx1),
-                _reg_idx!($idx2)
+                _reg_idx!($idx2),
             ))
         }
     };
     (mod $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ] , $reg3:ident [ $idx3:literal ]) => {
-        if _reg_block!($reg1) != RegBlock::A ||
-            _reg_block!($reg2) != RegBlock::A ||
-            _reg_block!($reg3) != RegBlock::A {
+        if _reg_block!($reg1) != RegBlock::A
+            || _reg_block!($reg2) != RegBlock::A
+            || _reg_block!($reg3) != RegBlock::A
+        {
             panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
         } else {
             Instr::Arithmetic(ArithmeticOp::Mod(
@@ -538,5 +649,13 @@ macro_rules! _reg_ty {
 macro_rules! _reg_idx {
     ($idx:literal) => {
         paste! { Reg32::[<Reg $idx>] }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_idx16 {
+    ($idx:literal) => {
+        paste! { Reg16::[<Reg $idx>] }
     };
 }
