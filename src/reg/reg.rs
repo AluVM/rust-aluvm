@@ -9,9 +9,10 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use amplify::num::{u256, u3, u4, u5, u512};
+use core::ops::Deref;
 use std::collections::BTreeMap;
 
-use crate::{reg::Value, LibSite};
+use crate::{reg::Value, LibSite, RegVal};
 
 /// All possible register indexes for `a` and `r` register sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -275,6 +276,12 @@ impl From<u3> for Reg8 {
             v if v == Reg8::Reg8.into() => Reg8::Reg8,
             _ => unreachable!(),
         }
+    }
+}
+
+impl From<Reg8> for Reg32 {
+    fn from(reg8: Reg8) -> Self {
+        u5::with(reg8 as u8).into()
     }
 }
 
@@ -641,9 +648,9 @@ impl Registers {
         }
     }
 
-    pub fn get(&self, reg: Reg, index: Reg32) -> Option<Value> {
-        let index = index as usize;
-        match reg {
+    pub fn get(&self, reg: impl Into<Reg>, index: impl Into<Reg32>) -> RegVal {
+        let index = index.into() as usize;
+        match reg.into() {
             Reg::A(a) => match a {
                 RegA::AP => self.ap[index].map(Value::from),
                 RegA::A8 => self.a8[index].map(Value::from),
@@ -666,11 +673,13 @@ impl Registers {
                 RegR::R8192 => self.r8192[index].map(Value::from),
             },
         }
+        .into()
     }
 
-    pub fn set(&mut self, reg: Reg, index: Reg32, value: Option<Value>) {
-        let index = index as usize;
-        match reg {
+    pub fn set(&mut self, reg: impl Into<Reg>, index: impl Into<Reg32>, value: impl Into<RegVal>) {
+        let index = index.into() as usize;
+        let value: Option<Value> = value.into().into();
+        match reg.into() {
             Reg::A(a) => match a {
                 RegA::AP => self.ap[index] = value.map(Value::into),
                 RegA::A8 => self.a8[index] = value.map(Value::into),
@@ -692,6 +701,82 @@ impl Registers {
                 RegR::R8192 => self.r8192[index] = value.map(Value::into),
             },
         }
+    }
+
+    pub fn set_if(&mut self, reg: impl Into<Reg>, index: impl Into<Reg32>, value: Value) {
+        let index = index.into();
+        let reg = reg.into();
+        if self.get(reg, index).deref().is_none() {
+            return;
+        }
+        let index = index as usize;
+        match reg {
+            Reg::A(a) => match a {
+                RegA::AP => self.ap[index] = Some(value.into()),
+                RegA::A8 => self.a8[index] = Some(value.into()),
+                RegA::A16 => self.a16[index] = Some(value.into()),
+                RegA::A32 => self.a32[index] = Some(value.into()),
+                RegA::A64 => self.a64[index] = Some(value.into()),
+                RegA::A128 => self.a128[index] = Some(value.into()),
+                RegA::A256 => self.a256[index] = Some(value.into()),
+                RegA::A512 => self.a512[index] = Some(value.into()),
+            },
+            Reg::R(r) => match r {
+                RegR::R128 => self.r128[index] = Some(value.into()),
+                RegR::R160 => self.r160[index] = Some(value.into()),
+                RegR::R256 => self.r256[index] = Some(value.into()),
+                RegR::R512 => self.r512[index] = Some(value.into()),
+                RegR::R1024 => self.r1024[index] = Some(value.into()),
+                RegR::R2048 => self.r2048[index] = Some(value.into()),
+                RegR::R4096 => self.r4096[index] = Some(value.into()),
+                RegR::R8192 => self.r8192[index] = Some(value.into()),
+            },
+        }
+    }
+
+    #[inline]
+    pub fn op(
+        &mut self,
+        reg: RegA,
+        src1: impl Into<Reg32>,
+        src2: impl Into<Reg32>,
+        dst: impl Into<Reg32>,
+        op: fn(RegVal, RegVal) -> RegVal,
+    ) {
+        self.set(reg, dst, op(self.get(reg, src1), self.get(reg, src2)))
+    }
+
+    #[inline]
+    pub fn op1(
+        &mut self,
+        reg: RegA,
+        index: impl Into<Reg32>,
+        ap: bool,
+        dst: impl Into<Reg32>,
+        op: impl Fn(RegVal) -> RegVal,
+    ) {
+        self.set(
+            if ap { RegA::AP } else { reg },
+            dst,
+            op(self.get(reg, index)),
+        )
+    }
+
+    #[inline]
+    pub fn op2(
+        &mut self,
+        reg: RegA,
+        src1: impl Into<Reg32>,
+        src2: impl Into<Reg32>,
+        ap: bool,
+        dst: impl Into<Reg32>,
+        op: fn(RegVal, RegVal) -> RegVal,
+    ) {
+        self.set(
+            if ap { RegA::AP } else { reg },
+            dst,
+            op(self.get(reg, src1), self.get(reg, src2)),
+        )
     }
 
     pub fn status(&self) -> bool {

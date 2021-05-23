@@ -8,12 +8,47 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use core::ops::Deref;
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter};
 #[cfg(feature = "std")]
 use std::str::FromStr;
 
 use amplify::num::{u1024, u256, u512};
+
+/// Register value, which may be `None`
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, From)]
+pub struct RegVal(Option<Value>);
+
+impl RegVal {
+    pub fn none() -> RegVal {
+        RegVal(None)
+    }
+}
+
+impl From<RegVal> for Option<Value> {
+    fn from(val: RegVal) -> Self {
+        val.0
+    }
+}
+
+impl Deref for RegVal {
+    type Target = Option<Value>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[cfg(feature = "std")]
+impl Display for RegVal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => Display::fmt(val, f),
+        }
+    }
+}
 
 /// Copy'able variable length slice
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]

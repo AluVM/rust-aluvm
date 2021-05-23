@@ -8,14 +8,13 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify::num::{u1024, u512};
+use core::ops::{BitAnd, BitOr, BitXor, Shl, Shr};
 
 use super::{
-    ArithmeticOp, Arithmetics, BitwiseOp, Bytecode, BytesOp, CmpOp,
-    ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp, NOp, NumType, PutOp,
-    SecpOp,
+    ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
+    Instr, MoveOp, NOp, NumType, PutOp, SecpOp,
 };
-use crate::reg::{Reg, Reg32, RegA, Registers, Value};
+use crate::reg::{Reg32, RegVal, Registers};
 use crate::LibSite;
 
 /// Turing machine movement after instruction execution
@@ -114,9 +113,7 @@ impl InstructionSet for ControlFlowOp {
                 .jmp()
                 .map(|_| ExecStep::Call(site))
                 .unwrap_or(ExecStep::Stop),
-            ControlFlowOp::Ret => {
-                regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop)
-            }
+            ControlFlowOp::Ret => regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop),
         }
     }
 }
@@ -124,32 +121,14 @@ impl InstructionSet for ControlFlowOp {
 impl InstructionSet for PutOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            PutOp::ZeroA(reg, index) => {
-                regs.set(Reg::A(reg), index, Some(0.into()))
-            }
-            PutOp::ZeroR(reg, index) => {
-                regs.set(Reg::R(reg), index, Some(0.into()))
-            }
-            PutOp::ClA(reg, index) => regs.set(Reg::A(reg), index, None),
-            PutOp::ClR(reg, index) => regs.set(Reg::R(reg), index, None),
-            PutOp::PutA(reg, index, blob) => {
-                regs.set(Reg::A(reg), index, Some(blob))
-            }
-            PutOp::PutR(reg, index, blob) => {
-                regs.set(Reg::R(reg), index, Some(blob))
-            }
-            PutOp::PutIfA(reg, index, blob) => {
-                regs.get(Reg::A(reg), index).or_else(|| {
-                    regs.set(Reg::A(reg), index, Some(blob));
-                    Some(blob)
-                });
-            }
-            PutOp::PutIfR(reg, index, blob) => {
-                regs.get(Reg::R(reg), index).or_else(|| {
-                    regs.set(Reg::R(reg), index, Some(blob));
-                    Some(blob)
-                });
-            }
+            PutOp::ZeroA(reg, index) => regs.set(reg, index, Some(0.into())),
+            PutOp::ZeroR(reg, index) => regs.set(reg, index, Some(0.into())),
+            PutOp::ClA(reg, index) => regs.set(reg, index, None),
+            PutOp::ClR(reg, index) => regs.set(reg, index, None),
+            PutOp::PutA(reg, index, blob) => regs.set(reg, index, Some(blob)),
+            PutOp::PutR(reg, index, blob) => regs.set(reg, index, Some(blob)),
+            PutOp::PutIfA(reg, index, blob) => regs.set_if(reg, index, blob),
+            PutOp::PutIfR(reg, index, blob) => regs.set_if(reg, index, blob),
         }
         ExecStep::Next
     }
@@ -159,22 +138,16 @@ impl InstructionSet for MoveOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
             MoveOp::SwpA(reg1, index1, reg2, index2) => {
-                let val1 = regs.get(Reg::A(reg1), index1);
-                let val2 = regs.get(Reg::A(reg2), index2);
-                regs.set(Reg::A(reg1), index1, val2);
-                regs.set(Reg::A(reg2), index2, val1);
+                regs.set(reg1, index1, regs.get(reg2, index2));
+                regs.set(reg2, index2, regs.get(reg1, index1));
             }
             MoveOp::SwpR(reg1, index1, reg2, index2) => {
-                let val1 = regs.get(Reg::R(reg1), index1);
-                let val2 = regs.get(Reg::R(reg2), index2);
-                regs.set(Reg::R(reg1), index1, val2);
-                regs.set(Reg::R(reg2), index2, val1);
+                regs.set(reg1, index1, regs.get(reg2, index2));
+                regs.set(reg2, index2, regs.get(reg1, index1));
             }
             MoveOp::SwpAR(reg1, index1, reg2, index2) => {
-                let val1 = regs.get(Reg::A(reg1), index1);
-                let val2 = regs.get(Reg::R(reg2), index2);
-                regs.set(Reg::A(reg1), index1, val2);
-                regs.set(Reg::R(reg2), index2, val1);
+                regs.set(reg1, index1, regs.get(reg2, index2));
+                regs.set(reg2, index2, regs.get(reg1, index1));
             }
             MoveOp::AMov(reg1, reg2, ty) => {
                 match ty {
@@ -186,16 +159,16 @@ impl InstructionSet for MoveOp {
                 // TODO: array move operation
             }
             MoveOp::MovA(sreg, sidx, dreg, didx) => {
-                regs.set(Reg::A(dreg), didx, regs.get(Reg::A(sreg), sidx));
+                regs.set(dreg, didx, regs.get(sreg, sidx));
             }
             MoveOp::MovR(sreg, sidx, dreg, didx) => {
-                regs.set(Reg::R(dreg), didx, regs.get(Reg::R(sreg), sidx));
+                regs.set(dreg, didx, regs.get(sreg, sidx));
             }
             MoveOp::MovAR(sreg, sidx, dreg, didx) => {
-                regs.set(Reg::R(dreg), didx, regs.get(Reg::A(sreg), sidx));
+                regs.set(dreg, didx, regs.get(sreg, sidx));
             }
             MoveOp::MovRA(sreg, sidx, dreg, didx) => {
-                regs.set(Reg::A(dreg), didx, regs.get(Reg::R(sreg), sidx));
+                regs.set(dreg, didx, regs.get(sreg, sidx));
             }
         }
         ExecStep::Next
@@ -213,137 +186,60 @@ impl InstructionSet for ArithmeticOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
             ArithmeticOp::Neg(reg, index) => {
-                regs.get(Reg::A(reg), index).map(|mut blob| {
+                regs.get(reg, index).map(|mut blob| {
                     blob.bytes[reg as usize] = 0xFF ^ blob.bytes[reg as usize];
-                    regs.set(Reg::A(reg), index, Some(blob));
+                    regs.set(reg, index, Some(blob));
                 });
             }
             ArithmeticOp::Stp(dir, arithm, reg, index, step) => {
-                regs.get(Reg::A(reg), index).map(|value| {
-                    let u512_max = u512::from_le_bytes([0xFF; 64]);
-                    let res = match arithm {
-                        Arithmetics::IntChecked { signed: false } => {
-                            let step = u512::from_u64(*step as u64).unwrap();
-                            let mut val: u512 = value.into();
-                            if step >= u512_max - val {
-                                None
-                            } else {
-                                val = val + step;
-                                Some(Value::from(val))
-                            }
-                        }
-                        Arithmetics::IntUnchecked { signed: false } => {
-                            let step = u512::from_u64(*step as u64).unwrap();
-                            let mut val: u512 = value.into();
-                            if step >= u512_max - val {
-                                Some(Value::from(step - (u512_max - val)))
-                            } else {
-                                val = val + step;
-                                Some(Value::from(val))
-                            }
-                        }
-                        Arithmetics::IntArbitraryPrecision {
-                            signed: false,
-                        } => {
-                            todo!("Arbitrary precision increment")
-                        }
-                        Arithmetics::IntChecked { signed: true } => {
-                            todo!("Signed increment")
-                        }
-                        Arithmetics::IntUnchecked { signed: true } => {
-                            todo!("Signed increment")
-                        }
-                        Arithmetics::IntArbitraryPrecision { signed: true } => {
-                            todo!("Arbitrary precision signed increment")
-                        }
-                        Arithmetics::Float => todo!("Float increment"),
-                        Arithmetics::FloatArbitraryPrecision => {
-                            todo!("Float increment")
-                        }
-                    };
-                    regs.set(Reg::A(reg), index, res);
-                });
+                regs.op1(
+                    reg,
+                    index,
+                    arithm.is_ap(),
+                    Reg32::Reg1,
+                    RegVal::step_op(arithm, *step as i8 * dir.multiplier()),
+                );
             }
-            ArithmeticOp::Add(arithm, reg, src, dst) => {
-                regs.get(Reg::A(reg), src).and_then(|value1| {
-                    regs.get(Reg::A(reg), dst).map(|value2| (value1, value2))
-                }).map(|(value1, value2)| {
-                    let mut dst_reg = Reg::A(reg);
-                    let res = match arithm {
-                        Arithmetics::IntChecked { signed: false } => {
-                            // TODO: Support source arbitrary precision registers
-                            let mut val: u1024 = value1.into();
-                            val = val + u1024::from(value2);
-                            Value::from(val)
-                        }
-                        Arithmetics::IntUnchecked { signed: false } => {
-                            // TODO: Support source arbitrary precision registers
-                            let mut val: u1024 = value1.into();
-                            val = val + u1024::from(value2);
-                            Value::from(val)
-                        }
-                        Arithmetics::IntArbitraryPrecision {
-                            signed: false,
-                        } => {
-                            dst_reg = Reg::A(RegA::AP);
-                            todo!("Unsigned int addition with arbitrary precision")
-                        }
-                        Arithmetics::IntChecked { signed: true } => todo!("Signed int addition"),
-                        Arithmetics::IntUnchecked { signed: true } => todo!("Signed int addition"),
-                        Arithmetics::IntArbitraryPrecision { signed: true } => {
-                            dst_reg = Reg::A(RegA::AP);
-                            todo!("Signed int addition with arbitrary precision")
-                        }
-                        Arithmetics::Float => todo!("Float addition"),
-                        Arithmetics::FloatArbitraryPrecision => {
-                            dst_reg = Reg::A(RegA::AP);
-                            todo!("Float addition with arbitrary precision")
-                        }
-                    };
-                    regs.set(dst_reg, Reg32::Reg1, Some(res));
-                }).unwrap_or_else(|| regs.set(Reg::A(reg), dst, None));
+            ArithmeticOp::Add(arithm, reg, src1, src2) => {
+                regs.op2(
+                    reg,
+                    src1,
+                    src2,
+                    arithm.is_ap(),
+                    Reg32::Reg1,
+                    RegVal::add_op(arithm),
+                );
             }
-            ArithmeticOp::Sub(arithm, reg, src, dst) => {}
-            ArithmeticOp::Mul(arithm, reg, src, dst) => {
-                regs.get(Reg::A(reg), src).and_then(|value1| {
-                    regs.get(Reg::A(reg), dst).map(|value2| (value1, value2))
-                }).map(|(value1, value2)| {
-                    let mut dst_reg = Reg::A(reg);
-                    let res = match arithm {
-                        Arithmetics::IntChecked { signed: false } => {
-                            // TODO: Rewrite
-                            let mut val: u1024 = value1.into();
-                            val = val * u1024::from(value2);
-                            Value::from(val)
-                        }
-                        Arithmetics::IntUnchecked { signed: false } => {
-                            // TODO: Rewrite
-                            let mut val: u1024 = value1.into();
-                            val = val * u1024::from(value2);
-                            Value::from(val)
-                        }
-                        Arithmetics::IntArbitraryPrecision {
-                            signed: false,
-                        } => {
-                            dst_reg = Reg::A(RegA::AP);
-                            todo!("Unsigned int multiplication with arbitrary precision")
-                        }
-                        Arithmetics::IntChecked { signed: true } => todo!("Signed int multiplication"),
-                        Arithmetics::IntUnchecked { signed: true } => todo!("Signed int multiplication"),
-                        Arithmetics::IntArbitraryPrecision { signed: true } => {
-                            dst_reg = Reg::A(RegA::AP);
-                            todo!("Signed int multiplication with arbitrary precision")
-                        }
-                        Arithmetics::Float => todo!("Float addition"),
-                        Arithmetics::FloatArbitraryPrecision => {
-                            dst_reg = Reg::A(RegA::AP);
-                            todo!("Float multiplication with arbitrary precision")
-                        }
-                    };
-                    regs.set(dst_reg, Reg32::Reg1, Some(res));
-                }).unwrap_or_else(|| regs.set(Reg::A(reg), dst, None));
+            ArithmeticOp::Sub(arithm, reg, src1, src2) => {
+                regs.op2(
+                    reg,
+                    src1,
+                    src2,
+                    arithm.is_ap(),
+                    Reg32::Reg1,
+                    RegVal::sub_op(arithm),
+                );
             }
-            ArithmeticOp::Div(arithm, reg, src, dst) => {}
+            ArithmeticOp::Mul(arithm, reg, src1, src2) => {
+                regs.op2(
+                    reg,
+                    src1,
+                    src2,
+                    arithm.is_ap(),
+                    Reg32::Reg1,
+                    RegVal::mul_op(arithm),
+                );
+            }
+            ArithmeticOp::Div(arithm, reg, src1, src2) => {
+                regs.op2(
+                    reg,
+                    src1,
+                    src2,
+                    arithm.is_ap(),
+                    Reg32::Reg1,
+                    RegVal::div_op(arithm),
+                );
+            }
             ArithmeticOp::Mod(reg1, index1, reg2, index2, reg3, index3) => {}
             ArithmeticOp::Abs(reg, index) => {}
         }
@@ -353,7 +249,17 @@ impl InstructionSet for ArithmeticOp {
 
 impl InstructionSet for BitwiseOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        todo!()
+        match self {
+            BitwiseOp::And(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, BitAnd::bitand),
+            BitwiseOp::Or(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, BitOr::bitor),
+            BitwiseOp::Xor(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, BitXor::bitxor),
+            BitwiseOp::Not(reg, idx) => regs.set(reg, idx, !regs.get(reg, idx)),
+            BitwiseOp::Shl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Shl::shl),
+            BitwiseOp::Shr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Shr::shr),
+            BitwiseOp::Scl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, RegVal::scl),
+            BitwiseOp::Scr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, RegVal::scr),
+        }
+        ExecStep::Next
     }
 }
 

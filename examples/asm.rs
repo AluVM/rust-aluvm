@@ -19,11 +19,10 @@ extern crate paste;
 
 use alure::instr::bytecode::disassemble;
 use alure::instr::{
-    ArithmeticOp, Arithmetics, CmpOp, ControlFlowOp, IncDec, Instr, MoveOp,
-    NOp, NumType, PutOp,
+    ArithmeticOp, Arithmetics, CmpOp, ControlFlowOp, IncDec, Instr, MoveOp, NOp, NumType, PutOp,
 };
-use alure::reg::{Reg, Reg32, RegA, RegBlock, RegR, Value};
 use alure::{Lib, Runtime};
+use alure::{Reg, Reg32, RegA, RegBlock, RegR};
 use amplify::hex::ToHex;
 use amplify::num::u4;
 use std::convert::TryFrom;

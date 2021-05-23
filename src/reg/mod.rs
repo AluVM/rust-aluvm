@@ -8,8 +8,10 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+mod arithm;
+mod bitwise;
 mod reg;
 mod value;
 
 pub use reg::{Reg, Reg32, Reg8, RegA, RegBlock, RegR, Registers};
-pub use value::Value;
+pub use value::{RegVal, Value};

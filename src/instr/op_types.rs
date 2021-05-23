@@ -125,6 +125,34 @@ impl Arithmetics {
             Arithmetics::FloatArbitraryPrecision => u3::with(7),
         }
     }
+
+    /// Detects arbitrary precision arithmetic operation type
+    pub fn is_ap(self) -> bool {
+        match self {
+            Arithmetics::IntArbitraryPrecision { .. } | Arithmetics::FloatArbitraryPrecision => {
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// Detects float-based arithmetic operation type
+    pub fn is_float(self) -> bool {
+        match self {
+            Arithmetics::Float | Arithmetics::FloatArbitraryPrecision => true,
+            _ => false,
+        }
+    }
+
+    /// Detects unsigned integer arithmetic operation type
+    pub fn is_unsigned(self) -> bool {
+        match self {
+            Arithmetics::IntChecked { signed: false }
+            | Arithmetics::IntUnchecked { signed: false }
+            | Arithmetics::IntArbitraryPrecision { signed: false } => true,
+            _ => false,
+        }
+    }
 }
 
 impl From<u3> for Arithmetics {
@@ -151,14 +179,10 @@ impl Display for Arithmetics {
         match self {
             Arithmetics::IntChecked { signed: false } => f.write_str("c"),
             Arithmetics::IntUnchecked { signed: false } => f.write_str("u"),
-            Arithmetics::IntArbitraryPrecision { signed: false } => {
-                f.write_str("a")
-            }
+            Arithmetics::IntArbitraryPrecision { signed: false } => f.write_str("a"),
             Arithmetics::IntChecked { signed: true } => f.write_str("cs"),
             Arithmetics::IntUnchecked { signed: true } => f.write_str("us"),
-            Arithmetics::IntArbitraryPrecision { signed: true } => {
-                f.write_str("as")
-            }
+            Arithmetics::IntArbitraryPrecision { signed: true } => f.write_str("as"),
             Arithmetics::Float => f.write_str("f"),
             Arithmetics::FloatArbitraryPrecision => f.write_str("af"),
         }
@@ -176,6 +200,15 @@ pub enum IncDec {
     /// Decrement operation
     #[display("dec")]
     Dec,
+}
+
+impl IncDec {
+    pub fn multiplier(self) -> i8 {
+        match self {
+            IncDec::Inc => 1,
+            IncDec::Dec => -1,
+        }
+    }
 }
 
 impl From<bool> for IncDec {
