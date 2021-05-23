@@ -8,20 +8,8 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#![cfg_attr(not(feature = "std"), no_std)]
+mod reg;
+mod value;
 
-#[cfg_attr(feature = "std", macro_use)]
-extern crate amplify;
-#[macro_use]
-extern crate bitcoin_hashes;
-
-mod encoding;
-pub mod instr;
-pub mod reg;
-mod runtime;
-
-pub(crate) use encoding::Cursor;
-pub use encoding::CursorError;
-pub use instr::{Instr, InstructionSet};
 pub use reg::{Reg, Reg32, Reg8, RegA, RegBlock, RegR, Registers};
-pub use runtime::{Blob, Lib, LibHash, LibSite, Runtime};
+pub use value::Value;

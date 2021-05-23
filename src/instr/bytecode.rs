@@ -12,15 +12,13 @@ use bitcoin_hashes::Hash;
 use core::ops::RangeInclusive;
 
 use super::instr::*;
-use crate::cursor::{Cursor, CursorError, Read, Write};
+use crate::encoding::{Cursor, CursorError, Read, Write};
 use crate::instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op,
     DigestOp, MoveOp, NOp, PutOp, SecpOp,
 };
-use crate::registers::{Reg, RegBlock};
-#[cfg(feature = "std")]
-use crate::InstructionSet;
-use crate::{Blob, Instr, LibHash, LibSite, Value};
+use crate::reg::{Reg, RegBlock, Value};
+use crate::{Blob, Instr, InstructionSet, LibHash, LibSite};
 
 /// Errors decoding bytecode
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]

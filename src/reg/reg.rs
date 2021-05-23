@@ -11,7 +11,7 @@
 use amplify::num::{u256, u3, u4, u5, u512};
 use std::collections::BTreeMap;
 
-use crate::{LibSite, Value};
+use crate::{reg::Value, LibSite};
 
 /// All possible register indexes for `a` and `r` register sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]

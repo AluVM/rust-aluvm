@@ -10,13 +10,13 @@
 
 use amplify::num::{u1024, u512};
 
-use crate::instr::{
+use super::{
     ArithmeticOp, Arithmetics, BitwiseOp, Bytecode, BytesOp, CmpOp,
-    ControlFlowOp, Curve25519Op, DigestOp, MoveOp, NOp, NumType, PutOp, SecpOp,
+    ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp, NOp, NumType, PutOp,
+    SecpOp,
 };
-use crate::registers::{Reg, Reg32, RegA, Registers};
-use crate::types::Value;
-use crate::{Instr, LibSite};
+use crate::reg::{Reg, Reg32, RegA, Registers, Value};
+use crate::LibSite;
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -301,7 +301,7 @@ impl InstructionSet for ArithmeticOp {
                         }
                     };
                     regs.set(dst_reg, Reg32::Reg1, Some(res));
-                });
+                }).unwrap_or_else(|| regs.set(Reg::A(reg), dst, None));
             }
             ArithmeticOp::Sub(arithm, reg, src, dst) => {}
             ArithmeticOp::Mul(arithm, reg, src, dst) => {
@@ -341,7 +341,7 @@ impl InstructionSet for ArithmeticOp {
                         }
                     };
                     regs.set(dst_reg, Reg32::Reg1, Some(res));
-                });
+                }).unwrap_or_else(|| regs.set(Reg::A(reg), dst, None));
             }
             ArithmeticOp::Div(arithm, reg, src, dst) => {}
             ArithmeticOp::Mod(reg1, index1, reg2, index2, reg3, index3) => {}

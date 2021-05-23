@@ -63,7 +63,7 @@ macro_rules! instr {
         Instr::Put(_reg_sfx!(PutOp, Put, $reg)(
             _reg_ty!(Reg, $reg),
             _reg_idx!($idx),
-            Value::from_str(stringify!($val)).expect("invalid hex literal"),
+            ::std::str::FromStr::from_str(stringify!($val)).expect("invalid hex literal"),
         ))
     };
 
@@ -71,7 +71,7 @@ macro_rules! instr {
         Instr::Put(_reg_sfx!(PutOp, PutIf, $reg)(
             _reg_ty!(Reg, $reg),
             _reg_idx!($idx),
-            Value::from_str(stringify!($val)).expect("invalid hex literal"),
+            ::std::str::FromStr::from_str(stringify!($val)).expect("invalid hex literal"),
         ))
     };
 

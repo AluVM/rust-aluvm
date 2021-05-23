@@ -11,9 +11,8 @@
 use amplify::num::u4;
 
 use crate::instr::{Arithmetics, IncDec, NumType};
-use crate::registers::{Reg32, Reg8, RegA, RegBlock, RegR};
-use crate::types::Blob;
-use crate::{InstructionSet, LibSite, Value};
+use crate::reg::{Reg32, Reg8, RegA, RegBlock, RegR, Value};
+use crate::{Blob, InstructionSet, LibSite};
 
 /// Default instruction extension which treats any operation as NOP
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
