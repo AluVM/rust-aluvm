@@ -12,6 +12,7 @@ use amplify::num::{u256, u3, u4, u5, u512};
 use core::ops::Deref;
 use std::collections::BTreeMap;
 
+use crate::instr::NumType;
 use crate::{reg::Value, LibSite, RegVal};
 
 /// All possible register indexes for `a` and `r` register sets
@@ -652,10 +653,10 @@ pub enum RegBlock {
     R,
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Registers {
     /// Arbitrary-precision arithmetics registers
-    pub(crate) ap: [Option<[u8; 1024]>; 32],
+    pub(crate) ap: [Option<Value>; 32],
 
     // Arithmetic registers:
     pub(crate) a8: [Option<u8>; 32],
@@ -765,6 +766,114 @@ impl Registers {
             self.cp0 -= 1;
             Some(self.cs0[self.cp0 as usize])
         }
+    }
+
+    pub fn all(&self, reg: impl Into<Reg>) -> [RegVal; 32] {
+        let mut res = [RegVal::none(); 32];
+        match reg.into() {
+            Reg::A(a) => match a {
+                RegA::AP => self
+                    .ap
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegA::A8 => self
+                    .a8
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegA::A16 => self
+                    .a16
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegA::A32 => self
+                    .a32
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegA::A64 => self
+                    .a64
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegA::A128 => self
+                    .a128
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegA::A256 => self
+                    .a256
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegA::A512 => self
+                    .a512
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+            },
+
+            Reg::R(r) => match r {
+                RegR::R128 => self
+                    .r128
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegR::R160 => self
+                    .r160
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegR::R256 => self
+                    .r256
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegR::R512 => self
+                    .r512
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegR::R1024 => self
+                    .r1024
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegR::R2048 => self
+                    .r2048
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegR::R4096 => self
+                    .r4096
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+                RegR::R8192 => self
+                    .r8192
+                    .iter()
+                    .map(RegVal::from)
+                    .enumerate()
+                    .for_each(|(idx, val)| res[idx] = val),
+            },
+        }
+        res
     }
 
     pub fn get(&self, reg: impl Into<Reg>, index: impl Into<Reg32>) -> RegVal {

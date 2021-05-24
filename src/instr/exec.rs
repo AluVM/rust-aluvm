@@ -11,6 +11,8 @@
 use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Shl, Shr};
 
+use amplify::num::u5;
+
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
     Instr, MoveOp, NOp, NumType, PutOp, SecpOp,
@@ -122,12 +124,12 @@ impl InstructionSet for ControlFlowOp {
 impl InstructionSet for PutOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            PutOp::ZeroA(reg, index) => regs.set(reg, index, Some(0.into())),
-            PutOp::ZeroR(reg, index) => regs.set(reg, index, Some(0.into())),
-            PutOp::ClA(reg, index) => regs.set(reg, index, None),
-            PutOp::ClR(reg, index) => regs.set(reg, index, None),
-            PutOp::PutA(reg, index, blob) => regs.set(reg, index, Some(blob)),
-            PutOp::PutR(reg, index, blob) => regs.set(reg, index, Some(blob)),
+            PutOp::ZeroA(reg, index) => regs.set(reg, index, 0),
+            PutOp::ZeroR(reg, index) => regs.set(reg, index, 0),
+            PutOp::ClA(reg, index) => regs.set(reg, index, RegVal::none()),
+            PutOp::ClR(reg, index) => regs.set(reg, index, RegVal::none()),
+            PutOp::PutA(reg, index, blob) => regs.set(reg, index, blob),
+            PutOp::PutR(reg, index, blob) => regs.set(reg, index, blob),
             PutOp::PutIfA(reg, index, blob) => regs.set_if(reg, index, blob),
             PutOp::PutIfR(reg, index, blob) => regs.set_if(reg, index, blob),
         }
@@ -150,14 +152,10 @@ impl InstructionSet for MoveOp {
                 regs.set(reg1, index1, regs.get(reg2, index2));
                 regs.set(reg2, index2, regs.get(reg1, index1));
             }
-            MoveOp::AMov(reg1, reg2, ty) => {
-                match ty {
-                    NumType::Unsigned => {}
-                    NumType::Signed => {}
-                    NumType::Float23 => {}
-                    NumType::Float52 => {}
+            MoveOp::AMov(reg1, reg2, num_type) => {
+                for idx in 0u8..32 {
+                    regs.set(reg2, u5::with(idx), regs.get(reg1, u5::with(idx)));
                 }
-                // TODO: array move operation
             }
             MoveOp::MovA(sreg, sidx, dreg, didx) => {
                 regs.set(dreg, didx, regs.get(sreg, sidx));
@@ -278,8 +276,12 @@ impl InstructionSet for ArithmeticOp {
                     RegVal::div_op(arithm),
                 );
             }
-            ArithmeticOp::Mod(reg1, index1, reg2, index2, reg3, index3) => {}
-            ArithmeticOp::Abs(reg, index) => {}
+            ArithmeticOp::Mod(reg1, index1, reg2, index2, reg3, index3) => {
+                todo!()
+            }
+            ArithmeticOp::Abs(reg, index) => {
+                todo!()
+            }
         }
         ExecStep::Next
     }

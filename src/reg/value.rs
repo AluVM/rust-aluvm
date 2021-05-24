@@ -14,18 +14,47 @@ use std::fmt::{self, Display, Formatter};
 #[cfg(feature = "std")]
 use std::str::FromStr;
 
-use crate::instr::NumType;
 use amplify::num::{u1024, u256, u512};
-use std::cmp::Ordering;
 
 /// Register value, which may be `None`
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
-pub struct RegVal(Option<Value>);
+pub struct RegVal(
+    Option<Value>, // TODO: Keep arithmetics type
+);
 
 impl RegVal {
     /// Creates [`RegVal`] without assigning a value to it
     pub fn none() -> RegVal {
         RegVal(None)
+    }
+
+    /// Creates [`RegVal`] assigning a value to it
+    pub fn some(val: Value) -> RegVal {
+        RegVal(Some(val))
+    }
+}
+
+impl From<Value> for RegVal {
+    fn from(val: Value) -> Self {
+        RegVal(Some(val))
+    }
+}
+
+impl From<&Value> for RegVal {
+    fn from(val: &Value) -> Self {
+        RegVal(Some(*val))
+    }
+}
+
+impl From<&Option<Value>> for RegVal {
+    fn from(val: &Option<Value>) -> Self {
+        RegVal(*val)
+    }
+}
+
+impl From<Option<&Value>> for RegVal {
+    fn from(val: Option<&Value>) -> Self {
+        RegVal(val.copied())
     }
 }
 
@@ -235,6 +264,24 @@ macro_rules! impl_value_bytes_conv {
                 Value { len: $len, bytes }
             }
         }
+
+        impl From<[u8; $len]> for RegVal {
+            fn from(val: [u8; $len]) -> RegVal {
+                RegVal::from(Value::from(val))
+            }
+        }
+
+        impl From<Option<[u8; $len]>> for RegVal {
+            fn from(val: Option<[u8; $len]>) -> RegVal {
+                RegVal::from(val.map(Value::from))
+            }
+        }
+
+        impl From<&Option<[u8; $len]>> for RegVal {
+            fn from(val: &Option<[u8; $len]>) -> RegVal {
+                RegVal::from(val.map(Value::from))
+            }
+        }
     };
 }
 
@@ -260,6 +307,32 @@ macro_rules! impl_value_ty_conv {
                     len: le.len() as u16,
                     bytes,
                 }
+            }
+        }
+
+        impl From<$ty> for RegVal {
+            fn from(val: $ty) -> Self {
+                RegVal::some(Value::from(val))
+            }
+        }
+        impl From<&$ty> for RegVal {
+            fn from(val: &$ty) -> Self {
+                RegVal::some(Value::from(*val))
+            }
+        }
+        impl From<Option<$ty>> for RegVal {
+            fn from(val: Option<$ty>) -> Self {
+                RegVal::from(val.map(Value::from))
+            }
+        }
+        impl From<Option<&$ty>> for RegVal {
+            fn from(val: Option<&$ty>) -> Self {
+                RegVal::from(val.copied().map(Value::from))
+            }
+        }
+        impl From<&Option<$ty>> for RegVal {
+            fn from(val: &Option<$ty>) -> Self {
+                RegVal::from((*val).map(Value::from))
             }
         }
     };
