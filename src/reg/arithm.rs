@@ -9,11 +9,21 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use amplify::num::u512;
+use core::cmp::Ordering;
 
 use super::{RegVal, Value};
-use crate::instr::Arithmetics;
+use crate::instr::{Arithmetics, NumType};
 
 impl RegVal {
+    pub fn partial_cmp_op(num_type: NumType) -> fn(RegVal, RegVal) -> Option<Ordering> {
+        match num_type {
+            NumType::Unsigned => RegVal::partial_cmp_uint,
+            NumType::Signed => RegVal::partial_cmp_int,
+            NumType::Float23 => RegVal::partial_cmp_f23,
+            NumType::Float52 => RegVal::partial_cmp_f52,
+        }
+    }
+
     pub fn step_op(arithm: Arithmetics, step: i8) -> impl Fn(RegVal) -> RegVal {
         move |src| match arithm {
             Arithmetics::IntChecked { signed: false } => RegVal::step_uint_checked(src, step),
@@ -77,6 +87,109 @@ impl RegVal {
             Arithmetics::Float => RegVal::div_float,
             Arithmetics::FloatArbitraryPrecision => RegVal::div_float_ap,
         }
+    }
+}
+
+impl RegVal {
+    /// Compares two values according to given arithmetics
+    pub fn partial_cmp(self, num_type: NumType, other: Self) -> Option<Ordering> {
+        match num_type {
+            NumType::Unsigned => self.partial_cmp_uint(other),
+            NumType::Signed => self.partial_cmp_int(other),
+            NumType::Float23 => self.partial_cmp_f23(other),
+            NumType::Float52 => self.partial_cmp_f52(other),
+        }
+    }
+
+    /// Compares two values according to unsigned arithmetics
+    pub fn partial_cmp_uint(self, other: Self) -> Option<Ordering> {
+        match (*self, *other) {
+            (None, None) => Some(Ordering::Equal),
+            (None, Some(_)) | (Some(_), None) => None,
+            (Some(a), Some(b)) => Some(a.cmp_uint(b)),
+        }
+    }
+
+    /// Compares two values according to unsigned arithmetics
+    pub fn partial_cmp_int(self, other: Self) -> Option<Ordering> {
+        match (*self, *other) {
+            (None, None) => Some(Ordering::Equal),
+            (None, Some(_)) | (Some(_), None) => None,
+            (Some(a), Some(b)) => Some(a.cmp_int(b)),
+        }
+    }
+
+    /// Compares two values according to short float arithmetics
+    pub fn partial_cmp_f23(self, other: Self) -> Option<Ordering> {
+        match (*self, *other) {
+            (None, None) => Some(Ordering::Equal),
+            (None, Some(_)) | (Some(_), None) => None,
+            (Some(a), Some(b)) => Some(a.cmp_f23(b)),
+        }
+    }
+
+    /// Compares two values according to long float arithmetics
+    pub fn partial_cmp_f52(self, other: Self) -> Option<Ordering> {
+        match (*self, *other) {
+            (None, None) => Some(Ordering::Equal),
+            (None, Some(_)) | (Some(_), None) => None,
+            (Some(a), Some(b)) => Some(a.cmp_f52(b)),
+        }
+    }
+}
+
+impl Value {
+    /// Compares two values according to given arithmetics
+    pub fn cmp(self, num_type: NumType, other: Self) -> Ordering {
+        match num_type {
+            NumType::Unsigned => self.cmp_uint(other),
+            NumType::Signed => self.cmp_int(other),
+            NumType::Float23 => self.cmp_f23(other),
+            NumType::Float52 => self.cmp_f52(other),
+        }
+    }
+
+    /// Compares two values according to unsigned arithmetics
+    pub fn cmp_uint(self, other: Self) -> Ordering {
+        self.as_clean().bytes.cmp(&other.as_clean().bytes)
+    }
+
+    /// Compares two values according to unsigned arithmetics
+    pub fn cmp_int(self, other: Self) -> Ordering {
+        let mut a = self.as_clean();
+        let mut b = other.as_clean();
+        let rev_a = if a.len > 0 {
+            let sign = &mut a.bytes[a.len as usize - 1];
+            let rev_a = *sign & 0x80 == 0x80;
+            *sign &= 0x7F;
+            rev_a
+        } else {
+            false
+        };
+        let rev_b = if b.len > 0 {
+            let sign = &mut b.bytes[b.len as usize - 1];
+            let rev_b = *sign & 0x80 == 0x80;
+            *sign &= 0x7F;
+            rev_b
+        } else {
+            false
+        };
+        match (rev_a, rev_b) {
+            (true, false) => Ordering::Less,
+            (false, true) => Ordering::Greater,
+            (false, false) => a.bytes.cmp(&b.bytes),
+            (true, true) => a.bytes.cmp(&b.bytes).reverse(),
+        }
+    }
+
+    /// Compares two values according to short float arithmetics
+    pub fn cmp_f23(self, other: Self) -> Ordering {
+        todo!("short float comparison")
+    }
+
+    /// Compares two values according to long float arithmetics
+    pub fn cmp_f52(self, other: Self) -> Ordering {
+        todo!("short long comparison")
     }
 }
 

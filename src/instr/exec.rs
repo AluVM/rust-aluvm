@@ -8,6 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Shl, Shr};
 
 use super::{
@@ -176,8 +177,45 @@ impl InstructionSet for MoveOp {
 }
 
 impl InstructionSet for CmpOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        // TODO: Implement comparison operations
+    fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
+        match self {
+            CmpOp::GtA(num_type, reg, idx1, idx2) => {
+                regs.st0 =
+                    RegVal::partial_cmp_op(num_type)(regs.get(reg, idx1), regs.get(reg, idx2))
+                        == Some(Ordering::Greater);
+            }
+            CmpOp::GtR(reg1, idx1, reg2, idx2) => {
+                regs.st0 = regs.get(reg1, idx1).partial_cmp_uint(regs.get(reg2, idx2))
+                    == Some(Ordering::Greater);
+            }
+            CmpOp::LtA(num_type, reg, idx1, idx2) => {
+                regs.st0 =
+                    RegVal::partial_cmp_op(num_type)(regs.get(reg, idx1), regs.get(reg, idx2))
+                        == Some(Ordering::Less);
+            }
+            CmpOp::LtR(reg1, idx1, reg2, idx2) => {
+                regs.st0 = regs.get(reg1, idx1).partial_cmp_uint(regs.get(reg2, idx2))
+                    == Some(Ordering::Less);
+            }
+            CmpOp::EqA(reg1, idx1, reg2, idx2) => {
+                regs.st0 = regs.get(reg1, idx1) == regs.get(reg2, idx2);
+            }
+            CmpOp::EqR(reg1, idx1, reg2, idx2) => {
+                regs.st0 = regs.get(reg1, idx1) == regs.get(reg2, idx2);
+            }
+            CmpOp::Len(reg, idx) => {
+                regs.a16[0] = regs.get(reg, idx).map(|v| v.len);
+            }
+            CmpOp::Cnt(reg, idx) => {
+                regs.a16[0] = regs.get(reg, idx).map(|v| v.count_ones());
+            }
+            CmpOp::St2A => {
+                regs.a8[0] = if regs.st0 == true { Some(1) } else { Some(0) };
+            }
+            CmpOp::A2St => {
+                regs.st0 = regs.a8[1].map(|val| val != 0).unwrap_or(false);
+            }
+        }
         ExecStep::Next
     }
 }

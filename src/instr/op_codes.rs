@@ -22,7 +22,7 @@ pub enum NOp {
 }
 
 /// Full set of instructions
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display), display(inner))]
 #[non_exhaustive]
 pub enum Instr<Extension = NOp>
@@ -131,7 +131,7 @@ pub enum ControlFlowOp {
 
 /// Instructions setting register values
 #[cfg_attr(feature = "std", derive(Display))]
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum PutOp {
     /// Sets `a` register value to zero
     #[cfg_attr(feature = "std", display("zero\t{0}{1}"))]
@@ -255,20 +255,23 @@ pub enum CmpOp {
     EqR(RegR, Reg32, RegR, Reg32),
 
     /// Measures bit length of a value in one of the registers putting result
-    /// to `a16[0]`
+    /// to `a16[0]`. If the register is in uninitialized state sets `a16[0]` to
+    /// be uninitialized as well.
     #[cfg_attr(feature = "std", display("len\t\t{0}{1}"))]
     Len(RegA, Reg32),
 
     /// Counts number of `1` bits in register putting result to `a16[0]`
-    /// register.
+    /// register. If the register is in uninitialized state sets `a16[0]` to be
+    /// uninitialized as well.
     #[cfg_attr(feature = "std", display("cnt\t\t{0}{1}"))]
     Cnt(RegA, Reg32),
 
-    /// Assigns value of `a8[0]` register to `st0`
+    /// Assigns value of `a8[0]` register to `st0`.
     #[cfg_attr(feature = "std", display("st2a"))]
     St2A,
 
-    /// `st0` value of `st0` register to the result of `a8[0] == 1`
+    /// `st0` value of `st0` register to the result of `a8[0] != 0`. If the
+    /// value is not set, assigns `st0` `false`
     #[cfg_attr(feature = "std", display("a2st"))]
     A2St,
 }

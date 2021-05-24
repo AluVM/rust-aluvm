@@ -14,13 +14,16 @@ use std::fmt::{self, Display, Formatter};
 #[cfg(feature = "std")]
 use std::str::FromStr;
 
+use crate::instr::NumType;
 use amplify::num::{u1024, u256, u512};
+use std::cmp::Ordering;
 
 /// Register value, which may be `None`
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, From)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
 pub struct RegVal(Option<Value>);
 
 impl RegVal {
+    /// Creates [`RegVal`] without assigning a value to it
     pub fn none() -> RegVal {
         RegVal(None)
     }
@@ -51,7 +54,7 @@ impl Display for RegVal {
 }
 
 /// Copy'able variable length slice
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Copy, Clone, Hash, Debug)]
 pub struct Value {
     /// Slice length
     pub len: u16,
@@ -59,6 +62,14 @@ pub struct Value {
     /// Slice bytes
     pub bytes: [u8; 1024],
 }
+
+impl PartialEq for Value {
+    fn eq(&self, mut other: &Self) -> bool {
+        self.as_clean().eq(&other.as_clean())
+    }
+}
+
+impl Eq for Value {}
 
 impl Default for Value {
     fn default() -> Value {
@@ -70,6 +81,15 @@ impl Default for Value {
 }
 
 impl Value {
+    /// Creates zero value of a given dimension
+    #[inline]
+    pub fn zero(len: u16) -> Value {
+        Value {
+            len,
+            bytes: [0u8; 1024],
+        }
+    }
+
     /// Constructs value from slice of bytes.
     ///
     /// Panics if the length of the slice is greater than 1024 bytes.
@@ -111,6 +131,27 @@ impl Value {
             write!(ret, "{:02x}", ch).expect("writing to string");
         }
         ret
+    }
+
+    /// Returns the number of ones in the binary representation of `self`.
+    pub fn count_ones(&self) -> u16 {
+        let mut count = 0u16;
+        for byte in &self.bytes[..self.len as usize] {
+            count += byte.count_ones() as u16;
+        }
+        count
+    }
+
+    /// Ensures that all non-value bits are set to zero
+    pub fn clean(&mut self) {
+        self.bytes[self.len as usize..].fill(0);
+    }
+
+    /// Returns a copy where all non-value bits are set to zero
+    pub fn as_clean(&self) -> Self {
+        let mut copy = *self;
+        copy.bytes[self.len as usize..].fill(0);
+        copy
     }
 }
 

@@ -319,6 +319,12 @@ impl From<u4> for Reg16 {
     }
 }
 
+impl From<Reg16> for Reg32 {
+    fn from(reg16: Reg16) -> Self {
+        u5::with(reg16 as u8).into()
+    }
+}
+
 /// Short version of register indexes for `a` and `r` register sets covering
 /// initial 8 registers only
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
