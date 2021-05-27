@@ -8,7 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify::num::u512;
+use amplify_num::u512;
 use core::cmp::Ordering;
 
 use super::{RegVal, Value};
@@ -23,69 +23,84 @@ impl RegVal {
             NumType::Float52 => RegVal::partial_cmp_f52,
         }
     }
+}
 
-    pub fn step_op(arithm: Arithmetics, step: i8) -> impl Fn(RegVal) -> RegVal {
+impl Value {
+    pub fn step_op(arithm: Arithmetics, step: i8) -> impl Fn(Value) -> Option<Value> {
         move |src| match arithm {
-            Arithmetics::IntChecked { signed: false } => RegVal::step_uint_checked(src, step),
-            Arithmetics::IntUnchecked { signed: false } => RegVal::step_uint_unchecked(src, step),
-            Arithmetics::IntArbitraryPrecision { signed: false } => RegVal::step_uint_ap(src, step),
-            Arithmetics::IntChecked { signed: true } => RegVal::step_int_checked(src, step),
-            Arithmetics::IntUnchecked { signed: true } => RegVal::step_int_unchecked(src, step),
-            Arithmetics::IntArbitraryPrecision { signed: true } => RegVal::step_int_ap(src, step),
-            Arithmetics::Float => RegVal::step_float(src, step),
-            Arithmetics::FloatArbitraryPrecision => RegVal::step_float_ap(src, step),
+            Arithmetics::IntChecked { signed: false } => Value::step_uint_checked(src, step),
+            Arithmetics::IntUnchecked { signed: false } => Value::step_uint_unchecked(src, step),
+            Arithmetics::IntArbitraryPrecision { signed: false } => Value::step_uint_ap(src, step),
+            Arithmetics::IntChecked { signed: true } => Value::step_int_checked(src, step),
+            Arithmetics::IntUnchecked { signed: true } => Value::step_int_unchecked(src, step),
+            Arithmetics::IntArbitraryPrecision { signed: true } => Value::step_int_ap(src, step),
+            Arithmetics::Float => Value::step_float(src, step),
+            Arithmetics::FloatArbitraryPrecision => Value::step_float_ap(src, step),
         }
     }
 
-    pub fn add_op(arithm: Arithmetics) -> fn(RegVal, RegVal) -> RegVal {
+    pub fn add_op(arithm: Arithmetics) -> fn(Value, Value) -> Option<Value> {
         match arithm {
-            Arithmetics::IntChecked { signed: false } => RegVal::add_uint_checked,
-            Arithmetics::IntUnchecked { signed: false } => RegVal::add_uint_unchecked,
-            Arithmetics::IntArbitraryPrecision { signed: false } => RegVal::add_uint_ap,
-            Arithmetics::IntChecked { signed: true } => RegVal::add_int_checked,
-            Arithmetics::IntUnchecked { signed: true } => RegVal::add_int_unchecked,
-            Arithmetics::IntArbitraryPrecision { signed: true } => RegVal::add_int_ap,
-            Arithmetics::Float => RegVal::add_float,
-            Arithmetics::FloatArbitraryPrecision => RegVal::add_float_ap,
+            Arithmetics::IntChecked { signed: false } => Value::add_uint_checked,
+            Arithmetics::IntUnchecked { signed: false } => Value::add_uint_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: false } => Value::add_uint_ap,
+            Arithmetics::IntChecked { signed: true } => Value::add_int_checked,
+            Arithmetics::IntUnchecked { signed: true } => Value::add_int_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: true } => Value::add_int_ap,
+            Arithmetics::Float => Value::add_float,
+            Arithmetics::FloatArbitraryPrecision => Value::add_float_ap,
         }
     }
 
-    pub fn sub_op(arithm: Arithmetics) -> fn(RegVal, RegVal) -> RegVal {
+    pub fn sub_op(arithm: Arithmetics) -> fn(Value, Value) -> Option<Value> {
         match arithm {
-            Arithmetics::IntChecked { signed: false } => RegVal::sub_uint_checked,
-            Arithmetics::IntUnchecked { signed: false } => RegVal::sub_uint_unchecked,
-            Arithmetics::IntArbitraryPrecision { signed: false } => RegVal::sub_uint_ap,
-            Arithmetics::IntChecked { signed: true } => RegVal::sub_int_checked,
-            Arithmetics::IntUnchecked { signed: true } => RegVal::mul_int_unchecked,
-            Arithmetics::IntArbitraryPrecision { signed: true } => RegVal::sub_int_ap,
-            Arithmetics::Float => RegVal::sub_float,
-            Arithmetics::FloatArbitraryPrecision => RegVal::sub_float_ap,
+            Arithmetics::IntChecked { signed: false } => Value::sub_uint_checked,
+            Arithmetics::IntUnchecked { signed: false } => Value::sub_uint_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: false } => Value::sub_uint_ap,
+            Arithmetics::IntChecked { signed: true } => Value::sub_int_checked,
+            Arithmetics::IntUnchecked { signed: true } => Value::mul_int_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: true } => Value::sub_int_ap,
+            Arithmetics::Float => Value::sub_float,
+            Arithmetics::FloatArbitraryPrecision => Value::sub_float_ap,
         }
     }
 
-    pub fn mul_op(arithm: Arithmetics) -> fn(RegVal, RegVal) -> RegVal {
+    pub fn mul_op(arithm: Arithmetics) -> fn(Value, Value) -> Option<Value> {
         match arithm {
-            Arithmetics::IntChecked { signed: false } => RegVal::mul_uint_checked,
-            Arithmetics::IntUnchecked { signed: false } => RegVal::mul_uint_unchecked,
-            Arithmetics::IntArbitraryPrecision { signed: false } => RegVal::mul_uint_ap,
-            Arithmetics::IntChecked { signed: true } => RegVal::mul_int_checked,
-            Arithmetics::IntUnchecked { signed: true } => RegVal::mul_int_unchecked,
-            Arithmetics::IntArbitraryPrecision { signed: true } => RegVal::mul_int_ap,
-            Arithmetics::Float => RegVal::mul_float,
-            Arithmetics::FloatArbitraryPrecision => RegVal::mul_float_ap,
+            Arithmetics::IntChecked { signed: false } => Value::mul_uint_checked,
+            Arithmetics::IntUnchecked { signed: false } => Value::mul_uint_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: false } => Value::mul_uint_ap,
+            Arithmetics::IntChecked { signed: true } => Value::mul_int_checked,
+            Arithmetics::IntUnchecked { signed: true } => Value::mul_int_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: true } => Value::mul_int_ap,
+            Arithmetics::Float => Value::mul_float,
+            Arithmetics::FloatArbitraryPrecision => Value::mul_float_ap,
         }
     }
 
-    pub fn div_op(arithm: Arithmetics) -> fn(RegVal, RegVal) -> RegVal {
+    pub fn div_op(arithm: Arithmetics) -> fn(Value, Value) -> Option<Value> {
         match arithm {
-            Arithmetics::IntChecked { signed: false } => RegVal::div_uint_checked,
-            Arithmetics::IntUnchecked { signed: false } => RegVal::div_uint_unchecked,
-            Arithmetics::IntArbitraryPrecision { signed: false } => RegVal::div_uint_ap,
-            Arithmetics::IntChecked { signed: true } => RegVal::div_int_checked,
-            Arithmetics::IntUnchecked { signed: true } => RegVal::div_int_unchecked,
-            Arithmetics::IntArbitraryPrecision { signed: true } => RegVal::div_int_ap,
-            Arithmetics::Float => RegVal::div_float,
-            Arithmetics::FloatArbitraryPrecision => RegVal::div_float_ap,
+            Arithmetics::IntChecked { signed: false } => Value::div_uint_checked,
+            Arithmetics::IntUnchecked { signed: false } => Value::div_uint_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: false } => Value::div_uint_ap,
+            Arithmetics::IntChecked { signed: true } => Value::div_int_checked,
+            Arithmetics::IntUnchecked { signed: true } => Value::div_int_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: true } => Value::div_int_ap,
+            Arithmetics::Float => Value::div_float,
+            Arithmetics::FloatArbitraryPrecision => Value::div_float_ap,
+        }
+    }
+
+    pub fn rem_op(arithm: Arithmetics) -> fn(Value, Value) -> Option<Value> {
+        match arithm {
+            Arithmetics::IntChecked { signed: false } => Value::rem_uint_checked,
+            Arithmetics::IntUnchecked { signed: false } => Value::rem_uint_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: false } => Value::rem_uint_ap,
+            Arithmetics::IntChecked { signed: true } => Value::rem_int_checked,
+            Arithmetics::IntUnchecked { signed: true } => Value::rem_int_unchecked,
+            Arithmetics::IntArbitraryPrecision { signed: true } => Value::rem_int_ap,
+            Arithmetics::Float => Value::rem_float,
+            Arithmetics::FloatArbitraryPrecision => Value::rem_float_ap,
         }
     }
 }
@@ -193,15 +208,10 @@ impl Value {
     }
 }
 
-impl RegVal {
-    pub fn step_uint_checked(value: RegVal, step: i8) -> RegVal {
-        let value = if let Some(value) = *value {
-            value
-        } else {
-            return RegVal::none();
-        };
+impl Value {
+    pub fn step_uint_checked(value: Value, step: i8) -> Option<Value> {
         let u512_max = u512::from_le_bytes([0xFF; 64]);
-        let step = u512::from_u64(step as u64).unwrap();
+        let step = u512::from(step as u64);
         let mut val: u512 = value.into();
         if step >= u512_max - val {
             None
@@ -209,17 +219,11 @@ impl RegVal {
             val = val + step;
             Some(Value::from(val))
         }
-        .into()
     }
 
-    pub fn step_uint_unchecked(value: RegVal, step: i8) -> RegVal {
-        let value = if let Some(value) = *value {
-            value
-        } else {
-            return RegVal::none();
-        };
+    pub fn step_uint_unchecked(value: Value, step: i8) -> Option<Value> {
         let u512_max = u512::from_le_bytes([0xFF; 64]);
-        let step = u512::from_u64(step as u64).unwrap();
+        let step = u512::from(step as u64);
         let mut val: u512 = value.into();
         if step >= u512_max - val {
             Some(Value::from(step - (u512_max - val)))
@@ -227,166 +231,235 @@ impl RegVal {
             val = val + step;
             Some(Value::from(val))
         }
-        .into()
     }
 
-    pub fn step_uint_ap(src: RegVal, step: i8) -> RegVal {
+    pub fn step_uint_ap(src: Value, step: i8) -> Option<Value> {
         todo!()
     }
 
-    pub fn step_int_checked(src: RegVal, step: i8) -> RegVal {
+    pub fn step_int_checked(src: Value, step: i8) -> Option<Value> {
         todo!()
     }
 
-    pub fn step_int_unchecked(src: RegVal, step: i8) -> RegVal {
+    pub fn step_int_unchecked(src: Value, step: i8) -> Option<Value> {
         todo!()
     }
 
-    pub fn step_int_ap(src: RegVal, step: i8) -> RegVal {
+    pub fn step_int_ap(src: Value, step: i8) -> Option<Value> {
         todo!()
     }
 
-    pub fn step_float(src: RegVal, step: i8) -> RegVal {
+    pub fn step_float(src: Value, step: i8) -> Option<Value> {
         todo!()
     }
 
-    pub fn step_float_ap(src: RegVal, step: i8) -> RegVal {
-        todo!()
-    }
-}
-
-impl RegVal {
-    pub fn add_uint_checked(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn add_uint_unchecked(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn add_uint_ap(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn add_int_checked(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn add_int_unchecked(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn add_int_ap(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn add_float(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn add_float_ap(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn step_float_ap(src: Value, step: i8) -> Option<Value> {
         todo!()
     }
 }
 
-impl RegVal {
-    pub fn sub_uint_checked(src1: RegVal, src2: RegVal) -> RegVal {
+impl Value {
+    pub fn add_uint_checked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        src1.checked_add(src2).map(Value::from)
+    }
+
+    pub fn add_uint_unchecked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        Some(src1.wrapping_add(src2).into())
+    }
+
+    pub fn add_uint_ap(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn sub_uint_unchecked(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn add_int_checked(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn sub_uint_ap(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn add_int_unchecked(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn sub_int_checked(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn add_int_ap(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn sub_int_unchecked(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn add_float(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn sub_int_ap(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn sub_float(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn sub_float_ap(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-}
-
-impl RegVal {
-    pub fn mul_uint_checked(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn mul_uint_unchecked(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn mul_uint_ap(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn mul_int_checked(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn mul_int_unchecked(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn mul_int_ap(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn mul_float(src1: RegVal, src2: RegVal) -> RegVal {
-        todo!()
-    }
-
-    pub fn mul_float_ap(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn add_float_ap(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 }
 
-impl RegVal {
-    pub fn div_uint_checked(src1: RegVal, src2: RegVal) -> RegVal {
+impl Value {
+    pub fn sub_uint_checked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        src1.checked_sub(src2).map(Value::from)
+    }
+
+    pub fn sub_uint_unchecked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        Some(src1.wrapping_sub(src2).into())
+    }
+
+    pub fn sub_uint_ap(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn div_uint_unchecked(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn sub_int_checked(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn div_uint_ap(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn sub_int_unchecked(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn div_int_checked(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn sub_int_ap(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn div_int_unchecked(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn sub_float(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn div_int_ap(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn sub_float_ap(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+}
+
+impl Value {
+    pub fn mul_uint_checked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        src1.checked_mul(src2).map(Value::from)
+    }
+
+    pub fn mul_uint_unchecked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        Some(src1.wrapping_mul(src2).into())
+    }
+
+    pub fn mul_uint_ap(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn div_float(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn mul_int_checked(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 
-    pub fn div_float_ap(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn mul_int_unchecked(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn mul_int_ap(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn mul_float(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn mul_float_ap(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+}
+
+impl Value {
+    pub fn div_uint_checked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        if src2 == u512::ZERO {
+            None
+        } else {
+            Some((src1 / src2).into())
+        }
+    }
+
+    pub fn div_uint_unchecked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        if src2 == u512::ZERO {
+            Some(0.into())
+        } else {
+            Some((src1 / src2).into())
+        }
+    }
+
+    pub fn div_uint_ap(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn div_int_checked(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn div_int_unchecked(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn div_int_ap(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn div_float(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn div_float_ap(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+}
+
+impl Value {
+    pub fn rem_uint_checked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        if src2 == u512::ZERO {
+            None
+        } else {
+            Some((src1 % src2).into())
+        }
+    }
+
+    pub fn rem_uint_unchecked(src1: Value, src2: Value) -> Option<Value> {
+        let src1: u512 = src1.into();
+        let src2: u512 = src2.into();
+        if src2 == u512::ZERO {
+            Some(0.into())
+        } else {
+            Some((src1 % src2).into())
+        }
+    }
+
+    pub fn rem_uint_ap(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn rem_int_checked(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn rem_int_unchecked(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn rem_int_ap(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn rem_float(src1: Value, src2: Value) -> Option<Value> {
+        todo!()
+    }
+
+    pub fn rem_float_ap(src1: Value, src2: Value) -> Option<Value> {
         todo!()
     }
 }

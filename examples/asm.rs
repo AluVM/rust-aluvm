@@ -23,8 +23,8 @@ use alure::instr::{
 };
 use alure::{Lib, Runtime};
 use alure::{Reg, Reg16, Reg32, RegA, RegBlock, RegR};
-use amplify::hex::ToHex;
-use amplify::num::u4;
+use amplify_num::hex::ToHex;
+use amplify_num::u4;
 use std::convert::TryFrom;
 
 trace_macros!(true);
@@ -71,8 +71,7 @@ fn main() {
         sub:c   a32[12],a32[13]                 ;
         mul:c   a32[12],a32[13]                 ;
         div:c   a32[12],a32[13]                 ;
-        mod     a64[8],a8[2],a8[3]              ;
-        abs     a8[3]                           ;
+        rem:u   a64[8],a8[2]                    ;
         ret                                     ;
         jmp     0                               ;
     };

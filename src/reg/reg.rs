@@ -8,11 +8,10 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify::num::{u256, u3, u4, u5, u512};
+use amplify_num::{u256, u3, u4, u5, u512};
 use core::ops::Deref;
 use std::collections::BTreeMap;
 
-use crate::instr::NumType;
 use crate::{reg::Value, LibSite, RegVal};
 
 /// All possible register indexes for `a` and `r` register sets
@@ -625,17 +624,17 @@ impl From<&Reg> for u4 {
 impl From<Reg> for u4 {
     fn from(reg: Reg) -> Self {
         match reg {
-            Reg::A(a) => u4::with(*u3::from(a)),
-            Reg::R(r) => u4::with(*u3::from(r) + 8),
+            Reg::A(a) => u4::with(u3::from(a).as_u8()),
+            Reg::R(r) => u4::with(u3::from(r).as_u8() + 8),
         }
     }
 }
 
 impl From<u4> for Reg {
     fn from(val: u4) -> Self {
-        match *val {
-            0..=7 => Reg::A(RegA::from(u3::with(*val))),
-            _ => Reg::R(RegR::from(u3::with(*val + 8))),
+        match val.as_u8() {
+            0..=7 => Reg::A(RegA::from(u3::with(val.as_u8()))),
+            _ => Reg::R(RegR::from(u3::with(val.as_u8() + 8))),
         }
     }
 }
@@ -969,42 +968,47 @@ impl Registers {
         src1: impl Into<Reg32>,
         src2: impl Into<Reg32>,
         dst: impl Into<Reg32>,
-        op: fn(RegVal, RegVal) -> RegVal,
+        op: fn(Value, Value) -> Value,
     ) {
-        self.set(reg, dst, op(self.get(reg, src1), self.get(reg, src2)))
+        let reg_val = match (*self.get(reg, src1), *self.get(reg, src2)) {
+            (None, None) | (None, Some(_)) | (Some(_), None) => RegVal::none(),
+            (Some(val1), Some(val2)) => op(val1, val2).into(),
+        };
+        self.set(reg, dst, reg_val);
     }
 
     #[inline]
-    pub fn op1(
+    pub fn op_ap1(
         &mut self,
         reg: RegA,
         index: impl Into<Reg32>,
         ap: bool,
         dst: impl Into<Reg32>,
-        op: impl Fn(RegVal) -> RegVal,
+        op: impl Fn(Value) -> Option<Value>,
     ) {
-        self.set(
-            if ap { RegA::AP } else { reg },
-            dst,
-            op(self.get(reg, index)),
-        )
+        let reg_val = self
+            .get(reg, index)
+            .and_then(op)
+            .map(RegVal::from)
+            .unwrap_or_default();
+        self.set(if ap { RegA::AP } else { reg }, dst, reg_val);
     }
 
     #[inline]
-    pub fn op2(
+    pub fn op_ap2(
         &mut self,
         reg: RegA,
         src1: impl Into<Reg32>,
         src2: impl Into<Reg32>,
         ap: bool,
         dst: impl Into<Reg32>,
-        op: fn(RegVal, RegVal) -> RegVal,
+        op: fn(Value, Value) -> Option<Value>,
     ) {
-        self.set(
-            if ap { RegA::AP } else { reg },
-            dst,
-            op(self.get(reg, src1), self.get(reg, src2)),
-        )
+        let reg_val = match (*self.get(reg, src1), *self.get(reg, src2)) {
+            (None, None) | (None, Some(_)) | (Some(_), None) => RegVal::none(),
+            (Some(val1), Some(val2)) => op(val1, val2).into(),
+        };
+        self.set(if ap { RegA::AP } else { reg }, dst, reg_val);
     }
 
     pub fn status(&self) -> bool {

@@ -21,8 +21,8 @@ use crate::instr::{ExecStep, NOp};
 use crate::{Cursor, Instr, InstructionSet, Registers};
 
 const LIB_HASH_MIDSTATE: [u8; 32] = [
-    156, 224, 228, 230, 124, 17, 108, 57, 56, 179, 202, 242, 195, 15, 80, 137,
-    211, 243, 147, 108, 71, 99, 110, 96, 125, 179, 62, 234, 221, 198, 240, 201,
+    156, 224, 228, 230, 124, 17, 108, 57, 56, 179, 202, 242, 195, 15, 80, 137, 211, 243, 147, 108,
+    71, 99, 110, 96, 125, 179, 62, 234, 221, 198, 240, 201,
 ];
 
 sha256t_hash_newtype!(
@@ -86,11 +86,7 @@ where
     }
 
     /// Executes library code starting at entrypoint
-    pub fn run(
-        &self,
-        entrypoint: u16,
-        registers: &mut Registers,
-    ) -> Option<LibSite> {
+    pub fn run(&self, entrypoint: u16, registers: &mut Registers) -> Option<LibSite> {
         let mut cursor = Cursor::with(&self.bytecode.bytes[..]);
         let lib_hash = self.lib_hash();
         cursor.seek(entrypoint);
@@ -180,7 +176,7 @@ impl Blob {
 #[cfg(feature = "std")]
 impl Display for Blob {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify::hex::ToHex;
+        use amplify_num::hex::ToHex;
         let vec = Vec::from(&self.bytes[..self.len as usize]);
         if let Ok(s) = String::from_utf8(vec) {
             f.write_str("\"")?;
@@ -201,9 +197,7 @@ impl Display for Blob {
 
 /// Error returned by [`Runtime::call`] method when the code calls to a library
 /// not known to the runtime
-#[derive(
-    Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error,
-)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
 #[display("call to unknown library {0:#}")]
 pub struct NoLibraryError(LibHash);
 
@@ -256,10 +250,7 @@ where
         self.call(self.entrypoint)
     }
 
-    pub fn call(
-        &mut self,
-        mut method: LibSite,
-    ) -> Result<bool, NoLibraryError> {
+    pub fn call(&mut self, mut method: LibSite) -> Result<bool, NoLibraryError> {
         while let Some(m) = self
             .libs
             .get(&method.lib)

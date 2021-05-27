@@ -392,20 +392,15 @@ macro_rules! instr {
             ))
         }
     };
-    (mod $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ] , $reg3:ident [ $idx3:literal ]) => {
-        if _reg_block!($reg1) != RegBlock::A
-            || _reg_block!($reg2) != RegBlock::A
-            || _reg_block!($reg3) != RegBlock::A
-        {
+    (rem : $flag:ident $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        if _reg_block!($reg1) != RegBlock::A || _reg_block!($reg2) != RegBlock::A {
             panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
         } else {
-            Instr::Arithmetic(ArithmeticOp::Mod(
+            Instr::Arithmetic(ArithmeticOp::Div(
+                _arithmetic_flag!($flag),
                 _reg_ty!(Reg, $reg1),
                 _reg_idx!($idx1),
-                _reg_ty!(Reg, $reg2),
                 _reg_idx!($idx2),
-                _reg_ty!(Reg, $reg3),
-                _reg_idx!($idx3),
             ))
         }
     };

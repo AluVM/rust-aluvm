@@ -11,13 +11,13 @@
 use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Shl, Shr};
 
-use amplify::num::u5;
+use amplify_num::u5;
 
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
-    Instr, MoveOp, NOp, NumType, PutOp, SecpOp,
+    Instr, MoveOp, NOp, PutOp, SecpOp,
 };
-use crate::reg::{Reg32, RegVal, Registers};
+use crate::reg::{Reg32, RegVal, Registers, Value};
 use crate::LibSite;
 
 /// Turing machine movement after instruction execution
@@ -228,56 +228,63 @@ impl InstructionSet for ArithmeticOp {
                 });
             }
             ArithmeticOp::Stp(dir, arithm, reg, index, step) => {
-                regs.op1(
+                regs.op_ap1(
                     reg,
                     index,
                     arithm.is_ap(),
                     Reg32::Reg1,
-                    RegVal::step_op(arithm, *step as i8 * dir.multiplier()),
+                    Value::step_op(arithm, step.as_u8() as i8 * dir.multiplier()),
                 );
             }
             ArithmeticOp::Add(arithm, reg, src1, src2) => {
-                regs.op2(
+                regs.op_ap2(
                     reg,
                     src1,
                     src2,
                     arithm.is_ap(),
                     Reg32::Reg1,
-                    RegVal::add_op(arithm),
+                    Value::add_op(arithm),
                 );
             }
             ArithmeticOp::Sub(arithm, reg, src1, src2) => {
-                regs.op2(
+                regs.op_ap2(
                     reg,
                     src1,
                     src2,
                     arithm.is_ap(),
                     Reg32::Reg1,
-                    RegVal::sub_op(arithm),
+                    Value::sub_op(arithm),
                 );
             }
             ArithmeticOp::Mul(arithm, reg, src1, src2) => {
-                regs.op2(
+                regs.op_ap2(
                     reg,
                     src1,
                     src2,
                     arithm.is_ap(),
                     Reg32::Reg1,
-                    RegVal::mul_op(arithm),
+                    Value::mul_op(arithm),
                 );
             }
             ArithmeticOp::Div(arithm, reg, src1, src2) => {
-                regs.op2(
+                regs.op_ap2(
                     reg,
                     src1,
                     src2,
                     arithm.is_ap(),
                     Reg32::Reg1,
-                    RegVal::div_op(arithm),
+                    Value::div_op(arithm),
                 );
             }
-            ArithmeticOp::Mod(reg1, index1, reg2, index2, reg3, index3) => {
-                todo!()
+            ArithmeticOp::Rem(arithm, reg, src1, src2) => {
+                regs.op_ap2(
+                    reg,
+                    src1,
+                    src2,
+                    arithm.is_ap(),
+                    Reg32::Reg1,
+                    Value::rem_op(arithm),
+                );
             }
             ArithmeticOp::Abs(reg, index) => {
                 todo!()
@@ -296,8 +303,8 @@ impl InstructionSet for BitwiseOp {
             BitwiseOp::Not(reg, idx) => regs.set(reg, idx, !regs.get(reg, idx)),
             BitwiseOp::Shl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Shl::shl),
             BitwiseOp::Shr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Shr::shr),
-            BitwiseOp::Scl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, RegVal::scl),
-            BitwiseOp::Scr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, RegVal::scr),
+            BitwiseOp::Scl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Value::scl),
+            BitwiseOp::Scr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Value::scr),
         }
         ExecStep::Next
     }

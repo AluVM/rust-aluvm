@@ -6,18 +6,10 @@ version = 3
 name = "alure"
 version = "0.1.0"
 dependencies = [
- "amplify",
+ "amplify_derive",
+ "amplify_num",
  "bitcoin_hashes",
  "paste",
-]
-
-[[package]]
-name = "amplify"
-version = "3.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fefcd4b9b40271f3d068df8e353575bbcbb9c8961ece518812f3d183f774cd5"
-dependencies = [
- "amplify_derive",
 ]
 
 [[package]]
@@ -31,6 +23,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "amplify_num"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "503e3439f9778886584280336dd97c02af32bc08e5172f8229369e6cfc360ec7"
 
 [[package]]
 name = "amplify_syn"
@@ -57,9 +55,9 @@ checksum = "acbf547ad0c65e31259204bd90935776d1c693cec2f4ff7abb7a1bbbd40dfe58"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.26"
+version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a152013215dca273577e18d2bf00fa862b89b24169fb78c4c95aeb07992c9cec"
+checksum = "f0d8caf72986c1a598726adc988bb5984792ef84f5ee5aa50209145ee8077038"
 dependencies = [
  "unicode-xid",
 ]

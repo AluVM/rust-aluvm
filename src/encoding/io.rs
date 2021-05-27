@@ -9,7 +9,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use crate::reg::{Reg, Value};
-use amplify::num::{u2, u3, u4, u5, u6, u7};
+use amplify_num::{u2, u3, u4, u5, u6, u7};
 
 // TODO: Make it sealed
 pub trait Read {
@@ -44,13 +44,6 @@ pub trait Write {
     fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), Self::Error>;
     fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), Self::Error>;
     fn write_bytes32(&mut self, data: [u8; 32]) -> Result<(), Self::Error>;
-    fn write_slice(
-        &mut self,
-        bytes: impl AsRef<[u8]>,
-    ) -> Result<(), Self::Error>;
-    fn write_value(
-        &mut self,
-        reg: Reg,
-        value: &Value,
-    ) -> Result<(), Self::Error>;
+    fn write_slice(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), Self::Error>;
+    fn write_value(&mut self, reg: Reg, value: &Value) -> Result<(), Self::Error>;
 }

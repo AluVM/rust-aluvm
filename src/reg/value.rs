@@ -14,7 +14,7 @@ use std::fmt::{self, Display, Formatter};
 #[cfg(feature = "std")]
 use std::str::FromStr;
 
-use amplify::num::{u1024, u256, u512};
+use amplify_num::{u1024, u256, u512};
 
 /// Register value, which may be `None`
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
@@ -134,12 +134,12 @@ impl Value {
 
     /// Constructs value from hex string
     #[cfg(feature = "std")]
-    pub fn from_hex(s: &str) -> Result<Value, amplify::hex::Error> {
-        use amplify::hex::FromHex;
+    pub fn from_hex(s: &str) -> Result<Value, amplify_num::hex::Error> {
+        use amplify_num::hex::FromHex;
         let s = s.trim_start_matches("0x");
         let len = s.len() / 2;
         if len > 1024 {
-            return Err(amplify::hex::Error::InvalidLength(1024, len));
+            return Err(amplify_num::hex::Error::InvalidLength(1024, len));
         }
         let mut bytes = [0u8; 1024];
         let hex = Vec::<u8>::from_hex(&s)?;
@@ -192,7 +192,7 @@ impl Value {
 pub enum LiteralParseError {
     /// Error parsing hexadecimal literal
     #[from]
-    Hex(amplify::hex::Error),
+    Hex(amplify_num::hex::Error),
 
     /// Error parsing decimal literal
     #[from]
@@ -230,7 +230,7 @@ impl FromStr for Value {
 #[cfg(feature = "std")]
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify::hex::ToHex;
+        use amplify_num::hex::ToHex;
         f.write_str("0x")?;
         if f.alternate() && self.len > 4 {
             write!(

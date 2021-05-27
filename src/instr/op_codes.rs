@@ -8,7 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify::num::u4;
+use amplify_num::u4;
 
 use crate::instr::{Arithmetics, IncDec, NumType};
 use crate::reg::{Reg32, Reg8, RegA, RegBlock, RegR, Value};
@@ -313,8 +313,8 @@ pub enum ArithmeticOp {
     Div(Arithmetics, RegA, Reg32, Reg32),
 
     /// Modulo division
-    #[cfg_attr(feature = "std", display("mod\t\t{0}{1},{2}{3},{4}{5}"))]
-    Mod(RegA, Reg32, RegA, Reg32, RegA, Reg32),
+    #[cfg_attr(feature = "std", display("rem:{0}\t{1}{2},{1}{3}"))]
+    Rem(Arithmetics, RegA, Reg32, Reg32),
 
     /// Puts absolute value of register into `a8[0]`
     #[cfg_attr(feature = "std", display("abs\t\t{0}{1}"))]

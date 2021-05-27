@@ -8,7 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify::num::{u2, u3};
+use amplify_num::{u2, u3};
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter};
 
@@ -36,7 +36,7 @@ pub enum NumType {
 impl NumType {
     /// Constructs numeric type from `u2` value (used in bytecode serialization)
     pub fn from_u2(val: u2) -> NumType {
-        match *val {
+        match val.as_u8() {
             0 => NumType::Unsigned,
             1 => NumType::Signed,
             2 => NumType::Float23,
@@ -98,7 +98,7 @@ impl Arithmetics {
     /// Constructs arithmetics variant from `u3` value (used in bytecode
     /// serialization).
     pub fn from_u3(val: u3) -> Arithmetics {
-        match *val {
+        match val.as_u8() {
             0 => Arithmetics::IntChecked { signed: false },
             1 => Arithmetics::IntUnchecked { signed: false },
             2 => Arithmetics::IntArbitraryPrecision { signed: false },

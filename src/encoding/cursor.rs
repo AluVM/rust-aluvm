@@ -8,7 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify::num::{u2, u3, u4, u5, u6, u7};
+use amplify_num::{u2, u3, u4, u5, u6, u7};
 use core::convert::TryInto;
 #[cfg(feature = "std")]
 use std::fmt::{self, Debug, Display, Formatter};
@@ -113,14 +113,14 @@ where
         }
         let byte = self.bytecode.as_ref()[self.byte_pos as usize];
         let mut mask = 0x00u8;
-        let mut cnt = *bit_count;
+        let mut cnt = bit_count.as_u8();
         while cnt > 0 {
             mask <<= 1;
             mask |= 0x01;
             cnt -= 1;
         }
-        mask <<= *self.bit_pos;
-        let val = (byte & mask) >> *self.bit_pos;
+        mask <<= self.bit_pos.as_u8();
+        let val = (byte & mask) >> self.bit_pos.as_u8();
         self.inc_bits(bit_count).map(|_| val)
     }
 
@@ -128,14 +128,15 @@ where
         if self.eof {
             return Err(CursorError::Eof);
         }
-        let pos = *self.bit_pos + *bit_count;
+        let pos = self.bit_pos.as_u8() + bit_count.as_u8();
         self.bit_pos = u3::with(pos % 8);
         self._inc_bytes_inner(pos as u16 / 8)
     }
 
     fn inc_bytes(&mut self, byte_count: u16) -> Result<(), CursorError> {
         assert_eq!(
-            *self.bit_pos, 0,
+            self.bit_pos.as_u8(),
+            0,
             "attempt to access (multiple) bytes at a non-byte aligned position"
         );
         if self.eof {
@@ -148,11 +149,12 @@ where
         if byte_count == 1 && self.byte_pos == u16::MAX {
             self.eof = true
         } else {
-            self.byte_pos = self.byte_pos.checked_add(byte_count).ok_or(
-                CursorError::OutOfBoundaries(
-                    self.byte_pos as usize + byte_count as usize,
-                ),
-            )?;
+            self.byte_pos =
+                self.byte_pos
+                    .checked_add(byte_count)
+                    .ok_or(CursorError::OutOfBoundaries(
+                        self.byte_pos as usize + byte_count as usize,
+                    ))?;
         }
         Ok(())
     }
@@ -279,43 +281,43 @@ impl Write for Cursor<&mut [u8]> {
     type Error = CursorError;
 
     fn write_bool(&mut self, data: bool) -> Result<(), CursorError> {
-        let data = if data { 1u8 } else { 0u8 } << *self.bit_pos;
+        let data = if data { 1u8 } else { 0u8 } << self.bit_pos.as_u8();
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc_bits(u3::with(1))
     }
 
     fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), CursorError> {
-        let data = data.into().as_u8() << *self.bit_pos;
+        let data = data.into().as_u8() << self.bit_pos.as_u8();
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc_bits(u3::with(2))
     }
 
     fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), CursorError> {
-        let data = data.into().as_u8() << *self.bit_pos;
+        let data = data.into().as_u8() << self.bit_pos.as_u8();
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc_bits(u3::with(3))
     }
 
     fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), CursorError> {
-        let data = data.into().as_u8() << *self.bit_pos;
+        let data = data.into().as_u8() << self.bit_pos.as_u8();
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc_bits(u3::with(4))
     }
 
     fn write_u5(&mut self, data: impl Into<u5>) -> Result<(), CursorError> {
-        let data = data.into().as_u8() << *self.bit_pos;
+        let data = data.into().as_u8() << self.bit_pos.as_u8();
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc_bits(u3::with(5))
     }
 
     fn write_u6(&mut self, data: impl Into<u6>) -> Result<(), CursorError> {
-        let data = data.into().as_u8() << *self.bit_pos;
+        let data = data.into().as_u8() << self.bit_pos.as_u8();
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc_bits(u3::with(6))
     }
 
     fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), CursorError> {
-        let data = data.into().as_u8() << *self.bit_pos;
+        let data = data.into().as_u8() << self.bit_pos.as_u8();
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc_bits(u3::with(7))
     }
@@ -339,10 +341,7 @@ impl Write for Cursor<&mut [u8]> {
         self.inc_bytes(32)
     }
 
-    fn write_slice(
-        &mut self,
-        bytes: impl AsRef<[u8]>,
-    ) -> Result<(), CursorError> {
+    fn write_slice(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), CursorError> {
         // We control that `self.byte_pos + bytes.len() < u16` at buffer
         // allocation time, so if we panic here this means we have a bug in
         // out allocation code and has to kill the process and report this issue
@@ -357,11 +356,7 @@ impl Write for Cursor<&mut [u8]> {
         self.inc_bytes(2u16 + len as u16)
     }
 
-    fn write_value(
-        &mut self,
-        reg: Reg,
-        value: &Value,
-    ) -> Result<(), CursorError> {
+    fn write_value(&mut self, reg: Reg, value: &Value) -> Result<(), CursorError> {
         let len = match reg.bits() {
             Some(bits) => bits / 8,
             None => {

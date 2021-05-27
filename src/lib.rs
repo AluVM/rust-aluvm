@@ -10,8 +10,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg_attr(feature = "std", macro_use)]
-extern crate amplify;
+#[macro_use]
+extern crate amplify_derive;
+
 #[macro_use]
 extern crate bitcoin_hashes;
 

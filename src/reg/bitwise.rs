@@ -8,7 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use super::RegVal;
+use super::{RegVal, Value};
 use core::ops::{BitAnd, BitOr, BitXor, Not, Shl, Shr};
 
 impl Not for RegVal {
@@ -19,52 +19,52 @@ impl Not for RegVal {
     }
 }
 
-impl BitAnd for RegVal {
-    type Output = RegVal;
+impl BitAnd for Value {
+    type Output = Value;
 
     fn bitand(self, rhs: Self) -> Self::Output {
         todo!()
     }
 }
 
-impl BitOr for RegVal {
-    type Output = RegVal;
+impl BitOr for Value {
+    type Output = Value;
 
     fn bitor(self, rhs: Self) -> Self::Output {
         todo!()
     }
 }
 
-impl BitXor for RegVal {
-    type Output = RegVal;
+impl BitXor for Value {
+    type Output = Value;
 
     fn bitxor(self, rhs: Self) -> Self::Output {
         todo!()
     }
 }
 
-impl Shl for RegVal {
-    type Output = RegVal;
+impl Shl for Value {
+    type Output = Value;
 
     fn shl(self, rhs: Self) -> Self::Output {
         todo!()
     }
 }
 
-impl Shr for RegVal {
-    type Output = RegVal;
+impl Shr for Value {
+    type Output = Value;
 
     fn shr(self, rhs: Self) -> Self::Output {
         todo!()
     }
 }
 
-impl RegVal {
-    pub fn scl(src1: RegVal, src2: RegVal) -> RegVal {
+impl Value {
+    pub fn scl(src1: Value, src2: Value) -> Value {
         todo!()
     }
 
-    pub fn scr(src1: RegVal, src2: RegVal) -> RegVal {
+    pub fn scr(src1: Value, src2: Value) -> Value {
         todo!()
     }
 }
