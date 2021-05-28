@@ -20,9 +20,10 @@ extern crate paste;
 use alure::instr::bytecode::disassemble;
 use alure::instr::{
     ArithmeticOp, Arithmetics, CmpOp, ControlFlowOp, IncDec, Instr, MoveOp, NOp, NumType, PutOp,
+    Secp256k1Op,
 };
 use alure::{Lib, Runtime};
-use alure::{Reg, Reg16, Reg32, RegA, RegBlock, RegR};
+use alure::{Reg, Reg16, Reg32, Reg8, RegA, RegBlock, RegR};
 use amplify_num::hex::ToHex;
 use amplify_num::u4;
 use std::convert::TryFrom;
@@ -72,6 +73,10 @@ fn main() {
         mul:c   a32[12],a32[13]                 ;
         div:c   a32[12],a32[13]                 ;
         rem:u   a64[8],a8[2]                    ;
+        ecgen:secp r256[1],r512[1]              ;
+        ecmul:secp a256[1],r512[1],r512[22]     ;
+        ecadd:secp r512[22],r512[1]             ;
+        ecneg:secp r512[1],r512[2]              ;
         ret                                     ;
         jmp     0                               ;
     };

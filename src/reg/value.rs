@@ -93,7 +93,7 @@ pub struct Value {
 }
 
 impl PartialEq for Value {
-    fn eq(&self, mut other: &Self) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.to_clean().eq(&other.to_clean())
     }
 }

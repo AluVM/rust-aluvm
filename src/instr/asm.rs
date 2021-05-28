@@ -407,6 +407,49 @@ macro_rules! instr {
     (abs $reg:ident [ $idx:literal ]) => {
         Instr::Arithmetic(ArithmeticOp::Abs(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
     };
+
+    (ecgen : secp $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        if _reg_block!($reg1) != RegBlock::R || _reg_block!($reg2) != RegBlock::R {
+            panic!("elliptic curve instruction accept only generic registers (R-registers)");
+        } else {
+            Instr::Secp256k1(Secp256k1Op::Gen(
+                _reg_idx!($idx1),
+                _reg_idx8!($idx2),
+            ))
+        }
+    };
+    (ecmul : secp $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ] , $reg3:ident [ $idx3:literal ]) => {
+        if _reg_ty!(Reg, $reg2) != _reg_ty!(Reg, $reg3) {
+            panic!("ecmul instruction can be used only with registers of the same type");
+        } else {
+            Instr::Secp256k1(Secp256k1Op::Mul(
+                _reg_block!($reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+                _reg_idx!($idx3),
+            ))
+        }
+    };
+    (ecadd : secp $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        if _reg_block!($reg1) != RegBlock::R || _reg_block!($reg2) != RegBlock::R {
+            panic!("elliptic curve instruction accept only generic registers (R-registers)");
+        } else {
+            Instr::Secp256k1(Secp256k1Op::Add(
+                _reg_idx!($idx1),
+                _reg_idx8!($idx2),
+            ))
+        }
+    };
+    (ecneg : secp $reg1:ident [ $idx1:literal ] , $reg2:ident [ $idx2:literal ]) => {
+        if _reg_block!($reg1) != RegBlock::R || _reg_block!($reg2) != RegBlock::R {
+            panic!("elliptic curve instruction accept only generic registers (R-registers)");
+        } else {
+            Instr::Secp256k1(Secp256k1Op::Neg(
+                _reg_idx!($idx1),
+                _reg_idx8!($idx2),
+            ))
+        }
+    };
 }
 
 #[doc(hidden)]
@@ -644,6 +687,14 @@ macro_rules! _reg_ty {
 macro_rules! _reg_idx {
     ($idx:literal) => {
         paste! { Reg32::[<Reg $idx>] }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_idx8 {
+    ($idx:literal) => {
+        paste! { Reg8::[<Reg $idx>] }
     };
 }
 
