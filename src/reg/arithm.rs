@@ -166,13 +166,13 @@ impl Value {
 
     /// Compares two values according to unsigned arithmetics
     pub fn cmp_uint(self, other: Self) -> Ordering {
-        self.as_clean().bytes.cmp(&other.as_clean().bytes)
+        self.to_clean().bytes.cmp(&other.to_clean().bytes)
     }
 
     /// Compares two values according to unsigned arithmetics
     pub fn cmp_int(self, other: Self) -> Ordering {
-        let mut a = self.as_clean();
-        let mut b = other.as_clean();
+        let mut a = self.to_clean();
+        let mut b = other.to_clean();
         let rev_a = if a.len > 0 {
             let sign = &mut a.bytes[a.len as usize - 1];
             let rev_a = *sign & 0x80 == 0x80;

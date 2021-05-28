@@ -8,7 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use core::ops::Deref;
+use core::ops::{Deref, Index, IndexMut};
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter};
 #[cfg(feature = "std")]
@@ -94,7 +94,7 @@ pub struct Value {
 
 impl PartialEq for Value {
     fn eq(&self, mut other: &Self) -> bool {
-        self.as_clean().eq(&other.as_clean())
+        self.to_clean().eq(&other.to_clean())
     }
 }
 
@@ -106,6 +106,22 @@ impl Default for Value {
             len: 0,
             bytes: [0u8; 1024],
         }
+    }
+}
+
+impl Index<u16> for Value {
+    type Output = u8;
+
+    fn index(&self, index: u16) -> &Self::Output {
+        assert!(index < self.len);
+        &self.bytes[index as usize]
+    }
+}
+
+impl IndexMut<u16> for Value {
+    fn index_mut(&mut self, index: u16) -> &mut Self::Output {
+        assert!(index < self.len);
+        &mut self.bytes[index as usize]
     }
 }
 
@@ -172,15 +188,23 @@ impl Value {
     }
 
     /// Ensures that all non-value bits are set to zero
+    #[inline]
     pub fn clean(&mut self) {
         self.bytes[self.len as usize..].fill(0);
     }
 
     /// Returns a copy where all non-value bits are set to zero
-    pub fn as_clean(&self) -> Self {
+    #[inline]
+    pub fn to_clean(&self) -> Self {
         let mut copy = *self;
         copy.bytes[self.len as usize..].fill(0);
         copy
+    }
+
+    /// Converts the value into `u1024` integer
+    #[inline]
+    pub fn to_u1024(&self) -> u1024 {
+        self.to_clean().into()
     }
 }
 
