@@ -8,7 +8,6 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#[cfg(feature = "std")]
 #[macro_export]
 macro_rules! aluasm {
     ($( $tt:tt )+) => { {
@@ -453,7 +452,6 @@ macro_rules! instr {
 }
 
 #[doc(hidden)]
-#[cfg(feature = "std")]
 #[macro_export]
 macro_rules! aluasm_inner {
     { $code:ident => } => { };

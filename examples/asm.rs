@@ -26,7 +26,7 @@ use alure::{Lib, Runtime};
 use alure::{Reg, Reg16, Reg32, Reg8, RegA, RegBlock, RegR};
 use amplify_num::hex::ToHex;
 use amplify_num::u4;
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 
 trace_macros!(true);
 

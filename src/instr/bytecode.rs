@@ -8,6 +8,8 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use bitcoin_hashes::Hash;
 use core::ops::RangeInclusive;
 
@@ -21,9 +23,9 @@ use crate::reg::{Reg, RegBlock, Value};
 use crate::{Blob, Instr, InstructionSet, LibHash, LibSite};
 
 /// Errors decoding bytecode
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(doc_comments)]
-#[derive(Error, From)]
+#[cfg_attr(feature = "std", derive(Error))]
 #[allow(clippy::branches_sharing_code)]
 pub enum DecodeError {
     /// Cursor error
@@ -37,9 +39,9 @@ pub enum DecodeError {
 }
 
 /// Errors encoding instructions
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(doc_comments)]
-#[derive(Error, From)]
+#[cfg_attr(feature = "std", derive(Error))]
 #[allow(clippy::branches_sharing_code)]
 pub enum EncodeError {
     /// Number of instructions ({0}) exceeds limit of 2^16
@@ -51,7 +53,6 @@ pub enum EncodeError {
     Cursor(CursorError),
 }
 
-#[cfg(feature = "std")]
 /// Decodes library from bytecode string
 pub fn disassemble<E>(bytecode: impl AsRef<[u8]>) -> Result<Vec<Instr<E>>, DecodeError>
 where

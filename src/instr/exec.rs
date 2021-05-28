@@ -18,7 +18,9 @@ use super::{
     Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
 use crate::reg::{Reg32, RegVal, Registers, Value};
-use crate::{LibSite, RegA, RegR};
+use crate::LibSite;
+#[cfg(feature = "std")]
+use crate::{RegA, RegR};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -36,20 +38,8 @@ pub enum ExecStep {
     Call(LibSite),
 }
 
-#[cfg(not(feature = "std"))]
 /// Trait for instructions
-pub trait Instruction: Bytecode {
-    /// Executes given instruction taking all registers as input and output.
-    /// The method is provided with the current code position which may be
-    /// used by the instruction for constructing call stack.
-    ///
-    /// Returns whether further execution should be stopped.
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep;
-}
-
-#[cfg(feature = "std")]
-/// Trait for instructions
-pub trait InstructionSet: Bytecode + std::fmt::Display {
+pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
     /// Executes given instruction taking all registers as input and output.
     /// The method is provided with the current code position which may be
     /// used by the instruction for constructing call stack.
@@ -72,7 +62,9 @@ where
             Instr::Bitwise(instr) => instr.exec(regs, site),
             Instr::Bytes(instr) => instr.exec(regs, site),
             Instr::Digest(instr) => instr.exec(regs, site),
+            #[cfg(feature = "secp256k1")]
             Instr::Secp256k1(instr) => instr.exec(regs, site),
+            #[cfg(feature = "curve25519")]
             Instr::Curve25519(instr) => instr.exec(regs, site),
             Instr::ExtensionCodes(instr) => instr.exec(regs, site),
             Instr::Nop => ExecStep::Next,

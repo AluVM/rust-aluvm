@@ -8,11 +8,10 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
+use core::fmt::{self, Display, Formatter};
 use core::marker::PhantomData;
-#[cfg(feature = "std")]
-use std::collections::HashMap;
-#[cfg(feature = "std")]
-use std::fmt::{self, Display, Formatter};
 
 use bitcoin_hashes::Hash;
 
@@ -35,11 +34,8 @@ sha256t_hash_newtype!(
 );
 
 /// AluVM executable code library
-#[cfg_attr(
-    feature = "std",
-    derive(Debug, Display),
-    display("{bytecode}", alt = "{bytecode:#}")
-)]
+#[derive(Debug, Display)]
+#[display("{bytecode}", alt = "{bytecode:#}")]
 pub struct Lib<E = NOp>
 where
     E: InstructionSet,
@@ -115,8 +111,8 @@ where
 }
 
 /// Location within a library
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
-#[cfg_attr(feature = "std", derive(Display), display("{pos:#06X}@{lib}"))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
+#[display("{pos:#06X}@{lib}")]
 pub struct LibSite {
     /// Library hash
     pub lib: LibHash,
@@ -195,10 +191,19 @@ impl Display for Blob {
     }
 }
 
+#[cfg(not(feature = "std"))]
+impl Display for Blob {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let vec = Vec::from(&self.bytes[..self.len as usize]);
+        write!(f, "{:#04X?}", &self.bytes[0usize..(self.len as usize)])
+    }
+}
+
 /// Error returned by [`Runtime::call`] method when the code calls to a library
 /// not known to the runtime
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[display("call to unknown library {0:#}")]
+#[cfg_attr(feature = "std", derive(Error))]
 pub struct NoLibraryError(LibHash);
 
 /// AluVM runtime execution environment
@@ -208,7 +213,7 @@ where
     E: InstructionSet,
 {
     /// Libraries known to the runtime, identified by their hashes
-    libs: HashMap<LibHash, Lib<E>>,
+    libs: BTreeMap<LibHash, Lib<E>>,
 
     /// Entrypoint for the main function
     entrypoint: LibSite,

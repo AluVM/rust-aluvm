@@ -91,7 +91,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all --all-targets --all-features
+          args: --all --all-targets --no-default-features --features std
   dependency:
     runs-on: ubuntu-latest
     steps:

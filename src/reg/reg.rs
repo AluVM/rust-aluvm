@@ -8,143 +8,144 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
 use amplify_num::{u256, u3, u4, u5, u512};
 use core::ops::Deref;
-use std::collections::BTreeMap;
 
 use crate::{reg::Value, LibSite, RegVal};
 
 /// All possible register indexes for `a` and `r` register sets
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
 pub enum Reg32 {
     /// Register with index `[1]`
-    #[cfg_attr(feature = "std", display("[1]"))]
+    #[display("[1]")]
     Reg1 = 0,
 
     /// Register with index `[2]`
-    #[cfg_attr(feature = "std", display("[2]"))]
+    #[display("[2]")]
     Reg2 = 1,
 
     /// Register with index `[3]`
-    #[cfg_attr(feature = "std", display("[3]"))]
+    #[display("[3]")]
     Reg3 = 2,
 
     /// Register with index `[4]`
-    #[cfg_attr(feature = "std", display("[4]"))]
+    #[display("[4]")]
     Reg4 = 3,
 
     /// Register with index `[5]`
-    #[cfg_attr(feature = "std", display("[5]"))]
+    #[display("[5]")]
     Reg5 = 4,
 
     /// Register with index `[6]`
-    #[cfg_attr(feature = "std", display("[6]"))]
+    #[display("[6]")]
     Reg6 = 5,
 
     /// Register with index `[7]`
-    #[cfg_attr(feature = "std", display("[7]"))]
+    #[display("[7]")]
     Reg7 = 6,
 
     /// Register with index `[8]`
-    #[cfg_attr(feature = "std", display("[8]"))]
+    #[display("[8]")]
     Reg8 = 7,
 
     /// Register with index `[9]`
-    #[cfg_attr(feature = "std", display("[9]"))]
+    #[display("[9]")]
     Reg9 = 8,
 
     /// Register with index `[10]`
-    #[cfg_attr(feature = "std", display("[10]"))]
+    #[display("[10]")]
     Reg10 = 9,
 
     /// Register with index `[11]`
-    #[cfg_attr(feature = "std", display("[11]"))]
+    #[display("[11]")]
     Reg11 = 10,
 
     /// Register with index `[12]`
-    #[cfg_attr(feature = "std", display("[12]"))]
+    #[display("[12]")]
     Reg12 = 11,
 
     /// Register with index `[13]`
-    #[cfg_attr(feature = "std", display("[13]"))]
+    #[display("[13]")]
     Reg13 = 12,
 
     /// Register with index `[14]`
-    #[cfg_attr(feature = "std", display("[14]"))]
+    #[display("[14]")]
     Reg14 = 13,
 
     /// Register with index `[15]`
-    #[cfg_attr(feature = "std", display("[15]"))]
+    #[display("[15]")]
     Reg15 = 14,
 
     /// Register with index `[16]`
-    #[cfg_attr(feature = "std", display("[16]"))]
+    #[display("[16]")]
     Reg16 = 15,
 
     /// Register with index `[17]`
-    #[cfg_attr(feature = "std", display("[17]"))]
+    #[display("[17]")]
     Reg17 = 16,
 
     /// Register with index `[18]`
-    #[cfg_attr(feature = "std", display("[18]"))]
+    #[display("[18]")]
     Reg18 = 17,
 
     /// Register with index `[19]`
-    #[cfg_attr(feature = "std", display("[19]"))]
+    #[display("[19]")]
     Reg19 = 18,
 
     /// Register with index `[20]`
-    #[cfg_attr(feature = "std", display("[10]"))]
+    #[display("[10]")]
     Reg20 = 19,
 
     /// Register with index `[21]`
-    #[cfg_attr(feature = "std", display("[21]"))]
+    #[display("[21]")]
     Reg21 = 20,
 
     /// Register with index `[22]`
-    #[cfg_attr(feature = "std", display("[22]"))]
+    #[display("[22]")]
     Reg22 = 21,
 
     /// Register with index `[23]`
-    #[cfg_attr(feature = "std", display("[23]"))]
+    #[display("[23]")]
     Reg23 = 22,
 
     /// Register with index `[24]`
-    #[cfg_attr(feature = "std", display("[24]"))]
+    #[display("[24]")]
     Reg24 = 23,
 
     /// Register with index `[25]`
-    #[cfg_attr(feature = "std", display("[25]"))]
+    #[display("[25]")]
     Reg25 = 24,
 
     /// Register with index `[26]`
-    #[cfg_attr(feature = "std", display("[26]"))]
+    #[display("[26]")]
     Reg26 = 25,
 
     /// Register with index `[27]`
-    #[cfg_attr(feature = "std", display("[27]"))]
+    #[display("[27]")]
     Reg27 = 26,
 
     /// Register with index `[28]`
-    #[cfg_attr(feature = "std", display("[28]"))]
+    #[display("[28]")]
     Reg28 = 27,
 
     /// Register with index `[29]`
-    #[cfg_attr(feature = "std", display("[29]"))]
+    #[display("[29]")]
     Reg29 = 28,
 
     /// Register with index `[30]`
-    #[cfg_attr(feature = "std", display("[30]"))]
+    #[display("[30]")]
     Reg30 = 29,
 
     /// Register with index `[31]`
-    #[cfg_attr(feature = "std", display("[31]"))]
+    #[display("[31]")]
     Reg31 = 30,
 
     /// Register with index `[32]`
-    #[cfg_attr(feature = "std", display("[32]"))]
+    #[display("[32]")]
     Reg32 = 31,
 }
 
@@ -208,72 +209,71 @@ impl From<u5> for Reg32 {
 
 /// Shorter version of possible register indexes for `a` and `r` register sets
 /// covering initial 16 registers
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
 pub enum Reg16 {
     /// Register with index `[1]`
-    #[cfg_attr(feature = "std", display("[1]"))]
+    #[display("[1]")]
     Reg1 = 0,
 
     /// Register with index `[2]`
-    #[cfg_attr(feature = "std", display("[2]"))]
+    #[display("[2]")]
     Reg2 = 1,
 
     /// Register with index `[3]`
-    #[cfg_attr(feature = "std", display("[3]"))]
+    #[display("[3]")]
     Reg3 = 2,
 
     /// Register with index `[4]`
-    #[cfg_attr(feature = "std", display("[4]"))]
+    #[display("[4]")]
     Reg4 = 3,
 
     /// Register with index `[5]`
-    #[cfg_attr(feature = "std", display("[5]"))]
+    #[display("[5]")]
     Reg5 = 4,
 
     /// Register with index `[6]`
-    #[cfg_attr(feature = "std", display("[6]"))]
+    #[display("[6]")]
     Reg6 = 5,
 
     /// Register with index `[7]`
-    #[cfg_attr(feature = "std", display("[7]"))]
+    #[display("[7]")]
     Reg7 = 6,
 
     /// Register with index `[8]`
-    #[cfg_attr(feature = "std", display("[8]"))]
+    #[display("[8]")]
     Reg8 = 7,
 
     /// Register with index `[9]`
-    #[cfg_attr(feature = "std", display("[9]"))]
+    #[display("[9]")]
     Reg9 = 8,
 
     /// Register with index `[10]`
-    #[cfg_attr(feature = "std", display("[10]"))]
+    #[display("[10]")]
     Reg10 = 9,
 
     /// Register with index `[11]`
-    #[cfg_attr(feature = "std", display("[11]"))]
+    #[display("[11]")]
     Reg11 = 10,
 
     /// Register with index `[12]`
-    #[cfg_attr(feature = "std", display("[12]"))]
+    #[display("[12]")]
     Reg12 = 11,
 
     /// Register with index `[13]`
-    #[cfg_attr(feature = "std", display("[13]"))]
+    #[display("[13]")]
     Reg13 = 12,
 
     /// Register with index `[14]`
-    #[cfg_attr(feature = "std", display("[14]"))]
+    #[display("[14]")]
     Reg14 = 13,
 
     /// Register with index `[15]`
-    #[cfg_attr(feature = "std", display("[15]"))]
+    #[display("[15]")]
     Reg15 = 14,
 
     /// Register with index `[16]`
-    #[cfg_attr(feature = "std", display("[16]"))]
+    #[display("[16]")]
     Reg16 = 15,
 }
 
@@ -327,40 +327,39 @@ impl From<Reg16> for Reg32 {
 
 /// Short version of register indexes for `a` and `r` register sets covering
 /// initial 8 registers only
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
 pub enum Reg8 {
     /// Register with index `[1]`
-    #[cfg_attr(feature = "std", display("[1]"))]
+    #[display("[1]")]
     Reg1 = 0,
 
     /// Register with index `[2]`
-    #[cfg_attr(feature = "std", display("[2]"))]
+    #[display("[2]")]
     Reg2 = 1,
 
     /// Register with index `[3]`
-    #[cfg_attr(feature = "std", display("[3]"))]
+    #[display("[3]")]
     Reg3 = 2,
 
     /// Register with index `[4]`
-    #[cfg_attr(feature = "std", display("[4]"))]
+    #[display("[4]")]
     Reg4 = 3,
 
     /// Register with index `[5]`
-    #[cfg_attr(feature = "std", display("[5]"))]
+    #[display("[5]")]
     Reg5 = 4,
 
     /// Register with index `[6]`
-    #[cfg_attr(feature = "std", display("[6]"))]
+    #[display("[6]")]
     Reg6 = 5,
 
     /// Register with index `[7]`
-    #[cfg_attr(feature = "std", display("[7]"))]
+    #[display("[7]")]
     Reg7 = 6,
 
     /// Register with index `[8]`
-    #[cfg_attr(feature = "std", display("[8]"))]
+    #[display("[8]")]
     Reg8 = 7,
 }
 
@@ -405,40 +404,39 @@ impl From<Reg8> for Reg32 {
 }
 
 /// Enumeration of the `a` set of registers (arithmetic registers)
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
 pub enum RegA {
     /// Arbitrary-precision register
-    #[cfg_attr(feature = "std", display("ap"))]
+    #[display("ap")]
     AP = 0,
 
     /// 8-bit arithmetics register
-    #[cfg_attr(feature = "std", display("a8"))]
+    #[display("a8")]
     A8 = 1,
 
     /// 16-bit arithmetics register
-    #[cfg_attr(feature = "std", display("a16"))]
+    #[display("a16")]
     A16 = 2,
 
     /// 32-bit arithmetics register
-    #[cfg_attr(feature = "std", display("a32"))]
+    #[display("a32")]
     A32 = 3,
 
     /// 64-bit arithmetics register
-    #[cfg_attr(feature = "std", display("a64"))]
+    #[display("a64")]
     A64 = 4,
 
     /// 128-bit arithmetics register
-    #[cfg_attr(feature = "std", display("a128"))]
+    #[display("a128")]
     A128 = 5,
 
     /// 256-bit arithmetics register
-    #[cfg_attr(feature = "std", display("a256"))]
+    #[display("a256")]
     A256 = 6,
 
     /// 512-bit arithmetics register
-    #[cfg_attr(feature = "std", display("a512"))]
+    #[display("a512")]
     A512 = 7,
 }
 
@@ -505,40 +503,39 @@ impl From<u3> for RegA {
 
 /// Enumeration of the `r` set of registers (non-arithmetic registers, mostly
 /// used for cryptography)
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display), display(Debug))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
 pub enum RegR {
     /// 128-bit non-arithmetics register
-    #[cfg_attr(feature = "std", display("r128"))]
+    #[display("r128")]
     R128 = 0,
 
     /// 160-bit non-arithmetics register
-    #[cfg_attr(feature = "std", display("r160"))]
+    #[display("r160")]
     R160 = 1,
 
     /// 256-bit non-arithmetics register
-    #[cfg_attr(feature = "std", display("r256"))]
+    #[display("r256")]
     R256 = 2,
 
     /// 512-bit non-arithmetics register
-    #[cfg_attr(feature = "std", display("r512"))]
+    #[display("r512")]
     R512 = 3,
 
     /// 1024-bit non-arithmetics register
-    #[cfg_attr(feature = "std", display("r1024"))]
+    #[display("r1024")]
     R1024 = 4,
 
     /// 2048-bit non-arithmetics register
-    #[cfg_attr(feature = "std", display("r2048"))]
+    #[display("r2048")]
     R2048 = 5,
 
     /// 4096-bit non-arithmetics register
-    #[cfg_attr(feature = "std", display("r4096"))]
+    #[display("r4096")]
     R4096 = 6,
 
     /// 8192-bit non-arithmetics register
-    #[cfg_attr(feature = "std", display("r8192"))]
+    #[display("r8192")]
     R8192 = 7,
 }
 
@@ -606,15 +603,15 @@ impl From<u3> for RegR {
 
 /// All non-string registers directly accessible by AluVM instructions,
 /// consisting of `a` and `r` sets of registers
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display, From), display(inner))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
+#[display(inner)]
 pub enum Reg {
     /// Arithmetic registers (`a` registers)
-    #[cfg_attr(feature = "std", from)]
+    #[from]
     A(RegA),
 
     /// Non-arithmetic (generic) registers (`r` registers)
-    #[cfg_attr(feature = "std", from)]
+    #[from]
     R(RegR),
 }
 
@@ -671,15 +668,14 @@ impl From<u4> for Reg {
 }
 
 /// Block of registers, either arithmetic or non-arithmetic
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum RegBlock {
     /// Arithmetic registers (`a` registers)
-    #[cfg_attr(feature = "std", display("a"))]
+    #[display("a")]
     A,
 
     /// Non-arithmetic (generic) registers (`r` registers)
-    #[cfg_attr(feature = "std", display("r"))]
+    #[display("r")]
     R,
 }
 

@@ -9,27 +9,25 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use amplify_num::{u2, u3};
-#[cfg(feature = "std")]
-use std::fmt::{self, Display, Formatter};
+use core::fmt::{self, Display, Formatter};
 
 /// Integer arithmetic types
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum NumType {
     /// Unsigned integer
-    #[cfg_attr(feature = "std", display("u"))]
+    #[display("u")]
     Unsigned,
 
     /// Signed integer
-    #[cfg_attr(feature = "std", display("s"))]
+    #[display("s")]
     Signed,
 
     /// Float number with 23-bit mantissa
-    #[cfg_attr(feature = "std", display("f"))]
+    #[display("f")]
     Float23,
 
     /// Float number with 52 bit mantissa
-    #[cfg_attr(feature = "std", display("d"))]
+    #[display("d")]
     Float52,
 }
 
@@ -175,7 +173,6 @@ impl From<Arithmetics> for u3 {
     }
 }
 
-#[cfg(feature = "std")]
 impl Display for Arithmetics {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -192,8 +189,7 @@ impl Display for Arithmetics {
 }
 
 /// Selector between increment and decrement operation
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[cfg_attr(feature = "std", derive(Display))]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum IncDec {
     /// Increment operation
     #[display("inc")]

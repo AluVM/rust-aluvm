@@ -10,8 +10,7 @@
 
 use amplify_num::{u2, u3, u4, u5, u6, u7};
 use core::convert::TryInto;
-#[cfg(feature = "std")]
-use std::fmt::{self, Debug, Display, Formatter};
+use core::fmt::{self, Debug, Display, Formatter};
 
 use super::{Read, Write};
 use crate::reg::{Reg, Value};
@@ -24,7 +23,7 @@ use crate::reg::{Reg, Value};
 /// Errors with cursor-based operations
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[display(doc_comments)]
-#[derive(Error)]
+#[cfg_attr(feature = "std", derive(Error))]
 #[allow(clippy::branches_sharing_code)]
 pub enum CursorError {
     /// Attempt to read or write after end of data
@@ -45,7 +44,6 @@ where
     eof: bool,
 }
 
-#[cfg(feature = "std")]
 impl<T> Debug for Cursor<T>
 where
     T: AsRef<[u8]>,
@@ -61,7 +59,6 @@ where
     }
 }
 
-#[cfg(feature = "std")]
 impl<T> Display for Cursor<T>
 where
     T: AsRef<[u8]>,

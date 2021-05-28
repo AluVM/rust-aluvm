@@ -8,7 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use alure::registers::{Reg32, RegA};
+use alure::{Reg32, RegA};
 
 /// Example extension set of operations which are required for RGB
 // TODO: Move to RGB Core Library

@@ -21,7 +21,9 @@
 // TODO: Complete assembly compiler
 // TODO: Add additional operations for checking
 // TODO: Add overflow register
-// TODO: Implement allocations with `alloc`, ensure `no_std`
+// TODO: Support assembly compillation in `no_std` environments
+
+extern crate alloc;
 
 #[macro_use]
 extern crate amplify_derive;

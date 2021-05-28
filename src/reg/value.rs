@@ -8,15 +8,14 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use core::fmt::{self, Display, Formatter};
 use core::hash::Hash;
 use core::ops::{Deref, Index, IndexMut};
 #[cfg(feature = "std")]
-use std::fmt::{self, Display, Formatter};
-#[cfg(feature = "std")]
-use std::str::FromStr;
+use core::str::FromStr;
 
 use amplify_num::{u1024, u256, u512};
-use std::hash::Hasher;
+use core::hash::Hasher;
 
 /// Register value, which may be `None`
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
@@ -74,7 +73,6 @@ impl Deref for RegVal {
     }
 }
 
-#[cfg(feature = "std")]
 impl Display for RegVal {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
@@ -231,9 +229,9 @@ impl Value {
 }
 
 /// Errors parsing literal values in AluVM assembly code
-#[derive(Clone, Eq, PartialEq, Debug)]
 #[cfg(feature = "std")]
-#[derive(Display, Error, From)]
+#[derive(Clone, Eq, PartialEq, Debug, Display, From)]
+#[cfg_attr(feature = "std", derive(Error))]
 #[display(inner)]
 #[allow(clippy::branches_sharing_code)]
 pub enum LiteralParseError {
@@ -243,7 +241,7 @@ pub enum LiteralParseError {
 
     /// Error parsing decimal literal
     #[from]
-    Int(std::num::ParseIntError),
+    Int(core::num::ParseIntError),
 
     /// Unknown literal
     #[display("unknown token `{0}` while parsing AluVM assembly literal")]
@@ -289,6 +287,19 @@ impl Display for Value {
         } else {
             f.write_str(&self.bytes[0usize..(self.len as usize)].to_hex())
         }
+    }
+}
+
+#[cfg(not(feature = "std"))]
+impl Display for Value {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str("0x")?;
+        write!(
+            f,
+            "{:#04X?}..{:#04X?}",
+            &self.bytes[..4],
+            &self.bytes[(self.len as usize - 4)..]
+        )
     }
 }
 
