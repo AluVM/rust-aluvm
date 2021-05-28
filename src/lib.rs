@@ -10,6 +10,19 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// TODO: Complete arithmetic integer implementation
+// TODO: Complete arithmetic float implementation
+// TODO: Complete cycle-shit operations
+// TODO: Add float registers
+// TODO: Refactor arithmetic operations according to the new spec
+// TODO: Refactor bitwise operation arguments
+// TODO: Implement string operations
+// TODO: Implement cryptorgraphic operations
+// TODO: Complete assembly compiler
+// TODO: Add additional operations for checking
+// TODO: Add overflow register
+// TODO: Implement allocations with `alloc`, ensure `no_std`
+
 #[macro_use]
 extern crate amplify_derive;
 
