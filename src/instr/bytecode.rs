@@ -8,7 +8,6 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 use bitcoin_hashes::Hash;
 use core::ops::RangeInclusive;
@@ -204,9 +203,7 @@ where
             instr if ControlFlowOp::instr_range().contains(&instr) => {
                 Instr::ControlFlow(ControlFlowOp::read(reader)?)
             }
-            instr if PutOp::instr_range().contains(&instr) => {
-                Instr::Put(Box::new(PutOp::read(reader)?))
-            }
+            instr if PutOp::instr_range().contains(&instr) => Instr::Put(PutOp::read(reader)?),
             instr if MoveOp::instr_range().contains(&instr) => Instr::Move(MoveOp::read(reader)?),
             instr if CmpOp::instr_range().contains(&instr) => Instr::Cmp(CmpOp::read(reader)?),
             instr if ArithmeticOp::instr_range().contains(&instr) => {
@@ -216,7 +213,7 @@ where
                 Instr::Bitwise(BitwiseOp::read(reader)?)
             }
             instr if BytesOp::instr_range().contains(&instr) => {
-                Instr::Bytes(Box::new(BytesOp::read(reader)?))
+                Instr::Bytes(BytesOp::read(reader)?)
             }
             instr if DigestOp::instr_range().contains(&instr) => {
                 Instr::Digest(DigestOp::read(reader)?)

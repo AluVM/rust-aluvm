@@ -8,8 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#![feature(trace_macros)]
-#![feature(log_syntax)]
+extern crate alloc;
 
 #[macro_use]
 extern crate alure;
@@ -27,8 +26,6 @@ use alure::{Reg, Reg16, Reg32, Reg8, RegA, RegBlock, RegR};
 use amplify_num::hex::ToHex;
 use amplify_num::u4;
 use core::convert::TryFrom;
-
-trace_macros!(true);
 
 fn main() {
     let code = aluasm! {

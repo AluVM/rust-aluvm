@@ -10,8 +10,6 @@
 
 #![allow(clippy::branches_sharing_code)]
 
-use alloc::boxed::Box;
-
 use amplify_num::u4;
 
 use crate::instr::{Arithmetics, IncDec, NumType};
@@ -39,7 +37,7 @@ where
 
     /// Instructions setting register values
     // 0b00_001_***
-    Put(Box<PutOp>),
+    Put(PutOp),
 
     /// Instructions moving and swapping register values
     // 0b00_010_***
@@ -59,7 +57,7 @@ where
 
     /// Operations on byte strings
     // 0b00_110_***
-    Bytes(Box<BytesOp>),
+    Bytes(BytesOp),
 
     /// Cryptographic hashing functions
     // 0b01_000_***
@@ -135,7 +133,7 @@ pub enum ControlFlowOp {
 }
 
 /// Instructions setting register values
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum PutOp {
     /// Sets `a` register value to zero
     #[display("zero\t{0}{1}")]
@@ -367,7 +365,7 @@ pub enum BitwiseOp {
 }
 
 /// Operations on byte strings
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum BytesOp {
     /// Put bytestring into a byte string register
     #[display("put\t\ts16[{0}],{1}")]

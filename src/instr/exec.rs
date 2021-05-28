@@ -19,8 +19,6 @@ use super::{
 };
 use crate::reg::{Reg32, RegVal, Registers, Value};
 use crate::LibSite;
-#[cfg(feature = "std")]
-use crate::{RegA, RegR};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -322,6 +320,7 @@ impl InstructionSet for Secp256k1Op {
 
     #[cfg(feature = "secp256k1")]
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        use crate::{RegA, RegR};
         use secp256k1::{PublicKey, SecretKey};
         match self {
             Secp256k1Op::Gen(src, dst) => {

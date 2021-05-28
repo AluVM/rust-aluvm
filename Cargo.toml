@@ -7,7 +7,7 @@ edition = "2018"
 license = "MIT"
 repository = "https://github.com/internet2-org/alure"
 homepage = "https://lnp-bp.org"
-keywords = ["virtual-machine", "eemulator", "functional-programming", "risc"]
+keywords = ["virtual-machine", "emulator", "declarative", "risc"]
 categories = ["no-std", "embedded", "compilers", "cryptography", "emulators"]
 readme = "README.md"
 exclude = [".github", "test"]
@@ -24,7 +24,7 @@ secp256k1 = { version = "0.20.2", optional = true }
 curve25519-dalek = { version = "3.1", optional = true }
 
 [features]
-default = ["secp256k1", "curve25519"]
+default = []
 all = ["std", "secp256k1", "curve25519"]
 std = ["amplify_num/std", "amplify_num/hex"]
 curve25519 = ["curve25519-dalek"]

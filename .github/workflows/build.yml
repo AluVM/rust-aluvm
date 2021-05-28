@@ -23,8 +23,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-  std:
+  features:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        feature: [ std, all, secp256k1, curve25519 ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable
@@ -36,7 +40,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features std
+          args: --features ${{ matrix.feature }}
   platforms:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -76,22 +80,6 @@ jobs:
         with:
           command: check
           args: --workspace --all-targets --all-features
-  ancient:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install rust 1.36.0
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.36.0
-          override: true
-      - name: Clean Cargo.lock
-        run: rm -f Cargo.lock
-      - name: 1.36.0
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --all --all-targets --no-default-features --features std
   dependency:
     runs-on: ubuntu-latest
     steps:

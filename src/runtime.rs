@@ -136,7 +136,7 @@ pub struct Blob {
     pub len: u16,
 
     /// Slice bytes
-    pub bytes: [u8; u16::MAX as usize],
+    pub bytes: [u8; core::u16::MAX as usize],
 }
 
 impl Default for Blob {
