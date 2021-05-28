@@ -986,7 +986,7 @@ impl Registers {
         let index = index as usize;
         match reg {
             Reg::A(a) => match a {
-                RegA::AP => self.ap[index] = Some(value.into()),
+                RegA::AP => self.ap[index] = value.into(),
                 RegA::A8 => self.a8[index] = Some(value.into()),
                 RegA::A16 => self.a16[index] = Some(value.into()),
                 RegA::A32 => self.a32[index] = Some(value.into()),
@@ -1058,7 +1058,8 @@ impl Registers {
         self.set(if ap { RegA::AP } else { reg }, dst, reg_val);
     }
 
+    #[inline]
     pub fn status(&self) -> bool {
-        return self.st0;
+        self.st0
     }
 }

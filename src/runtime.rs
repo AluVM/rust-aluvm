@@ -101,7 +101,7 @@ where
             }
         }
 
-        return None;
+        None
     }
 }
 

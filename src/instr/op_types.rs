@@ -138,6 +138,7 @@ impl Arithmetics {
 
     /// Detects float-based arithmetic operation type
     pub fn is_float(self) -> bool {
+        #[allow(clippy::match_like_matches_macro)]
         match self {
             Arithmetics::Float | Arithmetics::FloatArbitraryPrecision => true,
             _ => false,
@@ -146,6 +147,7 @@ impl Arithmetics {
 
     /// Detects unsigned integer arithmetic operation type
     pub fn is_unsigned(self) -> bool {
+        #[allow(clippy::match_like_matches_macro)]
         match self {
             Arithmetics::IntChecked { signed: false }
             | Arithmetics::IntUnchecked { signed: false }

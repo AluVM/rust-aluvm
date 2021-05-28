@@ -24,6 +24,7 @@ use crate::{Blob, Instr, InstructionSet, LibHash, LibSite};
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[display(doc_comments)]
 #[derive(Error, From)]
+#[allow(clippy::branches_sharing_code)]
 pub enum DecodeError {
     /// Cursor error
     #[display(inner)]
@@ -39,6 +40,7 @@ pub enum DecodeError {
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[display(doc_comments)]
 #[derive(Error, From)]
+#[allow(clippy::branches_sharing_code)]
 pub enum EncodeError {
     /// Number of instructions ({0}) exceeds limit of 2^16
     TooManyInstructions(usize),
@@ -88,10 +90,7 @@ where
 /// (1) we are no_std, (2) it operates data with unlimited length (while we are
 /// bound by u16), (3) it provides too many fails in situations when we can't
 /// fail because of `u16`-bounding and exclusive in-memory encoding handling.
-pub trait Bytecode
-where
-    Self: Copy,
-{
+pub trait Bytecode {
     /// Returns number of bytes which instruction and its argument occupies
     fn byte_count(&self) -> u16;
 
@@ -204,7 +203,9 @@ where
             instr if ControlFlowOp::instr_range().contains(&instr) => {
                 Instr::ControlFlow(ControlFlowOp::read(reader)?)
             }
-            instr if PutOp::instr_range().contains(&instr) => Instr::Put(PutOp::read(reader)?),
+            instr if PutOp::instr_range().contains(&instr) => {
+                Instr::Put(Box::new(PutOp::read(reader)?))
+            }
             instr if MoveOp::instr_range().contains(&instr) => Instr::Move(MoveOp::read(reader)?),
             instr if CmpOp::instr_range().contains(&instr) => Instr::Cmp(CmpOp::read(reader)?),
             instr if ArithmeticOp::instr_range().contains(&instr) => {
@@ -214,7 +215,7 @@ where
                 Instr::Bitwise(BitwiseOp::read(reader)?)
             }
             instr if BytesOp::instr_range().contains(&instr) => {
-                Instr::Bytes(BytesOp::read(reader)?)
+                Instr::Bytes(Box::new(BytesOp::read(reader)?))
             }
             instr if DigestOp::instr_range().contains(&instr) => {
                 Instr::Digest(DigestOp::read(reader)?)

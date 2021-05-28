@@ -8,6 +8,8 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+#![allow(clippy::branches_sharing_code)]
+
 use amplify_num::u4;
 
 use crate::instr::{Arithmetics, IncDec, NumType};
@@ -22,7 +24,7 @@ pub enum NOp {
 }
 
 /// Full set of instructions
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display), display(inner))]
 #[non_exhaustive]
 pub enum Instr<Extension = NOp>
@@ -35,7 +37,7 @@ where
 
     /// Instructions setting register values
     // 0b00_001_***
-    Put(PutOp),
+    Put(Box<PutOp>),
 
     /// Instructions moving and swapping register values
     // 0b00_010_***
@@ -55,7 +57,7 @@ where
 
     /// Operations on byte strings
     // 0b00_110_***
-    Bytes(BytesOp),
+    Bytes(Box<BytesOp>),
 
     /// Cryptographic hashing functions
     // 0b01_000_***

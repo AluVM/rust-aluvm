@@ -25,6 +25,7 @@ use crate::reg::{Reg, Value};
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[display(doc_comments)]
 #[derive(Error)]
+#[allow(clippy::branches_sharing_code)]
 pub enum CursorError {
     /// Attempt to read or write after end of data
     Eof,

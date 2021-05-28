@@ -41,8 +41,7 @@ pub enum RgbOp {
     MatchMiniscript(
         /** State type */ u16,
         /** Miniscript string length */ u16,
-        /** Miniscript template in strict encoded format */
-        [u8; u64::MAX as usize],
+        /** Miniscript template in strict encoded format */ [u8; u64::MAX as usize],
     ),
     MatchPsbt(
         /** State type */ u16,

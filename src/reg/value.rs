@@ -8,6 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use core::hash::Hash;
 use core::ops::{Deref, Index, IndexMut};
 #[cfg(feature = "std")]
 use std::fmt::{self, Display, Formatter};
@@ -15,6 +16,7 @@ use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
 use amplify_num::{u1024, u256, u512};
+use std::hash::Hasher;
 
 /// Register value, which may be `None`
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
@@ -83,7 +85,7 @@ impl Display for RegVal {
 }
 
 /// Copy'able variable length slice
-#[derive(Copy, Clone, Hash, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Value {
     /// Slice length
     pub len: u16,
@@ -99,6 +101,14 @@ impl PartialEq for Value {
 }
 
 impl Eq for Value {}
+
+impl Hash for Value {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let clean = self.to_clean();
+        state.write_u16(clean.len);
+        state.write(&clean.bytes);
+    }
+}
 
 impl Default for Value {
     fn default() -> Value {
@@ -180,7 +190,7 @@ impl Value {
 
     /// Serializes value in hexadecimal format to a string
     #[cfg(feature = "std")]
-    pub fn to_hex(&self) -> String {
+    pub fn to_hex(self) -> String {
         use std::fmt::Write;
         let mut ret = String::with_capacity(2usize * self.len as usize + 2);
         write!(ret, "0x").expect("writing to string");
@@ -207,15 +217,15 @@ impl Value {
 
     /// Returns a copy where all non-value bits are set to zero
     #[inline]
-    pub fn to_clean(&self) -> Self {
-        let mut copy = *self;
+    pub fn to_clean(self) -> Self {
+        let mut copy = self;
         copy.bytes[self.len as usize..].fill(0);
         copy
     }
 
     /// Converts the value into `u1024` integer
     #[inline]
-    pub fn to_u1024(&self) -> u1024 {
+    pub fn to_u1024(self) -> u1024 {
         self.to_clean().into()
     }
 }
@@ -225,6 +235,7 @@ impl Value {
 #[cfg(feature = "std")]
 #[derive(Display, Error, From)]
 #[display(inner)]
+#[allow(clippy::branches_sharing_code)]
 pub enum LiteralParseError {
     /// Error parsing hexadecimal literal
     #[from]
@@ -246,7 +257,7 @@ impl FromStr for Value {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.starts_with("0x") {
             Value::from_hex(s).map_err(LiteralParseError::from)
-        } else if s.starts_with("-") {
+        } else if s.starts_with('-') {
             // TODO: use arbitrary-precision type `FromStr`
             Ok(Value::from(i128::from_str(s)?))
         } else {
@@ -254,9 +265,9 @@ impl FromStr for Value {
             let val = u128::from_str(s)?;
             Ok(match val {
                 0..=0xFF => Value::from(val as u8),
-                0..=0xFFFF => Value::from(val as u16),
-                0..=0xFFFFFFFF => Value::from(val as u32),
-                0..=0xFFFFFFFFFFFFFFFF => Value::from(val as u64),
+                0x100..=0xFFFF => Value::from(val as u16),
+                0x10000..=0xFFFFFFFF => Value::from(val as u32),
+                0x100000000..=0xFFFFFFFFFFFFFFFF => Value::from(val as u64),
                 _ => Value::from(val),
             })
         }

@@ -96,7 +96,7 @@ impl InstructionSet for ControlFlowOp {
                 .map(|_| ExecStep::Jump(offset))
                 .unwrap_or(ExecStep::Stop),
             ControlFlowOp::Jif(offset) => {
-                if regs.st0 == true {
+                if regs.st0 {
                     regs.jmp()
                         .map(|_| ExecStep::Jump(offset))
                         .unwrap_or(ExecStep::Stop)
@@ -208,7 +208,7 @@ impl InstructionSet for CmpOp {
                 regs.a16[0] = regs.get(reg, idx).map(|v| v.count_ones());
             }
             CmpOp::St2A => {
-                regs.a8[0] = if regs.st0 == true { Some(1) } else { Some(0) };
+                regs.a8[0] = if regs.st0 { Some(1) } else { Some(0) };
             }
             CmpOp::A2St => {
                 regs.st0 = regs.a8[1].map(|val| val != 0).unwrap_or(false);
@@ -223,7 +223,7 @@ impl InstructionSet for ArithmeticOp {
         match self {
             ArithmeticOp::Neg(reg, index) => {
                 regs.get(reg, index).map(|mut blob| {
-                    blob.bytes[reg as usize] = 0xFF ^ blob.bytes[reg as usize];
+                    blob.bytes[reg as usize] ^= 0xFF;
                     regs.set(reg, index, Some(blob));
                 });
             }

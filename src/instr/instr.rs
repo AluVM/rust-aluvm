@@ -9,6 +9,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 #![allow(missing_docs)]
+#![allow(clippy::unusual_byte_groupings)]
 
 // Control-flow instructions
 pub const INSTR_FAIL: u8 = 0b00_000_000;

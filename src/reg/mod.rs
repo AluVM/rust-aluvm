@@ -10,6 +10,7 @@
 
 mod arithm;
 mod bitwise;
+#[allow(clippy::module_inception)]
 mod reg;
 mod value;
 

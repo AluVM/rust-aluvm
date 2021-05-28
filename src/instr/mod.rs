@@ -12,6 +12,7 @@
 mod asm;
 pub mod bytecode;
 mod exec;
+#[allow(clippy::module_inception)]
 mod instr;
 mod op_codes;
 mod op_types;

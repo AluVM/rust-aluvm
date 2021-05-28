@@ -216,7 +216,7 @@ impl Value {
         if step >= u512_max - val {
             None
         } else {
-            val = val + step;
+            val += step;
             Some(Value::from(val))
         }
     }
@@ -228,7 +228,7 @@ impl Value {
         if step >= u512_max - val {
             Some(Value::from(step - (u512_max - val)))
         } else {
-            val = val + step;
+            val += step;
             Some(Value::from(val))
         }
     }
