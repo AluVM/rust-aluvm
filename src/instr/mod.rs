@@ -20,7 +20,7 @@ pub use bytecode::Bytecode;
 pub use exec::{ExecStep, InstructionSet};
 pub use instr::*;
 pub use op_codes::{
-    ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op,
-    DigestOp, Instr, MoveOp, NOp, PutOp, SecpOp,
+    ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp,
+    NOp, PutOp, Secp256k1Op,
 };
 pub use op_types::{Arithmetics, IncDec, NumType};

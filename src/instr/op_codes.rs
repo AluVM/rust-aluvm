@@ -61,10 +61,12 @@ where
     // 0b01_000_***
     Digest(DigestOp),
 
+    #[cfg(feature = "secp256k1")]
     /// Operations on Secp256k1 elliptic curve
     // 0b01_001_0**
-    Secp256k1(SecpOp),
+    Secp256k1(Secp256k1Op),
 
+    #[cfg(feature = "curve25519")]
     /// Operations on Curve25519 elliptic curve
     // 0b01_001_1**
     Curve25519(Curve25519Op),
@@ -511,7 +513,7 @@ pub enum DigestOp {
 /// Operations on Secp256k1 elliptic curve
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[cfg_attr(feature = "std", derive(Display))]
-pub enum SecpOp {
+pub enum Secp256k1Op {
     /// Generates new elliptic curve point value saved into destination
     /// register in `r512` set using scalar value from the source `r256`
     /// register
@@ -531,13 +533,8 @@ pub enum SecpOp {
     ),
 
     /// Adds two elliptic curve points
-    #[cfg_attr(feature = "std", display("secpadd\tr512{0},r512{1},r512{2},{3}"))]
-    Add(
-        /** Source 1 */ Reg32,
-        /** Source 2 */ Reg32,
-        /** Source 3 */ Reg32,
-        /** Allow overflows */ bool,
-    ),
+    #[cfg_attr(feature = "std", display("secpadd\tr512{0},r512{1}"))]
+    Add(/** Source 1 */ Reg32, /** Source 2 and destination */ Reg8),
 
     /// Negates elliptic curve point
     #[cfg_attr(feature = "std", display("secpneg\tr512{0},r512{1}"))]

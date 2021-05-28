@@ -15,10 +15,10 @@ use amplify_num::u5;
 
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
-    Instr, MoveOp, NOp, PutOp, SecpOp,
+    Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
 use crate::reg::{Reg32, RegVal, Registers, Value};
-use crate::LibSite;
+use crate::{LibSite, RegA, RegR};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -322,13 +322,88 @@ impl InstructionSet for DigestOp {
     }
 }
 
-impl InstructionSet for SecpOp {
+impl InstructionSet for Secp256k1Op {
+    #[cfg(not(feature = "secp256k1"))]
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        todo!()
+        unimplemented!("AluVM runtime compiled without support for Secp256k1 instructions")
+    }
+
+    #[cfg(feature = "secp256k1")]
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        use secp256k1::{PublicKey, SecretKey};
+        match self {
+            Secp256k1Op::Gen(src, dst) => {
+                let res = regs
+                    .get(RegA::A256, src)
+                    .and_then(|src| SecretKey::from_slice(src.as_ref()).ok())
+                    .map(|sk| PublicKey::from_secret_key(&regs.secp, &sk))
+                    .as_ref()
+                    .map(PublicKey::serialize_uncompressed)
+                    .map(|pk| Value::with(&pk[1..]));
+                regs.set(RegR::R512, dst, res);
+            }
+
+            Secp256k1Op::Mul(block, scal, src, dst) => {
+                let reg = block
+                    .into_reg(256)
+                    .expect("register set does not match standard");
+                let res = regs
+                    .get(reg, scal)
+                    .and_then(|scal| {
+                        regs.get(RegR::R512, src)
+                            .and_then(|val| PublicKey::from_slice(val.as_ref()).ok())
+                            .map(|pk| (scal, pk))
+                    })
+                    .and_then(|(scal, mut pk)| {
+                        pk.mul_assign(&regs.secp, scal.as_ref()).map(|_| pk).ok()
+                    })
+                    .as_ref()
+                    .map(PublicKey::serialize_uncompressed)
+                    .map(|pk| Value::with(&pk[1..]));
+                regs.set(RegR::R512, dst, res);
+            }
+
+            Secp256k1Op::Add(src, srcdst) => {
+                let res = regs
+                    .get(RegR::R512, src)
+                    .and_then(|pk1| PublicKey::from_slice(pk1.as_ref()).ok())
+                    .and_then(|pk1| regs.get(RegR::R512, srcdst).map(|pk2| (pk1, pk2)))
+                    .and_then(|(mut pk1, pk2)| {
+                        pk1.add_exp_assign(&regs.secp, pk2.as_ref())
+                            .map(|_| pk1)
+                            .ok()
+                    })
+                    .as_ref()
+                    .map(PublicKey::serialize_uncompressed)
+                    .map(|pk| Value::with(&pk[1..]));
+                regs.set(RegR::R512, srcdst, res);
+            }
+
+            Secp256k1Op::Neg(src, dst) => {
+                let res = regs
+                    .get(RegR::R512, src)
+                    .and_then(|pk| PublicKey::from_slice(pk.as_ref()).ok())
+                    .map(|mut pk| {
+                        pk.negate_assign(&regs.secp);
+                        pk
+                    })
+                    .as_ref()
+                    .map(PublicKey::serialize_uncompressed)
+                    .map(|pk| Value::with(&pk[1..]));
+                regs.set(RegR::R512, dst, res);
+            }
+        }
+        ExecStep::Next
     }
 }
 
 impl InstructionSet for Curve25519Op {
+    #[cfg(not(feature = "curve25519"))]
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+        unimplemented!("AluVM runtime compiled without support for Curve25519 instructions")
+    }
+
+    #[cfg(feature = "curve25519")]
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         todo!()
     }

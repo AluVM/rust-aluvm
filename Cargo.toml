@@ -20,8 +20,11 @@ amplify_num = "0.1"
 amplify_derive = "2.7.1"
 paste = "1"
 bitcoin_hashes = "0.9.6" # this is most well-maintained generic hash implementation library
+secp256k1 = { version = "0.20.2", optional = true }
+curve25519-dalek = { version = "3.1", optional = true }
 
 [features]
-default = []
-all = ["std"]
+default = ["secp256k1", "curve25519"]
+all = ["std", "secp256k1", "curve25519"]
 std = ["amplify_num/std", "amplify_num/hex"]
+curve25519 = ["curve25519-dalek"]

@@ -15,7 +15,7 @@ use super::instr::*;
 use crate::encoding::{Cursor, CursorError, Read, Write};
 use crate::instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, MoveOp, NOp,
-    PutOp, SecpOp,
+    PutOp, Secp256k1Op,
 };
 use crate::reg::{Reg, RegBlock, Value};
 use crate::{Blob, Instr, InstructionSet, LibHash, LibSite};
@@ -139,7 +139,9 @@ where
             Instr::Bitwise(instr) => instr.byte_count(),
             Instr::Bytes(instr) => instr.byte_count(),
             Instr::Digest(instr) => instr.byte_count(),
+            #[cfg(feature = "secp256k1")]
             Instr::Secp256k1(instr) => instr.byte_count(),
+            #[cfg(feature = "curve25519")]
             Instr::Curve25519(instr) => instr.byte_count(),
             Instr::ExtensionCodes(instr) => instr.byte_count(),
             Instr::Nop => 1,
@@ -160,7 +162,9 @@ where
             Instr::Bitwise(instr) => instr.instr_byte(),
             Instr::Bytes(instr) => instr.instr_byte(),
             Instr::Digest(instr) => instr.instr_byte(),
+            #[cfg(feature = "secp256k1")]
             Instr::Secp256k1(instr) => instr.instr_byte(),
+            #[cfg(feature = "curve25519")]
             Instr::Curve25519(instr) => instr.instr_byte(),
             Instr::ExtensionCodes(instr) => instr.instr_byte(),
             Instr::Nop => 1,
@@ -181,7 +185,9 @@ where
             Instr::Bitwise(instr) => instr.write_args(writer),
             Instr::Bytes(instr) => instr.write_args(writer),
             Instr::Digest(instr) => instr.write_args(writer),
+            #[cfg(feature = "secp256k1")]
             Instr::Secp256k1(instr) => instr.write_args(writer),
+            #[cfg(feature = "curve25519")]
             Instr::Curve25519(instr) => instr.write_args(writer),
             Instr::ExtensionCodes(instr) => instr.write_args(writer),
             Instr::Nop => Ok(()),
@@ -213,9 +219,11 @@ where
             instr if DigestOp::instr_range().contains(&instr) => {
                 Instr::Digest(DigestOp::read(reader)?)
             }
-            instr if SecpOp::instr_range().contains(&instr) => {
-                Instr::Secp256k1(SecpOp::read(reader)?)
+            #[cfg(feature = "secp256k1")]
+            instr if Secp256k1Op::instr_range().contains(&instr) => {
+                Instr::Secp256k1(Secp256k1Op::read(reader)?)
             }
+            #[cfg(feature = "curve25519")]
             instr if Curve25519Op::instr_range().contains(&instr) => {
                 Instr::Curve25519(Curve25519Op::read(reader)?)
             }
@@ -1097,13 +1105,13 @@ impl Bytecode for DigestOp {
     }
 }
 
-impl Bytecode for SecpOp {
+impl Bytecode for Secp256k1Op {
     fn byte_count(&self) -> u16 {
         match self {
-            SecpOp::Gen(_, _) => 2,
-            SecpOp::Mul(_, _, _, _) => 3,
-            SecpOp::Add(_, _, _, _) => 3,
-            SecpOp::Neg(_, _) => 2,
+            Secp256k1Op::Gen(_, _) => 2,
+            Secp256k1Op::Mul(_, _, _, _) => 3,
+            Secp256k1Op::Add(_, _) => 2,
+            Secp256k1Op::Neg(_, _) => 2,
         }
     }
 
@@ -1113,10 +1121,10 @@ impl Bytecode for SecpOp {
 
     fn instr_byte(&self) -> u8 {
         match self {
-            SecpOp::Gen(_, _) => INSTR_SECP_GEN,
-            SecpOp::Mul(_, _, _, _) => INSTR_SECP_MUL,
-            SecpOp::Add(_, _, _, _) => INSTR_SECP_ADD,
-            SecpOp::Neg(_, _) => INSTR_SECP_NEG,
+            Secp256k1Op::Gen(_, _) => INSTR_SECP_GEN,
+            Secp256k1Op::Mul(_, _, _, _) => INSTR_SECP_MUL,
+            Secp256k1Op::Add(_, _) => INSTR_SECP_ADD,
+            Secp256k1Op::Neg(_, _) => INSTR_SECP_NEG,
         }
     }
 
@@ -1126,23 +1134,21 @@ impl Bytecode for SecpOp {
         EncodeError: From<<W as Write>::Error>,
     {
         match self {
-            SecpOp::Gen(src, dst) => {
+            Secp256k1Op::Gen(src, dst) => {
                 writer.write_u5(src)?;
                 writer.write_u3(dst)?;
             }
-            SecpOp::Mul(reg, scal, src, dst) => {
+            Secp256k1Op::Mul(reg, scal, src, dst) => {
                 writer.write_bool(*reg == RegBlock::A)?;
                 writer.write_u5(scal)?;
                 writer.write_u5(src)?;
                 writer.write_u5(dst)?;
             }
-            SecpOp::Add(src1, src2, dst, overflow) => {
-                writer.write_u5(src1)?;
-                writer.write_u5(src2)?;
-                writer.write_u5(dst)?;
-                writer.write_bool(*overflow)?;
+            Secp256k1Op::Add(src, srcdst) => {
+                writer.write_u5(src)?;
+                writer.write_u3(srcdst)?;
             }
-            SecpOp::Neg(src, dst) => {
+            Secp256k1Op::Neg(src, dst) => {
                 writer.write_u5(src)?;
                 writer.write_u3(dst)?;
             }
@@ -1167,12 +1173,7 @@ impl Bytecode for SecpOp {
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
             ),
-            INSTR_SECP_ADD => Self::Add(
-                reader.read_u5()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_bool()?,
-            ),
+            INSTR_SECP_ADD => Self::Add(reader.read_u5()?.into(), reader.read_u3()?.into()),
             INSTR_SECP_NEG => Self::Neg(reader.read_u5()?.into(), reader.read_u3()?.into()),
             x => unreachable!(
                 "instruction {:#010b} classified as Secp256k1 curve operation",

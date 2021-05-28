@@ -458,6 +458,21 @@ impl RegA {
             RegA::A512 => Some(512),
         }
     }
+
+    /// Constructs [`RegA`] object for a provided requirement for register bit
+    /// size
+    pub fn with(bits: u16) -> Option<Self> {
+        Some(match bits {
+            8 => RegA::A8,
+            16 => RegA::A16,
+            32 => RegA::A32,
+            64 => RegA::A64,
+            128 => RegA::A128,
+            256 => RegA::A256,
+            512 => RegA::A512,
+            _ => RegA::AP,
+        })
+    }
 }
 
 impl From<&RegA> for u3 {
@@ -542,6 +557,22 @@ impl RegR {
             RegR::R4096 => Some(4096),
             RegR::R8192 => Some(8192),
         }
+    }
+
+    /// Constructs [`RegR`] object for a provided requirement for register bit
+    /// size
+    pub fn with(bits: u16) -> Option<Self> {
+        Some(match bits {
+            128 => RegR::R128,
+            160 => RegR::R160,
+            256 => RegR::R256,
+            512 => RegR::R512,
+            1024 => RegR::R1024,
+            2048 => RegR::R2048,
+            4096 => RegR::R4096,
+            8192 => RegR::R8192,
+            _ => return None,
+        })
     }
 }
 
@@ -652,7 +683,16 @@ pub enum RegBlock {
     R,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+impl RegBlock {
+    pub fn into_reg(self, bits: u16) -> Option<Reg> {
+        match self {
+            RegBlock::A => RegA::with(bits).map(Reg::A),
+            RegBlock::R => RegR::with(bits).map(Reg::R),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Registers {
     /// Arbitrary-precision arithmetics registers
     pub(crate) ap: [Option<Value>; 32],
@@ -693,6 +733,10 @@ pub struct Registers {
 
     /// Defines "top" of the call stack
     cp0: u16,
+
+    /// Secp256k1 context object (used by [`Secp256k1Op`] instructions)
+    #[cfg(feature = "secp256k1")]
+    pub(crate) secp: secp256k1::Secp256k1<secp256k1::All>,
 }
 
 impl Default for Registers {
@@ -722,6 +766,9 @@ impl Default for Registers {
             cs0: Box::new([LibSite::default(); u16::MAX as usize]),
             s16: Default::default(),
             cp0: 0,
+
+            #[cfg(feature = "secp256k1")]
+            secp: secp256k1::Secp256k1::new(),
         }
     }
 }

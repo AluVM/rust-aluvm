@@ -109,6 +109,18 @@ impl Default for Value {
     }
 }
 
+impl AsRef<[u8]> for Value {
+    fn as_ref(&self) -> &[u8] {
+        &self.bytes[..self.len as usize]
+    }
+}
+
+impl AsMut<[u8]> for Value {
+    fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.bytes[..self.len as usize]
+    }
+}
+
 impl Index<u16> for Value {
     type Output = u8;
 
