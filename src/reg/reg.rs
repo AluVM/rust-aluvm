@@ -13,6 +13,8 @@ use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use amplify_num::{u256, u3, u4, u5, u512};
 use core::ops::Deref;
+use half::bf16;
+use rustc_apfloat::ieee;
 
 use crate::{reg::Value, LibSite, RegVal};
 
@@ -688,7 +690,7 @@ impl RegBlock {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Debug)]
 pub struct Registers {
     /// Arbitrary-precision arithmetics registers
     pub(crate) ap: [Option<Value>; 32],
@@ -702,6 +704,17 @@ pub struct Registers {
     pub(crate) a256: [Option<u256>; 32],
     pub(crate) a512: [Option<u512>; 32],
 
+    pub(crate) f16b: [Option<bf16>; 32],
+    pub(crate) f16: [Option<ieee::Half>; 32],
+    pub(crate) f32: [Option<ieee::Single>; 32],
+    pub(crate) f64: [Option<ieee::Double>; 32],
+    pub(crate) f87: [Option<ieee::X87DoubleExtended>; 32],
+    pub(crate) f128: [Option<ieee::Quad>; 32],
+    // TODO: Replace with `ieee::Oct` once it will be implemented
+    pub(crate) f256: [Option<u256>; 32],
+    // TODO: Implement tapered floating point type
+    pub(crate) f512: [Option<u512>; 32],
+
     // Non-arithmetic registers:
     pub(crate) r128: [Option<[u8; 16]>; 32],
     pub(crate) r160: [Option<[u8; 20]>; 32],
@@ -713,11 +726,16 @@ pub struct Registers {
     pub(crate) r8192: [Option<[u8; 1024]>; 32],
 
     /// String and bytestring registers
-    pub(crate) s16: BTreeMap<u8, Vec<u8>>,
+    pub(crate) s16: BTreeMap<u8, [u8; u16::MAX as usize]>,
 
     /// Control flow register which stores result of equality and other types
     /// of boolean checks. Initialized with `true`
     pub(crate) st0: bool,
+
+    /// Set to `true` following each operation resulting in overflow.
+    /// If the operation can't lead to an overflow, the value of the
+    /// register is not changed.
+    of0: bool,
 
     /// Counts number of jumps (possible cycles). The number of jumps is
     /// limited by 2^16 per script.
@@ -748,6 +766,15 @@ impl Default for Registers {
             a256: Default::default(),
             a512: Default::default(),
 
+            f16b: Default::default(),
+            f16: Default::default(),
+            f32: Default::default(),
+            f64: Default::default(),
+            f87: Default::default(),
+            f128: Default::default(),
+            f256: Default::default(),
+            f512: Default::default(),
+
             r128: Default::default(),
             r160: Default::default(),
             r256: Default::default(),
@@ -757,10 +784,12 @@ impl Default for Registers {
             r4096: Default::default(),
             r8192: Default::default(),
 
+            s16: Default::default(),
+
             st0: true,
+            of0: false,
             cy0: 0,
             cs0: Box::new([LibSite::default(); u16::MAX as usize]),
-            s16: Default::default(),
             cp0: 0,
 
             #[cfg(feature = "secp256k1")]
