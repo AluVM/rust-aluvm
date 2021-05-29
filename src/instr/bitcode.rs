@@ -32,24 +32,24 @@ pub const INSTR_PUTIFA: u8 = 0b00_001_110;
 pub const INSTR_PUTIFR: u8 = 0b00_001_111;
 
 // Instructions moving and swapping register values
-pub const INSTR_SWPA: u8 = 0b00_010_000;
-pub const INSTR_SWPR: u8 = 0b00_010_001;
-pub const INSTR_SWPAR: u8 = 0b00_010_010;
-pub const INSTR_AMOV: u8 = 0b00_010_011;
-pub const INSTR_MOVA: u8 = 0b00_010_100;
-pub const INSTR_MOVR: u8 = 0b00_010_101;
-pub const INSTR_MOVAR: u8 = 0b00_010_110;
-pub const INSTR_MOVRA: u8 = 0b00_010_111;
+pub const INSTR_MOV: u8 = 0b00_010_000;
+pub const INSTR_CPA: u8 = 0b00_010_001;
+pub const INSTR_CNA: u8 = 0b00_010_010;
+pub const INSTR_CNF: u8 = 0b00_010_011;
+pub const INSTR_CNR: u8 = 0b00_010_100;
+pub const INSTR_SPY: u8 = 0b00_010_101;
+pub const INSTR_CAF: u8 = 0b00_010_110;
+pub const INSTR_CFA: u8 = 0b00_010_111;
 
 // Instructions comparing register values
-pub const INSTR_GT: u8 = 0b00_011_000;
-pub const INSTR_LT: u8 = 0b00_011_001;
-pub const INSTR_EQA: u8 = 0b00_011_010;
-pub const INSTR_EQR: u8 = 0b00_011_011;
-pub const INSTR_LEN: u8 = 0b00_011_100;
-pub const INSTR_CNT: u8 = 0b00_011_101;
-pub const INSTR_ST2A: u8 = 0b00_011_110;
-pub const INSTR_A2ST: u8 = 0b00_011_111;
+pub const INSTR_LGT: u8 = 0b00_011_000;
+pub const INSTR_CMP: u8 = 0b00_011_001;
+pub const INSTR_IFZA: u8 = 0b00_011_010;
+pub const INSTR_IFZR: u8 = 0b00_011_011;
+pub const INSTR_IFNA: u8 = 0b00_011_100;
+pub const INSTR_IFNR: u8 = 0b00_011_101;
+pub const INSTR_ST: u8 = 0b00_011_110;
+pub const INSTR_STINV: u8 = 0b00_011_111;
 
 // Arithmetic instructions
 pub const INSTR_ADD: u8 = 0b00_100_000;
@@ -66,29 +66,29 @@ pub const INSTR_AND: u8 = 0b00_101_000;
 pub const INSTR_OR: u8 = 0b00_101_001;
 pub const INSTR_XOR: u8 = 0b00_101_010;
 pub const INSTR_NOT: u8 = 0b00_101_011;
-pub const INSTR_SHL: u8 = 0b00_101_100;
-pub const INSTR_SHR: u8 = 0b00_101_101;
-pub const INSTR_SCL: u8 = 0b00_101_110;
-pub const INSTR_SCR: u8 = 0b00_101_111;
+pub const INSTR_SHF: u8 = 0b00_101_100;
+pub const INSTR_SHC: u8 = 0b00_101_101;
+pub const INSTR_REVA: u8 = 0b00_101_110;
+pub const INSTR_REVR: u8 = 0b00_101_111;
 
 //  Operations on byte strings
 pub const INSTR_PUT: u8 = 0b00_110_000;
-pub const INSTR_MOV: u8 = 0b00_110_001;
+pub const INSTR_MVS: u8 = 0b00_110_001;
 pub const INSTR_SWP: u8 = 0b00_110_010;
 pub const INSTR_FILL: u8 = 0b00_110_011;
-pub const INSTR_LENS: u8 = 0b00_110_100;
-pub const INSTR_COUNT: u8 = 0b00_110_101;
-pub const INSTR_CMP: u8 = 0b00_110_110;
-pub const INSTR_COMM: u8 = 0b00_110_111;
+pub const INSTR_LEN: u8 = 0b00_110_100;
+pub const INSTR_CNT: u8 = 0b00_110_101;
+pub const INSTR_EQ: u8 = 0b00_110_110;
+pub const INSTR_CON: u8 = 0b00_110_111;
 
 pub const INSTR_FIND: u8 = 0b00_111_000;
 pub const INSTR_EXTR: u8 = 0b00_111_001;
 pub const INSTR_INJ: u8 = 0b00_111_010;
 pub const INSTR_JOIN: u8 = 0b00_111_011;
-pub const INSTR_SPLIT: u8 = 0b00_111_100;
+pub const INSTR_SPLT: u8 = 0b00_111_100;
 pub const INSTR_INS: u8 = 0b00_111_101;
 pub const INSTR_DEL: u8 = 0b00_111_110;
-pub const INSTR_TRANSL: u8 = 0b00_111_111;
+pub const INSTR_REV: u8 = 0b00_111_111;
 
 // Cryptographic hashing functions
 pub const INSTR_RIPEMD: u8 = 0b01_000_000;

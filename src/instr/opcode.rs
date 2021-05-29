@@ -303,13 +303,13 @@ pub enum CmpOp {
     /// parameter is greater (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
     #[display("gt\t\t{0}{1},{0}{2}")]
-    GtR(RegR, Reg32, Reg32),
+    GtR(RegR, Reg32, Reg32), //13
 
     /// Compares value of two general non-arithmetic registers setting `st0` to `true` if the first
     /// parameter is lesser (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
     #[display("lt\t\t{0}{1},{0}{2}")]
-    LtR(RegR, Reg32, Reg32),
+    LtR(RegR, Reg32, Reg32), //13
 
     /// Checks equality of value in two integer arithmetic (`A`) registers putting result into
     /// `st0`. None-equality flag specifies value for `st0` for the cases when both of the
@@ -321,7 +321,7 @@ pub enum CmpOp {
         Reg32,
         Reg32,
         /** `st0` value if both of the registers are uninitialized */ bool,
-    ),
+    ), //14
 
     /// Checks equality of value in two float arithmetic (`F`) registers putting result into `st0`.
     /// None-equality flag specifies value for `st0` for the cases when both of the registers
@@ -333,34 +333,34 @@ pub enum CmpOp {
         Reg32,
         Reg32,
         /** `st0` value if both of the registers are uninitialized */ bool,
-    ),
+    ), //14
 
     /// Checks equality of value in two non-arithmetic (`R`) registers putting result into `st0`.
     /// None-equality flag specifies value for `st0` for the cases when both of the registers
     /// are in `None` state.
     #[display("eq\t\t{1}{2},{1}{3},{0}")]
-    EqR(/** `st0` value if both of the registers are uninitialized */ bool, RegR, Reg32, Reg32),
+    EqR(/** `st0` value if both of the registers are uninitialized */ bool, RegR, Reg32, Reg32), /* 14 */
 
     // ---
     /// Checks if the value in `A` register is equal to zero, setting `st0` to `true` in this case.
     /// Otherwise, sets `st0` to false (including when the register is in the undefined state).
     #[display("ifz\t\t{0}{1}")]
-    IfAZ(RegA, Reg32),
+    IfZA(RegA, Reg32),
 
     /// Checks if the value in `R` register is equal to zero, setting `st0` to `true` in this case.
     /// Otherwise, sets `st0` to false (including when the register is in the undefined state).
     #[display("ifz\t\t{0}{1}")]
-    IfRZ(RegR, Reg32),
+    IfZR(RegR, Reg32),
 
     /// Checks if the value in `A` register is in an undefined state, setting `st0` to `true` in
     /// this case. Otherwise, sets `st0` to false.
     #[display("ifn\t\t{0}{1}")]
-    IfAN(RegA, Reg32),
+    IfNA(RegA, Reg32),
 
     /// Checks if the value in `R` register is in an undefined state, setting `st0` to `true` in
     /// this case. Otherwise, sets `st0` to false.
     #[display("ifn\t\t{0}{1}")]
-    IfRN(RegR, Reg32),
+    IfNR(RegR, Reg32),
 
     /// Takes value from `st0` and merges into the value of the destination `A` register. The merge
     /// operation is defined by the [`MergeFlag`] argument.
@@ -416,13 +416,13 @@ pub enum ArithmeticOp {
     #[display("neg\t\t{0}{1}")]
     Neg(RegAF, Reg16),
 
-    /// Modulo division
-    #[display("rem\t\t{0}{1},{2}{3},{4}{5}")]
-    Rem(RegA, Reg32, RegA, Reg32, RegA, Reg32),
-
     /// Puts absolute value of register into `a8[0]`
     #[display("abs\t\t{0}{1}")]
     Abs(RegAF, Reg16),
+
+    /// Modulo division
+    #[display("rem\t\t{0}{1},{2}{3},{4}{5}")]
+    Rem(RegA, Reg32, RegA, Reg32, RegA, Reg32),
 }
 
 /// Bit operations & boolean algebra instructions

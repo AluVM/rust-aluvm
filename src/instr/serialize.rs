@@ -533,7 +533,7 @@ impl Bytecode for CmpOp {
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> { INSTR_GT..=INSTR_A2ST }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_GT..=INSTR_STINV }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -543,8 +543,8 @@ impl Bytecode for CmpOp {
             CmpOp::EqR(_, _, _, _) => INSTR_EQR,
             CmpOp::Len(_, _) => INSTR_LEN,
             CmpOp::Cnt(_, _) => INSTR_CNT,
-            CmpOp::St => INSTR_ST2A,
-            CmpOp::A2St => INSTR_A2ST,
+            CmpOp::St => INSTR_ST,
+            CmpOp::A2St => INSTR_STINV,
         }
     }
 
@@ -640,8 +640,8 @@ impl Bytecode for CmpOp {
             ),
             INSTR_LEN => Self::Len(reader.read_u3()?.into(), reader.read_u5()?.into()),
             INSTR_CNT => Self::Cnt(reader.read_u3()?.into(), reader.read_u5()?.into()),
-            INSTR_ST2A => Self::St,
-            INSTR_A2ST => Self::A2St,
+            INSTR_ST => Self::St,
+            INSTR_STINV => Self::A2St,
             x => unreachable!("instruction {:#010b} classified as comparison operation", x),
         })
     }
@@ -864,26 +864,26 @@ impl Bytecode for BytesOp {
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> { INSTR_PUT..=INSTR_TRANSL }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_PUT..=INSTR_REV }
 
     fn instr_byte(&self) -> u8 {
         match self {
             BytesOp::Put(_, _) => INSTR_PUT,
-            BytesOp::Mov(_, _) => INSTR_MOV,
+            BytesOp::Mov(_, _) => INSTR_MVS,
             BytesOp::Swp(_, _) => INSTR_SWP,
             BytesOp::Fill(_, _, _, _) => INSTR_FILL,
-            BytesOp::Len(_) => INSTR_LENS,
-            BytesOp::Cnt(_, _) => INSTR_COUNT,
-            BytesOp::Cmp(_, _) => INSTR_CMP,
-            BytesOp::Comm(_, _) => INSTR_COMM,
+            BytesOp::Len(_) => INSTR_LEN,
+            BytesOp::Cnt(_, _) => INSTR_CNT,
+            BytesOp::Cmp(_, _) => INSTR_EQ,
+            BytesOp::Comm(_, _) => INSTR_CON,
             BytesOp::Find(_, _) => INSTR_FIND,
             BytesOp::Extr(_, _, _, _) => INSTR_EXTR,
             BytesOp::Inj(_, _, _, _) => INSTR_INJ,
             BytesOp::Join(_, _, _) => INSTR_JOIN,
-            BytesOp::Splt(_, _, _, _) => INSTR_SPLIT,
+            BytesOp::Splt(_, _, _, _) => INSTR_SPLT,
             BytesOp::Ins(_, _, _) => INSTR_DEL,
             BytesOp::Del(_, _, _) => INSTR_INS,
-            BytesOp::Transl(_, _, _, _) => INSTR_TRANSL,
+            BytesOp::Transl(_, _, _, _) => INSTR_REV,
         }
     }
 
@@ -959,7 +959,7 @@ impl Bytecode for BytesOp {
     {
         Ok(match reader.read_u8()? {
             INSTR_PUT => Self::Put(reader.read_u8()?, ByteStr::with(reader.read_slice()?)),
-            INSTR_MOV => Self::Mov(reader.read_u8()?, reader.read_u8()?),
+            INSTR_MVS => Self::Mov(reader.read_u8()?, reader.read_u8()?),
             INSTR_SWP => Self::Swp(reader.read_u8()?, reader.read_u8()?),
             INSTR_FILL => Self::Fill(
                 reader.read_u8()?,
@@ -967,10 +967,10 @@ impl Bytecode for BytesOp {
                 reader.read_u16()?,
                 reader.read_u8()?,
             ),
-            INSTR_LENS => Self::Len(reader.read_u8()?),
-            INSTR_COUNT => Self::Cnt(reader.read_u8()?, reader.read_u8()?),
-            INSTR_CMP => Self::Cmp(reader.read_u8()?, reader.read_u8()?),
-            INSTR_COMM => Self::Comm(reader.read_u8()?, reader.read_u8()?),
+            INSTR_LEN => Self::Len(reader.read_u8()?),
+            INSTR_CNT => Self::Cnt(reader.read_u8()?, reader.read_u8()?),
+            INSTR_EQ => Self::Cmp(reader.read_u8()?, reader.read_u8()?),
+            INSTR_CON => Self::Comm(reader.read_u8()?, reader.read_u8()?),
             INSTR_FIND => Self::Find(reader.read_u8()?, reader.read_u8()?),
             INSTR_EXTR => Self::Extr(
                 reader.read_u5()?.into(),
@@ -985,7 +985,7 @@ impl Bytecode for BytesOp {
                 reader.read_u5()?.into(),
             ),
             INSTR_JOIN => Self::Join(reader.read_u8()?, reader.read_u8()?, reader.read_u8()?),
-            INSTR_SPLIT => Self::Splt(
+            INSTR_SPLT => Self::Splt(
                 reader.read_u8()?,
                 reader.read_u16()?,
                 reader.read_u8()?,
@@ -993,7 +993,7 @@ impl Bytecode for BytesOp {
             ),
             INSTR_INS => Self::Ins(reader.read_u8()?, reader.read_u8()?, reader.read_u16()?),
             INSTR_DEL => Self::Del(reader.read_u8()?, reader.read_u16()?, reader.read_u16()?),
-            INSTR_TRANSL => Self::Transl(
+            INSTR_REV => Self::Transl(
                 reader.read_u8()?,
                 reader.read_u16()?,
                 reader.read_u16()?,
