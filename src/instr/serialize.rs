@@ -398,27 +398,43 @@ impl Bytecode for PutOp {
 impl Bytecode for MoveOp {
     fn byte_count(&self) -> u16 {
         match self {
-            MoveOp::SwpA(_, _, _, _) | MoveOp::SwpR(_, _, _, _) | MoveOp::SwpAR(_, _, _, _) => 3,
-            MoveOp::AMov(_, _, _) => 2,
-            MoveOp::MovA(_, _, _, _)
-            | MoveOp::MovR(_, _, _, _)
-            | MoveOp::CpyAR(_, _, _, _)
-            | MoveOp::CpyRA(_, _, _, _) => 3,
+            MoveOp::MovA(_, _, _)
+            | MoveOp::DupA(_, _, _)
+            | MoveOp::SwpA(_, _, _)
+            | MoveOp::MovF(_, _, _)
+            | MoveOp::DupF(_, _, _)
+            | MoveOp::SwpF(_, _, _)
+            | MoveOp::MovR(_, _, _)
+            | MoveOp::DupR(_, _, _) => 3,
+            MoveOp::CpyA(_, _, _, _)
+            | MoveOp::CnvA(_, _, _, _)
+            | MoveOp::CnvF(_, _, _, _)
+            | MoveOp::CpyR(_, _, _, _)
+            | MoveOp::SpyAR(_, _, _, _)
+            | MoveOp::CnvAF(_, _, _, _)
+            | MoveOp::CnvFA(_, _, _, _) => 3,
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> { INSTR_SWPA..=INSTR_MOVRA }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_MOV..=INSTR_CFA }
 
     fn instr_byte(&self) -> u8 {
         match self {
-            MoveOp::SwpA(_, _, _, _) => INSTR_SWPA,
-            MoveOp::SwpR(_, _, _, _) => INSTR_SWPR,
-            MoveOp::SwpAR(_, _, _, _) => INSTR_SWPAR,
-            MoveOp::AMov(_, _, _) => INSTR_AMOV,
-            MoveOp::MovA(_, _, _, _) => INSTR_MOVA,
-            MoveOp::MovR(_, _, _, _) => INSTR_MOVR,
-            MoveOp::CpyAR(_, _, _, _) => INSTR_MOVAR,
-            MoveOp::CpyRA(_, _, _, _) => INSTR_MOVRA,
+            MoveOp::MovA(_, _, _)
+            | MoveOp::DupA(_, _, _)
+            | MoveOp::SwpA(_, _, _)
+            | MoveOp::MovF(_, _, _)
+            | MoveOp::DupF(_, _, _)
+            | MoveOp::SwpF(_, _, _)
+            | MoveOp::MovR(_, _, _)
+            | MoveOp::DupR(_, _, _) => INSTR_MOV,
+            MoveOp::CpyA(_, _, _, _) => INSTR_CPA,
+            MoveOp::CnvA(_, _, _, _) => INSTR_CNA,
+            MoveOp::CnvF(_, _, _, _) => INSTR_CNF,
+            MoveOp::CpyR(_, _, _, _) => INSTR_CPR,
+            MoveOp::SpyAR(_, _, _, _) => INSTR_SPY,
+            MoveOp::CnvAF(_, _, _, _) => INSTR_CAF,
+            MoveOp::CnvFA(_, _, _, _) => INSTR_CFA,
         }
     }
 
@@ -428,34 +444,89 @@ impl Bytecode for MoveOp {
         EncodeError: From<<W as Write>::Error>,
     {
         match self {
-            MoveOp::SwpA(reg1, idx1, reg2, idx2) | MoveOp::MovA(reg1, idx1, reg2, idx2) => {
-                writer.write_u3(reg1)?;
+            MoveOp::MovA(reg, idx1, idx2) => {
+                writer.write_u3(0b000)?;
                 writer.write_u5(idx1)?;
-                writer.write_u3(reg2)?;
                 writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
             }
-            MoveOp::SwpR(reg1, idx1, reg2, idx2) | MoveOp::MovR(reg1, idx1, reg2, idx2) => {
-                writer.write_u3(reg1)?;
+            MoveOp::DupA(reg, idx1, idx2) => {
+                writer.write_u3(0b001)?;
                 writer.write_u5(idx1)?;
-                writer.write_u3(reg2)?;
                 writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
             }
-            MoveOp::SwpAR(reg1, idx1, reg2, idx2) | MoveOp::CpyAR(reg1, idx1, reg2, idx2) => {
-                writer.write_u3(reg1)?;
+            MoveOp::SwpA(reg, idx1, idx2) => {
+                writer.write_u3(0b010)?;
                 writer.write_u5(idx1)?;
-                writer.write_u3(reg2)?;
                 writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
             }
-            MoveOp::CpyRA(reg1, idx1, reg2, idx2) => {
-                writer.write_u3(reg1)?;
+            MoveOp::MovF(reg, idx1, idx2) => {
+                writer.write_u3(0b011)?;
                 writer.write_u5(idx1)?;
-                writer.write_u3(reg2)?;
                 writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
             }
-            MoveOp::AMov(reg1, reg2, nt) => {
-                writer.write_u3(reg1)?;
-                writer.write_u3(reg2)?;
-                writer.write_u2(nt)?;
+            MoveOp::DupF(reg, idx1, idx2) => {
+                writer.write_u3(0b100)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            MoveOp::SwpF(reg, idx1, idx2) => {
+                writer.write_u3(0b101)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            MoveOp::MovR(reg, idx1, idx2) => {
+                writer.write_u3(0b110)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            MoveOp::DupR(reg, idx1, idx2) => {
+                writer.write_u3(0b111)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            MoveOp::CpyA(sreg, sidx, dreg, didx) | MoveOp::CnvA(sreg, sidx, dreg, didx) => {
+                writer.write_u3(sreg)?;
+                writer.write_u5(sidx)?;
+                writer.write_u3(dreg)?;
+                writer.write_u5(didx)?;
+            }
+            MoveOp::CnvF(sreg, sidx, dreg, didx) => {
+                writer.write_u3(sreg)?;
+                writer.write_u5(sidx)?;
+                writer.write_u3(dreg)?;
+                writer.write_u5(didx)?;
+            }
+            MoveOp::CpyR(sreg, sidx, dreg, didx) => {
+                writer.write_u3(sreg)?;
+                writer.write_u5(sidx)?;
+                writer.write_u3(dreg)?;
+                writer.write_u5(didx)?;
+            }
+            MoveOp::SpyAR(sreg, sidx, dreg, didx) => {
+                writer.write_u3(sreg)?;
+                writer.write_u5(sidx)?;
+                writer.write_u3(dreg)?;
+                writer.write_u5(didx)?;
+            }
+            MoveOp::CnvAF(sreg, sidx, dreg, didx) => {
+                writer.write_u3(sreg)?;
+                writer.write_u5(sidx)?;
+                writer.write_u3(dreg)?;
+                writer.write_u5(didx)?;
+            }
+            MoveOp::CnvFA(sreg, sidx, dreg, didx) => {
+                writer.write_u3(sreg)?;
+                writer.write_u5(sidx)?;
+                writer.write_u3(dreg)?;
+                writer.write_u5(didx)?;
             }
         }
         Ok(())
@@ -466,55 +537,39 @@ impl Bytecode for MoveOp {
         R: Read,
         DecodeError: From<<R as Read>::Error>,
     {
-        Ok(match reader.read_u8()? {
-            INSTR_SWPA => Self::SwpA(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ),
-            INSTR_SWPR => Self::SwpR(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ),
-            INSTR_SWPAR => Self::SwpAR(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ),
-            INSTR_MOVA => Self::MovA(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ),
-            INSTR_MOVR => Self::MovR(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ),
-            INSTR_MOVAR => Self::CpyAR(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ),
-            INSTR_MOVRA => Self::CpyRA(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ),
-            INSTR_AMOV => Self::AMov(
-                reader.read_u3()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u2()?.into(),
-            ),
-            x => unreachable!("instruction {:#010b} classified as move operation", x),
+        let instr = reader.read_u8()?;
+
+        Ok(if instr == INSTR_MOV {
+            let code = reader.read_u3()?;
+            let idx1 = reader.read_u5()?.into();
+            let idx2 = reader.read_u5()?.into();
+            let reg = reader.read_u3()?;
+            match code.as_u8() {
+                0b000 => MoveOp::MovA(reg.into(), idx1, idx2),
+                0b001 => MoveOp::DupA(reg.into(), idx1, idx2),
+                0b010 => MoveOp::SwpA(reg.into(), idx1, idx2),
+                0b011 => MoveOp::MovF(reg.into(), idx1, idx2),
+                0b100 => MoveOp::DupF(reg.into(), idx1, idx2),
+                0b101 => MoveOp::SwpF(reg.into(), idx1, idx2),
+                0b110 => MoveOp::MovR(reg.into(), idx1, idx2),
+                0b111 => MoveOp::DupR(reg.into(), idx1, idx2),
+                _ => unreachable!(),
+            }
+        } else {
+            let sreg = reader.read_u3()?;
+            let sidx = reader.read_u5()?.into();
+            let dreg = reader.read_u3()?;
+            let didx = reader.read_u5()?.into();
+            match instr {
+                INSTR_CPA => MoveOp::CpyA(sreg.into(), sidx, dreg.into(), didx),
+                INSTR_CNA => MoveOp::CnvA(sreg.into(), sidx, dreg.into(), didx),
+                INSTR_CNF => MoveOp::CnvF(sreg.into(), sidx, dreg.into(), didx),
+                INSTR_CPR => MoveOp::CpyR(sreg.into(), sidx, dreg.into(), didx),
+                INSTR_SPY => MoveOp::SpyAR(sreg.into(), sidx, dreg.into(), didx),
+                INSTR_CAF => MoveOp::CnvAF(sreg.into(), sidx, dreg.into(), didx),
+                INSTR_CFA => MoveOp::CnvFA(sreg.into(), sidx, dreg.into(), didx),
+                x => unreachable!("instruction {:#010b} classified as move operation", x),
+            }
         })
     }
 }
