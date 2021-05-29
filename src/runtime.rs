@@ -15,7 +15,7 @@ use core::marker::PhantomData;
 
 use bitcoin_hashes::Hash;
 
-use crate::instr::bytecode::{compile, Bytecode, EncodeError};
+use crate::instr::serialize::{compile, Bytecode, EncodeError};
 use crate::instr::{ExecStep, NOp};
 use crate::{Cursor, Instr, InstructionSet, Registers};
 
@@ -40,7 +40,7 @@ pub struct Lib<E = NOp>
 where
     E: InstructionSet,
 {
-    bytecode: Blob,
+    bytecode: ByteStr,
     instruction_set: PhantomData<E>,
 }
 
@@ -56,10 +56,7 @@ where
         <I as IntoIterator>::Item: InstructionSet,
     {
         let bytecode = compile::<E, _>(code)?;
-        Ok(Lib {
-            bytecode,
-            instruction_set: PhantomData::<E>::default(),
-        })
+        Ok(Lib { bytecode, instruction_set: PhantomData::<E>::default() })
     }
 
     /// Returns hash identifier [`LibHash`], representing the library in a
@@ -67,19 +64,13 @@ where
     ///
     /// Lib hash is computed as SHA256 tagged hash of the serialized library
     /// bytecode.
-    pub fn lib_hash(&self) -> LibHash {
-        LibHash::hash(&self.bytecode.bytes)
-    }
+    pub fn lib_hash(&self) -> LibHash { LibHash::hash(&self.bytecode.bytes) }
 
     /// Calculates length of bytecode encoding in bytes
-    pub fn byte_count(&self) -> u16 {
-        self.bytecode.len
-    }
+    pub fn byte_count(&self) -> u16 { self.bytecode.len }
 
     /// Returns bytecode reference
-    pub fn bytecode(&self) -> &[u8] {
-        &self.bytecode.as_ref()
-    }
+    pub fn bytecode(&self) -> &[u8] { &self.bytecode.as_ref() }
 
     /// Executes library code starting at entrypoint
     pub fn run(&self, entrypoint: u16, registers: &mut Registers) -> Option<LibSite> {
@@ -105,9 +96,7 @@ impl<E> AsRef<[u8]> for Lib<E>
 where
     E: InstructionSet,
 {
-    fn as_ref(&self) -> &[u8] {
-        self.bytecode.as_ref()
-    }
+    fn as_ref(&self) -> &[u8] { self.bytecode.as_ref() }
 }
 
 /// Location within a library
@@ -124,14 +113,12 @@ pub struct LibSite {
 impl LibSite {
     /// Constricts library site reference from a given position and library hash
     /// value
-    pub fn with(pos: u16, lib: LibHash) -> LibSite {
-        LibSite { lib, pos }
-    }
+    pub fn with(pos: u16, lib: LibHash) -> LibSite { LibSite { lib, pos } }
 }
 
 /// Large binary bytestring object
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct Blob {
+pub struct ByteStr {
     /// Slice length
     pub len: u16,
 
@@ -139,38 +126,28 @@ pub struct Blob {
     pub bytes: [u8; u16::MAX as usize],
 }
 
-impl Default for Blob {
-    fn default() -> Blob {
-        Blob {
-            len: 0,
-            bytes: [0u8; u16::MAX as usize],
-        }
-    }
+impl Default for ByteStr {
+    fn default() -> ByteStr { ByteStr { len: 0, bytes: [0u8; u16::MAX as usize] } }
 }
 
-impl AsRef<[u8]> for Blob {
-    fn as_ref(&self) -> &[u8] {
-        &self.bytes[..self.len as usize]
-    }
+impl AsRef<[u8]> for ByteStr {
+    fn as_ref(&self) -> &[u8] { &self.bytes[..self.len as usize] }
 }
 
-impl Blob {
+impl ByteStr {
     /// Constructs blob from slice of bytes.
     ///
     /// Panics if the length of the slice is greater than `u16::MAX` bytes.
-    pub fn with(slice: impl AsRef<[u8]>) -> Blob {
+    pub fn with(slice: impl AsRef<[u8]>) -> ByteStr {
         let len = slice.as_ref().len();
         let mut bytes = [0u8; u16::MAX as usize];
         bytes[0..len].copy_from_slice(slice.as_ref());
-        Blob {
-            len: len as u16,
-            bytes,
-        }
+        ByteStr { len: len as u16, bytes }
     }
 }
 
 #[cfg(feature = "std")]
-impl Display for Blob {
+impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify_num::hex::ToHex;
         let vec = Vec::from(&self.bytes[..self.len as usize]);
@@ -192,7 +169,7 @@ impl Display for Blob {
 }
 
 #[cfg(not(feature = "std"))]
-impl Display for Blob {
+impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let vec = Vec::from(&self.bytes[..self.len as usize]);
         write!(f, "{:#04X?}", &self.bytes[0usize..(self.len as usize)])
@@ -247,13 +224,9 @@ where
         self.libs.insert(lib.lib_hash(), lib).is_none()
     }
 
-    pub fn set_entrypoint(&mut self, entrypoint: LibSite) {
-        self.entrypoint = entrypoint;
-    }
+    pub fn set_entrypoint(&mut self, entrypoint: LibSite) { self.entrypoint = entrypoint; }
 
-    pub fn main(&mut self) -> Result<bool, NoLibraryError> {
-        self.call(self.entrypoint)
-    }
+    pub fn main(&mut self) -> Result<bool, NoLibraryError> { self.call(self.entrypoint) }
 
     pub fn call(&mut self, mut method: LibSite) -> Result<bool, NoLibraryError> {
         while let Some(m) = self

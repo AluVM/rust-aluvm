@@ -10,18 +10,17 @@
 
 #[macro_use]
 mod asm;
-pub mod bytecode;
+mod bitcode;
 mod exec;
-#[allow(clippy::module_inception)]
-mod instr;
-mod op_codes;
-mod op_types;
+mod flags;
+mod opcode;
+pub mod serialize;
 
-pub use bytecode::Bytecode;
+pub use bitcode::*;
 pub use exec::{ExecStep, InstructionSet};
-pub use instr::*;
-pub use op_codes::{
+pub use flags::{FloatEqFlag, IntFlags, ParseFlagError, RoundingFlag, SignFlag};
+pub use opcode::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp,
     NOp, PutOp, Secp256k1Op,
 };
-pub use op_types::{Arithmetics, IncDec, NumType};
+pub use serialize::Bytecode;

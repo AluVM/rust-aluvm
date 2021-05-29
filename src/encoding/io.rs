@@ -8,8 +8,9 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use crate::reg::{Reg, Value};
 use amplify_num::{u2, u3, u4, u5, u6, u7};
+
+use crate::reg::{RegAR, Value};
 
 // TODO: Make it sealed
 pub trait Read {
@@ -28,7 +29,7 @@ pub trait Read {
     fn read_u16(&mut self) -> Result<u16, Self::Error>;
     fn read_bytes32(&mut self) -> Result<[u8; 32], Self::Error>;
     fn read_slice(&mut self) -> Result<&[u8], Self::Error>;
-    fn read_value(&mut self, reg: Reg) -> Result<Value, Self::Error>;
+    fn read_value(&mut self, reg: RegAR) -> Result<Value, Self::Error>;
 }
 
 pub trait Write {
@@ -45,5 +46,5 @@ pub trait Write {
     fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), Self::Error>;
     fn write_bytes32(&mut self, data: [u8; 32]) -> Result<(), Self::Error>;
     fn write_slice(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), Self::Error>;
-    fn write_value(&mut self, reg: Reg, value: &Value) -> Result<(), Self::Error>;
+    fn write_value(&mut self, reg: RegAR, value: &Value) -> Result<(), Self::Error>;
 }

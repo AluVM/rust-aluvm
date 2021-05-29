@@ -52,14 +52,14 @@ pub const INSTR_ST2A: u8 = 0b00_011_110;
 pub const INSTR_A2ST: u8 = 0b00_011_111;
 
 // Arithmetic instructions
-pub const INSTR_NEG: u8 = 0b00_100_000;
-pub const INSTR_STP: u8 = 0b00_100_001;
-pub const INSTR_ADD: u8 = 0b00_100_010;
-pub const INSTR_SUB: u8 = 0b00_100_011;
-pub const INSTR_MUL: u8 = 0b00_100_100;
-pub const INSTR_DIV: u8 = 0b00_100_101;
-pub const INSTR_REM: u8 = 0b00_100_110;
-pub const INSTR_ABS: u8 = 0b00_100_111;
+pub const INSTR_ADD: u8 = 0b00_100_000;
+pub const INSTR_SUB: u8 = 0b00_100_001;
+pub const INSTR_MUL: u8 = 0b00_100_010;
+pub const INSTR_DIV: u8 = 0b00_100_011;
+pub const INSTR_STP: u8 = 0b00_100_100;
+pub const INSTR_NEG: u8 = 0b00_100_101;
+pub const INSTR_ABS: u8 = 0b00_100_110;
+pub const INSTR_REM: u8 = 0b00_100_111;
 
 // Bit operations & boolean algebra instructions
 pub const INSTR_AND: u8 = 0b00_101_000;

@@ -9,17 +9,18 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use alloc::vec::Vec;
-use bitcoin_hashes::Hash;
 use core::ops::RangeInclusive;
 
-use super::instr::*;
+use bitcoin_hashes::Hash;
+
+use super::bitcode::*;
 use crate::encoding::{Cursor, CursorError, Read, Write};
 use crate::instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, MoveOp, NOp,
     PutOp, Secp256k1Op,
 };
-use crate::reg::{Reg, RegBlock, Value};
-use crate::{Blob, Instr, InstructionSet, LibHash, LibSite};
+use crate::reg::{RegAR, RegBlockAR, Value};
+use crate::{ByteStr, Instr, InstructionSet, LibHash, LibSite};
 
 /// Errors decoding bytecode
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -71,13 +72,13 @@ where
 }
 
 /// Encodes library as bytecode
-pub fn compile<E, I>(code: I) -> Result<Blob, EncodeError>
+pub fn compile<E, I>(code: I) -> Result<ByteStr, EncodeError>
 where
     E: InstructionSet,
     I: IntoIterator,
     <I as IntoIterator>::Item: InstructionSet,
 {
-    let mut bytecode = Blob::default();
+    let mut bytecode = ByteStr::default();
     let mut writer = Cursor::with(&mut bytecode.bytes[..]);
     for instr in code.into_iter() {
         instr.write(&mut writer)?;
@@ -147,9 +148,7 @@ where
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        0..=u8::MAX
-    }
+    fn instr_range() -> RangeInclusive<u8> { 0..=u8::MAX }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -249,9 +248,7 @@ impl Bytecode for ControlFlowOp {
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_FAIL..=INSTR_RET
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_FAIL..=INSTR_RET }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -306,10 +303,7 @@ impl Bytecode for ControlFlowOp {
                 LibHash::from_inner(reader.read_bytes32()?),
             )),
             INSTR_RET => Self::Ret,
-            x => unreachable!(
-                "instruction {:#010b} classified as control flow operation",
-                x
-            ),
+            x => unreachable!("instruction {:#010b} classified as control flow operation", x),
         })
     }
 }
@@ -327,9 +321,7 @@ impl Bytecode for PutOp {
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_ZEROA..=INSTR_PUTIFR
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_ZEROA..=INSTR_PUTIFR }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -361,12 +353,12 @@ impl Bytecode for PutOp {
             PutOp::PutA(reg, reg32, val) | PutOp::PutIfA(reg, reg32, val) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(reg32)?;
-                writer.write_value(Reg::A(*reg), val)?;
+                writer.write_value(RegAR::A(*reg), val)?;
             }
             PutOp::PutR(reg, reg32, val) | PutOp::PutIfR(reg, reg32, val) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(reg32)?;
-                writer.write_value(Reg::R(*reg), val)?;
+                writer.write_value(RegAR::R(*reg), val)?;
             }
         }
         Ok(())
@@ -384,35 +376,19 @@ impl Bytecode for PutOp {
             INSTR_CLR => Self::ClR(reader.read_u3()?.into(), reader.read_u5()?.into()),
             INSTR_PUTA => {
                 let reg = reader.read_u3()?.into();
-                Self::PutA(
-                    reg,
-                    reader.read_u5()?.into(),
-                    reader.read_value(Reg::A(reg))?,
-                )
+                Self::PutA(reg, reader.read_u5()?.into(), reader.read_value(RegAR::A(reg))?)
             }
             INSTR_PUTR => {
                 let reg = reader.read_u3()?.into();
-                Self::PutR(
-                    reg,
-                    reader.read_u5()?.into(),
-                    reader.read_value(Reg::R(reg))?,
-                )
+                Self::PutR(reg, reader.read_u5()?.into(), reader.read_value(RegAR::R(reg))?)
             }
             INSTR_PUTIFA => {
                 let reg = reader.read_u3()?.into();
-                Self::PutIfA(
-                    reg,
-                    reader.read_u5()?.into(),
-                    reader.read_value(Reg::A(reg))?,
-                )
+                Self::PutIfA(reg, reader.read_u5()?.into(), reader.read_value(RegAR::A(reg))?)
             }
             INSTR_PUTIFR => {
                 let reg = reader.read_u3()?.into();
-                Self::PutIfR(
-                    reg,
-                    reader.read_u5()?.into(),
-                    reader.read_value(Reg::R(reg))?,
-                )
+                Self::PutIfR(reg, reader.read_u5()?.into(), reader.read_value(RegAR::R(reg))?)
             }
             x => unreachable!("instruction {:#010b} classified as put operation", x),
         })
@@ -426,14 +402,12 @@ impl Bytecode for MoveOp {
             MoveOp::AMov(_, _, _) => 2,
             MoveOp::MovA(_, _, _, _)
             | MoveOp::MovR(_, _, _, _)
-            | MoveOp::MovAR(_, _, _, _)
-            | MoveOp::MovRA(_, _, _, _) => 3,
+            | MoveOp::CpyAR(_, _, _, _)
+            | MoveOp::CpyRA(_, _, _, _) => 3,
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_SWPA..=INSTR_MOVRA
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_SWPA..=INSTR_MOVRA }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -443,8 +417,8 @@ impl Bytecode for MoveOp {
             MoveOp::AMov(_, _, _) => INSTR_AMOV,
             MoveOp::MovA(_, _, _, _) => INSTR_MOVA,
             MoveOp::MovR(_, _, _, _) => INSTR_MOVR,
-            MoveOp::MovAR(_, _, _, _) => INSTR_MOVAR,
-            MoveOp::MovRA(_, _, _, _) => INSTR_MOVRA,
+            MoveOp::CpyAR(_, _, _, _) => INSTR_MOVAR,
+            MoveOp::CpyRA(_, _, _, _) => INSTR_MOVRA,
         }
     }
 
@@ -466,13 +440,13 @@ impl Bytecode for MoveOp {
                 writer.write_u3(reg2)?;
                 writer.write_u5(idx2)?;
             }
-            MoveOp::SwpAR(reg1, idx1, reg2, idx2) | MoveOp::MovAR(reg1, idx1, reg2, idx2) => {
+            MoveOp::SwpAR(reg1, idx1, reg2, idx2) | MoveOp::CpyAR(reg1, idx1, reg2, idx2) => {
                 writer.write_u3(reg1)?;
                 writer.write_u5(idx1)?;
                 writer.write_u3(reg2)?;
                 writer.write_u5(idx2)?;
             }
-            MoveOp::MovRA(reg1, idx1, reg2, idx2) => {
+            MoveOp::CpyRA(reg1, idx1, reg2, idx2) => {
                 writer.write_u3(reg1)?;
                 writer.write_u5(idx1)?;
                 writer.write_u3(reg2)?;
@@ -523,13 +497,13 @@ impl Bytecode for MoveOp {
                 reader.read_u3()?.into(),
                 reader.read_u5()?.into(),
             ),
-            INSTR_MOVAR => Self::MovAR(
+            INSTR_MOVAR => Self::CpyAR(
                 reader.read_u3()?.into(),
                 reader.read_u5()?.into(),
                 reader.read_u3()?.into(),
                 reader.read_u5()?.into(),
             ),
-            INSTR_MOVRA => Self::MovRA(
+            INSTR_MOVRA => Self::CpyRA(
                 reader.read_u3()?.into(),
                 reader.read_u5()?.into(),
                 reader.read_u3()?.into(),
@@ -555,13 +529,11 @@ impl Bytecode for CmpOp {
             | CmpOp::EqA(_, _, _, _)
             | CmpOp::EqR(_, _, _, _) => 3,
             CmpOp::Len(_, _) | CmpOp::Cnt(_, _) => 2,
-            CmpOp::St2A | CmpOp::A2St => 1,
+            CmpOp::St | CmpOp::A2St => 1,
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_GT..=INSTR_A2ST
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_GT..=INSTR_A2ST }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -571,7 +543,7 @@ impl Bytecode for CmpOp {
             CmpOp::EqR(_, _, _, _) => INSTR_EQR,
             CmpOp::Len(_, _) => INSTR_LEN,
             CmpOp::Cnt(_, _) => INSTR_CNT,
-            CmpOp::St2A => INSTR_ST2A,
+            CmpOp::St => INSTR_ST2A,
             CmpOp::A2St => INSTR_A2ST,
         }
     }
@@ -583,13 +555,13 @@ impl Bytecode for CmpOp {
     {
         match self {
             CmpOp::GtA(num_type, reg, idx1, idx2) | CmpOp::LtA(num_type, reg, idx1, idx2) => {
-                writer.write_u4(Reg::A(*reg))?;
+                writer.write_u4(RegAR::A(*reg))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u2(num_type)?;
             }
             CmpOp::GtR(reg1, idx1, reg2, idx2) | CmpOp::LtR(reg1, idx1, reg2, idx2) => {
-                writer.write_u4(Reg::R(*reg1))?;
+                writer.write_u4(RegAR::R(*reg1))?;
                 writer.write_u4(idx1)?;
                 writer.write_u3(reg2)?;
                 writer.write_u5(idx2)?;
@@ -610,7 +582,7 @@ impl Bytecode for CmpOp {
                 writer.write_u3(reg)?;
                 writer.write_u5(idx)?;
             }
-            CmpOp::St2A => {}
+            CmpOp::St => {}
             CmpOp::A2St => {}
         }
         Ok(())
@@ -668,7 +640,7 @@ impl Bytecode for CmpOp {
             ),
             INSTR_LEN => Self::Len(reader.read_u3()?.into(), reader.read_u5()?.into()),
             INSTR_CNT => Self::Cnt(reader.read_u3()?.into(), reader.read_u5()?.into()),
-            INSTR_ST2A => Self::St2A,
+            INSTR_ST2A => Self::St,
             INSTR_A2ST => Self::A2St,
             x => unreachable!("instruction {:#010b} classified as comparison operation", x),
         })
@@ -689,9 +661,7 @@ impl Bytecode for ArithmeticOp {
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_NEG..=INSTR_ABS
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_NEG..=INSTR_ABS }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -807,9 +777,7 @@ impl Bytecode for BitwiseOp {
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_AND..=INSTR_SCR
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_AND..=INSTR_SCR }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -857,10 +825,7 @@ impl Bytecode for BitwiseOp {
     {
         let instr = reader.read_u8()?;
         if instr == INSTR_NOT {
-            return Ok(Self::Not(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ));
+            return Ok(Self::Not(reader.read_u3()?.into(), reader.read_u5()?.into()));
         }
         let reg = reader.read_u3()?.into();
         let src1 = reader.read_u5()?.into();
@@ -883,25 +848,23 @@ impl Bytecode for BitwiseOp {
 impl Bytecode for BytesOp {
     fn byte_count(&self) -> u16 {
         match self {
-            BytesOp::Put(_, Blob { len, .. }) => 4u16.saturating_add(*len),
+            BytesOp::Put(_, ByteStr { len, .. }) => 4u16.saturating_add(*len),
             BytesOp::Mov(_, _) | BytesOp::Swp(_, _) => 3,
             BytesOp::Fill(_, _, _, _) => 7,
-            BytesOp::LenS(_) => 2,
-            BytesOp::Count(_, _) => 3,
+            BytesOp::Len(_) => 2,
+            BytesOp::Cnt(_, _) => 3,
             BytesOp::Cmp(_, _) => 3,
             BytesOp::Comm(_, _) => 3,
             BytesOp::Find(_, _) => 3,
             BytesOp::Extr(_, _, _, _) | BytesOp::Inj(_, _, _, _) => 4,
             BytesOp::Join(_, _, _) => 4,
-            BytesOp::Split(_, _, _, _) => 6,
+            BytesOp::Splt(_, _, _, _) => 6,
             BytesOp::Ins(_, _, _) | BytesOp::Del(_, _, _) => 5,
             BytesOp::Transl(_, _, _, _) => 7,
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_PUT..=INSTR_TRANSL
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_PUT..=INSTR_TRANSL }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -909,15 +872,15 @@ impl Bytecode for BytesOp {
             BytesOp::Mov(_, _) => INSTR_MOV,
             BytesOp::Swp(_, _) => INSTR_SWP,
             BytesOp::Fill(_, _, _, _) => INSTR_FILL,
-            BytesOp::LenS(_) => INSTR_LENS,
-            BytesOp::Count(_, _) => INSTR_COUNT,
+            BytesOp::Len(_) => INSTR_LENS,
+            BytesOp::Cnt(_, _) => INSTR_COUNT,
             BytesOp::Cmp(_, _) => INSTR_CMP,
             BytesOp::Comm(_, _) => INSTR_COMM,
             BytesOp::Find(_, _) => INSTR_FIND,
             BytesOp::Extr(_, _, _, _) => INSTR_EXTR,
             BytesOp::Inj(_, _, _, _) => INSTR_INJ,
             BytesOp::Join(_, _, _) => INSTR_JOIN,
-            BytesOp::Split(_, _, _, _) => INSTR_SPLIT,
+            BytesOp::Splt(_, _, _, _) => INSTR_SPLIT,
             BytesOp::Ins(_, _, _) => INSTR_DEL,
             BytesOp::Del(_, _, _) => INSTR_INS,
             BytesOp::Transl(_, _, _, _) => INSTR_TRANSL,
@@ -936,7 +899,7 @@ impl Bytecode for BytesOp {
             }
             BytesOp::Mov(reg1, reg2)
             | BytesOp::Swp(reg1, reg2)
-            | BytesOp::Count(reg1, reg2)
+            | BytesOp::Cnt(reg1, reg2)
             | BytesOp::Cmp(reg1, reg2)
             | BytesOp::Comm(reg1, reg2)
             | BytesOp::Find(reg1, reg2) => {
@@ -949,13 +912,13 @@ impl Bytecode for BytesOp {
                 writer.write_u16(*to)?;
                 writer.write_u8(*value)?;
             }
-            BytesOp::LenS(reg) => {
+            BytesOp::Len(reg) => {
                 writer.write_u8(*reg)?;
             }
             BytesOp::Extr(src, offset, dst, index) | BytesOp::Inj(src, offset, dst, index) => {
                 writer.write_u5(src)?;
                 writer.write_u5(offset)?;
-                writer.write_bool(*dst == RegBlock::A)?;
+                writer.write_bool(*dst == RegBlockAR::A)?;
                 writer.write_u5(index)?;
             }
             BytesOp::Join(src1, src2, dst) => {
@@ -963,7 +926,7 @@ impl Bytecode for BytesOp {
                 writer.write_u8(*src2)?;
                 writer.write_u8(*dst)?;
             }
-            BytesOp::Split(src, pos, dst1, dst2) => {
+            BytesOp::Splt(src, pos, dst1, dst2) => {
                 writer.write_u8(*src)?;
                 writer.write_u16(*pos)?;
                 writer.write_u8(*dst1)?;
@@ -995,7 +958,7 @@ impl Bytecode for BytesOp {
         DecodeError: From<<R as Read>::Error>,
     {
         Ok(match reader.read_u8()? {
-            INSTR_PUT => Self::Put(reader.read_u8()?, Blob::with(reader.read_slice()?)),
+            INSTR_PUT => Self::Put(reader.read_u8()?, ByteStr::with(reader.read_slice()?)),
             INSTR_MOV => Self::Mov(reader.read_u8()?, reader.read_u8()?),
             INSTR_SWP => Self::Swp(reader.read_u8()?, reader.read_u8()?),
             INSTR_FILL => Self::Fill(
@@ -1004,33 +967,25 @@ impl Bytecode for BytesOp {
                 reader.read_u16()?,
                 reader.read_u8()?,
             ),
-            INSTR_LENS => Self::LenS(reader.read_u8()?),
-            INSTR_COUNT => Self::Count(reader.read_u8()?, reader.read_u8()?),
+            INSTR_LENS => Self::Len(reader.read_u8()?),
+            INSTR_COUNT => Self::Cnt(reader.read_u8()?, reader.read_u8()?),
             INSTR_CMP => Self::Cmp(reader.read_u8()?, reader.read_u8()?),
             INSTR_COMM => Self::Comm(reader.read_u8()?, reader.read_u8()?),
             INSTR_FIND => Self::Find(reader.read_u8()?, reader.read_u8()?),
             INSTR_EXTR => Self::Extr(
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
-                if reader.read_bool()? {
-                    RegBlock::A
-                } else {
-                    RegBlock::R
-                },
+                if reader.read_bool()? { RegBlockAR::A } else { RegBlockAR::R },
                 reader.read_u5()?.into(),
             ),
             INSTR_INJ => Self::Inj(
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
-                if reader.read_bool()? {
-                    RegBlock::A
-                } else {
-                    RegBlock::R
-                },
+                if reader.read_bool()? { RegBlockAR::A } else { RegBlockAR::R },
                 reader.read_u5()?.into(),
             ),
             INSTR_JOIN => Self::Join(reader.read_u8()?, reader.read_u8()?, reader.read_u8()?),
-            INSTR_SPLIT => Self::Split(
+            INSTR_SPLIT => Self::Splt(
                 reader.read_u8()?,
                 reader.read_u16()?,
                 reader.read_u8()?,
@@ -1044,22 +999,15 @@ impl Bytecode for BytesOp {
                 reader.read_u16()?,
                 reader.read_u8()?,
             ),
-            x => unreachable!(
-                "instruction {:#010b} classified as byte string operation",
-                x
-            ),
+            x => unreachable!("instruction {:#010b} classified as byte string operation", x),
         })
     }
 }
 
 impl Bytecode for DigestOp {
-    fn byte_count(&self) -> u16 {
-        3
-    }
+    fn byte_count(&self) -> u16 { 3 }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_RIPEMD..=INSTR_HASH5
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_RIPEMD..=INSTR_HASH5 }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -1114,9 +1062,7 @@ impl Bytecode for Secp256k1Op {
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_SECP_GEN..=INSTR_SECP_NEG
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_SECP_GEN..=INSTR_SECP_NEG }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -1138,7 +1084,7 @@ impl Bytecode for Secp256k1Op {
                 writer.write_u3(dst)?;
             }
             Secp256k1Op::Mul(reg, scal, src, dst) => {
-                writer.write_bool(*reg == RegBlock::A)?;
+                writer.write_bool(*reg == RegBlockAR::A)?;
                 writer.write_u5(scal)?;
                 writer.write_u5(src)?;
                 writer.write_u5(dst)?;
@@ -1163,21 +1109,14 @@ impl Bytecode for Secp256k1Op {
         Ok(match reader.read_u8()? {
             INSTR_SECP_GEN => Self::Gen(reader.read_u5()?.into(), reader.read_u3()?.into()),
             INSTR_SECP_MUL => Self::Mul(
-                if reader.read_bool()? {
-                    RegBlock::A
-                } else {
-                    RegBlock::R
-                },
+                if reader.read_bool()? { RegBlockAR::A } else { RegBlockAR::R },
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
             ),
             INSTR_SECP_ADD => Self::Add(reader.read_u5()?.into(), reader.read_u3()?.into()),
             INSTR_SECP_NEG => Self::Neg(reader.read_u5()?.into(), reader.read_u3()?.into()),
-            x => unreachable!(
-                "instruction {:#010b} classified as Secp256k1 curve operation",
-                x
-            ),
+            x => unreachable!("instruction {:#010b} classified as Secp256k1 curve operation", x),
         })
     }
 }
@@ -1192,9 +1131,7 @@ impl Bytecode for Curve25519Op {
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_ED_GEN..=INSTR_ED_NEG
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_ED_GEN..=INSTR_ED_NEG }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -1216,7 +1153,7 @@ impl Bytecode for Curve25519Op {
                 writer.write_u3(dst)?;
             }
             Curve25519Op::Mul(reg, scal, src, dst) => {
-                writer.write_bool(*reg == RegBlock::A)?;
+                writer.write_bool(*reg == RegBlockAR::A)?;
                 writer.write_u5(scal)?;
                 writer.write_u5(src)?;
                 writer.write_u5(dst)?;
@@ -1243,11 +1180,7 @@ impl Bytecode for Curve25519Op {
         Ok(match reader.read_u8()? {
             INSTR_ED_GEN => Self::Gen(reader.read_u5()?.into(), reader.read_u3()?.into()),
             INSTR_ED_MUL => Self::Mul(
-                if reader.read_bool()? {
-                    RegBlock::A
-                } else {
-                    RegBlock::R
-                },
+                if reader.read_bool()? { RegBlockAR::A } else { RegBlockAR::R },
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
@@ -1265,17 +1198,11 @@ impl Bytecode for Curve25519Op {
 }
 
 impl Bytecode for NOp {
-    fn byte_count(&self) -> u16 {
-        1
-    }
+    fn byte_count(&self) -> u16 { 1 }
 
-    fn instr_range() -> RangeInclusive<u8> {
-        INSTR_NOP..=INSTR_NOP
-    }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_NOP..=INSTR_NOP }
 
-    fn instr_byte(&self) -> u8 {
-        INSTR_NOP
-    }
+    fn instr_byte(&self) -> u8 { INSTR_NOP }
 
     fn write_args<W>(&self, _writer: &mut W) -> Result<(), EncodeError>
     where

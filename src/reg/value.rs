@@ -8,14 +8,13 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use core::fmt::{self, Display, Formatter};
-use core::hash::Hash;
+use core::fmt::{self, Display, Formatter, Write};
+use core::hash::{Hash, Hasher};
 use core::ops::{Deref, Index, IndexMut};
 #[cfg(feature = "std")]
 use core::str::FromStr;
 
 use amplify_num::{u1024, u256, u512};
-use core::hash::Hasher;
 
 /// Register value, which may be `None`
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
@@ -25,52 +24,36 @@ pub struct RegVal(
 
 impl RegVal {
     /// Creates [`RegVal`] without assigning a value to it
-    pub fn none() -> RegVal {
-        RegVal(None)
-    }
+    pub fn none() -> RegVal { RegVal(None) }
 
     /// Creates [`RegVal`] assigning a value to it
-    pub fn some(val: Value) -> RegVal {
-        RegVal(Some(val))
-    }
+    pub fn some(val: Value) -> RegVal { RegVal(Some(val)) }
 }
 
 impl From<Value> for RegVal {
-    fn from(val: Value) -> Self {
-        RegVal(Some(val))
-    }
+    fn from(val: Value) -> Self { RegVal(Some(val)) }
 }
 
 impl From<&Value> for RegVal {
-    fn from(val: &Value) -> Self {
-        RegVal(Some(*val))
-    }
+    fn from(val: &Value) -> Self { RegVal(Some(*val)) }
 }
 
 impl From<&Option<Value>> for RegVal {
-    fn from(val: &Option<Value>) -> Self {
-        RegVal(*val)
-    }
+    fn from(val: &Option<Value>) -> Self { RegVal(*val) }
 }
 
 impl From<Option<&Value>> for RegVal {
-    fn from(val: Option<&Value>) -> Self {
-        RegVal(val.copied())
-    }
+    fn from(val: Option<&Value>) -> Self { RegVal(val.copied()) }
 }
 
 impl From<RegVal> for Option<Value> {
-    fn from(val: RegVal) -> Self {
-        val.0
-    }
+    fn from(val: RegVal) -> Self { val.0 }
 }
 
 impl Deref for RegVal {
     type Target = Option<Value>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+    fn deref(&self) -> &Self::Target { &self.0 }
 }
 
 impl Display for RegVal {
@@ -93,9 +76,7 @@ pub struct Value {
 }
 
 impl PartialEq for Value {
-    fn eq(&self, other: &Self) -> bool {
-        self.to_clean().eq(&other.to_clean())
-    }
+    fn eq(&self, other: &Self) -> bool { self.to_clean().eq(&other.to_clean()) }
 }
 
 impl Eq for Value {}
@@ -109,24 +90,15 @@ impl Hash for Value {
 }
 
 impl Default for Value {
-    fn default() -> Value {
-        Value {
-            len: 0,
-            bytes: [0u8; 1024],
-        }
-    }
+    fn default() -> Value { Value { len: 0, bytes: [0u8; 1024] } }
 }
 
 impl AsRef<[u8]> for Value {
-    fn as_ref(&self) -> &[u8] {
-        &self.bytes[..self.len as usize]
-    }
+    fn as_ref(&self) -> &[u8] { &self.bytes[..self.len as usize] }
 }
 
 impl AsMut<[u8]> for Value {
-    fn as_mut(&mut self) -> &mut [u8] {
-        &mut self.bytes[..self.len as usize]
-    }
+    fn as_mut(&mut self) -> &mut [u8] { &mut self.bytes[..self.len as usize] }
 }
 
 impl Index<u16> for Value {
@@ -148,12 +120,7 @@ impl IndexMut<u16> for Value {
 impl Value {
     /// Creates zero value of a given dimension
     #[inline]
-    pub fn zero(len: u16) -> Value {
-        Value {
-            len,
-            bytes: [0u8; 1024],
-        }
-    }
+    pub fn zero(len: u16) -> Value { Value { len, bytes: [0u8; 1024] } }
 
     /// Constructs value from slice of bytes.
     ///
@@ -162,10 +129,7 @@ impl Value {
         let len = slice.as_ref().len();
         let mut bytes = [0u8; 1024];
         bytes[0..len].copy_from_slice(slice.as_ref());
-        Value {
-            len: len as u16,
-            bytes,
-        }
+        Value { len: len as u16, bytes }
     }
 
     /// Constructs value from hex string
@@ -180,10 +144,7 @@ impl Value {
         let mut bytes = [0u8; 1024];
         let hex = Vec::<u8>::from_hex(&s)?;
         bytes[0..len].copy_from_slice(&hex);
-        Ok(Value {
-            len: hex.len() as u16,
-            bytes,
-        })
+        Ok(Value { len: hex.len() as u16, bytes })
     }
 
     /// Serializes value in hexadecimal format to a string
@@ -209,9 +170,7 @@ impl Value {
 
     /// Ensures that all non-value bits are set to zero
     #[inline]
-    pub fn clean(&mut self) {
-        self.bytes[self.len as usize..].fill(0);
-    }
+    pub fn clean(&mut self) { self.bytes[self.len as usize..].fill(0); }
 
     /// Returns a copy where all non-value bits are set to zero
     #[inline]
@@ -223,9 +182,7 @@ impl Value {
 
     /// Converts the value into `u1024` integer
     #[inline]
-    pub fn to_u1024(self) -> u1024 {
-        self.to_clean().into()
-    }
+    pub fn to_u1024(self) -> u1024 { self.to_clean().into() }
 }
 
 /// Errors parsing literal values in AluVM assembly code
@@ -294,12 +251,7 @@ impl Display for Value {
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str("0x")?;
-        write!(
-            f,
-            "{:#04X?}..{:#04X?}",
-            &self.bytes[..4],
-            &self.bytes[(self.len as usize - 4)..]
-        )
+        write!(f, "{:#04X?}..{:#04X?}", &self.bytes[..4], &self.bytes[(self.len as usize - 4)..])
     }
 }
 
@@ -324,21 +276,15 @@ macro_rules! impl_value_bytes_conv {
         }
 
         impl From<[u8; $len]> for RegVal {
-            fn from(val: [u8; $len]) -> RegVal {
-                RegVal::from(Value::from(val))
-            }
+            fn from(val: [u8; $len]) -> RegVal { RegVal::from(Value::from(val)) }
         }
 
         impl From<Option<[u8; $len]>> for RegVal {
-            fn from(val: Option<[u8; $len]>) -> RegVal {
-                RegVal::from(val.map(Value::from))
-            }
+            fn from(val: Option<[u8; $len]>) -> RegVal { RegVal::from(val.map(Value::from)) }
         }
 
         impl From<&Option<[u8; $len]>> for RegVal {
-            fn from(val: &Option<[u8; $len]>) -> RegVal {
-                RegVal::from(val.map(Value::from))
-            }
+            fn from(val: &Option<[u8; $len]>) -> RegVal { RegVal::from(val.map(Value::from)) }
         }
     };
 }
@@ -346,52 +292,35 @@ macro_rules! impl_value_bytes_conv {
 macro_rules! impl_value_ty_conv {
     ($ty:ident, $len:literal) => {
         impl From<Value> for $ty {
-            fn from(val: Value) -> Self {
-                $ty::from_le_bytes(<[u8; $len]>::from(val))
-            }
+            fn from(val: Value) -> Self { $ty::from_le_bytes(<[u8; $len]>::from(val)) }
         }
 
         impl From<$ty> for Value {
-            fn from(val: $ty) -> Self {
-                Value::from(&val)
-            }
+            fn from(val: $ty) -> Self { Value::from(&val) }
         }
         impl From<&$ty> for Value {
             fn from(val: &$ty) -> Self {
                 let mut bytes = [0u8; 1024];
                 let le = val.to_le_bytes();
                 bytes[0..le.len()].copy_from_slice(&le[..]);
-                Value {
-                    len: le.len() as u16,
-                    bytes,
-                }
+                Value { len: le.len() as u16, bytes }
             }
         }
 
         impl From<$ty> for RegVal {
-            fn from(val: $ty) -> Self {
-                RegVal::some(Value::from(val))
-            }
+            fn from(val: $ty) -> Self { RegVal::some(Value::from(val)) }
         }
         impl From<&$ty> for RegVal {
-            fn from(val: &$ty) -> Self {
-                RegVal::some(Value::from(*val))
-            }
+            fn from(val: &$ty) -> Self { RegVal::some(Value::from(*val)) }
         }
         impl From<Option<$ty>> for RegVal {
-            fn from(val: Option<$ty>) -> Self {
-                RegVal::from(val.map(Value::from))
-            }
+            fn from(val: Option<$ty>) -> Self { RegVal::from(val.map(Value::from)) }
         }
         impl From<Option<&$ty>> for RegVal {
-            fn from(val: Option<&$ty>) -> Self {
-                RegVal::from(val.copied().map(Value::from))
-            }
+            fn from(val: Option<&$ty>) -> Self { RegVal::from(val.copied().map(Value::from)) }
         }
         impl From<&Option<$ty>> for RegVal {
-            fn from(val: &Option<$ty>) -> Self {
-                RegVal::from((*val).map(Value::from))
-            }
+            fn from(val: &Option<$ty>) -> Self { RegVal::from((*val).map(Value::from)) }
         }
     };
 }
@@ -423,3 +352,24 @@ impl_value_ty_conv!(i16, 2);
 impl_value_ty_conv!(i32, 4);
 impl_value_ty_conv!(i64, 8);
 impl_value_ty_conv!(i128, 16);
+
+/// Value for step instructions which can be displayed as a part of operation mnemonic
+#[derive(Wrapper, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, From)]
+pub struct Step(Value);
+
+impl Display for Step {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            let val = i64::from(self.0);
+            match val {
+                1 => f.write_str("inc"),
+                -1 => f.write_str("dec"),
+                x if x < 0 => f.write_str("sub"),
+                x if x >= 0 => f.write_str("add"),
+            }
+        } else {
+            f.write_char(',')?;
+            Display::fmt(&self.0, f)
+        }
+    }
+}

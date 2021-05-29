@@ -1,0 +1,823 @@
+// AluRE: AluVM runtime environment.
+// This is rust implementation of AluVM (arithmetic logic unit virtual machine).
+//
+// Designed & written in 2021 by
+//     Dr. Maxim Orlovsky <orlovsky@pandoracore.com>
+//
+// This software is licensed under the terms of MIT License.
+// You should have received a copy of the MIT License along with this software.
+// If not, see <https://opensource.org/licenses/MIT>.
+
+#![allow(clippy::branches_sharing_code)]
+
+use amplify_num::{u3, u4, u6};
+
+use crate::instr::flags::{FloatEqFlag, SignFlag};
+use crate::instr::{ArithmFlags, CmpFlag, IncDec, IntFlags, RoundingFlag};
+use crate::reg::{Reg16, Reg32, Reg8, RegA, RegAR, RegBlockAR, RegR, Step, Value};
+use crate::{ByteStr, InstructionSet, LibSite};
+
+/// Default instruction extension which treats any operation as NOP
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[display("nop")]
+pub enum NOp {
+    NOp,
+}
+
+/// Full set of instructions
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
+#[display(inner)]
+#[non_exhaustive]
+pub enum Instr<Extension = NOp>
+where
+    Extension: InstructionSet,
+{
+    /// Control-flow instructions. See [`ControlFlowOp`] for the details.
+    // 0b00_000_***
+    ControlFlow(ControlFlowOp),
+
+    /// Instructions setting register values. See [`PutOp`] for the details.
+    // 0b00_001_***
+    Put(PutOp),
+
+    /// Instructions moving and swapping register values. See [`PutOp`] for the details.
+    // 0b00_010_***
+    Move(MoveOp),
+
+    /// Instructions comparing register values. See [`CmpOp`] for the details.
+    // 0b00_011_***
+    Cmp(CmpOp),
+
+    /// Arithmetic instructions. See [`ArithmeticOp`] for the details.
+    // 0b00_100_***
+    Arithmetic(ArithmeticOp),
+
+    /// Bit operations & boolean algebra instructions. See [`BitwiseOp`] for the details.
+    // 0b00_101_***
+    Bitwise(BitwiseOp),
+
+    /// Operations on byte strings. See [`BytesOp`] for the details.
+    // 0b00_110_***
+    Bytes(BytesOp),
+
+    /// Cryptographic hashing functions. See [`DigestOp`] for the details.
+    // 0b01_000_***
+    Digest(DigestOp),
+
+    #[cfg(feature = "secp256k1")]
+    /// Operations on Secp256k1 elliptic curve. See [`Secp256k1Op`] for the details.
+    // 0b01_001_0**
+    Secp256k1(Secp256k1Op),
+
+    #[cfg(feature = "curve25519")]
+    /// Operations on Curve25519 elliptic curve. See [`Curve25519Op`] for the details.
+    // 0b01_001_1**
+    Curve25519(Curve25519Op),
+
+    /// Extension operations which can be provided by a host environment provided via generic
+    /// parameter
+    // 0b10_***_***
+    ExtensionCodes(Extension),
+
+    // Reserved operations for the future use.
+    //
+    // When such an opcode is met in the bytecode the decoder MUST fail.
+    // 0x11_***_***
+    /// No-operation instruction.
+    // #[value = 0b11_111_111]
+    Nop,
+}
+
+/// Control-flow instructions
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum ControlFlowOp {
+    /// Completes program execution writing `false` to `st0` (indicating program failure). Does not
+    /// modify value of call stack registers.
+    #[display("fail")]
+    Fail,
+
+    /// Completes program execution writing `true` to `st0` (indicating program success). Does not
+    /// modify value of call stack registers.
+    #[display("succ")]
+    Succ,
+
+    /// Unconditionally jumps to an offset. Increments `cy0`.
+    #[display("jmp\t\t{0:#06X}")]
+    Jmp(u16),
+
+    /// Jumps to an offset if `st0` == true, otherwise does nothing. Increments `cy0`.
+    #[display("jif\t\t{0:#06X}")]
+    Jif(u16),
+
+    /// Jumps to other location in the current code with ability to return back (calls a
+    /// subroutine). Increments `cy0` and pushes offset of the instruction which follows current
+    /// one to `cs0`.
+    #[display("routine\t{0:#06X}")]
+    Routine(u16),
+
+    /// Calls code from an external library identified by the hash of its code. Increments `cy0`
+    /// and `cp0` and pushes offset of the instruction which follows current one to `cs0`.
+    #[display("call\t{0}")]
+    Call(LibSite),
+
+    /// Passes execution to other library without an option to return. Does not increment `cy0` and
+    /// `cp0` counters and does not add anything to the call stack `cs0`.
+    #[display("exec\t{0}")]
+    Exec(LibSite),
+
+    /// Returns execution flow to the previous location from the top of `cs0`. Does not change the
+    /// value in `cy0`. Decrements `cp0`.
+    #[display("ret")]
+    Ret,
+}
+
+/// Instructions setting register values
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
+pub enum PutOp {
+    /// Sets `a` register value to zero
+    #[display("zero\t{0}{1}")]
+    ZeroA(RegA, Reg32),
+
+    /// Sets `r` register value to zero
+    #[display("zero\t{0}{1}")]
+    ZeroR(RegR, Reg32),
+
+    /// Cleans a value of `a` register (sets it to undefined state)
+    #[display("cl\t\t{0}{1}")]
+    ClA(RegA, Reg32),
+
+    /// Cleans a value of `r` register (sets it to undefined state)
+    #[display("cl\t\t{0}{1}")]
+    ClR(RegR, Reg32),
+
+    /// Unconditionally assigns a value to `a` register
+    #[display("put\t\t{0}{1}, {2}")]
+    PutA(RegA, Reg32, Value),
+
+    /// Unconditionally assigns a value to `r` register
+    #[display("put\t\t{0}{1}, {2}")]
+    PutR(RegR, Reg32, Value),
+
+    /// Conditionally assigns a value to `a` register if the register is in uninitialized state
+    #[display("putif\t{0}{1}, {2}")]
+    PutIfA(RegA, Reg32, Value),
+
+    /// Conditionally assigns a value to `r` register if the register is in uninitialized state
+    #[display("putif\t{0}{1}, {2}")]
+    PutIfR(RegR, Reg32, Value),
+}
+
+/// Instructions moving and swapping register values
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum MoveOp {
+    /// Move operation: moves value of one of the integer arithmetic registers into another integer
+    /// arithmetic register of the same bit size, clearing its previous value and setting the
+    /// source to `None`.
+    #[display("mov\t\t{0}{1},{2}{3}")]
+    MovA(RegA, Reg32, Reg32),
+
+    /// Duplicate operation: duplicates value of one of the integer arithmetic registers into
+    /// another integer arithmetic register of the same bit size, clearing its previous value.
+    #[display("dup\t\t{0}{1},{2}{3}")]
+    DupA(RegA, Reg32, Reg32),
+
+    /// Swap operation: swaps value of two integer arithmetic registers of the same bit size.
+    #[display("swp\t\t{0}{1},{2}{3}")]
+    SwpA(RegA, Reg32, Reg32),
+
+    /// Move operation: moves value of one of the float arithmetic registers into another float
+    /// arithmetic register of the same bit size, clearing its previous value and setting the
+    /// source to `None`.
+    #[display("mov\t\t{0}{1},{2}{3}")]
+    MovF(RegF, Reg32, Reg32),
+
+    /// Duplicate operation: duplicates value of one of the float arithmetic registers into
+    /// another float arithmetic register of the same bit size, clearing its previous value.
+    #[display("dup\t\t{0}{1},{2}{3}")]
+    DupF(RegF, Reg32, Reg32),
+
+    /// Swap operation: swaps value of two float arithmetic registers of the same bit size.
+    #[display("swp\t\t{0}{1},{2}{3}")]
+    SwpF(RegF, Reg32, Reg32),
+
+    /// Move operation: moves value of one of the general non-arithmetic registers into another
+    /// general non- arithmetic register of the same bit size, clearing its previous value and
+    /// setting the source to `None`.
+    #[display("mov\t\t{0}{1},{2}{3}")]
+    MovR(RegR, Reg32, Reg32),
+
+    /// Duplicate operation: duplicates value of one of the general non-arithmetic registers into
+    /// another general non-arithmetic register of the same bit size, clearing its previous value.
+    #[display("dup\t\t{0}{1},{2}{3}")]
+    DupR(RegR, Reg32, Reg32),
+
+    // ----
+    /// Copy operation: copies value from one of the integer arithmetic registers to a destination
+    /// register treating value as unsigned: if the value does not fit destination bit dimension,
+    /// truncates the most significant bits until they fit, setting `st0` value to `false`.
+    /// Otherwise, the operation sets `st0` to `true`.
+    #[display("cpy\t\t{0}{1},{2}{3}")]
+    CpyA(RegA, Reg32, RegA, Reg32),
+
+    /// Conversion operation: copies value from one of the integer arithmetic registers to a
+    /// destination register treating value a signed: if the value does not fit destination bit
+    /// dimension, truncates the most significant non-sign bits until they fit, setting `st0`
+    /// value to `false`. Otherwise, fills the difference between source and destination bit length
+    /// with the value taken from the most significant source bit (sign bit) and sets `st0` to
+    /// `true`.
+    #[display("cnv\t\t{0}{1},{2}{3}")]
+    CnvA(RegA, Reg32, RegA, Reg32),
+
+    /// Conversion operation: converts value from one of the float arithmetic registers to a
+    /// destination register according to floating encoding rules. If the value does not fit
+    /// destination bit dimension, truncates the most significant non-sign bits until they fit,
+    /// setting `st0` value to `false`. Otherwise sets `st0` to `true`.
+    #[display("cnv\t\t{0}{1},{2}{3}")]
+    CnvF(RegF, Reg32, RegF, Reg32),
+
+    /// Copy operation: copies value from one of the general non-arithmetic registers to a
+    /// destination register. If the value does not fit destination bit dimension,
+    /// truncates the most significant bits until they fit, setting `st0` value to `false`.
+    /// Otherwise, extends most significant bits with zeros and sets `st0` to `true`.
+    #[display("cpy\t\t{0}{1},{2}{3}")]
+    CpyR(RegR, Reg32, RegR, Reg32),
+
+    /// Swap-copy operation: swaps value one of the integer arithmetic registers with a value of an
+    /// general non-arithmetic register. If any of the values do not fit destination bit
+    /// dimensions, truncates the most significant bits until they fit, setting `st0` value to
+    /// `false`. Otherwise, extends most significant bits with zeros and sets `st0` to `true`.
+    #[display("spy\t\t{0}{1},{2}{3}")]
+    SpyAR(RegA, Reg32, RegR, Reg32),
+
+    /// Conversion operation: converts value of an integer arithmetic register to a float register
+    /// according to floating encoding rules. If the value does not fit destination bit dimension,
+    /// truncates the most significant non-sign bits until they fit, setting `st0` value to
+    /// `false`. Otherwise sets `st0` to `true`.
+    ///
+    /// NB: operation always treats integers as signed integers.
+    #[display("cnv\t\t{0}{1},{2}{3}")]
+    CnvAF(RegA, Reg32, RegF, Reg32),
+
+    /// Conversion operation: converts value of a float arithmetic register to an integer register
+    /// according to floating encoding rules. If the value does not fit destination bit dimension,
+    /// truncates the most significant non-sign bits until they fit, setting `st0` value to
+    /// `false`. Otherwise sets `st0` to `true`.
+    ///
+    /// NB: operation always treats integers as signed integers.
+    #[display("cnv\t\t{0}{1},{2}{3}")]
+    CnvFA(RegF, Reg32, RegA, Reg32),
+}
+
+/// Instructions comparing register values
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum CmpOp {
+    /// Compares value of two integer arithmetic registers setting `st0` to `true` if the first
+    /// parameter is greater (and not equal) than the second one. If at least one of the registers
+    /// is set to `None`, sets `st0` to `false`.
+    #[display("gt:{0}\t{1}{2},{1}{3}")]
+    GtA(SignFlag, RegA, Reg32, Reg32),
+
+    /// Compares value of two integer arithmetic registers setting `st0` to `true` if the first
+    /// parameter is lesser (and not equal) than the second one. If at least one of the registers
+    /// is set to `None`, sets `st0` to `false`.
+    #[display("gt:{0}\t{1}{2},{1}{3}")]
+    LtA(SignFlag, RegA, Reg32, Reg32),
+
+    /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
+    /// parameter is greater (and not equal) than the second one. If at least one of the registers
+    /// is set to `None`, sets `st0` to `false`.
+    #[display("gt:{0}\t{1}{2},{1}{3}")]
+    GtF(FloatEqFlag, RegF, Reg32, Reg32),
+
+    /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
+    /// parameter is lesser (and not equal) than the second one. If at least one of the registers
+    /// is set to `None`, sets `st0` to `false`.
+    #[display("gt:{0}\t{1}{2},{1}{3}")]
+    LtF(FloatEqFlag, RegF, Reg32, Reg32),
+
+    // ----
+    /// Compares value of two general non-arithmetic registers setting `st0` to `true` if the first
+    /// parameter is greater (and not equal) than the second one. If at least one of the registers
+    /// is set to `None`, sets `st0` to `false`.
+    #[display("gt\t\t{0}{1},{0}{2}")]
+    GtR(RegR, Reg32, Reg32),
+
+    /// Compares value of two general non-arithmetic registers setting `st0` to `true` if the first
+    /// parameter is lesser (and not equal) than the second one. If at least one of the registers
+    /// is set to `None`, sets `st0` to `false`.
+    #[display("lt\t\t{0}{1},{0}{2}")]
+    LtR(RegR, Reg32, Reg32),
+
+    /// Checks equality of value in two integer arithmetic (`A`) registers putting result into
+    /// `st0`. None-equality flag specifies value for `st0` for the cases when both of the
+    /// registers are in `None` state.
+    #[display("eq:{0}\t{1}{2},{1}{3},{4}")]
+    EqA(
+        SignFlag,
+        RegA,
+        Reg32,
+        Reg32,
+        /** `st0` value if both of the registers are uninitialized */ bool,
+    ),
+
+    /// Checks equality of value in two float arithmetic (`F`) registers putting result into `st0`.
+    /// None-equality flag specifies value for `st0` for the cases when both of the registers
+    /// are in `None` state.
+    #[display("eq:{0}\t{1}{2},{1}{3},{4}")]
+    EqF(
+        FloatEqFlag,
+        RegF,
+        Reg32,
+        Reg32,
+        /** `st0` value if both of the registers are uninitialized */ bool,
+    ),
+
+    /// Checks equality of value in two non-arithmetic (`R`) registers putting result into `st0`.
+    /// None-equality flag specifies value for `st0` for the cases when both of the registers
+    /// are in `None` state.
+    #[display("eq\t\t{1}{2},{1}{3},{0}")]
+    EqR(/** `st0` value if both of the registers are uninitialized */ bool, RegR, Reg32, Reg32),
+
+    // ---
+    /// Checks if the value in `A` register is equal to zero, setting `st0` to `true` in this case.
+    /// Otherwise, sets `st0` to false (including when the register is in the undefined state).
+    #[display("ifz\t\t{0}{1}")]
+    IfAZ(RegA, Reg32),
+
+    /// Checks if the value in `R` register is equal to zero, setting `st0` to `true` in this case.
+    /// Otherwise, sets `st0` to false (including when the register is in the undefined state).
+    #[display("ifz\t\t{0}{1}")]
+    IfRZ(RegR, Reg32),
+
+    /// Checks if the value in `A` register is in an undefined state, setting `st0` to `true` in
+    /// this case. Otherwise, sets `st0` to false.
+    #[display("ifn\t\t{0}{1}")]
+    IfAN(RegA, Reg32),
+
+    /// Checks if the value in `R` register is in an undefined state, setting `st0` to `true` in
+    /// this case. Otherwise, sets `st0` to false.
+    #[display("ifn\t\t{0}{1}")]
+    IfRN(RegR, Reg32),
+
+    /// Takes value from `st0` and merges into the value of the destination `A` register. The merge
+    /// operation is defined by the [`MergeFlag`] argument.
+    // MergeFlag: add, and, or, set
+    #[display("st:{0}\t{0}{1}")]
+    St(MergeFlag, RegA, Reg8),
+
+    /// Inverses value in `st0` register
+    #[displau("stinv")]
+    StInv,
+}
+
+/// Arithmetic instructions
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum ArithmeticOp {
+    /// Adds values from two integer arithmetic registers and puts result into destination.
+    #[display("add:{0}\t{1}{2},{1}{3}")]
+    AddA(IntFlags, RegA, Reg32, Reg32),
+
+    /// Adds values from two float arithmetic registers and puts result into destination.
+    #[display("add:{0}\t{1}{2},{1}{3}")]
+    AddF(RoundingFlag, RegF, Reg32, Reg32),
+
+    /// Subtracts values from two integer arithmetic registers and puts result into destination.
+    #[display("sub:{0}\t{1}{2},{1}{3}")]
+    SubA(IntFlags, RegA, Reg32, Reg32),
+
+    /// Subtracts values from two float arithmetic registers and puts result into destination.
+    #[display("sub:{0}\t{1}{2},{1}{3}")]
+    SubF(RoundingFlag, RegF, Reg32, Reg32),
+
+    /// Multiplies values from two integer arithmetic registers and puts result into destination.
+    #[display("mul:{0}\t{1}{2},{1}{3}")]
+    MulA(IntFlags, RegA, Reg32, Reg32),
+
+    /// Multiplies values from two float arithmetic registers and puts result into destination.
+    #[display("mul:{0}\t{1}{2},{1}{3}")]
+    MulF(RoundingFlag, RegF, Reg32, Reg32),
+
+    /// Divides values from two integer arithmetic registers and puts result into destination.
+    #[display("div:{0}\t{1}{2},{1}{3}")]
+    DivA(IntFlags, RegA, Reg32, Reg32),
+
+    /// Divides values from two float arithmetic registers and puts result into destination.
+    #[display("div:{0}\t{1}{2},{1}{3}")]
+    DivF(RoundingFlag, RegF, Reg32, Reg32),
+
+    /// Increment/decrement register value on a given signed step.
+    #[display("{2:#}\t\t{0}{1}")]
+    Stp(RegA, Reg32, Step),
+
+    /// Negates most significant bit
+    #[display("neg\t\t{0}{1}")]
+    Neg(RegAF, Reg16),
+
+    /// Modulo division
+    #[display("rem\t\t{0}{1},{2}{3},{4}{5}")]
+    Rem(RegA, Reg32, RegA, Reg32, RegA, Reg32),
+
+    /// Puts absolute value of register into `a8[0]`
+    #[display("abs\t\t{0}{1}")]
+    Abs(RegAF, Reg16),
+}
+
+/// Bit operations & boolean algebra instructions
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum BitwiseOp {
+    /// Bitwise AND operation
+    #[display("and\t\t{0}{1},{0}{2},{0}{3}")]
+    And(RegAR, /** Source 1 */ Reg16, /** Source 2 */ Reg16, /** Operation destination */ Reg16),
+
+    /// Bitwise OR operation
+    #[display("or\t\t{0}{1},{0}{2},{0}{3}")]
+    Or(RegAR, /** Source 1 */ Reg16, /** Source 2 */ Reg16, /** Operation destination */ Reg16),
+
+    /// Bitwise XOR operation
+    #[display("xor\t\t{0}{1},{0}{2},{0}{3}")]
+    Xor(RegAR, /** Source 1 */ Reg16, /** Source 2 */ Reg16, /** Operation destination */ Reg16),
+
+    /// Bitwise inversion
+    #[display("not\t\t{0}{1}")]
+    Not(RegAR, Reg16),
+
+    /// Left bit shift, filling added bits values with zeros. Sets `st0` value to the value of the
+    /// most significant bit before the operation.
+    ///
+    /// This, [`BitwiseOp::ShrA`] and [`BitwiseOp::ShrR`] operations are encoded with the same
+    /// instruction bitcode and differ only in their first two argument bits.
+    #[display("shl\t\t{0}{1},{2}{3}")]
+    Shl(
+        /** Which of `a` registers to use */ RegA2,
+        /** Index of `u8` or `u16` register with bitshift value */ Reg32,
+        RegAR,
+        /** Source & destination register */ Reg32,
+    ),
+
+    /// Right bit shift for one of the integer arithmetic registers, filling added bits values with
+    /// zeros (if `sign` flag is set to `false`) or ones (if `sign` flag is set to `true`).
+    /// Sets `st0` value to the value of the least significant bit before the operation.
+    ///
+    /// This, [`BitwiseOp::Shl`] and [`BitwiseOp::ShrR`] operations are encoded with the same
+    /// instruction bitcode and differ only in their first two argument bits.
+    #[display("shr{0},\t\t{1}{2},{3}{4}")]
+    ShrA(
+        /** Sign flag */ SignFlag,
+        /** Which of `a` registers to use */ RegA2,
+        /** Index of `u8` or `u16` register with bitshift value */ Reg32,
+        RegA,
+        /** Source & destination register */ Reg32,
+    ),
+
+    /// Right bit shift for one of the general non-arithmetic registers, filling added bits values
+    /// with zeros (if `sign` flag is set to `false`) or ones (if `sign` flag is set to `true`).
+    /// Sets `st0` value to the value of the least significant bit before the operation.
+    ///
+    /// This, [`BitwiseOp::Shl`] and [`BitwiseOp::ShrA`] operations are encoded with the same
+    /// instruction bitcode and differ only in their first two argument bits.
+    #[display("shr\t\t{0}{1},{2}{3}")]
+    ShrR(
+        /** Which of `a` registers to use */ RegA2,
+        /** Index of `u8` or `u16` register with bitshift value */ Reg32,
+        RegR,
+        /** Source & destination register */ Reg32,
+    ),
+
+    /// Left bit shift, cycling the shifted values (most significant bit becomes least
+    /// significant). Does not modify `st0` value.
+    ///
+    /// This and the next [`BitwiseOp::Scr`] operation are encoded with the same instruction
+    /// bitcode and differ only in their first argument bit.
+    #[display("scl\t\t{0}{1},{2}{3}")]
+    Scl(RegA2, Reg32, RegAR, Reg32),
+
+    /// Right bit shift, cycling the shifted values (least significant bit becomes nost
+    /// significant). Does not modify `st0` value.
+    ///
+    /// This and the previous [`BitwiseOp::Scl`] operation are encoded with the same instruction
+    /// bitcode and differ only in their first argument bit.
+    #[display("scr\t\t{0}{1},{2}{3}")]
+    Scr(RegA2, Reg32, RegAR, Reg32),
+
+    /// Reverses bit order in the integer arithmetic register. Does not modify `st0` value.
+    #[display("rev\t\t{0}{1}")]
+    RevA(RegA, Reg32),
+
+    /// Reverses bit order in the generic non-arithmetic register. Does not modify `st0` value.
+    #[display("rev\t\t{0}{1}")]
+    RevR(RegR, Reg32),
+}
+
+/// Operations on byte strings.
+///
+/// All of these operations either set `st0` to `false`, if an exception occurred during their
+/// execution, or do not modify `st0` register value. Since each of the exceptions can be predicted
+/// with a code run by VM beforehand (unlike for arithmetic exceptions), the absence of `st0` value
+/// change upon success allows batching multiple string operations and checking their final result,
+/// while still maintaining ability to predict/detect which of the operations has failed.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum BytesOp {
+    /// Put bytestring into a byte string register
+    #[display("put\t\ts16[{0}],{1}")]
+    Put(/** Destination `s` register index */ u8, ByteStr),
+
+    /// Move bytestring value between registers
+    #[display("mov\t\ts16[{0}],s16[{1}]")]
+    Mov(/** Source `s` register index */ u8, /** Destination `s` register index */ u8),
+
+    /// Swap bytestring value between registers
+    #[display("swp\t\ts16[{0}],s16[{1}]")]
+    Swp(/** First `s` register index */ u8, /** Second `s` register index */ u8),
+
+    /// Fill segment of bytestring with specific byte value, setting the length of the string in
+    /// the destination register to specific value.
+    ///
+    /// The start offset is the least offset from one of the `a16` register provided in `offset`
+    /// arguments, the end offset is the greatest one. If any of the offsets exceeds the length of
+    /// the string in the destination register, operation behaviour is defined by the provided
+    /// boolean flag:
+    /// - if the flag is `true`, the string length is extended to the largest of the offsets and
+    ///   all bytes between previous string length and start offset are filled with zeros, setting
+    ///   `st0` value to `false`;
+    /// - if the flag is `false`, the destination register is set to `None` and `st0` is set to
+    ///   `false`.
+    /// If both of the offsets lie within the length of the string, the `st0` register value is not
+    /// modified.
+    #[display("fill\ts16[{0}],{1}..{2},{3}")]
+    Fill(
+        /** `s` register index */ u8,
+        /** `a16` register holding first offset */ Reg32,
+        /** `a16` register holding second offset */ Reg32,
+        /** `a8` register index holding the value */ Reg32,
+        /** Exception handling flag */ bool,
+    ),
+
+    /// Put length of the string into the destination register. If `a8` register is specified and
+    /// the value does not fit into it, the destination is set to `None` and `st0` to `false`.
+    /// Otherwise `st0` value is not changed.
+    #[display("len\t\ts16[{0}],a16[0]")]
+    Len(/** `s` register index */ u8, RegA, Reg32),
+
+    /// Count number of byte occurrences from the `a8` register with the provided index within the
+    /// string and stores that value into `a16` register with the provided index.
+    #[display("cnt\ts16[{0}],{1},a16[0]")]
+    Cnt(
+        /** `s` register index */ u8,
+        /** `a8` register with the byte value */ Reg16,
+        /** `a16` destination register index */ Reg16,
+    ),
+
+    /// Check equality of two strings, putting result into `st0`
+    #[display("cmp\t\ts16[{0}],s16[{0}]")]
+    Eq(u8, u8),
+
+    /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
+    /// fragment"), putting it to the destination `u16` registers. If strings have no conjoint
+    /// fragment sets destination to `None`.
+    #[display("cn\ts16[{0}],s16[{1}],u16{2},u16{3}")]
+    Con(
+        /** First source string register */ u8,
+        /** Second source string register */ u8,
+        /** Number of the conjoint fragment to match */ u6,
+        /** `u16` register index to save the offset of the conjoint fragment */ Reg32,
+        /** `u16` register index to save the length of the conjoint fragment */ Reg32,
+    ),
+
+    /// Count number of occurrences of one string within another putting result to `a16[0]`
+    #[display("find\ts16[{0}],s16[{1}],a16[0]")]
+    Find(/** `s` register with string */ u8, /** `s` register with matching fragment */ u8),
+
+    /// Extract byte string slice into general `r` register. The length of the extracted string is
+    /// equal to the bit dimension of the destination register. If the bit size of the destination
+    /// plus the initial offset exceeds string length the rest of the destination register bits is
+    /// filled with zeros and `st0` is set to `false`. Otherwise, `st0` value is not modified.
+    #[display("extr\ts16{0},a16{1},{2}{3}")]
+    Extr(/** `s` register index */ Reg32, /** `a16` register with offset */ Reg32, RegR, Reg32),
+
+    /// Inject general `R` register value at a given position to string register, replacing value
+    /// of the corresponding bytes. If the insert offset is larger than the current length of the
+    /// string, the length is extended and all bytes inbetween previous length and the new length
+    /// are initialized with zeros. If the length of the inserted string plus insert offset exceeds
+    /// the maximum string register length (2^16 bytes), than the destination register is set to
+    /// `None` state and `st0` is set to `false`. Otherwise, `st0` value is not modified.
+    #[display("inj\t\ts16{0},a16{1},{2}{3}")]
+    Inj(/** `s` register index */ Reg32, /** `a16` register with offset */ Reg32, RegR, Reg32),
+
+    /// Join bytestrings from two registers into destination, overwriting its value. If the length
+    /// of the joined string exceeds the maximum string register length (2^16 bytes), than the
+    /// destination register is set to `None` state and `st0` is set to `false`. Otherwise,
+    /// `st0` value is not modified.
+    #[display("join\ts16[{0}],s16[{1}],s16[{2}]")]
+    Join(/** Source 1 */ u8, /** Source 2 */ u8, /** Destination */ u8),
+
+    /// Split bytestring at a given offset taken from `a16` register into two destination strings,
+    /// overwriting their value. If offset exceeds the length of the string in the register,
+    /// than the behaviour is determined by the [`SplitFlag`] value.
+    ///
+    /// <pre>
+    /// +--------------------
+    /// |       | ....
+    /// +--------------------
+    ///         ^       ^
+    ///         |       +-- Split offset (`offset`)
+    ///         +-- Source string length (`src_len`)
+    /// </pre>
+    ///
+    /// `offset == 0`:
+    ///   (1) first, second <- None; `st0` <- false
+    ///   (2) first <- None, second <- `src_len > 0` ? src : None; `st0` <- false
+    ///   (3) first <- None, second <- `src_len > 0` ? src : zero-len; `st0` <- false
+    ///   (4) first <- zero-len, second <- `src_len > 0` ? src : zero-len
+    /// `offset > 0 && offset < src_len`: `st0` always set to false
+    ///   (1) first, second <- None
+    ///   (5) first <- short, second <- None
+    ///   (6) first <- short, second <- zero-len
+    ///   (7) first <- zero-ext, second <- None
+    ///   (8) first <- zero-ext, second <- zero-len
+    /// `offset = src_len`:
+    ///   (1) first, second <- None; `st0` <- false
+    ///   (5,7) first <- ok, second <- None; `st0` <- false
+    ///   (6,8) first <- ok, second <- zero-len
+    /// `offset > src_len`: operation succeeds anyway, `st0` value is not changed
+    ///
+    /// Rule on `st0` changes: if at least one of the destination registers is set to `None`, or
+    /// `offset` value exceeds source string length, `st0` is set to `false`; otherwise its value
+    /// is not modified
+    #[display("splt:{2}\ts16[{0}],a16{1},s16[{3}],s16[{4}]")]
+    Splt(
+        /** Source */ u8,
+        /** `a16` register index with offset value */ Reg32,
+        SplitFlag,
+        /** Destination 1 */ u8,
+        /** Destination 2 */ u8,
+    ),
+
+    /// Insert value from one of bytestring register at a given index of other bytestring register,
+    /// shifting string bytes. If the destination register does not fit the length of the new
+    /// string, or the offset exceeds the length of destination string operation behaviour is
+    /// defined by the provided [`InsertFlag`].
+    ///
+    /// <pre>
+    /// +--------------------
+    /// |       | ....
+    /// +--------------------
+    ///         ^       ^
+    ///         |       +-- Insert offset (`offset`)
+    ///         +-- Destination string length (`dst_len`)
+    /// </pre>
+    ///
+    /// `offset < dst_len && src_len + dst_len > 2^16`:
+    ///   (6) Set destination to `None`
+    ///   (7) Cut destination string part exceeding `2^16`
+    ///   (8) Reduce `src_len` such that it will fit the destination
+    /// `offset > dst_len && src_len + dst_len + offset <= 2^16`:
+    ///   (1) Set destination to `None`
+    ///   (2) Fill destination from `dst_let` to `offset` with zeros
+    ///   (3) Use `src_len` instead of `offset`
+    /// `offset > dst_len && src_len + dst_len + offset > 2^16`:
+    ///   (4) Set destination to `None`
+    ///   (5) Fill destination from `dst_let` to `offset` with zeros and cut source string part
+    /// exceeding `2^16`   (6-8) Use `src_len` instead of `offset` and use flag value from the
+    /// first section
+    ///
+    /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
+    #[display("ins:{3}\ts16[{0}],s16[{1}],a16{2}")]
+    Ins(
+        /** Source register */ u8,
+        /** Destination register */ u8,
+        /** `a16` register index with offset value for insert location */ Reg32,
+        InsertFlag,
+    ),
+
+    /// Delete bytes in a given range, shifting the remaining bytes leftward. The start offset is
+    /// the least offset from one of the `a16` register provided in `offset` arguments, the end
+    /// offset is the greatest one. If any of the offsets exceeds the length of the string in
+    /// the destination register, operation behaviour is defined by the provided [`DelFlag`]
+    /// argument.
+    ///
+    /// <pre>
+    /// +----------------------------------
+    /// |                   | ....
+    /// +----------------------------------
+    ///     ^               ^       ^  
+    ///     |               |       +-- End offset (`offset_end`)
+    ///     |               +-- Source string length (`src_len`)
+    ///     +-- Start offset (`offset_start`)
+    /// </pre>
+    ///
+    /// `offset_start > src_len`:
+    ///   (1) set destination to `None`
+    ///   (2) set destination to zero-length string
+    /// `offset_end > src_len && offser_start <= src_len`:
+    ///   (1) set destination to `None`
+    ///   (3) set destination to the fragment of the string `offset_start..src_len`
+    ///   (4) set destination to the fragment of the string `offset_start..src_len` and extend
+    ///       its length up to `offset_end - offset_start` with trailing zeros.
+    ///
+    /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
+    #[display("del:{6}\ts16[{0}],s16[{1}],{2}{3},{4}{5}")]
+    Del(
+        /** Source `s` register */ u8,
+        /** Destination `s` register */ u8,
+        RegA2,
+        /** `a8` or `a16` register index with a first offset for delete location */ Reg32,
+        RegA2,
+        /** `a8` or `a16` register index with a second offset for delete location */ Reg32,
+        DelFlag,
+    ),
+
+    /// Revert byte order of the string
+    #[display("rev\t\ts16[{0}],s16[{1}]")]
+    Rev(/** Source */ u8, /** Destination */ u8),
+}
+
+/// Cryptographic hashing functions
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[non_exhaustive]
+pub enum DigestOp {
+    /// Computes RIPEMD160 hash value
+    #[display("rmd:160\ts16{0},r160{1}")]
+    Ripemd(
+        /** Index of string register */ Reg32,
+        /** Index of `r160` register to save result to */ Reg8,
+    ),
+
+    /// Computes SHA256 hash value
+    #[display("sha2:256\ts16{0},r256{1}")]
+    Sha256(
+        /** Index of string register */ Reg32,
+        /** Index of `r256` register to save result to */ Reg8,
+    ),
+
+    /// Computes SHA256 hash value
+    #[display("sha2:512\ts16{0},r512{1}")]
+    Sha512(
+        /** Index of string register */ Reg32,
+        /** Index of `r512` register to save result to */ Reg8,
+    ),
+}
+
+/// Operations on Secp256k1 elliptic curve
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum Secp256k1Op {
+    /// Generates new elliptic curve point value saved into destination
+    /// register in `r512` set using scalar value from the source `r256`
+    /// register
+    #[display("secpgen\tr256{0},r512{1}")]
+    Gen(
+        /** Register containing scalar */ Reg32,
+        /** Destination register to put G * scalar */ Reg8,
+    ),
+
+    /// Multiplies elliptic curve point on a scalar
+    #[display("secpmul\t{0}256{1},r512{2},r512{3}")]
+    Mul(
+        /** Use `a` or `r` register as scalar source */ RegBlockAR,
+        /** Scalar register index */ Reg32,
+        /** Source `r` register index containing EC point */ Reg32,
+        /** Destination `r` register index */ Reg32,
+    ),
+
+    /// Adds two elliptic curve points
+    #[display("secpadd\tr512{0},r512{1}")]
+    Add(/** Source 1 */ Reg32, /** Source 2 and destination */ Reg8),
+
+    /// Negates elliptic curve point
+    #[display("secpneg\tr512{0},r512{1}")]
+    Neg(/** Register hilding EC point to negate */ Reg32, /** Destination register */ Reg8),
+}
+
+/// Operations on Curve25519 elliptic curve
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum Curve25519Op {
+    /// Generates new elliptic curve point value saved into destination
+    /// register in `r512` set using scalar value from the source `r256`
+    /// register
+    #[display("edgen\tr256{0},r512{1}")]
+    Gen(
+        /** Register containing scalar */ Reg32,
+        /** Destination register to put G * scalar */ Reg8,
+    ),
+
+    /// Multiplies elliptic curve point on a scalar
+    #[display("edmul\t{0}256{1},r512{2},r512{3}")]
+    Mul(
+        /** Use `a` or `r` register as scalar source */ RegBlockAR,
+        /** Scalar register index */ Reg32,
+        /** Source `r` register index containing EC point */ Reg32,
+        /** Destination `r` register index */ Reg32,
+    ),
+
+    /// Adds two elliptic curve points
+    #[display("edadd\tr512{0},r512{1},r512{2},{3}")]
+    Add(
+        /** Source 1 */ Reg32,
+        /** Source 2 */ Reg32,
+        /** Source 3 */ Reg32,
+        /** Allow overflows */ bool,
+    ),
+
+    /// Negates elliptic curve point
+    #[display("edneg\tr512{0},r512{1}")]
+    Neg(/** Register hilding EC point to negate */ Reg32, /** Destination register */ Reg8),
+}

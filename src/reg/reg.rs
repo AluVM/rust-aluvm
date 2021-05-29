@@ -11,12 +11,14 @@
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
-use amplify_num::{u256, u3, u4, u5, u512};
 use core::ops::Deref;
+
+use amplify_num::{u256, u3, u4, u5, u512};
 use half::bf16;
 use rustc_apfloat::ieee;
 
-use crate::{reg::Value, LibSite, RegVal};
+use crate::reg::Value;
+use crate::{LibSite, RegVal};
 
 /// All possible register indexes for `a` and `r` register sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -152,21 +154,15 @@ pub enum Reg32 {
 }
 
 impl Default for Reg32 {
-    fn default() -> Self {
-        Reg32::Reg1
-    }
+    fn default() -> Self { Reg32::Reg1 }
 }
 
 impl From<&Reg32> for u5 {
-    fn from(reg32: &Reg32) -> Self {
-        u5::with(*reg32 as u8)
-    }
+    fn from(reg32: &Reg32) -> Self { u5::with(*reg32 as u8) }
 }
 
 impl From<Reg32> for u5 {
-    fn from(reg32: Reg32) -> Self {
-        u5::with(reg32 as u8)
-    }
+    fn from(reg32: Reg32) -> Self { u5::with(reg32 as u8) }
 }
 
 impl From<u5> for Reg32 {
@@ -280,21 +276,15 @@ pub enum Reg16 {
 }
 
 impl Default for Reg16 {
-    fn default() -> Self {
-        Reg16::Reg1
-    }
+    fn default() -> Self { Reg16::Reg1 }
 }
 
 impl From<&Reg16> for u4 {
-    fn from(reg16: &Reg16) -> Self {
-        u4::with(*reg16 as u8)
-    }
+    fn from(reg16: &Reg16) -> Self { u4::with(*reg16 as u8) }
 }
 
 impl From<Reg16> for u4 {
-    fn from(reg16: Reg16) -> Self {
-        u4::with(reg16 as u8)
-    }
+    fn from(reg16: Reg16) -> Self { u4::with(reg16 as u8) }
 }
 
 impl From<u4> for Reg16 {
@@ -322,9 +312,7 @@ impl From<u4> for Reg16 {
 }
 
 impl From<Reg16> for Reg32 {
-    fn from(reg16: Reg16) -> Self {
-        u5::with(reg16 as u8).into()
-    }
+    fn from(reg16: Reg16) -> Self { u5::with(reg16 as u8).into() }
 }
 
 /// Short version of register indexes for `a` and `r` register sets covering
@@ -366,21 +354,15 @@ pub enum Reg8 {
 }
 
 impl Default for Reg8 {
-    fn default() -> Self {
-        Reg8::Reg1
-    }
+    fn default() -> Self { Reg8::Reg1 }
 }
 
 impl From<&Reg8> for u3 {
-    fn from(reg8: &Reg8) -> Self {
-        u3::with(*reg8 as u8)
-    }
+    fn from(reg8: &Reg8) -> Self { u3::with(*reg8 as u8) }
 }
 
 impl From<Reg8> for u3 {
-    fn from(reg8: Reg8) -> Self {
-        u3::with(reg8 as u8)
-    }
+    fn from(reg8: Reg8) -> Self { u3::with(reg8 as u8) }
 }
 
 impl From<u3> for Reg8 {
@@ -400,67 +382,62 @@ impl From<u3> for Reg8 {
 }
 
 impl From<Reg8> for Reg32 {
-    fn from(reg8: Reg8) -> Self {
-        u5::with(reg8 as u8).into()
-    }
+    fn from(reg8: Reg8) -> Self { u5::with(reg8 as u8).into() }
 }
 
-/// Enumeration of the `a` set of registers (arithmetic registers)
+/// Enumeration of integer arithmetic registers (`A`-registers)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
 pub enum RegA {
-    /// Arbitrary-precision register
-    #[display("ap")]
-    AP = 0,
-
     /// 8-bit arithmetics register
     #[display("a8")]
-    A8 = 1,
+    A8 = 0,
 
     /// 16-bit arithmetics register
     #[display("a16")]
-    A16 = 2,
+    A16 = 1,
 
     /// 32-bit arithmetics register
     #[display("a32")]
-    A32 = 3,
+    A32 = 2,
 
     /// 64-bit arithmetics register
     #[display("a64")]
-    A64 = 4,
+    A64 = 3,
 
     /// 128-bit arithmetics register
     #[display("a128")]
-    A128 = 5,
+    A128 = 4,
 
     /// 256-bit arithmetics register
     #[display("a256")]
-    A256 = 6,
+    A256 = 5,
 
     /// 512-bit arithmetics register
     #[display("a512")]
-    A512 = 7,
+    A512 = 6,
+
+    /// 1024-bit arithmetics register
+    #[display("a1024")]
+    A1024 = 7,
 }
 
 impl RegA {
-    /// Returns bit size, if defined, for the register.
-    ///
-    /// Bit size is undefined for [`RegA::AP`] register
-    pub fn bits(self) -> Option<u16> {
+    /// Returns bit size of the register.
+    pub fn bits(self) -> u16 {
         match self {
-            RegA::AP => None,
-            RegA::A8 => Some(8),
-            RegA::A16 => Some(16),
-            RegA::A32 => Some(32),
-            RegA::A64 => Some(64),
-            RegA::A128 => Some(128),
-            RegA::A256 => Some(256),
-            RegA::A512 => Some(512),
+            RegA::A8 => 8,
+            RegA::A16 => 16,
+            RegA::A32 => 32,
+            RegA::A64 => 64,
+            RegA::A128 => 128,
+            RegA::A256 => 256,
+            RegA::A512 => 512,
+            RegA::A1024 => 1024,
         }
     }
 
-    /// Constructs [`RegA`] object for a provided requirement for register bit
-    /// size
+    /// Constructs [`RegA`] object for a provided requirement for register bit size
     pub fn with(bits: u16) -> Option<Self> {
         Some(match bits {
             8 => RegA::A8,
@@ -470,27 +447,23 @@ impl RegA {
             128 => RegA::A128,
             256 => RegA::A256,
             512 => RegA::A512,
-            _ => RegA::AP,
+            1024 => RegA::A1024,
+            _ => return None,
         })
     }
 }
 
 impl From<&RegA> for u3 {
-    fn from(rega: &RegA) -> Self {
-        u3::with(*rega as u8)
-    }
+    fn from(rega: &RegA) -> Self { u3::with(*rega as u8) }
 }
 
 impl From<RegA> for u3 {
-    fn from(rega: RegA) -> Self {
-        u3::with(rega as u8)
-    }
+    fn from(rega: RegA) -> Self { u3::with(rega as u8) }
 }
 
 impl From<u3> for RegA {
     fn from(val: u3) -> Self {
         match val {
-            v if v == RegA::AP.into() => RegA::AP,
             v if v == RegA::A8.into() => RegA::A8,
             v if v == RegA::A16.into() => RegA::A16,
             v if v == RegA::A32.into() => RegA::A32,
@@ -498,12 +471,110 @@ impl From<u3> for RegA {
             v if v == RegA::A128.into() => RegA::A128,
             v if v == RegA::A256.into() => RegA::A256,
             v if v == RegA::A512.into() => RegA::A512,
+            v if v == RegA::A1024.into() => RegA::A1024,
             _ => unreachable!(),
         }
     }
 }
 
-/// Enumeration of the `r` set of registers (non-arithmetic registers, mostly
+/// Enumeration of float arithmetic registers (`F`-registers)
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[repr(u8)]
+pub enum RegF {
+    /// 16-bit bfloat16 format used in machine learning
+    #[display("f16b")]
+    F16B = 0,
+
+    /// 16-bit IEEE-754 binary16 half-precision
+    #[display("f16")]
+    F16 = 1,
+
+    /// 32-bit IEEE-754 binary32 single-precision
+    #[display("f32")]
+    F32 = 2,
+
+    /// 64-bit IEEE-754 binary64 double-precision
+    #[display("f64")]
+    F64 = 3,
+
+    /// 80-bit IEEE-754 extended precision
+    #[display("f80")]
+    F80 = 4,
+
+    /// 128-bit IEEE-754 binary128 quadruple precision
+    #[display("f128")]
+    F128 = 5,
+
+    /// 256-bit IEEE-754 binary256 octuple precision
+    #[display("f256")]
+    F256 = 6,
+
+    /// 512-bit tapered floating point
+    #[display("f512")]
+    F512 = 7,
+}
+
+impl RegF {
+    /// Returns bit size of the register.
+    pub fn bits(self) -> u16 {
+        match self {
+            RegF::F16B => 16,
+            RegF::F16 => 16,
+            RegF::F32 => 32,
+            RegF::F64 => 64,
+            RegF::F80 => 80,
+            RegF::F128 => 128,
+            RegF::F256 => 256,
+            RegF::F512 => 512,
+        }
+    }
+
+    /// Constructs [`RegF`] object for a provided requirement for register bit size
+    pub fn with(bits: u16, use_bfloat16: bool) -> Option<Self> {
+        Some(match bits {
+            16 => {
+                if use_bfloat16 {
+                    RegF::F16B
+                } else {
+                    RegF::F16
+                }
+            }
+            32 => RegF::F32,
+            64 => RegF::F64,
+            80 => RegF::F80,
+            128 => RegF::F128,
+            256 => RegF::F256,
+            512 => RegF::F512,
+            _ => return None,
+        })
+    }
+}
+
+impl From<&RegF> for u3 {
+    fn from(regf: &RegF) -> Self { u3::with(*regf as u8) }
+}
+
+impl From<RegF> for u3 {
+    fn from(regf: RegF) -> Self { u3::with(regf as u8) }
+}
+
+impl From<u3> for RegF {
+    fn from(val: u3) -> Self {
+        match val {
+            v if v == RegF::F16B.into() => RegF::F16B,
+            v if v == RegF::F16.into() => RegF::F16,
+            v if v == RegF::F32.into() => RegF::F32,
+            v if v == RegF::F64.into() => RegF::F64,
+            v if v == RegF::F80.into() => RegF::F80,
+            v if v == RegF::F128.into() => RegF::F128,
+            v if v == RegF::F256.into() => RegF::F256,
+            v if v == RegF::F512.into() => RegF::F512,
+            _ => unreachable!(),
+        }
+    }
+}
+
+/// Enumeration of the set of general registers (`R`-registers: non-arithmetic registers, mostly
 /// used for cryptography)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
@@ -542,24 +613,21 @@ pub enum RegR {
 }
 
 impl RegR {
-    /// Returns bit size, if defined, for the register.
-    ///
-    /// Bit size is undefined for [`RegA::AP`] register
-    pub fn bits(self) -> Option<u16> {
+    /// Returns bit size of the register.
+    pub fn bits(self) -> u16 {
         match self {
-            RegR::R128 => Some(128),
-            RegR::R160 => Some(160),
-            RegR::R256 => Some(256),
-            RegR::R512 => Some(512),
-            RegR::R1024 => Some(1024),
-            RegR::R2048 => Some(2048),
-            RegR::R4096 => Some(4096),
-            RegR::R8192 => Some(8192),
+            RegR::R128 => 128,
+            RegR::R160 => 160,
+            RegR::R256 => 256,
+            RegR::R512 => 512,
+            RegR::R1024 => 1024,
+            RegR::R2048 => 2048,
+            RegR::R4096 => 4096,
+            RegR::R8192 => 8192,
         }
     }
 
-    /// Constructs [`RegR`] object for a provided requirement for register bit
-    /// size
+    /// Constructs [`RegR`] object for a provided requirement for register bit size
     pub fn with(bits: u16) -> Option<Self> {
         Some(match bits {
             128 => RegR::R128,
@@ -576,15 +644,11 @@ impl RegR {
 }
 
 impl From<&RegR> for u3 {
-    fn from(regr: &RegR) -> Self {
-        u3::with(*regr as u8)
-    }
+    fn from(regr: &RegR) -> Self { u3::with(*regr as u8) }
 }
 
 impl From<RegR> for u3 {
-    fn from(regr: RegR) -> Self {
-        u3::with(regr as u8)
-    }
+    fn from(regr: RegR) -> Self { u3::with(regr as u8) }
 }
 
 impl From<u3> for RegR {
@@ -603,11 +667,10 @@ impl From<u3> for RegR {
     }
 }
 
-/// All non-string registers directly accessible by AluVM instructions,
-/// consisting of `a` and `r` sets of registers
+/// Superset of `A` and `R` registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
 #[display(inner)]
-pub enum Reg {
+pub enum RegAR {
     /// Arithmetic registers (`a` registers)
     #[from]
     A(RegA),
@@ -617,61 +680,57 @@ pub enum Reg {
     R(RegR),
 }
 
-impl Reg {
-    /// Returns bit size, if defined, for the register.
-    ///
-    /// Bit size is undefined for [`RegA::AP`] register
-    pub fn bits(self) -> Option<u16> {
+impl RegAR {
+    /// Returns bit size of the register.
+    pub fn bits(self) -> u16 {
         match self {
-            Reg::A(a) => a.bits(),
-            Reg::R(r) => r.bits(),
+            RegAR::A(a) => a.bits(),
+            RegAR::R(r) => r.bits(),
         }
     }
 
     /// Returns inner A-register type, if any
     pub fn reg_a(self) -> Option<RegA> {
         match self {
-            Reg::A(a) => Some(a),
-            Reg::R(_) => None,
+            RegAR::A(a) => Some(a),
+            RegAR::R(_) => None,
         }
     }
 
     /// Returns inner R-register type, if any
     pub fn reg_r(self) -> Option<RegR> {
         match self {
-            Reg::A(_) => None,
-            Reg::R(r) => Some(r),
+            RegAR::A(_) => None,
+            RegAR::R(r) => Some(r),
         }
     }
 }
 
-impl From<&Reg> for u4 {
-    fn from(reg: &Reg) -> Self {
-        u4::from(*reg)
-    }
+impl From<&RegAR> for u4 {
+    fn from(reg: &RegAR) -> Self { u4::from(*reg) }
 }
 
-impl From<Reg> for u4 {
-    fn from(reg: Reg) -> Self {
+impl From<RegAR> for u4 {
+    fn from(reg: RegAR) -> Self {
         match reg {
-            Reg::A(a) => u4::with(u3::from(a).as_u8()),
-            Reg::R(r) => u4::with(u3::from(r).as_u8() + 8),
+            RegAR::A(a) => u4::with(u3::from(a).as_u8()),
+            RegAR::R(r) => u4::with(u3::from(r).as_u8() + 8),
         }
     }
 }
 
-impl From<u4> for Reg {
+impl From<u4> for RegAR {
     fn from(val: u4) -> Self {
         match val.as_u8() {
-            0..=7 => Reg::A(RegA::from(u3::with(val.as_u8()))),
-            _ => Reg::R(RegR::from(u3::with(val.as_u8() + 8))),
+            0..=7 => RegAR::A(RegA::from(u3::with(val.as_u8()))),
+            _ => RegAR::R(RegR::from(u3::with(val.as_u8() + 8))),
         }
     }
 }
 
-/// Block of registers, either arithmetic or non-arithmetic
+/// Block of registers, either integer arithmetic or non-arithmetic (general) registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
-pub enum RegBlock {
+pub enum RegBlockAR {
     /// Arithmetic registers (`a` registers)
     #[display("a")]
     A,
@@ -681,11 +740,11 @@ pub enum RegBlock {
     R,
 }
 
-impl RegBlock {
-    pub fn into_reg(self, bits: u16) -> Option<Reg> {
+impl RegBlockAR {
+    pub fn into_reg(self, bits: u16) -> Option<RegAR> {
         match self {
-            RegBlock::A => RegA::with(bits).map(Reg::A),
-            RegBlock::R => RegR::with(bits).map(Reg::R),
+            RegBlockAR::A => RegA::with(bits).map(RegAR::A),
+            RegBlockAR::R => RegR::with(bits).map(RegAR::R),
         }
     }
 }
@@ -708,7 +767,7 @@ pub struct Registers {
     pub(crate) f16: [Option<ieee::Half>; 32],
     pub(crate) f32: [Option<ieee::Single>; 32],
     pub(crate) f64: [Option<ieee::Double>; 32],
-    pub(crate) f87: [Option<ieee::X87DoubleExtended>; 32],
+    pub(crate) f80: [Option<ieee::X87DoubleExtended>; 32],
     pub(crate) f128: [Option<ieee::Quad>; 32],
     // TODO: Replace with `ieee::Oct` once it will be implemented
     pub(crate) f256: [Option<u256>; 32],
@@ -728,21 +787,15 @@ pub struct Registers {
     /// String and bytestring registers
     pub(crate) s16: BTreeMap<u8, [u8; u16::MAX as usize]>,
 
-    /// Control flow register which stores result of equality and other types
-    /// of boolean checks. Initialized with `true`
+    /// Control flow register which stores result of equality, comparison, boolean check and
+    /// overflowing operations. Initialized with `true`.
     pub(crate) st0: bool,
 
-    /// Set to `true` following each operation resulting in overflow.
-    /// If the operation can't lead to an overflow, the value of the
-    /// register is not changed.
-    of0: bool,
-
-    /// Counts number of jumps (possible cycles). The number of jumps is
-    /// limited by 2^16 per script.
+    /// Counts number of jumps (possible cycles). The number of jumps is limited by 2^16 per
+    /// script.
     cy0: u16,
 
-    /// Call stack. Maximal size is `u16::MAX` (limited by `cy0` mechanics and
-    /// `cp0`)
+    /// Call stack. Maximal size is `u16::MAX` (limited by `cy0` mechanics and `cp0`)
     cs0: Box<[LibSite; u16::MAX as usize]>,
 
     /// Defines "top" of the call stack
@@ -770,7 +823,7 @@ impl Default for Registers {
             f16: Default::default(),
             f32: Default::default(),
             f64: Default::default(),
-            f87: Default::default(),
+            f80: Default::default(),
             f128: Default::default(),
             f256: Default::default(),
             f512: Default::default(),
@@ -787,7 +840,6 @@ impl Default for Registers {
             s16: Default::default(),
 
             st0: true,
-            of0: false,
             cy0: 0,
             cs0: Box::new([LibSite::default(); u16::MAX as usize]),
             cp0: 0,
@@ -800,9 +852,7 @@ impl Default for Registers {
 
 impl Registers {
     #[inline]
-    pub fn new() -> Registers {
-        Registers::default()
-    }
+    pub fn new() -> Registers { Registers::default() }
 
     pub(crate) fn jmp(&mut self) -> Result<(), ()> {
         self.cy0
@@ -839,11 +889,11 @@ impl Registers {
         }
     }
 
-    pub fn all(&self, reg: impl Into<Reg>) -> [RegVal; 32] {
+    pub fn all(&self, reg: impl Into<RegAR>) -> [RegVal; 32] {
         let mut res = [RegVal::none(); 32];
         match reg.into() {
-            Reg::A(a) => match a {
-                RegA::AP => self
+            RegAR::A(a) => match a {
+                RegA::A1024 => self
                     .ap
                     .iter()
                     .map(RegVal::from)
@@ -893,7 +943,7 @@ impl Registers {
                     .for_each(|(idx, val)| res[idx] = val),
             },
 
-            Reg::R(r) => match r {
+            RegAR::R(r) => match r {
                 RegR::R128 => self
                     .r128
                     .iter()
@@ -947,11 +997,11 @@ impl Registers {
         res
     }
 
-    pub fn get(&self, reg: impl Into<Reg>, index: impl Into<Reg32>) -> RegVal {
+    pub fn get(&self, reg: impl Into<RegAR>, index: impl Into<Reg32>) -> RegVal {
         let index = index.into() as usize;
         match reg.into() {
-            Reg::A(a) => match a {
-                RegA::AP => self.ap[index].map(Value::from),
+            RegAR::A(a) => match a {
+                RegA::A1024 => self.ap[index].map(Value::from),
                 RegA::A8 => self.a8[index].map(Value::from),
                 RegA::A16 => self.a16[index].map(Value::from),
                 RegA::A32 => self.a32[index].map(Value::from),
@@ -961,7 +1011,7 @@ impl Registers {
                 RegA::A512 => self.a512[index].map(Value::from),
             },
 
-            Reg::R(r) => match r {
+            RegAR::R(r) => match r {
                 RegR::R128 => self.r128[index].map(Value::from),
                 RegR::R160 => self.r160[index].map(Value::from),
                 RegR::R256 => self.r256[index].map(Value::from),
@@ -975,12 +1025,17 @@ impl Registers {
         .into()
     }
 
-    pub fn set(&mut self, reg: impl Into<Reg>, index: impl Into<Reg32>, value: impl Into<RegVal>) {
+    pub fn set(
+        &mut self,
+        reg: impl Into<RegAR>,
+        index: impl Into<Reg32>,
+        value: impl Into<RegVal>,
+    ) {
         let index = index.into() as usize;
         let value: Option<Value> = value.into().into();
         match reg.into() {
-            Reg::A(a) => match a {
-                RegA::AP => self.ap[index] = value.map(Value::into),
+            RegAR::A(a) => match a {
+                RegA::A1024 => self.ap[index] = value.map(Value::into),
                 RegA::A8 => self.a8[index] = value.map(Value::into),
                 RegA::A16 => self.a16[index] = value.map(Value::into),
                 RegA::A32 => self.a32[index] = value.map(Value::into),
@@ -989,7 +1044,7 @@ impl Registers {
                 RegA::A256 => self.a256[index] = value.map(Value::into),
                 RegA::A512 => self.a512[index] = value.map(Value::into),
             },
-            Reg::R(r) => match r {
+            RegAR::R(r) => match r {
                 RegR::R128 => self.r128[index] = value.map(Value::into),
                 RegR::R160 => self.r160[index] = value.map(Value::into),
                 RegR::R256 => self.r256[index] = value.map(Value::into),
@@ -1002,7 +1057,7 @@ impl Registers {
         }
     }
 
-    pub fn set_if(&mut self, reg: impl Into<Reg>, index: impl Into<Reg32>, value: Value) {
+    pub fn set_if(&mut self, reg: impl Into<RegAR>, index: impl Into<Reg32>, value: Value) {
         let index = index.into();
         let reg = reg.into();
         if self.get(reg, index).deref().is_none() {
@@ -1010,8 +1065,8 @@ impl Registers {
         }
         let index = index as usize;
         match reg {
-            Reg::A(a) => match a {
-                RegA::AP => self.ap[index] = value.into(),
+            RegAR::A(a) => match a {
+                RegA::A1024 => self.ap[index] = value.into(),
                 RegA::A8 => self.a8[index] = Some(value.into()),
                 RegA::A16 => self.a16[index] = Some(value.into()),
                 RegA::A32 => self.a32[index] = Some(value.into()),
@@ -1020,7 +1075,7 @@ impl Registers {
                 RegA::A256 => self.a256[index] = Some(value.into()),
                 RegA::A512 => self.a512[index] = Some(value.into()),
             },
-            Reg::R(r) => match r {
+            RegAR::R(r) => match r {
                 RegR::R128 => self.r128[index] = Some(value.into()),
                 RegR::R160 => self.r160[index] = Some(value.into()),
                 RegR::R256 => self.r256[index] = Some(value.into()),
@@ -1058,12 +1113,8 @@ impl Registers {
         dst: impl Into<Reg32>,
         op: impl Fn(Value) -> Option<Value>,
     ) {
-        let reg_val = self
-            .get(reg, index)
-            .and_then(op)
-            .map(RegVal::from)
-            .unwrap_or_default();
-        self.set(if ap { RegA::AP } else { reg }, dst, reg_val);
+        let reg_val = self.get(reg, index).and_then(op).map(RegVal::from).unwrap_or_default();
+        self.set(if ap { RegA::A1024 } else { reg }, dst, reg_val);
     }
 
     #[inline]
@@ -1080,11 +1131,9 @@ impl Registers {
             (None, None) | (None, Some(_)) | (Some(_), None) => RegVal::none(),
             (Some(val1), Some(val2)) => op(val1, val2).into(),
         };
-        self.set(if ap { RegA::AP } else { reg }, dst, reg_val);
+        self.set(if ap { RegA::A1024 } else { reg }, dst, reg_val);
     }
 
     #[inline]
-    pub fn status(&self) -> bool {
-        self.st0
-    }
+    pub fn status(&self) -> bool { self.st0 }
 }

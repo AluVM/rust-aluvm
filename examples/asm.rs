@@ -16,16 +16,16 @@ extern crate alure;
 #[macro_use]
 extern crate paste;
 
-use alure::instr::bytecode::disassemble;
+use core::convert::TryFrom;
+
+use alure::instr::serialize::disassemble;
 use alure::instr::{
-    ArithmeticOp, Arithmetics, CmpOp, ControlFlowOp, IncDec, Instr, MoveOp, NOp, NumType, PutOp,
+    ArithmFlags, ArithmeticOp, CmpFlag, CmpOp, ControlFlowOp, IncDec, Instr, MoveOp, NOp, PutOp,
     Secp256k1Op,
 };
-use alure::{Lib, Runtime};
-use alure::{Reg, Reg16, Reg32, Reg8, RegA, RegBlock, RegR};
+use alure::{Lib, Reg16, Reg32, Reg8, RegA, RegAR, RegBlockAR, RegR, Runtime};
 use amplify_num::hex::ToHex;
 use amplify_num::u4;
-use core::convert::TryFrom;
 
 fn main() {
     let code = aluasm! {

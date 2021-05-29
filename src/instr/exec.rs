@@ -81,31 +81,25 @@ impl InstructionSet for ControlFlowOp {
                 regs.st0 = true;
                 ExecStep::Stop
             }
-            ControlFlowOp::Jmp(offset) => regs
-                .jmp()
-                .map(|_| ExecStep::Jump(offset))
-                .unwrap_or(ExecStep::Stop),
+            ControlFlowOp::Jmp(offset) => {
+                regs.jmp().map(|_| ExecStep::Jump(offset)).unwrap_or(ExecStep::Stop)
+            }
             ControlFlowOp::Jif(offset) => {
                 if regs.st0 {
-                    regs.jmp()
-                        .map(|_| ExecStep::Jump(offset))
-                        .unwrap_or(ExecStep::Stop)
+                    regs.jmp().map(|_| ExecStep::Jump(offset)).unwrap_or(ExecStep::Stop)
                 } else {
                     ExecStep::Next
                 }
             }
-            ControlFlowOp::Routine(offset) => regs
-                .call(site)
-                .map(|_| ExecStep::Jump(offset))
-                .unwrap_or(ExecStep::Stop),
-            ControlFlowOp::Call(site) => regs
-                .call(site)
-                .map(|_| ExecStep::Call(site))
-                .unwrap_or(ExecStep::Stop),
-            ControlFlowOp::Exec(site) => regs
-                .jmp()
-                .map(|_| ExecStep::Call(site))
-                .unwrap_or(ExecStep::Stop),
+            ControlFlowOp::Routine(offset) => {
+                regs.call(site).map(|_| ExecStep::Jump(offset)).unwrap_or(ExecStep::Stop)
+            }
+            ControlFlowOp::Call(site) => {
+                regs.call(site).map(|_| ExecStep::Call(site)).unwrap_or(ExecStep::Stop)
+            }
+            ControlFlowOp::Exec(site) => {
+                regs.jmp().map(|_| ExecStep::Call(site)).unwrap_or(ExecStep::Stop)
+            }
             ControlFlowOp::Ret => regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop),
         }
     }
@@ -153,10 +147,10 @@ impl InstructionSet for MoveOp {
             MoveOp::MovR(sreg, sidx, dreg, didx) => {
                 regs.set(dreg, didx, regs.get(sreg, sidx));
             }
-            MoveOp::MovAR(sreg, sidx, dreg, didx) => {
+            MoveOp::CpyAR(sreg, sidx, dreg, didx) => {
                 regs.set(dreg, didx, regs.get(sreg, sidx));
             }
-            MoveOp::MovRA(sreg, sidx, dreg, didx) => {
+            MoveOp::CpyRA(sreg, sidx, dreg, didx) => {
                 regs.set(dreg, didx, regs.get(sreg, sidx));
             }
         }
@@ -197,7 +191,7 @@ impl InstructionSet for CmpOp {
             CmpOp::Cnt(reg, idx) => {
                 regs.a16[0] = regs.get(reg, idx).map(|v| v.count_ones());
             }
-            CmpOp::St2A => {
+            CmpOp::St => {
                 regs.a8[0] = if regs.st0 { Some(1) } else { Some(0) };
             }
             CmpOp::A2St => {
@@ -227,54 +221,19 @@ impl InstructionSet for ArithmeticOp {
                 );
             }
             ArithmeticOp::Add(arithm, reg, src1, src2) => {
-                regs.op_ap2(
-                    reg,
-                    src1,
-                    src2,
-                    arithm.is_ap(),
-                    Reg32::Reg1,
-                    Value::add_op(arithm),
-                );
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::add_op(arithm));
             }
             ArithmeticOp::Sub(arithm, reg, src1, src2) => {
-                regs.op_ap2(
-                    reg,
-                    src1,
-                    src2,
-                    arithm.is_ap(),
-                    Reg32::Reg1,
-                    Value::sub_op(arithm),
-                );
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::sub_op(arithm));
             }
             ArithmeticOp::Mul(arithm, reg, src1, src2) => {
-                regs.op_ap2(
-                    reg,
-                    src1,
-                    src2,
-                    arithm.is_ap(),
-                    Reg32::Reg1,
-                    Value::mul_op(arithm),
-                );
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::mul_op(arithm));
             }
             ArithmeticOp::Div(arithm, reg, src1, src2) => {
-                regs.op_ap2(
-                    reg,
-                    src1,
-                    src2,
-                    arithm.is_ap(),
-                    Reg32::Reg1,
-                    Value::div_op(arithm),
-                );
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::div_op(arithm));
             }
             ArithmeticOp::Rem(arithm, reg, src1, src2) => {
-                regs.op_ap2(
-                    reg,
-                    src1,
-                    src2,
-                    arithm.is_ap(),
-                    Reg32::Reg1,
-                    Value::rem_op(arithm),
-                );
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::rem_op(arithm));
             }
             ArithmeticOp::Abs(reg, index) => {
                 todo!()
@@ -301,15 +260,11 @@ impl InstructionSet for BitwiseOp {
 }
 
 impl InstructionSet for BytesOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        todo!()
-    }
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep { todo!() }
 }
 
 impl InstructionSet for DigestOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        todo!()
-    }
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep { todo!() }
 }
 
 impl InstructionSet for Secp256k1Op {
@@ -320,8 +275,9 @@ impl InstructionSet for Secp256k1Op {
 
     #[cfg(feature = "secp256k1")]
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        use crate::{RegA, RegR};
         use secp256k1::{PublicKey, SecretKey};
+
+        use crate::{RegA, RegR};
         match self {
             Secp256k1Op::Gen(src, dst) => {
                 let res = regs
@@ -335,9 +291,7 @@ impl InstructionSet for Secp256k1Op {
             }
 
             Secp256k1Op::Mul(block, scal, src, dst) => {
-                let reg = block
-                    .into_reg(256)
-                    .expect("register set does not match standard");
+                let reg = block.into_reg(256).expect("register set does not match standard");
                 let res = regs
                     .get(reg, scal)
                     .and_then(|scal| {
@@ -360,9 +314,7 @@ impl InstructionSet for Secp256k1Op {
                     .and_then(|pk1| PublicKey::from_slice(pk1.as_ref()).ok())
                     .and_then(|pk1| regs.get(RegR::R512, srcdst).map(|pk2| (pk1, pk2)))
                     .and_then(|(mut pk1, pk2)| {
-                        pk1.add_exp_assign(&regs.secp, pk2.as_ref())
-                            .map(|_| pk1)
-                            .ok()
+                        pk1.add_exp_assign(&regs.secp, pk2.as_ref()).map(|_| pk1).ok()
                     })
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
@@ -395,13 +347,9 @@ impl InstructionSet for Curve25519Op {
     }
 
     #[cfg(feature = "curve25519")]
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        todo!()
-    }
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep { todo!() }
 }
 
 impl InstructionSet for NOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
-        ExecStep::Next
-    }
+    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep { ExecStep::Next }
 }

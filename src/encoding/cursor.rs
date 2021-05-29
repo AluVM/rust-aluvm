@@ -8,12 +8,13 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify_num::{u2, u3, u4, u5, u6, u7};
 use core::convert::TryInto;
 use core::fmt::{self, Debug, Display, Formatter};
 
+use amplify_num::{u2, u3, u4, u5, u6, u7};
+
 use super::{Read, Write};
-use crate::reg::{Reg, Value};
+use crate::reg::{RegAR, Value};
 
 // I had an idea of putting Read/Write functionality into `amplify` crate,
 // but it is quire specific to the fact that it uses `u16`-sized underlying
@@ -81,29 +82,18 @@ where
 {
     /// Creates cursor from the provided byte string
     pub fn with(bytecode: T) -> Cursor<T> {
-        Cursor {
-            bytecode,
-            byte_pos: 0,
-            bit_pos: u3::MIN,
-            eof: false,
-        }
+        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, eof: false }
     }
 
     /// Returns whether cursor is at the upper length boundary for any byte
     /// string (equal to `u16::MAX`)
-    pub fn is_eof(&self) -> bool {
-        self.eof
-    }
+    pub fn is_eof(&self) -> bool { self.eof }
 
     /// Returns current byte offset of the cursor. Does not accounts bits.
-    pub fn pos(&self) -> u16 {
-        self.byte_pos
-    }
+    pub fn pos(&self) -> u16 { self.byte_pos }
 
     /// Sets current cursor byte offset to the provided value
-    pub fn seek(&mut self, byte_pos: u16) {
-        self.byte_pos = byte_pos;
-    }
+    pub fn seek(&mut self, byte_pos: u16) { self.byte_pos = byte_pos; }
 
     fn extract(&mut self, bit_count: u3) -> Result<u8, CursorError> {
         if self.eof {
@@ -147,12 +137,9 @@ where
         if byte_count == 1 && self.byte_pos == u16::MAX {
             self.eof = true
         } else {
-            self.byte_pos =
-                self.byte_pos
-                    .checked_add(byte_count)
-                    .ok_or(CursorError::OutOfBoundaries(
-                        self.byte_pos as usize + byte_count as usize,
-                    ))?;
+            self.byte_pos = self.byte_pos.checked_add(byte_count).ok_or(
+                CursorError::OutOfBoundaries(self.byte_pos as usize + byte_count as usize),
+            )?;
         }
         Ok(())
     }
@@ -161,9 +148,7 @@ where
 impl Read for Cursor<&[u8]> {
     type Error = CursorError;
 
-    fn is_end(&self) -> bool {
-        self.byte_pos as usize >= self.bytecode.len()
-    }
+    fn is_end(&self) -> bool { self.byte_pos as usize >= self.bytecode.len() }
 
     fn peek_u8(&self) -> Result<u8, CursorError> {
         if self.eof {
@@ -181,45 +166,27 @@ impl Read for Cursor<&[u8]> {
     }
 
     fn read_u2(&mut self) -> Result<u2, CursorError> {
-        Ok(self
-            .extract(u3::with(2))?
-            .try_into()
-            .expect("bit extractor failure"))
+        Ok(self.extract(u3::with(2))?.try_into().expect("bit extractor failure"))
     }
 
     fn read_u3(&mut self) -> Result<u3, CursorError> {
-        Ok(self
-            .extract(u3::with(3))?
-            .try_into()
-            .expect("bit extractor failure"))
+        Ok(self.extract(u3::with(3))?.try_into().expect("bit extractor failure"))
     }
 
     fn read_u4(&mut self) -> Result<u4, CursorError> {
-        Ok(self
-            .extract(u3::with(4))?
-            .try_into()
-            .expect("bit extractor failure"))
+        Ok(self.extract(u3::with(4))?.try_into().expect("bit extractor failure"))
     }
 
     fn read_u5(&mut self) -> Result<u5, CursorError> {
-        Ok(self
-            .extract(u3::with(5))?
-            .try_into()
-            .expect("bit extractor failure"))
+        Ok(self.extract(u3::with(5))?.try_into().expect("bit extractor failure"))
     }
 
     fn read_u6(&mut self) -> Result<u6, CursorError> {
-        Ok(self
-            .extract(u3::with(6))?
-            .try_into()
-            .expect("bit extractor failure"))
+        Ok(self.extract(u3::with(6))?.try_into().expect("bit extractor failure"))
     }
 
     fn read_u7(&mut self) -> Result<u7, CursorError> {
-        Ok(self
-            .extract(u3::with(7))?
-            .try_into()
-            .expect("bit extractor failure"))
+        Ok(self.extract(u3::with(7))?.try_into().expect("bit extractor failure"))
     }
 
     fn read_u8(&mut self) -> Result<u8, CursorError> {
@@ -257,11 +224,10 @@ impl Read for Cursor<&[u8]> {
         }
         let len = self.read_u16()? as usize;
         let pos = self.byte_pos as usize;
-        self.inc_bytes(2u16 + len as u16)
-            .map(|_| &self.bytecode[pos..pos + len])
+        self.inc_bytes(2u16 + len as u16).map(|_| &self.bytecode[pos..pos + len])
     }
 
-    fn read_value(&mut self, reg: Reg) -> Result<Value, CursorError> {
+    fn read_value(&mut self, reg: RegAR) -> Result<Value, CursorError> {
         if self.eof {
             return Err(CursorError::Eof);
         }
@@ -354,7 +320,7 @@ impl Write for Cursor<&mut [u8]> {
         self.inc_bytes(2u16 + len as u16)
     }
 
-    fn write_value(&mut self, reg: Reg, value: &Value) -> Result<(), CursorError> {
+    fn write_value(&mut self, reg: RegAR, value: &Value) -> Result<(), CursorError> {
         let len = match reg.bits() {
             Some(bits) => bits / 8,
             None => {
@@ -362,10 +328,7 @@ impl Write for Cursor<&mut [u8]> {
                 value.len
             }
         };
-        assert!(
-            len >= value.len,
-            "value for the register has larger bit length than the register"
-        );
+        assert!(len >= value.len, "value for the register has larger bit length than the register");
         let value_len = value.len as usize;
         let from = self.byte_pos as usize;
         let to = from + value_len;
