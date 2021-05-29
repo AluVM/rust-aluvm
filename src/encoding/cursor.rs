@@ -11,7 +11,7 @@
 use core::convert::TryInto;
 use core::fmt::{self, Debug, Display, Formatter};
 
-use amplify_num::{u2, u3, u4, u5, u6, u7};
+use amplify_num::{u1, u2, u3, u4, u5, u6, u7};
 
 use super::{Read, Write};
 use crate::reg::{RegAR, Value};
@@ -165,6 +165,10 @@ impl Read for Cursor<&[u8]> {
         Ok(byte == 0x01)
     }
 
+    fn read_u1(&mut self) -> Result<u1, Self::Error> {
+        Ok(self.extract(u3::with(1))?.try_into().expect("bit extractor failure"))
+    }
+
     fn read_u2(&mut self) -> Result<u2, CursorError> {
         Ok(self.extract(u3::with(2))?.try_into().expect("bit extractor failure"))
     }
@@ -243,6 +247,12 @@ impl Write for Cursor<&mut [u8]> {
 
     fn write_bool(&mut self, data: bool) -> Result<(), CursorError> {
         let data = if data { 1u8 } else { 0u8 } << self.bit_pos.as_u8();
+        self.bytecode[self.byte_pos as usize] |= data;
+        self.inc_bits(u3::with(1))
+    }
+
+    fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), Self::Error> {
+        let data = data.into().as_u8() << self.bit_pos.as_u8();
         self.bytecode[self.byte_pos as usize] |= data;
         self.inc_bits(u3::with(1))
     }

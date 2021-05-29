@@ -8,7 +8,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify_num::{u2, u3, u4, u5, u6, u7};
+use amplify_num::{u1, u2, u3, u4, u5, u6, u7};
 
 use crate::reg::{RegAR, Value};
 
@@ -19,6 +19,7 @@ pub trait Read {
     fn is_end(&self) -> bool;
     fn peek_u8(&self) -> Result<u8, Self::Error>;
     fn read_bool(&mut self) -> Result<bool, Self::Error>;
+    fn read_u1(&mut self) -> Result<u1, Self::Error>;
     fn read_u2(&mut self) -> Result<u2, Self::Error>;
     fn read_u3(&mut self) -> Result<u3, Self::Error>;
     fn read_u4(&mut self) -> Result<u4, Self::Error>;
@@ -36,6 +37,7 @@ pub trait Write {
     type Error;
 
     fn write_bool(&mut self, data: bool) -> Result<(), Self::Error>;
+    fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), Self::Error>;
     fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), Self::Error>;
     fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), Self::Error>;
     fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), Self::Error>;

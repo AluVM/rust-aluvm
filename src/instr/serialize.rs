@@ -396,25 +396,7 @@ impl Bytecode for PutOp {
 }
 
 impl Bytecode for MoveOp {
-    fn byte_count(&self) -> u16 {
-        match self {
-            MoveOp::MovA(_, _, _)
-            | MoveOp::DupA(_, _, _)
-            | MoveOp::SwpA(_, _, _)
-            | MoveOp::MovF(_, _, _)
-            | MoveOp::DupF(_, _, _)
-            | MoveOp::SwpF(_, _, _)
-            | MoveOp::MovR(_, _, _)
-            | MoveOp::DupR(_, _, _) => 3,
-            MoveOp::CpyA(_, _, _, _)
-            | MoveOp::CnvA(_, _, _, _)
-            | MoveOp::CnvF(_, _, _, _)
-            | MoveOp::CpyR(_, _, _, _)
-            | MoveOp::SpyAR(_, _, _, _)
-            | MoveOp::CnvAF(_, _, _, _)
-            | MoveOp::CnvFA(_, _, _, _) => 3,
-        }
-    }
+    fn byte_count(&self) -> u16 { 3 }
 
     fn instr_range() -> RangeInclusive<u8> { INSTR_MOV..=INSTR_CFA }
 
@@ -579,27 +561,38 @@ impl Bytecode for CmpOp {
         match self {
             CmpOp::GtA(_, _, _, _)
             | CmpOp::LtA(_, _, _, _)
-            | CmpOp::GtR(_, _, _, _)
-            | CmpOp::LtR(_, _, _, _)
+            | CmpOp::GtF(_, _, _, _)
+            | CmpOp::LtF(_, _, _, _)
+            | CmpOp::GtR(_, _, _)
+            | CmpOp::LtR(_, _, _)
             | CmpOp::EqA(_, _, _, _)
+            | CmpOp::EqF(_, _, _, _)
             | CmpOp::EqR(_, _, _, _) => 3,
-            CmpOp::Len(_, _) | CmpOp::Cnt(_, _) => 2,
-            CmpOp::St | CmpOp::A2St => 1,
+            CmpOp::IfZA(_, _) | CmpOp::IfZR(_, _) | CmpOp::IfNA(_, _) | CmpOp::IfNR(_, _) => 2,
+            CmpOp::St(_, _, _) => 2,
+            CmpOp::StInv => 1,
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> { INSTR_GT..=INSTR_STINV }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_LGT..=INSTR_STINV }
 
     fn instr_byte(&self) -> u8 {
         match self {
-            CmpOp::GtA(_, _, _, _) | CmpOp::GtR(_, _, _, _) => INSTR_GT,
-            CmpOp::LtA(_, _, _, _) | CmpOp::LtR(_, _, _, _) => INSTR_LT,
-            CmpOp::EqA(_, _, _, _) => INSTR_EQA,
-            CmpOp::EqR(_, _, _, _) => INSTR_EQR,
-            CmpOp::Len(_, _) => INSTR_LEN,
-            CmpOp::Cnt(_, _) => INSTR_CNT,
-            CmpOp::St => INSTR_ST,
-            CmpOp::A2St => INSTR_STINV,
+            CmpOp::GtA(_, _, _, _)
+            | CmpOp::LtA(_, _, _, _)
+            | CmpOp::GtF(_, _, _, _)
+            | CmpOp::LtF(_, _, _, _) => INSTR_LGT,
+            CmpOp::GtR(_, _, _)
+            | CmpOp::LtR(_, _, _)
+            | CmpOp::EqA(_, _, _, _)
+            | CmpOp::EqF(_, _, _, _)
+            | CmpOp::EqR(_, _, _, _) => INSTR_CMP,
+            CmpOp::IfZA(_, _) => INSTR_IFZA,
+            CmpOp::IfZR(_, _) => INSTR_IFZR,
+            CmpOp::IfNA(_, _) => INSTR_IFNA,
+            CmpOp::IfNR(_, _) => INSTR_IFNR,
+            CmpOp::St(_, _, _) => INSTR_ST,
+            CmpOp::StInv => INSTR_STINV,
         }
     }
 
@@ -609,36 +602,83 @@ impl Bytecode for CmpOp {
         EncodeError: From<<W as Write>::Error>,
     {
         match self {
-            CmpOp::GtA(num_type, reg, idx1, idx2) | CmpOp::LtA(num_type, reg, idx1, idx2) => {
-                writer.write_u4(RegAR::A(*reg))?;
+            CmpOp::GtA(flag, reg, idx1, idx2) => {
+                writer.write_u2(0b00)?;
+                writer.write_u1(flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
-                writer.write_u2(num_type)?;
-            }
-            CmpOp::GtR(reg1, idx1, reg2, idx2) | CmpOp::LtR(reg1, idx1, reg2, idx2) => {
-                writer.write_u4(RegAR::R(*reg1))?;
-                writer.write_u4(idx1)?;
-                writer.write_u3(reg2)?;
-                writer.write_u5(idx2)?;
-            }
-            CmpOp::EqA(reg1, idx1, reg2, idx2) => {
-                writer.write_u3(reg1)?;
-                writer.write_u5(idx1)?;
-                writer.write_u3(reg2)?;
-                writer.write_u5(idx2)?;
-            }
-            CmpOp::EqR(reg1, idx1, reg2, idx2) => {
-                writer.write_u3(reg1)?;
-                writer.write_u5(idx1)?;
-                writer.write_u3(reg2)?;
-                writer.write_u5(idx2)?;
-            }
-            CmpOp::Len(reg, idx) | CmpOp::Cnt(reg, idx) => {
                 writer.write_u3(reg)?;
-                writer.write_u5(idx)?;
             }
-            CmpOp::St => {}
-            CmpOp::A2St => {}
+            CmpOp::LtA(flag, reg, idx1, idx2) => {
+                writer.write_u2(0b01)?;
+                writer.write_u1(flag)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            CmpOp::GtF(flag, reg, idx1, idx2) => {
+                writer.write_u2(0b10)?;
+                writer.write_u1(flag)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            CmpOp::LtF(flag, reg, idx1, idx2) => {
+                writer.write_u2(0b11)?;
+                writer.write_u1(flag)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+
+            CmpOp::GtR(reg, idx1, idx2) => {
+                writer.write_u3(0b000)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            CmpOp::LtR(reg, idx1, idx2) => {
+                writer.write_u3(0b001)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            CmpOp::EqA(flag, reg, idx1, idx2) => {
+                writer.write_u2(0b01)?;
+                writer.write_u1(flag)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            CmpOp::EqF(flag, reg, idx1, idx2) => {
+                writer.write_u2(0b10)?;
+                writer.write_u1(flag)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+            CmpOp::EqR(flag, reg, idx1, idx2) => {
+                writer.write_u2(0b11)?;
+                writer.write_u1(flag)?;
+                writer.write_u5(idx1)?;
+                writer.write_u5(idx2)?;
+                writer.write_u3(reg)?;
+            }
+
+            CmpOp::IfZA(reg, idx) | CmpOp::IfNA(reg, idx) => {
+                writer.write_u3(reg)?;
+                writer.write_u5(idx2)?;
+            }
+            CmpOp::IfZR(reg, idx) | CmpOp::IfNR(reg, idx) => {
+                writer.write_u3(reg)?;
+                writer.write_u5(idx2)?;
+            }
+            CmpOp::St(flag, reg, idx) => {
+                writer.write_u2(flag)?;
+                writer.write_u3(reg)?;
+                writer.write_u3(idx)?;
+            }
+            CmpOp::StInv => {}
         }
         Ok(())
     }
@@ -648,56 +688,39 @@ impl Bytecode for CmpOp {
         R: Read,
         DecodeError: From<<R as Read>::Error>,
     {
-        Ok(match reader.read_u8()? {
-            INSTR_GT => {
-                if reader.read_bool()? {
-                    Self::GtR(
-                        reader.read_u3()?.into(),
-                        reader.read_u4()?.into(),
-                        reader.read_u3()?.into(),
-                        reader.read_u5()?.into(),
-                    )
-                } else {
-                    let reg = reader.read_u3()?.into();
-                    let idx1 = reader.read_u5()?.into();
-                    let idx2 = reader.read_u5()?.into();
-                    let num_type = reader.read_u2()?.into();
-                    Self::GtA(num_type, reg, idx1, idx2)
-                }
+        let instr = reader.read_u8()?;
+
+        Ok(if instr == INSTR_LGT || instr == INSTR_CMP {
+            let code = reader.read_u2()?;
+            let flag = reader.read_u1()?;
+            let idx1 = reader.read_u5()?.into();
+            let idx2 = reader.read_u5()?.into();
+            let reg = reader.read_u3()?;
+            match (instr, code.as_u8(), flag.as_u8()) {
+                (INSTR_LGT, 0b00, _) => CmpOp::GtA(flag.into(), reg.into(), idx1, idx2),
+                (INSTR_LGT, 0b01, _) => CmpOp::LtA(flag.into(), reg.into(), idx1, idx2),
+                (INSTR_LGT, 0b10, _) => CmpOp::GtF(flag.into(), reg.into(), idx1, idx2),
+                (INSTR_LGT, 0b11, _) => CmpOp::LtF(flag.into(), reg.into(), idx1, idx2),
+                (INSTR_CMP, 0b00, 0b0) => CmpOp::GtR(reg.into(), idx1, idx2),
+                (INSTR_CMP, 0b00, 0b1) => CmpOp::LtR(reg.into(), idx1, idx2),
+                (INSTR_CMP, 0b01, _) => CmpOp::EqA(flag.into(), reg.into(), idx1, idx2),
+                (INSTR_CMP, 0b10, _) => CmpOp::EqF(flag.into(), reg.into(), idx1, idx2),
+                (INSTR_CMP, 0b11, _) => CmpOp::EqR(flag.into(), reg.into(), idx1, idx2),
+                _ => unreachable!(),
             }
-            INSTR_LT => {
-                if reader.read_bool()? {
-                    Self::LtR(
-                        reader.read_u3()?.into(),
-                        reader.read_u4()?.into(),
-                        reader.read_u3()?.into(),
-                        reader.read_u5()?.into(),
-                    )
-                } else {
-                    let reg = reader.read_u3()?.into();
-                    let idx1 = reader.read_u5()?.into();
-                    let idx2 = reader.read_u5()?.into();
-                    let num_type = reader.read_u2()?.into();
-                    Self::LtA(num_type, reg, idx1, idx2)
-                }
+        } else if instr == INSTR_STINV {
+            // Nothing to read here
+        } else if instr == INSTR_ST {
+        } else {
+            let reg = reader.read_u3()?;
+            let idx = reader.read_u5()?.into();
+            match instr {
+                INSTR_IFZA => CmpOp::IfZA(reg.into(), idx),
+                INSTR_IFNA => CmpOp::IfNA(reg.into(), idx),
+                INSTR_IFZR => CmpOp::IfZR(reg.into(), idx),
+                INSTR_IFNR => CmpOp::IfNR(reg.into(), idx),
+                x => unreachable!("instruction {:#010b} classified as comparison operation", x),
             }
-            INSTR_EQA => Self::EqA(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ),
-            INSTR_EQR => Self::EqR(
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
-                reader.read_u5()?.into(),
-            ),
-            INSTR_LEN => Self::Len(reader.read_u3()?.into(), reader.read_u5()?.into()),
-            INSTR_CNT => Self::Cnt(reader.read_u3()?.into(), reader.read_u5()?.into()),
-            INSTR_ST => Self::St,
-            INSTR_STINV => Self::A2St,
-            x => unreachable!("instruction {:#010b} classified as comparison operation", x),
         })
     }
 }
