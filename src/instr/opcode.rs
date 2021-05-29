@@ -10,11 +10,14 @@
 
 #![allow(clippy::branches_sharing_code)]
 
-use amplify_num::{u3, u4, u6};
+use amplify_num::u6;
 
-use crate::instr::flags::{FloatEqFlag, SignFlag};
-use crate::instr::{ArithmFlags, CmpFlag, IncDec, IntFlags, RoundingFlag};
-use crate::reg::{Reg16, Reg32, Reg8, RegA, RegAR, RegBlockAR, RegR, Step, Value};
+use crate::instr::{
+    DeleteFlag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, RoundingFlag, SignFlag, SplitFlag,
+};
+use crate::reg::{
+    Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, Step, Value,
+};
 use crate::{ByteStr, InstructionSet, LibSite};
 
 /// Default instruction extension which treats any operation as NOP
@@ -173,42 +176,42 @@ pub enum MoveOp {
     /// Move operation: moves value of one of the integer arithmetic registers into another integer
     /// arithmetic register of the same bit size, clearing its previous value and setting the
     /// source to `None`.
-    #[display("mov\t\t{0}{1},{2}{3}")]
+    #[display("mov\t\t{0}{1},{0}{2}")]
     MovA(RegA, Reg32, Reg32),
 
     /// Duplicate operation: duplicates value of one of the integer arithmetic registers into
     /// another integer arithmetic register of the same bit size, clearing its previous value.
-    #[display("dup\t\t{0}{1},{2}{3}")]
+    #[display("dup\t\t{0}{1},{0}{2}")]
     DupA(RegA, Reg32, Reg32),
 
     /// Swap operation: swaps value of two integer arithmetic registers of the same bit size.
-    #[display("swp\t\t{0}{1},{2}{3}")]
+    #[display("swp\t\t{0}{1},{0}{2}")]
     SwpA(RegA, Reg32, Reg32),
 
     /// Move operation: moves value of one of the float arithmetic registers into another float
     /// arithmetic register of the same bit size, clearing its previous value and setting the
     /// source to `None`.
-    #[display("mov\t\t{0}{1},{2}{3}")]
+    #[display("mov\t\t{0}{1},{0}{2}")]
     MovF(RegF, Reg32, Reg32),
 
     /// Duplicate operation: duplicates value of one of the float arithmetic registers into
     /// another float arithmetic register of the same bit size, clearing its previous value.
-    #[display("dup\t\t{0}{1},{2}{3}")]
+    #[display("dup\t\t{0}{1},{0}{2}")]
     DupF(RegF, Reg32, Reg32),
 
     /// Swap operation: swaps value of two float arithmetic registers of the same bit size.
-    #[display("swp\t\t{0}{1},{2}{3}")]
+    #[display("swp\t\t{0}{1},{0}{2}")]
     SwpF(RegF, Reg32, Reg32),
 
     /// Move operation: moves value of one of the general non-arithmetic registers into another
     /// general non- arithmetic register of the same bit size, clearing its previous value and
     /// setting the source to `None`.
-    #[display("mov\t\t{0}{1},{2}{3}")]
+    #[display("mov\t\t{0}{1},{0}{2}")]
     MovR(RegR, Reg32, Reg32),
 
     /// Duplicate operation: duplicates value of one of the general non-arithmetic registers into
     /// another general non-arithmetic register of the same bit size, clearing its previous value.
-    #[display("dup\t\t{0}{1},{2}{3}")]
+    #[display("dup\t\t{0}{1},{0}{2}")]
     DupR(RegR, Reg32, Reg32),
 
     // ----
@@ -366,12 +369,12 @@ pub enum CmpOp {
     St(MergeFlag, RegA, Reg8),
 
     /// Inverses value in `st0` register
-    #[displau("stinv")]
+    #[display("stinv")]
     StInv,
 }
 
 /// Arithmetic instructions
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum ArithmeticOp {
     /// Adds values from two integer arithmetic registers and puts result into destination.
     #[display("add:{0}\t{1}{2},{1}{3}")]
@@ -677,8 +680,8 @@ pub enum BytesOp {
     /// `offset > dst_len && src_len + dst_len + offset > 2^16`:
     ///   (4) Set destination to `None`
     ///   (5) Fill destination from `dst_let` to `offset` with zeros and cut source string part
-    /// exceeding `2^16`   (6-8) Use `src_len` instead of `offset` and use flag value from the
-    /// first section
+    ///       exceeding `2^16`
+    ///   (6-8) Use `src_len` instead of `offset` and use flag value from the first section
     ///
     /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
     #[display("ins:{3}\ts16[{0}],s16[{1}],a16{2}")]
@@ -723,7 +726,7 @@ pub enum BytesOp {
         /** `a8` or `a16` register index with a first offset for delete location */ Reg32,
         RegA2,
         /** `a8` or `a16` register index with a second offset for delete location */ Reg32,
-        DelFlag,
+        DeleteFlag,
     ),
 
     /// Revert byte order of the string

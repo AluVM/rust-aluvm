@@ -14,5 +14,5 @@ mod bitwise;
 mod reg;
 mod value;
 
-pub use reg::{Reg16, Reg32, Reg8, RegA, RegAR, RegBlockAR, RegR, Registers};
+pub use reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, Registers};
 pub use value::{RegVal, Step, Value};

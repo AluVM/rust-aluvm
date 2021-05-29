@@ -150,7 +150,6 @@ impl Value {
     /// Serializes value in hexadecimal format to a string
     #[cfg(feature = "std")]
     pub fn to_hex(self) -> String {
-        use std::fmt::Write;
         let mut ret = String::with_capacity(2usize * self.len as usize + 2);
         write!(ret, "0x").expect("writing to string");
         for ch in &self.bytes {
@@ -354,8 +353,8 @@ impl_value_ty_conv!(i64, 8);
 impl_value_ty_conv!(i128, 16);
 
 /// Value for step instructions which can be displayed as a part of operation mnemonic
-#[derive(Wrapper, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, From)]
-pub struct Step(Value);
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
+pub struct Step(#[from] Value);
 
 impl Display for Step {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {

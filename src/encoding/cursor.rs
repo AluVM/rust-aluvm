@@ -231,10 +231,7 @@ impl Read for Cursor<&[u8]> {
         if self.eof {
             return Err(CursorError::Eof);
         }
-        let len = match reg.bits() {
-            Some(bits) => bits / 8,
-            None => self.read_u16()?,
-        } as usize;
+        let len = (reg.bits() / 8u16) as usize;
         let pos = self.byte_pos as usize;
         let value = Value::with(&self.bytecode[pos..pos + len]);
         self.inc_bytes(len as u16).map(|_| value)
@@ -321,13 +318,7 @@ impl Write for Cursor<&mut [u8]> {
     }
 
     fn write_value(&mut self, reg: RegAR, value: &Value) -> Result<(), CursorError> {
-        let len = match reg.bits() {
-            Some(bits) => bits / 8,
-            None => {
-                self.write_u16(value.len)?;
-                value.len
-            }
-        };
+        let len = reg.bits() / 8;
         assert!(len >= value.len, "value for the register has larger bit length than the register");
         let value_len = value.len as usize;
         let from = self.byte_pos as usize;

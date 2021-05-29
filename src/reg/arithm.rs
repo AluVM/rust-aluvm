@@ -13,7 +13,6 @@ use core::cmp::Ordering;
 use amplify_num::u512;
 
 use super::{RegVal, Value};
-use crate::instr::{ArithmFlags, CmpFlag};
 
 impl RegVal {
     pub fn partial_cmp_op(num_type: CmpFlag) -> fn(RegVal, RegVal) -> Option<Ordering> {

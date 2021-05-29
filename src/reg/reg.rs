@@ -10,10 +10,9 @@
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
-use alloc::vec::Vec;
 use core::ops::Deref;
 
-use amplify_num::{u256, u3, u4, u5, u512};
+use amplify_num::{u1, u256, u3, u4, u5, u512};
 use half::bf16;
 use rustc_apfloat::ieee;
 
@@ -477,6 +476,57 @@ impl From<u3> for RegA {
     }
 }
 
+/// Enumeration of integer arithmetic registers suited for string addresses (`a8` and `a16`
+/// registers)
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[repr(u8)]
+pub enum RegA2 {
+    /// 8-bit arithmetics register
+    #[display("a8")]
+    A8 = 0,
+
+    /// 16-bit arithmetics register
+    #[display("a16")]
+    A16 = 1,
+}
+
+impl RegA2 {
+    /// Returns bit size of the register.
+    pub fn bits(self) -> u16 {
+        match self {
+            RegA2::A8 => 8,
+            RegA2::A16 => 16,
+        }
+    }
+
+    /// Constructs [`RegA2`] object for a provided requirement for register bit size
+    pub fn with(bits: u16) -> Option<Self> {
+        Some(match bits {
+            8 => RegA2::A8,
+            16 => RegA2::A16,
+            _ => return None,
+        })
+    }
+}
+
+impl From<&RegA2> for u1 {
+    fn from(rega: &RegA2) -> Self { u1::with(*rega as u8) }
+}
+
+impl From<RegA2> for u1 {
+    fn from(rega: RegA2) -> Self { u1::with(rega as u8) }
+}
+
+impl From<u1> for RegA2 {
+    fn from(val: u1) -> Self {
+        match val {
+            v if v == RegA2::A8.into() => RegA2::A8,
+            v if v == RegA2::A16.into() => RegA2::A16,
+            _ => unreachable!(),
+        }
+    }
+}
+
 /// Enumeration of float arithmetic registers (`F`-registers)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
@@ -667,15 +717,76 @@ impl From<u3> for RegR {
     }
 }
 
+/// Superset of `A` and `F` arithmetic registers
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
+#[display(inner)]
+pub enum RegAF {
+    /// Arithmetic integer registers (`A` registers)
+    #[from]
+    A(RegA),
+
+    /// Arithmetic float registers (`F` registers)
+    #[from]
+    F(RegF),
+}
+
+impl RegAF {
+    /// Returns bit size of the register.
+    pub fn bits(self) -> u16 {
+        match self {
+            RegAF::A(a) => a.bits(),
+            RegAF::F(f) => f.bits(),
+        }
+    }
+
+    /// Returns inner A-register type, if any
+    pub fn reg_a(self) -> Option<RegA> {
+        match self {
+            RegAF::A(a) => Some(a),
+            RegAF::F(_) => None,
+        }
+    }
+
+    /// Returns inner F-register type, if any
+    pub fn reg_f(self) -> Option<RegF> {
+        match self {
+            RegAF::A(_) => None,
+            RegAF::F(f) => Some(f),
+        }
+    }
+}
+
+impl From<&RegAF> for u4 {
+    fn from(reg: &RegAF) -> Self { u4::from(*reg) }
+}
+
+impl From<RegAF> for u4 {
+    fn from(reg: RegAF) -> Self {
+        match reg {
+            RegAF::A(a) => u4::with(u3::from(a).as_u8()),
+            RegAF::F(f) => u4::with(u3::from(f).as_u8() + 8),
+        }
+    }
+}
+
+impl From<u4> for RegAF {
+    fn from(val: u4) -> Self {
+        match val.as_u8() {
+            0..=7 => RegAF::A(RegA::from(u3::with(val.as_u8()))),
+            _ => RegAF::F(RegF::from(u3::with(val.as_u8() + 8))),
+        }
+    }
+}
+
 /// Superset of `A` and `R` registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
 #[display(inner)]
 pub enum RegAR {
-    /// Arithmetic registers (`a` registers)
+    /// Arithmetic integer registers (`A` registers)
     #[from]
     A(RegA),
 
-    /// Non-arithmetic (generic) registers (`r` registers)
+    /// Non-arithmetic (general) registers (`R` registers)
     #[from]
     R(RegR),
 }
