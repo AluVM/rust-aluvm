@@ -191,7 +191,7 @@ impl InstructionSet for CmpOp {
             CmpOp::Cnt(reg, idx) => {
                 regs.a16[0] = regs.get(reg, idx).map(|v| v.count_ones());
             }
-            CmpOp::St => {
+            CmpOp::St(_, _) => {
                 regs.a8[0] = if regs.st0 { Some(1) } else { Some(0) };
             }
             CmpOp::A2St => {

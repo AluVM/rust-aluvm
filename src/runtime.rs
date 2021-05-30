@@ -64,7 +64,7 @@ where
     ///
     /// Lib hash is computed as SHA256 tagged hash of the serialized library
     /// bytecode.
-    pub fn lib_hash(&self) -> LibHash { LibHash::hash(&self.bytecode.bytes) }
+    pub fn lib_hash(&self) -> LibHash { LibHash::hash(&*self.bytecode.bytes) }
 
     /// Calculates length of bytecode encoding in bytes
     pub fn byte_count(&self) -> u16 { self.bytecode.len }
@@ -117,7 +117,7 @@ impl LibSite {
 }
 
 /// Large binary bytestring object
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct ByteStr {
     /// Slice length
     pub len: u16,

@@ -11,7 +11,7 @@
 use alloc::vec::Vec;
 use core::ops::RangeInclusive;
 
-use amplify_num::u5;
+use amplify_num::{u1, u2, u3, u5};
 use bitcoin_hashes::Hash;
 
 use super::bitcode::*;
@@ -20,7 +20,7 @@ use crate::instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, MoveOp, NOp,
     PutOp, Secp256k1Op,
 };
-use crate::reg::{RegAR, RegBlockAR, Value};
+use crate::reg::{RegAR, RegBlockAR};
 use crate::{ByteStr, Instr, InstructionSet, LibHash, LibSite};
 
 /// Errors decoding bytecode
@@ -313,11 +313,11 @@ impl Bytecode for PutOp {
     fn byte_count(&self) -> u16 {
         match self {
             PutOp::ZeroA(_, _) | PutOp::ZeroR(_, _) | PutOp::ClA(_, _) | PutOp::ClR(_, _) => 2,
-            PutOp::PutA(reg, _, Value { len, .. }) | PutOp::PutIfA(reg, _, Value { len, .. }) => {
-                2u16.saturating_add(reg.bits().map(|bits| bits / 8).unwrap_or(*len))
+            PutOp::PutA(reg, _, _) | PutOp::PutIfA(reg, _, _) => {
+                2u16.saturating_add(reg.bits() / 8)
             }
-            PutOp::PutR(reg, _, Value { len, .. }) | PutOp::PutIfR(reg, _, Value { len, .. }) => {
-                2u16.saturating_add(reg.bits().map(|bits| bits / 8).unwrap_or(*len))
+            PutOp::PutR(reg, _, _) | PutOp::PutIfR(reg, _, _) => {
+                2u16.saturating_add(reg.bits() / 8)
             }
         }
     }
@@ -428,49 +428,49 @@ impl Bytecode for MoveOp {
     {
         match self {
             MoveOp::MovA(reg, idx1, idx2) => {
-                writer.write_u3(0b000)?;
+                writer.write_u3(u3::with(0b000))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             MoveOp::DupA(reg, idx1, idx2) => {
-                writer.write_u3(0b001)?;
+                writer.write_u3(u3::with(0b001))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             MoveOp::SwpA(reg, idx1, idx2) => {
-                writer.write_u3(0b010)?;
+                writer.write_u3(u3::with(0b010))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             MoveOp::MovF(reg, idx1, idx2) => {
-                writer.write_u3(0b011)?;
+                writer.write_u3(u3::with(0b011))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             MoveOp::DupF(reg, idx1, idx2) => {
-                writer.write_u3(0b100)?;
+                writer.write_u3(u3::with(0b100))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             MoveOp::SwpF(reg, idx1, idx2) => {
-                writer.write_u3(0b101)?;
+                writer.write_u3(u3::with(0b101))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             MoveOp::MovR(reg, idx1, idx2) => {
-                writer.write_u3(0b110)?;
+                writer.write_u3(u3::with(0b110))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             MoveOp::DupR(reg, idx1, idx2) => {
-                writer.write_u3(0b111)?;
+                writer.write_u3(u3::with(0b111))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
@@ -604,28 +604,28 @@ impl Bytecode for CmpOp {
     {
         match self {
             CmpOp::GtA(flag, reg, idx1, idx2) => {
-                writer.write_u2(0b00)?;
+                writer.write_u2(u2::with(0b00))?;
                 writer.write_u1(flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             CmpOp::LtA(flag, reg, idx1, idx2) => {
-                writer.write_u2(0b01)?;
+                writer.write_u2(u2::with(0b01))?;
                 writer.write_u1(flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             CmpOp::GtF(flag, reg, idx1, idx2) => {
-                writer.write_u2(0b10)?;
+                writer.write_u2(u2::with(0b10))?;
                 writer.write_u1(flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             CmpOp::LtF(flag, reg, idx1, idx2) => {
-                writer.write_u2(0b11)?;
+                writer.write_u2(u2::with(0b11))?;
                 writer.write_u1(flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
@@ -633,34 +633,34 @@ impl Bytecode for CmpOp {
             }
 
             CmpOp::GtR(reg, idx1, idx2) => {
-                writer.write_u3(0b000)?;
+                writer.write_u3(u3::with(0b000))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             CmpOp::LtR(reg, idx1, idx2) => {
-                writer.write_u3(0b001)?;
+                writer.write_u3(u3::with(0b001))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             CmpOp::EqA(flag, reg, idx1, idx2) => {
-                writer.write_u2(0b01)?;
+                writer.write_u2(u2::with(0b01))?;
                 writer.write_u1(flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             CmpOp::EqF(flag, reg, idx1, idx2) => {
-                writer.write_u2(0b10)?;
+                writer.write_u2(u2::with(0b10))?;
                 writer.write_u1(flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             CmpOp::EqR(flag, reg, idx1, idx2) => {
-                writer.write_u2(0b11)?;
-                writer.write_u1(flag)?;
+                writer.write_u2(u2::with(0b11))?;
+                writer.write_bool(*flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
@@ -668,11 +668,11 @@ impl Bytecode for CmpOp {
 
             CmpOp::IfZA(reg, idx) | CmpOp::IfNA(reg, idx) => {
                 writer.write_u3(reg)?;
-                writer.write_u5(idx2)?;
+                writer.write_u5(idx)?;
             }
             CmpOp::IfZR(reg, idx) | CmpOp::IfNR(reg, idx) => {
                 writer.write_u3(reg)?;
-                writer.write_u5(idx2)?;
+                writer.write_u5(idx)?;
             }
             CmpOp::St(flag, reg, idx) => {
                 writer.write_u2(flag)?;
@@ -706,12 +706,13 @@ impl Bytecode for CmpOp {
                 (INSTR_CMP, 0b00, 0b1) => CmpOp::LtR(reg.into(), idx1, idx2),
                 (INSTR_CMP, 0b01, _) => CmpOp::EqA(flag.into(), reg.into(), idx1, idx2),
                 (INSTR_CMP, 0b10, _) => CmpOp::EqF(flag.into(), reg.into(), idx1, idx2),
-                (INSTR_CMP, 0b11, _) => CmpOp::EqR(flag.into(), reg.into(), idx1, idx2),
+                (INSTR_CMP, 0b11, _) => CmpOp::EqR(flag.as_u8() == 1, reg.into(), idx1, idx2),
                 _ => unreachable!(),
             }
         } else if instr == INSTR_STINV {
-            // Nothing to read here
+            CmpOp::StInv
         } else if instr == INSTR_ST {
+            CmpOp::St(reader.read_u2()?.into(), reader.read_u3()?.into(), reader.read_u3()?.into())
         } else {
             let reg = reader.read_u3()?;
             let idx = reader.read_u5()?.into();
@@ -765,10 +766,10 @@ impl Bytecode for ArithmeticOp {
     {
         match self {
             ArithmeticOp::Neg(reg, idx) | ArithmeticOp::Abs(reg, idx) => {
-                writer.write_u3(reg)?;
-                writer.write_u5(idx)?;
+                writer.write_u4(reg)?;
+                writer.write_u4(idx)?;
             }
-            ArithmeticOp::Stp(oreg, idx, step) => {
+            ArithmeticOp::Stp(reg, idx, step) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(idx)?;
                 writer.write_i16(step.as_i16())?;
@@ -777,17 +778,17 @@ impl Bytecode for ArithmeticOp {
             | ArithmeticOp::SubA(flags, reg, src1, src2)
             | ArithmeticOp::MulA(flags, reg, src1, src2)
             | ArithmeticOp::DivA(flags, reg, src1, src2) => {
-                writer.write_u1(0b0)?;
+                writer.write_u1(u1::with(0b0))?;
                 writer.write_u2(flags)?;
                 writer.write_u5(src1)?;
                 writer.write_u5(src2)?;
                 writer.write_u3(reg)?;
             }
             ArithmeticOp::AddF(flag, reg, src1, src2)
-            | ArithmeticOp::SubF(flags, reg, src1, src2)
-            | ArithmeticOp::MulF(flags, reg, src1, src2)
-            | ArithmeticOp::DivF(flags, reg, src1, src2) => {
-                writer.write_u1(0b1)?;
+            | ArithmeticOp::SubF(flag, reg, src1, src2)
+            | ArithmeticOp::MulF(flag, reg, src1, src2)
+            | ArithmeticOp::DivF(flag, reg, src1, src2) => {
+                writer.write_u1(u1::with(0b1))?;
                 writer.write_u2(flag)?;
                 writer.write_u5(src1)?;
                 writer.write_u5(src2)?;
@@ -831,7 +832,7 @@ impl Bytecode for ArithmeticOp {
             }
         } else {
             match instr {
-                INSTR_NEG => Self::Neg(reader.read_u3()?.into(), reader.read_u5()?.into()),
+                INSTR_NEG => Self::Neg(reader.read_u4()?.into(), reader.read_u4()?.into()),
                 INSTR_STP => {
                     let reg = reader.read_u3()?.into();
                     let idx = reader.read_u5()?.into();
@@ -847,7 +848,7 @@ impl Bytecode for ArithmeticOp {
                     let dst = reader.read_u5()?.into();
                     Self::Rem(reg1, src1, reg2, src2, reg3, dst)
                 }
-                INSTR_ABS => Self::Abs(reader.read_u3()?.into(), reader.read_u5()?.into()),
+                INSTR_ABS => Self::Abs(reader.read_u4()?.into(), reader.read_u4()?.into()),
                 x => unreachable!("instruction {:#010b} classified as arithmetic operation", x),
             }
         })
@@ -912,39 +913,39 @@ impl Bytecode for BitwiseOp {
             }
 
             BitwiseOp::Shl(a2, shift, reg, idx) => {
-                writer.write_u1(0b0)?;
+                writer.write_u1(u1::with(0b0))?;
                 writer.write_u1(a2)?;
                 writer.write_u5(shift)?;
                 writer.write_u4(reg)?;
                 writer.write_u5(idx)?;
             }
             BitwiseOp::ShrA(sign, a2, shift, reg, idx) => {
-                writer.write_u1(0b1)?;
+                writer.write_u1(u1::with(0b1))?;
                 writer.write_u1(a2)?;
                 writer.write_u4(shift)?;
                 writer.write_u1(sign)?;
-                writer.write_u1(0b0)?;
+                writer.write_u1(u1::with(0b0))?;
                 writer.write_u3(reg)?;
                 writer.write_u5(idx)?;
             }
             BitwiseOp::ShrR(a2, shift, reg, idx) => {
-                writer.write_u1(0b1)?;
+                writer.write_u1(u1::with(0b1))?;
                 writer.write_u1(a2)?;
                 writer.write_u5(shift)?;
-                writer.write_u1(0b1)?;
+                writer.write_u1(u1::with(0b1))?;
                 writer.write_u3(reg)?;
                 writer.write_u5(idx)?;
             }
 
             BitwiseOp::Scl(a2, shift, reg, idx) => {
-                writer.write_u1(0b0)?;
+                writer.write_u1(u1::with(0b0))?;
                 writer.write_u1(a2)?;
                 writer.write_u5(shift)?;
                 writer.write_u4(reg)?;
                 writer.write_u5(idx)?;
             }
             BitwiseOp::Scr(a2, shift, reg, idx) => {
-                writer.write_u1(0b1)?;
+                writer.write_u1(u1::with(0b1))?;
                 writer.write_u1(a2)?;
                 writer.write_u5(shift)?;
                 writer.write_u4(reg)?;
@@ -1067,41 +1068,41 @@ impl Bytecode for BytesOp {
     {
         match self {
             BytesOp::Put(reg, bytes) => {
-                writer.write_u8(reg)?;
+                writer.write_u8(*reg)?;
                 writer.write_slice(bytes.as_ref())?;
             }
             BytesOp::Mov(reg1, reg2)
             | BytesOp::Swp(reg1, reg2)
             | BytesOp::Find(reg1, reg2)
             | BytesOp::Rev(reg1, reg2) => {
-                writer.write_u8(reg1)?;
-                writer.write_u8(reg2)?;
+                writer.write_u8(*reg1)?;
+                writer.write_u8(*reg2)?;
             }
             BytesOp::Fill(reg, offset1, offset2, value, flag) => {
-                writer.write_u8(reg)?;
+                writer.write_u8(*reg)?;
                 writer.write_u5(offset1)?;
                 writer.write_u5(offset2)?;
                 writer.write_u5(value)?;
                 writer.write_bool(*flag)?;
             }
             BytesOp::Len(src, reg, dst) => {
-                writer.write_u8(src)?;
+                writer.write_u8(*src)?;
                 writer.write_u3(reg)?;
                 writer.write_u5(dst)?;
             }
             BytesOp::Cnt(src, byte, cnt) => {
-                writer.write_u8(src)?;
+                writer.write_u8(*src)?;
                 writer.write_u4(byte)?;
                 writer.write_u4(cnt)?;
             }
             BytesOp::Eq(reg1, reg2) => {
-                writer.write_u8(reg1)?;
-                writer.write_u8(reg2)?;
+                writer.write_u8(*reg1)?;
+                writer.write_u8(*reg2)?;
             }
             BytesOp::Con(reg1, reg2, no, offset, len) => {
-                writer.write_u8(reg1)?;
-                writer.write_u8(reg2)?;
-                writer.write_u6(no)?;
+                writer.write_u8(*reg1)?;
+                writer.write_u8(*reg2)?;
+                writer.write_u6(*no)?;
                 writer.write_u5(offset)?;
                 writer.write_u5(len)?;
             }
@@ -1112,22 +1113,22 @@ impl Bytecode for BytesOp {
                 writer.write_u4(offset)?;
             }
             BytesOp::Join(src1, src2, dst) => {
-                writer.write_u8(src1)?;
-                writer.write_u8(src2)?;
-                writer.write_u8(dst)?;
+                writer.write_u8(*src1)?;
+                writer.write_u8(*src2)?;
+                writer.write_u8(*dst)?;
             }
             BytesOp::Splt(flag, offset, src, dst1, dst2) => {
                 writer.write_u3(flag)?;
                 writer.write_u5(offset)?;
-                writer.write_u8(src)?;
-                writer.write_u8(dst1)?;
-                writer.write_u8(dst2)?;
+                writer.write_u8(*src)?;
+                writer.write_u8(*dst1)?;
+                writer.write_u8(*dst2)?;
             }
             BytesOp::Ins(flag, offset, src, dst) => {
                 writer.write_u3(flag)?;
                 writer.write_u5(offset)?;
-                writer.write_u8(src)?;
-                writer.write_u8(dst)?;
+                writer.write_u8(*src)?;
+                writer.write_u8(*dst)?;
             }
             BytesOp::Del(flag, reg1, offset1, reg2, offset2, flag1, flag2, src, dst) => {
                 writer.write_u2(flag)?;
@@ -1137,8 +1138,8 @@ impl Bytecode for BytesOp {
                 writer.write_u5(offset2)?;
                 writer.write_bool(*flag1)?;
                 writer.write_bool(*flag2)?;
-                writer.write_u8(src)?;
-                writer.write_u8(dst)?;
+                writer.write_u8(*src)?;
+                writer.write_u8(*dst)?;
             }
         }
         Ok(())

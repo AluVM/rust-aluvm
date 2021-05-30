@@ -793,7 +793,7 @@ pub enum RegAR {
 
 impl RegAR {
     /// Constructs register superset from register block and family integer representation
-    pub fn from(block: u1, reg: u4) -> Self {
+    pub fn from(block: u1, reg: u3) -> Self {
         match block.as_u8() {
             0 => RegAR::A(reg.into()),
             1 => RegAR::R(reg.into()),
