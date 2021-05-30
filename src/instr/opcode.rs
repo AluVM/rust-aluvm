@@ -581,7 +581,7 @@ pub enum BytesOp {
     /// plus the initial offset exceeds string length the rest of the destination register bits is
     /// filled with zeros and `st0` is set to `false`. Otherwise, `st0` value is not modified.
     #[display("extr\ts16{0},a16{1},{2}{3}")]
-    Extr(/** `s` register index */ Reg32, /** `a16` register with offset */ Reg32, RegR, Reg32),
+    Extr(/** `s` register index */ Reg32, RegR, Reg16, /** `a16` register with offset */ Reg16),
 
     /// Inject general `R` register value at a given position to string register, replacing value
     /// of the corresponding bytes. If the insert offset is larger than the current length of the
@@ -590,7 +590,7 @@ pub enum BytesOp {
     /// the maximum string register length (2^16 bytes), than the destination register is set to
     /// `None` state and `st0` is set to `false`. Otherwise, `st0` value is not modified.
     #[display("inj\t\ts16{0},a16{1},{2}{3}")]
-    Inj(/** `s` register index */ Reg32, /** `a16` register with offset */ Reg32, RegR, Reg32),
+    Inj(/** `s` register index */ Reg32, RegR, Reg16, /** `a16` register with offset */ Reg16),
 
     /// Join bytestrings from two registers into destination, overwriting its value. If the length
     /// of the joined string exceeds the maximum string register length (2^16 bytes), than the
@@ -634,9 +634,9 @@ pub enum BytesOp {
     /// is not modified
     #[display("splt:{2}\ts16[{0}],a16{1},s16[{3}],s16[{4}]")]
     Splt(
-        /** Source */ u8,
-        /** `a16` register index with offset value */ Reg32,
         SplitFlag,
+        /** `a16` register index with offset value */ Reg32,
+        /** Source */ u8,
         /** Destination 1 */ u8,
         /** Destination 2 */ u8,
     ),
@@ -672,10 +672,10 @@ pub enum BytesOp {
     /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
     #[display("ins:{3}\ts16[{0}],s16[{1}],a16{2}")]
     Ins(
+        InsertFlag,
+        /** `a16` register index with offset value for insert location */ Reg32,
         /** Source register */ u8,
         /** Destination register */ u8,
-        /** `a16` register index with offset value for insert location */ Reg32,
-        InsertFlag,
     ),
 
     /// Delete bytes in a given range, shifting the remaining bytes leftward. The start offset is
@@ -703,16 +703,22 @@ pub enum BytesOp {
     ///   (4) set destination to the fragment of the string `offset_start..src_len` and extend
     ///       its length up to `offset_end - offset_start` with trailing zeros.
     ///
-    /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
+    /// `flag1` and `flag2` arguments indicate whether `st0` should be set to `false` if
+    /// `offset_start > src_len` and `offset_end > src_len && offser_start <= src_len`.
+    /// In all other cases, `st0` value is not modified.
     #[display("del:{6}\ts16[{0}],s16[{1}],{2}{3},{4}{5}")]
     Del(
-        /** Source `s` register */ u8,
-        /** Destination `s` register */ u8,
+        DeleteFlag,
         RegA2,
         /** `a8` or `a16` register index with a first offset for delete location */ Reg32,
         RegA2,
         /** `a8` or `a16` register index with a second offset for delete location */ Reg32,
-        DeleteFlag,
+        /** `flag1` indicating `st0` value set to false if `offset_start > src_len` */ bool,
+        /** `flag2` indicating `st0` value set to false if
+         * `offset_end > src_len && offser_start <= src_len` */
+        bool,
+        /** Source `s` register */ u8,
+        /** Destination `s` register */ u8,
     ),
 
     /// Revert byte order of the string

@@ -123,11 +123,11 @@ pub struct ByteStr {
     pub len: u16,
 
     /// Slice bytes
-    pub bytes: [u8; u16::MAX as usize],
+    pub bytes: Box<[u8; u16::MAX as usize]>,
 }
 
 impl Default for ByteStr {
-    fn default() -> ByteStr { ByteStr { len: 0, bytes: [0u8; u16::MAX as usize] } }
+    fn default() -> ByteStr { ByteStr { len: 0, bytes: Box::new([0u8; u16::MAX as usize]) } }
 }
 
 impl AsRef<[u8]> for ByteStr {
@@ -142,7 +142,7 @@ impl ByteStr {
         let len = slice.as_ref().len();
         let mut bytes = [0u8; u16::MAX as usize];
         bytes[0..len].copy_from_slice(slice.as_ref());
-        ByteStr { len: len as u16, bytes }
+        ByteStr { len: len as u16, bytes: Box::new(bytes) }
     }
 }
 
