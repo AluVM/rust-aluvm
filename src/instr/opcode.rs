@@ -394,6 +394,10 @@ pub enum ArithmeticOp {
     #[display("div:{0}\t{1}{2},{1}{3}")]
     DivF(RoundingFlag, RegF, Reg32, Reg32),
 
+    /// Modulo division
+    #[display("rem\t\t{0}{1},{2}{3},{4}{5}")]
+    Rem(RegA, Reg32, RegA, Reg32, RegA, Reg32),
+
     /// Increment/decrement register value on a given signed step.
     #[display("{2:#}\t\t{0}{1}")]
     Stp(RegA, Reg32, Step),
@@ -405,10 +409,6 @@ pub enum ArithmeticOp {
     /// Puts absolute value of register into `a8[0]`
     #[display("abs\t\t{0}{1}")]
     Abs(RegAF, Reg16),
-
-    /// Modulo division
-    #[display("rem\t\t{0}{1},{2}{3},{4}{5}")]
-    Rem(RegA, Reg32, RegA, Reg32, RegA, Reg32),
 }
 
 /// Bit operations & boolean algebra instructions
@@ -453,7 +453,7 @@ pub enum BitwiseOp {
     ShrA(
         /** Sign flag */ SignFlag,
         /** Which of `a` registers to use */ RegA2,
-        /** Index of `u8` or `u16` register with bitshift value */ Reg32,
+        /** Index of `u8` or `u16` register with bitshift value */ Reg16,
         RegA,
         /** Source & destination register */ Reg32,
     ),

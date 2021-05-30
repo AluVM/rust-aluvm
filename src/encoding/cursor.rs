@@ -212,6 +212,17 @@ impl Read for Cursor<&[u8]> {
         self.inc_bytes(2).map(|_| word)
     }
 
+    fn read_i16(&mut self) -> Result<i16, Self::Error> {
+        if self.eof {
+            return Err(CursorError::Eof);
+        }
+        let pos = self.byte_pos as usize;
+        let mut buf = [0u8; 2];
+        buf.copy_from_slice(&self.bytecode[pos..pos + 2]);
+        let word = i16::from_le_bytes(buf);
+        self.inc_bytes(2).map(|_| word)
+    }
+
     fn read_bytes32(&mut self) -> Result<[u8; 32], CursorError> {
         if self.eof {
             return Err(CursorError::Eof);
@@ -299,6 +310,13 @@ impl Write for Cursor<&mut [u8]> {
     }
 
     fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), CursorError> {
+        let data = data.into().to_le_bytes();
+        self.bytecode[self.byte_pos as usize] = data[0];
+        self.bytecode[self.byte_pos as usize + 1] = data[1];
+        self.inc_bytes(2)
+    }
+
+    fn write_i16(&mut self, data: impl Into<i16>) -> Result<(), Self::Error> {
         let data = data.into().to_le_bytes();
         self.bytecode[self.byte_pos as usize] = data[0];
         self.bytecode[self.byte_pos as usize + 1] = data[1];

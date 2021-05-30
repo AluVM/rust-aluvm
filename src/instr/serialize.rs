@@ -11,6 +11,7 @@
 use alloc::vec::Vec;
 use core::ops::RangeInclusive;
 
+use amplify_num::u5;
 use bitcoin_hashes::Hash;
 
 use super::bitcode::*;
@@ -728,28 +729,31 @@ impl Bytecode for CmpOp {
 impl Bytecode for ArithmeticOp {
     fn byte_count(&self) -> u16 {
         match self {
-            ArithmeticOp::Neg(_, _) => 2,
-            ArithmeticOp::Stp(_, _, _, _, _) => 3,
-            ArithmeticOp::Add(_, _, _, _)
-            | ArithmeticOp::Sub(_, _, _, _)
-            | ArithmeticOp::Mul(_, _, _, _)
-            | ArithmeticOp::Div(_, _, _, _)
-            | ArithmeticOp::Rem(_, _, _, _) => 3,
-            ArithmeticOp::Abs(_, _) => 2,
+            ArithmeticOp::AddA(_, _, _, _)
+            | ArithmeticOp::AddF(_, _, _, _)
+            | ArithmeticOp::SubA(_, _, _, _)
+            | ArithmeticOp::SubF(_, _, _, _)
+            | ArithmeticOp::MulA(_, _, _, _)
+            | ArithmeticOp::MulF(_, _, _, _)
+            | ArithmeticOp::DivA(_, _, _, _)
+            | ArithmeticOp::DivF(_, _, _, _) => 3,
+            ArithmeticOp::Rem(_, _, _, _, _, _) => 4,
+            ArithmeticOp::Stp(_, _, _) => 4,
+            ArithmeticOp::Neg(_, _) | ArithmeticOp::Abs(_, _) => 2,
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> { INSTR_NEG..=INSTR_ABS }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_ADD..=INSTR_REM }
 
     fn instr_byte(&self) -> u8 {
         match self {
+            ArithmeticOp::AddF(_, _, _, _) | ArithmeticOp::AddA(_, _, _, _) => INSTR_ADD,
+            ArithmeticOp::SubF(_, _, _, _) | ArithmeticOp::SubA(_, _, _, _) => INSTR_SUB,
+            ArithmeticOp::MulF(_, _, _, _) | ArithmeticOp::MulA(_, _, _, _) => INSTR_MUL,
+            ArithmeticOp::DivF(_, _, _, _) | ArithmeticOp::DivA(_, _, _, _) => INSTR_DIV,
+            ArithmeticOp::Rem(_, _, _, _, _, _) => INSTR_REM,
+            ArithmeticOp::Stp(_, _, _) => INSTR_STP,
             ArithmeticOp::Neg(_, _) => INSTR_NEG,
-            ArithmeticOp::Stp(_, _, _, _, _) => INSTR_STP,
-            ArithmeticOp::Add(_, _, _, _) => INSTR_ADD,
-            ArithmeticOp::Sub(_, _, _, _) => INSTR_SUB,
-            ArithmeticOp::Mul(_, _, _, _) => INSTR_MUL,
-            ArithmeticOp::Div(_, _, _, _) => INSTR_DIV,
-            ArithmeticOp::Rem(_, _, _, _) => INSTR_REM,
             ArithmeticOp::Abs(_, _) => INSTR_ABS,
         }
     }
@@ -764,22 +768,38 @@ impl Bytecode for ArithmeticOp {
                 writer.write_u3(reg)?;
                 writer.write_u5(idx)?;
             }
-            ArithmeticOp::Stp(op, ar, reg, idx, step) => {
+            ArithmeticOp::Stp(oreg, idx, step) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(idx)?;
-                writer.write_u4(*step)?;
-                writer.write_bool(op.into())?;
-                writer.write_u3(ar)?;
+                writer.write_i16(step.as_i16())?;
             }
-            ArithmeticOp::Add(ar, reg, src1, src2)
-            | ArithmeticOp::Sub(ar, reg, src1, src2)
-            | ArithmeticOp::Mul(ar, reg, src1, src2)
-            | ArithmeticOp::Div(ar, reg, src1, src2)
-            | ArithmeticOp::Rem(ar, reg, src1, src2) => {
-                writer.write_u3(reg)?;
+            ArithmeticOp::AddA(flags, reg, src1, src2)
+            | ArithmeticOp::SubA(flags, reg, src1, src2)
+            | ArithmeticOp::MulA(flags, reg, src1, src2)
+            | ArithmeticOp::DivA(flags, reg, src1, src2) => {
+                writer.write_u1(0b0)?;
+                writer.write_u2(flags)?;
                 writer.write_u5(src1)?;
                 writer.write_u5(src2)?;
-                writer.write_u3(ar)?;
+                writer.write_u3(reg)?;
+            }
+            ArithmeticOp::AddF(flag, reg, src1, src2)
+            | ArithmeticOp::SubF(flags, reg, src1, src2)
+            | ArithmeticOp::MulF(flags, reg, src1, src2)
+            | ArithmeticOp::DivF(flags, reg, src1, src2) => {
+                writer.write_u1(0b1)?;
+                writer.write_u2(flag)?;
+                writer.write_u5(src1)?;
+                writer.write_u5(src2)?;
+                writer.write_u3(reg)?;
+            }
+            ArithmeticOp::Rem(reg1, src1, reg2, src2, reg3, dst) => {
+                writer.write_u3(reg1)?;
+                writer.write_u5(src1)?;
+                writer.write_u3(reg2)?;
+                writer.write_u5(src2)?;
+                writer.write_u3(reg3)?;
+                writer.write_u5(dst)?;
             }
         }
         Ok(())
@@ -790,53 +810,46 @@ impl Bytecode for ArithmeticOp {
         R: Read,
         DecodeError: From<<R as Read>::Error>,
     {
-        Ok(match reader.read_u8()? {
-            INSTR_NEG => Self::Neg(reader.read_u3()?.into(), reader.read_u5()?.into()),
-            INSTR_STP => {
-                let reg = reader.read_u3()?.into();
-                let idx = reader.read_u5()?.into();
-                let step = reader.read_u4()?;
-                let op = reader.read_bool()?.into();
-                let ar = reader.read_u3()?.into();
-                Self::Stp(op, ar, reg, idx, step)
+        let instr = reader.read_u8()?;
+
+        Ok(if instr >= INSTR_ADD && instr <= INSTR_DIV {
+            let code = reader.read_u1()?.into();
+            let flags = reader.read_u2()?;
+            let src1 = reader.read_u5()?.into();
+            let src2 = reader.read_u5()?.into();
+            let reg = reader.read_u3()?;
+            match (code, instr) {
+                (0b0, INSTR_ADD) => Self::AddA(flags.into(), reg.into(), src1, src2),
+                (0b0, INSTR_SUB) => Self::SubA(flags.into(), reg.into(), src1, src2),
+                (0b0, INSTR_MUL) => Self::MulA(flags.into(), reg.into(), src1, src2),
+                (0b0, INSTR_DIV) => Self::DivA(flags.into(), reg.into(), src1, src2),
+                (0b1, INSTR_ADD) => Self::AddF(flags.into(), reg.into(), src1, src2),
+                (0b1, INSTR_SUB) => Self::SubF(flags.into(), reg.into(), src1, src2),
+                (0b1, INSTR_MUL) => Self::MulF(flags.into(), reg.into(), src1, src2),
+                (0b1, INSTR_DIV) => Self::DivF(flags.into(), reg.into(), src1, src2),
+                _ => unreachable!(),
             }
-            INSTR_ADD => {
-                let reg = reader.read_u3()?.into();
-                let src1 = reader.read_u5()?.into();
-                let src2 = reader.read_u5()?.into();
-                let ar = reader.read_u3()?.into();
-                Self::Add(ar, reg, src1, src2)
+        } else {
+            match instr {
+                INSTR_NEG => Self::Neg(reader.read_u3()?.into(), reader.read_u5()?.into()),
+                INSTR_STP => {
+                    let reg = reader.read_u3()?.into();
+                    let idx = reader.read_u5()?.into();
+                    let step = reader.read_i16()?.into();
+                    Self::Stp(reg, idx, step)
+                }
+                INSTR_REM => {
+                    let reg1 = reader.read_u3()?.into();
+                    let src1 = reader.read_u5()?.into();
+                    let reg2 = reader.read_u3()?.into();
+                    let src2 = reader.read_u5()?.into();
+                    let reg3 = reader.read_u3()?.into();
+                    let dst = reader.read_u5()?.into();
+                    Self::Rem(reg1, src1, reg2, src2, reg3, dst)
+                }
+                INSTR_ABS => Self::Abs(reader.read_u3()?.into(), reader.read_u5()?.into()),
+                x => unreachable!("instruction {:#010b} classified as arithmetic operation", x),
             }
-            INSTR_SUB => {
-                let reg = reader.read_u3()?.into();
-                let src1 = reader.read_u5()?.into();
-                let src2 = reader.read_u5()?.into();
-                let ar = reader.read_u3()?.into();
-                Self::Sub(ar, reg, src1, src2)
-            }
-            INSTR_MUL => {
-                let reg = reader.read_u3()?.into();
-                let src1 = reader.read_u5()?.into();
-                let src2 = reader.read_u5()?.into();
-                let ar = reader.read_u3()?.into();
-                Self::Mul(ar, reg, src1, src2)
-            }
-            INSTR_DIV => {
-                let reg = reader.read_u3()?.into();
-                let src1 = reader.read_u5()?.into();
-                let src2 = reader.read_u5()?.into();
-                let ar = reader.read_u3()?.into();
-                Self::Div(ar, reg, src1, src2)
-            }
-            INSTR_REM => {
-                let reg = reader.read_u3()?.into();
-                let src1 = reader.read_u5()?.into();
-                let src2 = reader.read_u5()?.into();
-                let ar = reader.read_u3()?.into();
-                Self::Rem(ar, reg, src1, src2)
-            }
-            INSTR_ABS => Self::Abs(reader.read_u3()?.into(), reader.read_u5()?.into()),
-            x => unreachable!("instruction {:#010b} classified as arithmetic operation", x),
         })
     }
 }
@@ -848,14 +861,18 @@ impl Bytecode for BitwiseOp {
                 3
             }
             BitwiseOp::Not(_, _) => 2,
+
             BitwiseOp::Shl(_, _, _, _)
-            | BitwiseOp::Shr(_, _, _, _)
+            | BitwiseOp::ShrA(_, _, _, _, _)
+            | BitwiseOp::ShrR(_, _, _, _)
             | BitwiseOp::Scl(_, _, _, _)
             | BitwiseOp::Scr(_, _, _, _) => 3,
+
+            BitwiseOp::RevA(_, _) | BitwiseOp::RevR(_, _) => 2,
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> { INSTR_AND..=INSTR_SCR }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_AND..=INSTR_REVR }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -863,10 +880,15 @@ impl Bytecode for BitwiseOp {
             BitwiseOp::Or(_, _, _, _) => INSTR_OR,
             BitwiseOp::Xor(_, _, _, _) => INSTR_XOR,
             BitwiseOp::Not(_, _) => INSTR_NOT,
-            BitwiseOp::Shl(_, _, _, _) => INSTR_SHL,
-            BitwiseOp::Shr(_, _, _, _) => INSTR_SHR,
-            BitwiseOp::Scl(_, _, _, _) => INSTR_SCL,
-            BitwiseOp::Scr(_, _, _, _) => INSTR_SCR,
+
+            BitwiseOp::Shl(_, _, _, _) => INSTR_SHF,
+            BitwiseOp::ShrA(_, _, _, _, _) => INSTR_SHF,
+            BitwiseOp::ShrR(_, _, _, _) => INSTR_SHF,
+            BitwiseOp::Scl(_, _, _, _) => INSTR_SHC,
+            BitwiseOp::Scr(_, _, _, _) => INSTR_SHC,
+
+            BitwiseOp::RevA(_, _) => INSTR_REVA,
+            BitwiseOp::RevR(_, _) => INSTR_REVR,
         }
     }
 
@@ -878,17 +900,62 @@ impl Bytecode for BitwiseOp {
         match self {
             BitwiseOp::And(reg, idx1, idx2, idx3)
             | BitwiseOp::Or(reg, idx1, idx2, idx3)
-            | BitwiseOp::Xor(reg, idx1, idx2, idx3)
-            | BitwiseOp::Shl(reg, idx1, idx2, idx3)
-            | BitwiseOp::Shr(reg, idx1, idx2, idx3)
-            | BitwiseOp::Scl(reg, idx1, idx2, idx3)
-            | BitwiseOp::Scr(reg, idx1, idx2, idx3) => {
-                writer.write_u3(reg)?;
-                writer.write_u5(idx1)?;
-                writer.write_u5(idx2)?;
-                writer.write_u3(idx3)?;
+            | BitwiseOp::Xor(reg, idx1, idx2, idx3) => {
+                writer.write_u4(reg)?;
+                writer.write_u4(idx1)?;
+                writer.write_u4(idx2)?;
+                writer.write_u4(idx3)?;
             }
             BitwiseOp::Not(reg, idx) => {
+                writer.write_u4(reg)?;
+                writer.write_u4(idx)?;
+            }
+
+            BitwiseOp::Shl(a2, shift, reg, idx) => {
+                writer.write_u1(0b0)?;
+                writer.write_u1(a2)?;
+                writer.write_u5(shift)?;
+                writer.write_u4(reg)?;
+                writer.write_u5(idx)?;
+            }
+            BitwiseOp::ShrA(sign, a2, shift, reg, idx) => {
+                writer.write_u1(0b1)?;
+                writer.write_u1(a2)?;
+                writer.write_u4(shift)?;
+                writer.write_u1(sign)?;
+                writer.write_u1(0b0)?;
+                writer.write_u3(reg)?;
+                writer.write_u5(idx)?;
+            }
+            BitwiseOp::ShrR(a2, shift, reg, idx) => {
+                writer.write_u1(0b1)?;
+                writer.write_u1(a2)?;
+                writer.write_u5(shift)?;
+                writer.write_u1(0b1)?;
+                writer.write_u3(reg)?;
+                writer.write_u5(idx)?;
+            }
+
+            BitwiseOp::Scl(a2, shift, reg, idx) => {
+                writer.write_u1(0b0)?;
+                writer.write_u1(a2)?;
+                writer.write_u5(shift)?;
+                writer.write_u4(reg)?;
+                writer.write_u5(idx)?;
+            }
+            BitwiseOp::Scr(a2, shift, reg, idx) => {
+                writer.write_u1(0b1)?;
+                writer.write_u1(a2)?;
+                writer.write_u5(shift)?;
+                writer.write_u4(reg)?;
+                writer.write_u5(idx)?;
+            }
+
+            BitwiseOp::RevA(reg, idx) => {
+                writer.write_u3(reg)?;
+                writer.write_u5(idx)?;
+            }
+            BitwiseOp::RevR(reg, idx) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(idx)?;
             }
@@ -902,23 +969,52 @@ impl Bytecode for BitwiseOp {
         DecodeError: From<<R as Read>::Error>,
     {
         let instr = reader.read_u8()?;
-        if instr == INSTR_NOT {
-            return Ok(Self::Not(reader.read_u3()?.into(), reader.read_u5()?.into()));
-        }
-        let reg = reader.read_u3()?.into();
-        let src1 = reader.read_u5()?.into();
-        let src2 = reader.read_u5()?.into();
-        let dst = reader.read_u3()?.into();
 
-        Ok(match instr {
-            INSTR_AND => Self::And(reg, src1, src2, dst),
-            INSTR_OR => Self::Or(reg, src1, src2, dst),
-            INSTR_XOR => Self::Xor(reg, src1, src2, dst),
-            INSTR_SHL => Self::Shl(reg, src1, src2, dst),
-            INSTR_SHR => Self::Shr(reg, src1, src2, dst),
-            INSTR_SCL => Self::Scl(reg, src1, src2, dst),
-            INSTR_SCR => Self::Scr(reg, src1, src2, dst),
-            x => unreachable!("instruction {:#010b} classified as bitwise operation", x),
+        Ok(if instr >= INSTR_AND && instr <= INSTR_XOR {
+            let reg = reader.read_u4()?.into();
+            let src1 = reader.read_u4()?.into();
+            let src2 = reader.read_u4()?.into();
+            let dst = reader.read_u4()?.into();
+            match instr {
+                INSTR_AND => Self::And(reg, src1, src2, dst),
+                INSTR_OR => Self::Or(reg, src1, src2, dst),
+                INSTR_XOR => Self::Xor(reg, src1, src2, dst),
+                _ => unreachable!(),
+            }
+        } else if instr == INSTR_SHC {
+            let code = reader.read_u1()?;
+            let a2 = reader.read_u1()?.into();
+            let shift = reader.read_u5()?.into();
+            let reg = reader.read_u4()?.into();
+            let idx = reader.read_u5()?.into();
+            match code.as_u8() {
+                0b0 => Self::Scl(a2, shift, reg, idx),
+                0b1 => Self::Scr(a2, shift, reg, idx),
+                _ => unreachable!(),
+            }
+        } else if instr == INSTR_SHF {
+            let code = reader.read_u1()?;
+            let a2 = reader.read_u1()?.into();
+            let shift = reader.read_u4()?;
+            let sign = reader.read_u1()?;
+            let block = reader.read_u1()?;
+            let reg = reader.read_u3()?;
+            let idx = reader.read_u5()?.into();
+            let shift2 = u5::with(shift.as_u8() << 1 | sign.as_u8()).into();
+            let regar = RegAR::from(block.into(), reg.into());
+            match (code.as_u8(), block.as_u8()) {
+                (0b0, _) => Self::Shl(a2, shift2, regar, idx),
+                (0b1, 0b0) => Self::ShrA(sign.into(), a2, shift.into(), reg.into(), idx),
+                (0b1, 0b1) => Self::ShrR(a2, shift2, reg.into(), idx),
+                _ => unreachable!(),
+            }
+        } else {
+            match instr {
+                INSTR_NOT => Self::Not(reader.read_u4()?.into(), reader.read_u4()?.into()),
+                INSTR_REVA => Self::RevA(reader.read_u3()?.into(), reader.read_u5()?.into()),
+                INSTR_REVR => Self::RevR(reader.read_u3()?.into(), reader.read_u5()?.into()),
+                x => unreachable!("instruction {:#010b} classified as bitwise operation", x),
+            }
         })
     }
 }

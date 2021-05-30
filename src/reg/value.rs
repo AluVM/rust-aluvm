@@ -354,12 +354,17 @@ impl_value_ty_conv!(i128, 16);
 
 /// Value for step instructions which can be displayed as a part of operation mnemonic
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
-pub struct Step(#[from] Value);
+pub struct Step(#[from] i16);
+
+impl Step {
+    /// Returns step value
+    pub fn as_i16(self) -> i16 { self.0 }
+}
 
 impl Display for Step {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
-            let val = i64::from(self.0);
+            let val = self.0;
             match val {
                 1 => f.write_str("inc"),
                 -1 => f.write_str("dec"),

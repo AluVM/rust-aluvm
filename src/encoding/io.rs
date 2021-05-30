@@ -28,6 +28,7 @@ pub trait Read {
     fn read_u7(&mut self) -> Result<u7, Self::Error>;
     fn read_u8(&mut self) -> Result<u8, Self::Error>;
     fn read_u16(&mut self) -> Result<u16, Self::Error>;
+    fn read_i16(&mut self) -> Result<i16, Self::Error>;
     fn read_bytes32(&mut self) -> Result<[u8; 32], Self::Error>;
     fn read_slice(&mut self) -> Result<&[u8], Self::Error>;
     fn read_value(&mut self, reg: RegAR) -> Result<Value, Self::Error>;
@@ -46,6 +47,7 @@ pub trait Write {
     fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), Self::Error>;
     fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), Self::Error>;
     fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), Self::Error>;
+    fn write_i16(&mut self, data: impl Into<i16>) -> Result<(), Self::Error>;
     fn write_bytes32(&mut self, data: [u8; 32]) -> Result<(), Self::Error>;
     fn write_slice(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), Self::Error>;
     fn write_value(&mut self, reg: RegAR, value: &Value) -> Result<(), Self::Error>;
