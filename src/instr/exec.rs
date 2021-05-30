@@ -15,7 +15,7 @@ use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
     Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
-use crate::reg::{Number, Reg32, RegVal, RegisterSet, Registers};
+use crate::reg::{MaybeNumber, Number, Reg32, RegisterSet, Registers};
 use crate::LibSite;
 
 /// Turing machine movement after instruction execution
@@ -106,9 +106,9 @@ impl InstructionSet for ControlFlowOp {
 impl InstructionSet for PutOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            PutOp::ClrA(reg, index) => regs.set(reg, index, RegVal::none()),
-            PutOp::ClrF(reg, index) => regs.set(reg, index, RegVal::none()),
-            PutOp::ClrR(reg, index) => regs.set(reg, index, RegVal::none()),
+            PutOp::ClrA(reg, index) => regs.set(reg, index, MaybeNumber::none()),
+            PutOp::ClrF(reg, index) => regs.set(reg, index, MaybeNumber::none()),
+            PutOp::ClrR(reg, index) => regs.set(reg, index, MaybeNumber::none()),
             PutOp::PutA(reg, index, number) => regs.set(reg, index, number),
             PutOp::PutF(reg, index, number) => regs.set(reg, index, number),
             PutOp::PutR(reg, index, number) => regs.set(reg, index, number),
@@ -155,7 +155,7 @@ impl InstructionSet for MoveOp {
             }
 
             MoveOp::CpyA(sreg, sidx, dreg, didx) => {
-                let val = regs.get(sreg, sidx);
+                let mut val = regs.get(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
                 regs.set(dreg, didx, val);
             }
@@ -165,29 +165,29 @@ impl InstructionSet for MoveOp {
                 regs.set(dreg, didx, val);
             }
             MoveOp::CnvF(sreg, sidx, dreg, didx) => {
-                let val = regs.get(sreg, sidx);
+                let mut val = regs.get(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
                 regs.set(dreg, didx, val);
             }
             MoveOp::CpyR(sreg, sidx, dreg, didx) => {
-                let val = regs.get(sreg, sidx);
+                let mut val = regs.get(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
                 regs.set(dreg, didx, val);
             }
             MoveOp::SpyAR(sreg, sidx, dreg, didx) => {
-                let val1 = regs.get(sreg, sidx);
-                let val2 = regs.get(dreg, didx);
+                let mut val1 = regs.get(sreg, sidx);
+                let mut val2 = regs.get(dreg, didx);
                 regs.st0 = val1.reshape(dreg.layout()) && val2.reshape(sreg.layout());
                 regs.set(dreg, didx, val1);
                 regs.set(sreg, sidx, val2);
             }
             MoveOp::CnvAF(sreg, sidx, dreg, didx) => {
-                let val = regs.get(sreg, sidx);
+                let mut val = regs.get(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
                 regs.set(dreg, didx, val);
             }
             MoveOp::CnvFA(sreg, sidx, dreg, didx) => {
-                let val = regs.get(sreg, sidx);
+                let mut val = regs.get(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
                 regs.set(dreg, didx, val);
             }
@@ -199,41 +199,58 @@ impl InstructionSet for MoveOp {
 impl InstructionSet for CmpOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            CmpOp::GtA(num_type, reg, idx1, idx2) => {
-                regs.st0 =
-                    RegVal::partial_cmp_op(num_type)(regs.get(reg, idx1), regs.get(reg, idx2))
-                        == Some(Ordering::Greater);
+            CmpOp::GtA(sign_flag, reg, idx1, idx2) => {
+                regs.st0 = MaybeNumber::partial_cmp_op(sign_flag)(
+                    regs.get(reg, idx1),
+                    regs.get(reg, idx2),
+                ) == Some(Ordering::Greater);
             }
-            CmpOp::GtR(reg1, idx1, reg2, idx2) => {
-                regs.st0 = regs.get(reg1, idx1).partial_cmp_uint(regs.get(reg2, idx2))
+            CmpOp::GtF(_, _, _, _) => {
+                todo!()
+            }
+            CmpOp::GtR(reg, idx1, idx2) => {
+                regs.st0 = regs.get(reg, idx1).partial_cmp_uint(regs.get(reg, idx2))
                     == Some(Ordering::Greater);
             }
-            CmpOp::LtA(num_type, reg, idx1, idx2) => {
-                regs.st0 =
-                    RegVal::partial_cmp_op(num_type)(regs.get(reg, idx1), regs.get(reg, idx2))
-                        == Some(Ordering::Less);
+            CmpOp::LtA(sign_flag, reg, idx1, idx2) => {
+                regs.st0 = MaybeNumber::partial_cmp_op(sign_flag)(
+                    regs.get(reg, idx1),
+                    regs.get(reg, idx2),
+                ) == Some(Ordering::Less);
             }
-            CmpOp::LtR(reg1, idx1, reg2, idx2) => {
-                regs.st0 = regs.get(reg1, idx1).partial_cmp_uint(regs.get(reg2, idx2))
+            CmpOp::LtF(_, _, _, _) => {
+                todo!()
+            }
+            CmpOp::LtR(reg, idx1, idx2) => {
+                regs.st0 = regs.get(reg, idx1).partial_cmp_uint(regs.get(reg, idx2))
                     == Some(Ordering::Less);
             }
-            CmpOp::EqA(reg1, idx1, reg2, idx2) => {
-                regs.st0 = regs.get(reg1, idx1) == regs.get(reg2, idx2);
+            CmpOp::EqA(sign_flag, reg, idx1, idx2) => {
+                regs.st0 = regs.get(reg, idx1) == regs.get(reg, idx2);
             }
-            CmpOp::EqR(reg1, idx1, reg2, idx2) => {
-                regs.st0 = regs.get(reg1, idx1) == regs.get(reg2, idx2);
+            CmpOp::EqF(_, _, _, _) => {
+                todo!()
             }
-            CmpOp::Len(reg, idx) => {
-                regs.a16[0] = regs.get(reg, idx).map(|v| v.len);
+            CmpOp::EqR(st, reg, idx1, idx2) => {
+                regs.st0 = regs.get(reg, idx1) == regs.get(reg, idx2);
             }
-            CmpOp::Cnt(reg, idx) => {
-                regs.a16[0] = regs.get(reg, idx).map(|v| v.count_ones());
+            CmpOp::IfZA(_, _) => {
+                todo!()
             }
-            CmpOp::St(_, _) => {
+            CmpOp::IfZR(_, _) => {
+                todo!()
+            }
+            CmpOp::IfNA(_, _) => {
+                todo!()
+            }
+            CmpOp::IfNR(_, _) => {
+                todo!()
+            }
+            CmpOp::St(merge_flag, reg, idx) => {
                 regs.a8[0] = if regs.st0 { Some(1) } else { Some(0) };
             }
-            CmpOp::A2St => {
-                regs.st0 = regs.a8[1].map(|val| val != 0).unwrap_or(false);
+            CmpOp::StInv => {
+                todo!()
             }
         }
         ExecStep::Next
@@ -289,9 +306,12 @@ impl InstructionSet for BitwiseOp {
             BitwiseOp::Xor(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, BitXor::bitxor),
             BitwiseOp::Not(reg, idx) => regs.set(reg, idx, !regs.get(reg, idx)),
             BitwiseOp::Shl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Shl::shl),
-            BitwiseOp::Shr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Shr::shr),
+            BitwiseOp::ShrA(_, _, _, _, _) => todo!(),
+            BitwiseOp::ShrR(_, _, _, _) => todo!(),
             BitwiseOp::Scl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Number::scl),
             BitwiseOp::Scr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Number::scr),
+            BitwiseOp::RevA(_, _) => todo!(),
+            BitwiseOp::RevR(_, _) => todo!(),
         }
         ExecStep::Next
     }

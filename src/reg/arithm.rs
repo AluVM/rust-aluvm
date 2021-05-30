@@ -12,15 +12,15 @@ use core::cmp::Ordering;
 
 use amplify_num::u512;
 
-use super::{Number, RegVal};
+use super::{MaybeNumber, Number};
 
-impl RegVal {
-    pub fn partial_cmp_op(num_type: CmpFlag) -> fn(RegVal, RegVal) -> Option<Ordering> {
+impl MaybeNumber {
+    pub fn partial_cmp_op(num_type: CmpFlag) -> fn(MaybeNumber, MaybeNumber) -> Option<Ordering> {
         match num_type {
-            CmpFlag::Unsigned => RegVal::partial_cmp_uint,
-            CmpFlag::Signed => RegVal::partial_cmp_int,
-            CmpFlag::ExactEq => RegVal::partial_cmp_f23,
-            CmpFlag::RoundingEq => RegVal::partial_cmp_f52,
+            CmpFlag::Unsigned => MaybeNumber::partial_cmp_uint,
+            CmpFlag::Signed => MaybeNumber::partial_cmp_int,
+            CmpFlag::ExactEq => MaybeNumber::partial_cmp_f23,
+            CmpFlag::RoundingEq => MaybeNumber::partial_cmp_f52,
         }
     }
 }
@@ -105,7 +105,7 @@ impl Number {
     }
 }
 
-impl RegVal {
+impl MaybeNumber {
     /// Compares two values according to given arithmetics
     pub fn partial_cmp(self, num_type: CmpFlag, other: Self) -> Option<Ordering> {
         match num_type {

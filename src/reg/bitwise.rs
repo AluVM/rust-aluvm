@@ -11,10 +11,10 @@
 use core::convert::TryFrom;
 use core::ops::{BitAnd, BitOr, BitXor, Not, Shl, Shr};
 
-use super::{Number, RegVal};
+use super::{MaybeNumber, Number};
 
-impl Not for RegVal {
-    type Output = RegVal;
+impl Not for MaybeNumber {
+    type Output = MaybeNumber;
 
     #[inline]
     fn not(self) -> Self::Output { self.map(Number::not).into() }

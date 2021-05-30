@@ -16,7 +16,7 @@ use half::bf16;
 use rustc_apfloat::ieee;
 
 use crate::reg::{number, Number};
-use crate::{LibSite, RegVal};
+use crate::{LibSite, MaybeNumber};
 
 /// Common set of methods handled by different sets and families of VM registers
 pub trait RegisterSet {
@@ -762,7 +762,7 @@ impl From<u3> for RegR {
     }
 }
 
-/// Superset of all registers which value can be represented by a [`Number`]/[`RegVal`]. The
+/// Superset of all registers which value can be represented by a [`Number`]/[`MaybeNumber`]. The
 /// superset includes `A`, `F`, and `R`families of registers.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
 #[display(inner)]
@@ -1147,56 +1147,56 @@ impl Registers {
 
     /// Returns array of all values from a register set. Can be used by SIMD extensions provided by
     /// a host environment.
-    pub fn all(&self, reg: impl Into<RegARF>) -> [RegVal; 32] {
-        let mut res = [RegVal::none(); 32];
+    pub fn all(&self, reg: impl Into<RegARF>) -> [MaybeNumber; 32] {
+        let mut res = [MaybeNumber::none(); 32];
         match reg.into() {
             RegARF::A(a) => match a {
                 RegA::A1024 => self
                     .a1024
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegA::A8 => self
                     .a8
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegA::A16 => self
                     .a16
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegA::A32 => self
                     .a32
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegA::A64 => self
                     .a64
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegA::A128 => self
                     .a128
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegA::A256 => self
                     .a256
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegA::A512 => self
                     .a512
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
             },
@@ -1205,49 +1205,49 @@ impl Registers {
                 RegR::R128 => self
                     .r128
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegR::R160 => self
                     .r160
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegR::R256 => self
                     .r256
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegR::R512 => self
                     .r512
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegR::R1024 => self
                     .r1024
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegR::R2048 => self
                     .r2048
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegR::R4096 => self
                     .r4096
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
                 RegR::R8192 => self
                     .r8192
                     .iter()
-                    .map(RegVal::from)
+                    .map(MaybeNumber::from)
                     .enumerate()
                     .for_each(|(idx, val)| res[idx] = val),
             },
@@ -1256,7 +1256,7 @@ impl Registers {
     }
 
     /// Retrieves register value
-    pub fn get(&self, reg: impl Into<RegARF>, index: impl Into<Reg32>) -> RegVal {
+    pub fn get(&self, reg: impl Into<RegARF>, index: impl Into<Reg32>) -> MaybeNumber {
         let index = index.into() as usize;
         match reg.into() {
             RegARF::A(a) => match a {
@@ -1301,7 +1301,7 @@ impl Registers {
         &mut self,
         reg: impl Into<RegARF>,
         index: impl Into<Reg32>,
-        value: impl Into<RegVal>,
+        value: impl Into<MaybeNumber>,
     ) {
         let index = index.into() as usize;
         let value: Option<Number> = value.into().into();
@@ -1360,7 +1360,7 @@ impl Registers {
         op: fn(Number, Number) -> Number,
     ) {
         let reg_val = match (*self.get(reg, src1), *self.get(reg, src2)) {
-            (None, None) | (None, Some(_)) | (Some(_), None) => RegVal::none(),
+            (None, None) | (None, Some(_)) | (Some(_), None) => MaybeNumber::none(),
             (Some(val1), Some(val2)) => op(val1, val2).into(),
         };
         self.set(reg, dst, reg_val);
@@ -1375,7 +1375,7 @@ impl Registers {
         dst: impl Into<Reg32>,
         op: impl Fn(Number) -> Option<Number>,
     ) {
-        let reg_val = self.get(reg, index).and_then(op).map(RegVal::from).unwrap_or_default();
+        let reg_val = self.get(reg, index).and_then(op).map(MaybeNumber::from).unwrap_or_default();
         self.set(if ap { RegA::A1024 } else { reg }, dst, reg_val);
     }
 
@@ -1390,7 +1390,7 @@ impl Registers {
         op: fn(Number, Number) -> Option<Number>,
     ) {
         let reg_val = match (*self.get(reg, src1), *self.get(reg, src2)) {
-            (None, None) | (None, Some(_)) | (Some(_), None) => RegVal::none(),
+            (None, None) | (None, Some(_)) | (Some(_), None) => MaybeNumber::none(),
             (Some(val1), Some(val2)) => op(val1, val2).into(),
         };
         self.set(if ap { RegA::A1024 } else { reg }, dst, reg_val);

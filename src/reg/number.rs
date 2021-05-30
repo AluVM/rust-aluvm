@@ -304,14 +304,14 @@ impl FloatLayout {
 
 /// Representation of the value from a register, which may be `None` if the register is unset.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
-pub struct RegVal(Option<Number>);
+pub struct MaybeNumber(Option<Number>);
 
-impl RegVal {
-    /// Creates [`RegVal`] without assigning a value to it
-    pub fn none() -> RegVal { RegVal(None) }
+impl MaybeNumber {
+    /// Creates [`MaybeNumber`] without assigning a value to it
+    pub fn none() -> MaybeNumber { MaybeNumber(None) }
 
-    /// Creates [`RegVal`] assigning a value to it
-    pub fn some(val: Number) -> RegVal { RegVal(Some(val)) }
+    /// Creates [`MaybeNumber`] assigning a value to it
+    pub fn some(val: Number) -> MaybeNumber { MaybeNumber(Some(val)) }
 
     /// Transforms internal value layout returning whether this was possible without discarding any
     /// bit information
@@ -323,33 +323,33 @@ impl RegVal {
     }
 }
 
-impl From<Number> for RegVal {
-    fn from(val: Number) -> Self { RegVal(Some(val)) }
+impl From<Number> for MaybeNumber {
+    fn from(val: Number) -> Self { MaybeNumber(Some(val)) }
 }
 
-impl From<&Number> for RegVal {
-    fn from(val: &Number) -> Self { RegVal(Some(*val)) }
+impl From<&Number> for MaybeNumber {
+    fn from(val: &Number) -> Self { MaybeNumber(Some(*val)) }
 }
 
-impl From<&Option<Number>> for RegVal {
-    fn from(val: &Option<Number>) -> Self { RegVal(*val) }
+impl From<&Option<Number>> for MaybeNumber {
+    fn from(val: &Option<Number>) -> Self { MaybeNumber(*val) }
 }
 
-impl From<Option<&Number>> for RegVal {
-    fn from(val: Option<&Number>) -> Self { RegVal(val.copied()) }
+impl From<Option<&Number>> for MaybeNumber {
+    fn from(val: Option<&Number>) -> Self { MaybeNumber(val.copied()) }
 }
 
-impl From<RegVal> for Option<Number> {
-    fn from(val: RegVal) -> Self { val.0 }
+impl From<MaybeNumber> for Option<Number> {
+    fn from(val: MaybeNumber) -> Self { val.0 }
 }
 
-impl Deref for RegVal {
+impl Deref for MaybeNumber {
     type Target = Option<Number>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
-impl Display for RegVal {
+impl Display for MaybeNumber {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
             None => f.write_str("~"),
@@ -890,16 +890,20 @@ macro_rules! impl_number_bytes_conv {
             }
         }
 
-        impl From<[u8; $len]> for RegVal {
-            fn from(val: [u8; $len]) -> RegVal { RegVal::from(Number::from(val)) }
+        impl From<[u8; $len]> for MaybeNumber {
+            fn from(val: [u8; $len]) -> MaybeNumber { MaybeNumber::from(Number::from(val)) }
         }
 
-        impl From<Option<[u8; $len]>> for RegVal {
-            fn from(val: Option<[u8; $len]>) -> RegVal { RegVal::from(val.map(Number::from)) }
+        impl From<Option<[u8; $len]>> for MaybeNumber {
+            fn from(val: Option<[u8; $len]>) -> MaybeNumber {
+                MaybeNumber::from(val.map(Number::from))
+            }
         }
 
-        impl From<&Option<[u8; $len]>> for RegVal {
-            fn from(val: &Option<[u8; $len]>) -> RegVal { RegVal::from(val.map(Number::from)) }
+        impl From<&Option<[u8; $len]>> for MaybeNumber {
+            fn from(val: &Option<[u8; $len]>) -> MaybeNumber {
+                MaybeNumber::from(val.map(Number::from))
+            }
         }
     };
 }
@@ -988,20 +992,20 @@ macro_rules! impl_number_ty_conv {
             fn from(val: $ty) -> Self { Number::from(&val) }
         }
 
-        impl From<$ty> for RegVal {
-            fn from(val: $ty) -> Self { RegVal::some(Number::from(val)) }
+        impl From<$ty> for MaybeNumber {
+            fn from(val: $ty) -> Self { MaybeNumber::some(Number::from(val)) }
         }
-        impl From<&$ty> for RegVal {
-            fn from(val: &$ty) -> Self { RegVal::some(Number::from(*val)) }
+        impl From<&$ty> for MaybeNumber {
+            fn from(val: &$ty) -> Self { MaybeNumber::some(Number::from(*val)) }
         }
-        impl From<Option<$ty>> for RegVal {
-            fn from(val: Option<$ty>) -> Self { RegVal::from(val.map(Number::from)) }
+        impl From<Option<$ty>> for MaybeNumber {
+            fn from(val: Option<$ty>) -> Self { MaybeNumber::from(val.map(Number::from)) }
         }
-        impl From<Option<&$ty>> for RegVal {
-            fn from(val: Option<&$ty>) -> Self { RegVal::from(val.copied().map(Number::from)) }
+        impl From<Option<&$ty>> for MaybeNumber {
+            fn from(val: Option<&$ty>) -> Self { MaybeNumber::from(val.copied().map(Number::from)) }
         }
-        impl From<&Option<$ty>> for RegVal {
-            fn from(val: &Option<$ty>) -> Self { RegVal::from((*val).map(Number::from)) }
+        impl From<&Option<$ty>> for MaybeNumber {
+            fn from(val: &Option<$ty>) -> Self { MaybeNumber::from((*val).map(Number::from)) }
         }
     };
 }
