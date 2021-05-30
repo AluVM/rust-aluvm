@@ -39,5 +39,5 @@ mod runtime;
 pub(crate) use encoding::Cursor;
 pub use encoding::CursorError;
 pub use instr::{Instr, InstructionSet};
-pub use reg::{Reg16, Reg32, Reg8, RegA, RegAR, RegBlockAR, RegR, RegVal, Registers, Value};
+pub use reg::{Number, Reg16, Reg32, Reg8, RegA, RegAR, RegBlockAR, RegR, RegVal, Registers};
 pub use runtime::{ByteStr, Lib, LibHash, LibSite, Runtime};

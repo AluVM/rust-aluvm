@@ -22,11 +22,11 @@ pub const INSTR_EXEC: u8 = 0b00_000_110;
 pub const INSTR_RET: u8 = 0b00_000_111;
 
 // Instructions setting register values
-pub const INSTR_ZEROA: u8 = 0b00_001_000;
-pub const INSTR_ZEROR: u8 = 0b00_001_001;
-pub const INSTR_CLA: u8 = 0b00_001_010;
-pub const INSTR_CLR: u8 = 0b00_001_011;
-pub const INSTR_PUTA: u8 = 0b00_001_100;
+pub const INSTR_CLRA: u8 = 0b00_001_000;
+pub const INSTR_CLRF: u8 = 0b00_001_001;
+pub const INSTR_CLRR: u8 = 0b00_001_010;
+pub const INSTR_PUTA: u8 = 0b00_001_011;
+pub const INSTR_PUTF: u8 = 0b00_001_100;
 pub const INSTR_PUTR: u8 = 0b00_001_101;
 pub const INSTR_PUTIFA: u8 = 0b00_001_110;
 pub const INSTR_PUTIFR: u8 = 0b00_001_111;

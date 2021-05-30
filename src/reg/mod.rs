@@ -10,9 +10,11 @@
 
 mod arithm;
 mod bitwise;
+pub mod number;
 #[allow(clippy::module_inception)]
 mod reg;
-mod value;
 
-pub use reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, Registers};
-pub use value::{RegVal, Step, Value};
+pub use number::{Number, RegVal, Step};
+pub use reg::{
+    Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, RegisterSet, Registers,
+};

@@ -16,7 +16,7 @@ use crate::instr::{
     DeleteFlag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, RoundingFlag, SignFlag, SplitFlag,
 };
 use crate::reg::{
-    Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, Step, Value,
+    Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, Step,
 };
 use crate::{ByteStr, InstructionSet, LibSite};
 
@@ -137,37 +137,37 @@ pub enum ControlFlowOp {
 /// Instructions setting register values
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum PutOp {
-    /// Sets `a` register value to zero
-    #[display("zero\t{0}{1}")]
-    ZeroA(RegA, Reg32),
+    /// Cleans a value of `A` register (sets it to undefined state)
+    #[display("clr\t\t{0}{1}")]
+    ClrA(RegA, Reg32),
 
-    /// Sets `r` register value to zero
-    #[display("zero\t{0}{1}")]
-    ZeroR(RegR, Reg32),
+    /// Cleans a value of `F` register (sets it to undefined state)
+    #[display("clr\t\t{0}{1}")]
+    ClrF(RegF, Reg32),
 
-    /// Cleans a value of `a` register (sets it to undefined state)
-    #[display("cl\t\t{0}{1}")]
-    ClA(RegA, Reg32),
+    /// Cleans a value of `R` register (sets it to undefined state)
+    #[display("clr\t\t{0}{1}")]
+    ClrR(RegR, Reg32),
 
-    /// Cleans a value of `r` register (sets it to undefined state)
-    #[display("cl\t\t{0}{1}")]
-    ClR(RegR, Reg32),
-
-    /// Unconditionally assigns a value to `a` register
+    /// Unconditionally assigns a value to `A` register
     #[display("put\t\t{0}{1}, {2}")]
-    PutA(RegA, Reg32, Value),
+    PutA(RegA, Reg32, Number),
 
-    /// Unconditionally assigns a value to `r` register
+    /// Unconditionally assigns a value to `F` register
     #[display("put\t\t{0}{1}, {2}")]
-    PutR(RegR, Reg32, Value),
+    PutF(RegF, Reg32, Number),
 
-    /// Conditionally assigns a value to `a` register if the register is in uninitialized state
-    #[display("putif\t{0}{1}, {2}")]
-    PutIfA(RegA, Reg32, Value),
+    /// Unconditionally assigns a value to `R` register
+    #[display("put\t\t{0}{1}, {2}")]
+    PutR(RegR, Reg32, Number),
 
-    /// Conditionally assigns a value to `r` register if the register is in uninitialized state
+    /// Conditionally assigns a value to `A` register if the register is in uninitialized state
     #[display("putif\t{0}{1}, {2}")]
-    PutIfR(RegR, Reg32, Value),
+    PutIfA(RegA, Reg32, Number),
+
+    /// Conditionally assigns a value to `R` register if the register is in uninitialized state
+    #[display("putif\t{0}{1}, {2}")]
+    PutIfR(RegR, Reg32, Number),
 }
 
 /// Instructions moving and swapping register values
@@ -223,7 +223,7 @@ pub enum MoveOp {
     CpyA(RegA, Reg32, RegA, Reg32),
 
     /// Conversion operation: copies value from one of the integer arithmetic registers to a
-    /// destination register treating value a signed: if the value does not fit destination bit
+    /// destination register treating value as signed: if the value does not fit destination bit
     /// dimension, truncates the most significant non-sign bits until they fit, setting `st0`
     /// value to `false`. Otherwise, fills the difference between source and destination bit length
     /// with the value taken from the most significant source bit (sign bit) and sets `st0` to

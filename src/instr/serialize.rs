@@ -20,7 +20,7 @@ use crate::instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, MoveOp, NOp,
     PutOp, Secp256k1Op,
 };
-use crate::reg::{RegAR, RegBlockAR};
+use crate::reg::{RegAR, RegBlockAR, RegisterSet};
 use crate::{ByteStr, Instr, InstructionSet, LibHash, LibSite};
 
 /// Errors decoding bytecode
@@ -312,25 +312,26 @@ impl Bytecode for ControlFlowOp {
 impl Bytecode for PutOp {
     fn byte_count(&self) -> u16 {
         match self {
-            PutOp::ZeroA(_, _) | PutOp::ZeroR(_, _) | PutOp::ClA(_, _) | PutOp::ClR(_, _) => 2,
+            PutOp::ClrA(_, _) | PutOp::ClrF(_, _) | PutOp::ClrR(_, _) => 2,
             PutOp::PutA(reg, _, _) | PutOp::PutIfA(reg, _, _) => {
                 2u16.saturating_add(reg.bits() / 8)
             }
+            PutOp::PutF(reg, _, _) => 2u16.saturating_add(reg.bits() / 8),
             PutOp::PutR(reg, _, _) | PutOp::PutIfR(reg, _, _) => {
                 2u16.saturating_add(reg.bits() / 8)
             }
         }
     }
 
-    fn instr_range() -> RangeInclusive<u8> { INSTR_ZEROA..=INSTR_PUTIFR }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_CLRA..=INSTR_PUTIFR }
 
     fn instr_byte(&self) -> u8 {
         match self {
-            PutOp::ZeroA(_, _) => INSTR_ZEROA,
-            PutOp::ZeroR(_, _) => INSTR_ZEROR,
-            PutOp::ClA(_, _) => INSTR_CLA,
-            PutOp::ClR(_, _) => INSTR_CLR,
+            PutOp::ClrA(_, _) => INSTR_CLRA,
+            PutOp::ClrF(_, _) => INSTR_CLRF,
+            PutOp::ClrR(_, _) => INSTR_CLRR,
             PutOp::PutA(_, _, _) => INSTR_PUTA,
+            PutOp::PutF(_, _, _) => INSTR_PUTF,
             PutOp::PutR(_, _, _) => INSTR_PUTR,
             PutOp::PutIfA(_, _, _) => INSTR_PUTIFA,
             PutOp::PutIfR(_, _, _) => INSTR_PUTIFR,
@@ -343,23 +344,20 @@ impl Bytecode for PutOp {
         EncodeError: From<<W as Write>::Error>,
     {
         match self {
-            PutOp::ZeroA(reg, reg32) | PutOp::ClA(reg, reg32) => {
-                writer.write_u3(reg)?;
-                writer.write_u5(reg32)?;
-            }
-            PutOp::ZeroR(reg, reg32) | PutOp::ClR(reg, reg32) => {
-                writer.write_u3(reg)?;
-                writer.write_u5(reg32)?;
-            }
             PutOp::PutA(reg, reg32, val) | PutOp::PutIfA(reg, reg32, val) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(reg32)?;
-                writer.write_value(RegAR::A(*reg), val)?;
+                writer.write_value(*reg, *val)?;
+            }
+            PutOp::PutF(reg, reg32, val) => {
+                writer.write_u3(reg)?;
+                writer.write_u5(reg32)?;
+                writer.write_value(*reg, *val)?;
             }
             PutOp::PutR(reg, reg32, val) | PutOp::PutIfR(reg, reg32, val) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(reg32)?;
-                writer.write_value(RegAR::R(*reg), val)?;
+                writer.write_value(*reg, *val)?;
             }
         }
         Ok(())
@@ -371,25 +369,28 @@ impl Bytecode for PutOp {
         DecodeError: From<<R as Read>::Error>,
     {
         Ok(match reader.read_u8()? {
-            INSTR_ZEROA => Self::ZeroA(reader.read_u3()?.into(), reader.read_u5()?.into()),
-            INSTR_ZEROR => Self::ZeroR(reader.read_u3()?.into(), reader.read_u5()?.into()),
-            INSTR_CLA => Self::ClA(reader.read_u3()?.into(), reader.read_u5()?.into()),
-            INSTR_CLR => Self::ClR(reader.read_u3()?.into(), reader.read_u5()?.into()),
+            INSTR_CLRA => Self::ClrA(reader.read_u3()?.into(), reader.read_u5()?.into()),
+            INSTR_CLRF => Self::ClrF(reader.read_u3()?.into(), reader.read_u5()?.into()),
+            INSTR_CLRR => Self::ClrR(reader.read_u3()?.into(), reader.read_u5()?.into()),
             INSTR_PUTA => {
                 let reg = reader.read_u3()?.into();
-                Self::PutA(reg, reader.read_u5()?.into(), reader.read_value(RegAR::A(reg))?)
+                Self::PutA(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
+            }
+            INSTR_PUTF => {
+                let reg = reader.read_u3()?.into();
+                Self::PutF(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
             }
             INSTR_PUTR => {
                 let reg = reader.read_u3()?.into();
-                Self::PutR(reg, reader.read_u5()?.into(), reader.read_value(RegAR::R(reg))?)
+                Self::PutR(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
             }
             INSTR_PUTIFA => {
                 let reg = reader.read_u3()?.into();
-                Self::PutIfA(reg, reader.read_u5()?.into(), reader.read_value(RegAR::A(reg))?)
+                Self::PutIfA(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
             }
             INSTR_PUTIFR => {
                 let reg = reader.read_u3()?.into();
-                Self::PutIfR(reg, reader.read_u5()?.into(), reader.read_value(RegAR::R(reg))?)
+                Self::PutIfR(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
             }
             x => unreachable!("instruction {:#010b} classified as put operation", x),
         })

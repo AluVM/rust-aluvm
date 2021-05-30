@@ -14,7 +14,7 @@ use core::fmt::{self, Debug, Display, Formatter};
 use amplify_num::{u1, u2, u3, u4, u5, u6, u7};
 
 use super::{Read, Write};
-use crate::reg::{RegAR, Value};
+use crate::reg::{Number, RegisterSet};
 
 // I had an idea of putting Read/Write functionality into `amplify` crate,
 // but it is quire specific to the fact that it uses `u16`-sized underlying
@@ -242,13 +242,13 @@ impl Read for Cursor<&[u8]> {
         self.inc_bytes(2u16 + len as u16).map(|_| &self.bytecode[pos..pos + len])
     }
 
-    fn read_value(&mut self, reg: RegAR) -> Result<Value, CursorError> {
+    fn read_value(&mut self, reg: impl RegisterSet) -> Result<Number, CursorError> {
         if self.eof {
             return Err(CursorError::Eof);
         }
         let len = (reg.bits() / 8u16) as usize;
         let pos = self.byte_pos as usize;
-        let value = Value::with(&self.bytecode[pos..pos + len]);
+        let value = Number::from_slice(&self.bytecode[pos..pos + len]);
         self.inc_bytes(len as u16).map(|_| value)
     }
 }
@@ -345,13 +345,16 @@ impl Write for Cursor<&mut [u8]> {
         self.inc_bytes(2u16 + len as u16)
     }
 
-    fn write_value(&mut self, reg: RegAR, value: &Value) -> Result<(), CursorError> {
+    fn write_value(&mut self, reg: impl RegisterSet, mut value: Number) -> Result<(), CursorError> {
         let len = reg.bits() / 8;
-        assert!(len >= value.len, "value for the register has larger bit length than the register");
-        let value_len = value.len as usize;
+        assert!(
+            len >= value.len(),
+            "value for the register has larger bit length than the register"
+        );
+        value.reshape(reg.layout().using_sign(value.layout()));
         let from = self.byte_pos as usize;
-        let to = from + value_len;
-        self.bytecode[from..to].copy_from_slice(&value.bytes[0..value_len]);
+        let to = from + value.len() as usize;
+        self.bytecode[from..to].copy_from_slice(&value[..]);
         self.inc_bytes(len as u16)
     }
 }

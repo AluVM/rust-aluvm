@@ -11,13 +11,11 @@
 use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Shl, Shr};
 
-use amplify_num::u5;
-
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
     Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
-use crate::reg::{Reg32, RegVal, Registers, Value};
+use crate::reg::{Number, Reg32, RegVal, RegisterSet, Registers};
 use crate::LibSite;
 
 /// Turing machine movement after instruction execution
@@ -108,14 +106,14 @@ impl InstructionSet for ControlFlowOp {
 impl InstructionSet for PutOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            PutOp::ZeroA(reg, index) => regs.set(reg, index, 0),
-            PutOp::ZeroR(reg, index) => regs.set(reg, index, 0),
-            PutOp::ClA(reg, index) => regs.set(reg, index, RegVal::none()),
-            PutOp::ClR(reg, index) => regs.set(reg, index, RegVal::none()),
-            PutOp::PutA(reg, index, blob) => regs.set(reg, index, blob),
-            PutOp::PutR(reg, index, blob) => regs.set(reg, index, blob),
-            PutOp::PutIfA(reg, index, blob) => regs.set_if(reg, index, blob),
-            PutOp::PutIfR(reg, index, blob) => regs.set_if(reg, index, blob),
+            PutOp::ClrA(reg, index) => regs.set(reg, index, RegVal::none()),
+            PutOp::ClrF(reg, index) => regs.set(reg, index, RegVal::none()),
+            PutOp::ClrR(reg, index) => regs.set(reg, index, RegVal::none()),
+            PutOp::PutA(reg, index, number) => regs.set(reg, index, number),
+            PutOp::PutF(reg, index, number) => regs.set(reg, index, number),
+            PutOp::PutR(reg, index, number) => regs.set(reg, index, number),
+            PutOp::PutIfA(reg, index, number) => regs.set_if(reg, index, number),
+            PutOp::PutIfR(reg, index, number) => regs.set_if(reg, index, number),
         }
         ExecStep::Next
     }
@@ -124,34 +122,74 @@ impl InstructionSet for PutOp {
 impl InstructionSet for MoveOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            MoveOp::SwpA(reg1, index1, reg2, index2) => {
-                regs.set(reg1, index1, regs.get(reg2, index2));
-                regs.set(reg2, index2, regs.get(reg1, index1));
+            MoveOp::MovA(reg, idx1, idx2) => {
+                regs.set(reg, idx2, regs.get(reg, idx1));
+                regs.set(reg, idx1, None);
             }
-            MoveOp::SwpR(reg1, index1, reg2, index2) => {
-                regs.set(reg1, index1, regs.get(reg2, index2));
-                regs.set(reg2, index2, regs.get(reg1, index1));
+            MoveOp::DupA(reg, idx1, idx2) => {
+                regs.set(reg, idx2, regs.get(reg, idx1));
             }
-            MoveOp::SwpAR(reg1, index1, reg2, index2) => {
-                regs.set(reg1, index1, regs.get(reg2, index2));
-                regs.set(reg2, index2, regs.get(reg1, index1));
+            MoveOp::SwpA(reg, idx1, idx2) => {
+                let val = regs.get(reg, idx2);
+                regs.set(reg, idx2, regs.get(reg, idx1));
+                regs.set(reg, idx1, val);
             }
-            MoveOp::AMov(reg1, reg2, num_type) => {
-                for idx in 0u8..32 {
-                    regs.set(reg2, u5::with(idx), regs.get(reg1, u5::with(idx)));
-                }
+            MoveOp::MovF(reg, idx1, idx2) => {
+                regs.set(reg, idx2, regs.get(reg, idx1));
+                regs.set(reg, idx1, None);
             }
-            MoveOp::MovA(sreg, sidx, dreg, didx) => {
-                regs.set(dreg, didx, regs.get(sreg, sidx));
+            MoveOp::DupF(reg, idx1, idx2) => {
+                regs.set(reg, idx2, regs.get(reg, idx1));
             }
-            MoveOp::MovR(sreg, sidx, dreg, didx) => {
-                regs.set(dreg, didx, regs.get(sreg, sidx));
+            MoveOp::SwpF(reg, idx1, idx2) => {
+                let val = regs.get(reg, idx2);
+                regs.set(reg, idx2, regs.get(reg, idx1));
+                regs.set(reg, idx1, val);
             }
-            MoveOp::CpyAR(sreg, sidx, dreg, didx) => {
-                regs.set(dreg, didx, regs.get(sreg, sidx));
+            MoveOp::MovR(reg, idx1, idx2) => {
+                regs.set(reg, idx2, regs.get(reg, idx1));
+                regs.set(reg, idx1, None);
             }
-            MoveOp::CpyRA(sreg, sidx, dreg, didx) => {
-                regs.set(dreg, didx, regs.get(sreg, sidx));
+            MoveOp::DupR(reg, idx1, idx2) => {
+                regs.set(reg, idx2, regs.get(reg, idx1));
+            }
+
+            MoveOp::CpyA(sreg, sidx, dreg, didx) => {
+                let val = regs.get(sreg, sidx);
+                regs.st0 = val.reshape(dreg.layout());
+                regs.set(dreg, didx, val);
+            }
+            MoveOp::CnvA(sreg, sidx, dreg, didx) => {
+                let mut val = regs.get(sreg, sidx);
+                regs.st0 = val.reshape(dreg.layout().into_signed());
+                regs.set(dreg, didx, val);
+            }
+            MoveOp::CnvF(sreg, sidx, dreg, didx) => {
+                let val = regs.get(sreg, sidx);
+                regs.st0 = val.reshape(dreg.layout());
+                regs.set(dreg, didx, val);
+            }
+            MoveOp::CpyR(sreg, sidx, dreg, didx) => {
+                let val = regs.get(sreg, sidx);
+                regs.st0 = val.reshape(dreg.layout());
+                regs.set(dreg, didx, val);
+            }
+            MoveOp::SpyAR(sreg, sidx, dreg, didx) => {
+                let val1 = regs.get(sreg, sidx);
+                let val2 = regs.get(dreg, didx);
+                regs.st0 = val1.reshape(dreg.layout()) && val2.reshape(sreg.layout());
+                regs.set(dreg, didx, val1);
+                regs.set(sreg, sidx, val2);
+            }
+            MoveOp::CnvAF(sreg, sidx, dreg, didx) => {
+                let val = regs.get(sreg, sidx);
+                regs.st0 = val.reshape(dreg.layout());
+                regs.set(dreg, didx, val);
+            }
+            MoveOp::CnvFA(sreg, sidx, dreg, didx) => {
+                let val = regs.get(sreg, sidx);
+                regs.st0 = val.reshape(dreg.layout());
+                regs.set(dreg, didx, val);
             }
         }
         ExecStep::Next
@@ -217,23 +255,23 @@ impl InstructionSet for ArithmeticOp {
                     index,
                     arithm.is_ap(),
                     Reg32::Reg1,
-                    Value::step_op(arithm, step.as_u8() as i8 * dir.multiplier()),
+                    Number::step_op(arithm, step.as_u8() as i8 * dir.multiplier()),
                 );
             }
             ArithmeticOp::Add(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::add_op(arithm));
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::add_op(arithm));
             }
             ArithmeticOp::Sub(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::sub_op(arithm));
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::sub_op(arithm));
             }
             ArithmeticOp::Mul(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::mul_op(arithm));
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::mul_op(arithm));
             }
             ArithmeticOp::Div(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::div_op(arithm));
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::div_op(arithm));
             }
             ArithmeticOp::Rem(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Value::rem_op(arithm));
+                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::rem_op(arithm));
             }
             ArithmeticOp::Abs(reg, index) => {
                 todo!()
@@ -252,8 +290,8 @@ impl InstructionSet for BitwiseOp {
             BitwiseOp::Not(reg, idx) => regs.set(reg, idx, !regs.get(reg, idx)),
             BitwiseOp::Shl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Shl::shl),
             BitwiseOp::Shr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Shr::shr),
-            BitwiseOp::Scl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Value::scl),
-            BitwiseOp::Scr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Value::scr),
+            BitwiseOp::Scl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Number::scl),
+            BitwiseOp::Scr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Number::scr),
         }
         ExecStep::Next
     }
@@ -286,7 +324,7 @@ impl InstructionSet for Secp256k1Op {
                     .map(|sk| PublicKey::from_secret_key(&regs.secp, &sk))
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
-                    .map(|pk| Value::with(&pk[1..]));
+                    .map(|pk| Number::from_slice(&pk[1..]));
                 regs.set(RegR::R512, dst, res);
             }
 
@@ -304,7 +342,7 @@ impl InstructionSet for Secp256k1Op {
                     })
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
-                    .map(|pk| Value::with(&pk[1..]));
+                    .map(|pk| Number::from_slice(&pk[1..]));
                 regs.set(RegR::R512, dst, res);
             }
 
@@ -318,7 +356,7 @@ impl InstructionSet for Secp256k1Op {
                     })
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
-                    .map(|pk| Value::with(&pk[1..]));
+                    .map(|pk| Number::from_slice(&pk[1..]));
                 regs.set(RegR::R512, srcdst, res);
             }
 
@@ -332,7 +370,7 @@ impl InstructionSet for Secp256k1Op {
                     })
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
-                    .map(|pk| Value::with(&pk[1..]));
+                    .map(|pk| Number::from_slice(&pk[1..]));
                 regs.set(RegR::R512, dst, res);
             }
         }
