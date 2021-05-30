@@ -11,16 +11,63 @@
 use core::cmp::Ordering;
 
 use amplify_num::u512;
+use half::bf16;
+use rustc_apfloat::ieee;
 
 use super::{MaybeNumber, Number};
+use crate::reg::number::{FloatLayout, IntLayout, Layout};
 
-impl MaybeNumber {
-    pub fn partial_cmp_op(num_type: CmpFlag) -> fn(MaybeNumber, MaybeNumber) -> Option<Ordering> {
-        match num_type {
-            CmpFlag::Unsigned => MaybeNumber::partial_cmp_uint,
-            CmpFlag::Signed => MaybeNumber::partial_cmp_int,
-            CmpFlag::ExactEq => MaybeNumber::partial_cmp_f23,
-            CmpFlag::RoundingEq => MaybeNumber::partial_cmp_f52,
+impl PartialEq for Number {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        (self.layout() == other.layout()
+            || self.layout().is_signed_int() && other.layout().is_unsigned_int()
+            || self.layout().is_unsigned_int() && other.layout().is_signed_int())
+            && self.to_clean().eq(&other.to_clean())
+    }
+}
+
+impl Eq for Number {}
+
+impl PartialOrd for Number {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
+
+/// Since we always convert `NaN` values into `None` and keep them at the level of `MaybeNumber`, we
+/// can do strict ordering even on float numbers
+impl Ord for Number {
+    fn cmp(&self, other: &Self) -> Ordering {
+        assert_eq!(self.layout(), other.layout(), "comparing numbers with different layout");
+        match self.layout() {
+            Layout::Integer(_) => match (self.is_positive(), other.is_positive()) {
+                (true, false) => Ordering::Greater,
+                (false, true) => Ordering::Less,
+                _ => self.to_u1024_bytes().cmp(&other.to_u1024_bytes()),
+            },
+            Layout::Float(FloatLayout::BFloat16) => {
+                bf16::from(self).partial_cmp(&bf16::from(other)).expect("number value contains NaN")
+            }
+            Layout::Float(FloatLayout::IeeeHalf) => ieee::Half::from(self)
+                .partial_cmp(&ieee::Half::from(other))
+                .expect("number value contains NaN"),
+            Layout::Float(FloatLayout::IeeeSingle) => ieee::Single::from(self)
+                .partial_cmp(&ieee::Single::from(other))
+                .expect("number value contains NaN"),
+            Layout::Float(FloatLayout::IeeeDouble) => ieee::Double::from(self)
+                .partial_cmp(&ieee::Double::from(other))
+                .expect("number value contains NaN"),
+            Layout::Float(FloatLayout::X87DoubleExt) => ieee::X87DoubleExtended::from(self)
+                .partial_cmp(&ieee::X87DoubleExtended::from(other))
+                .expect("number value contains NaN"),
+            Layout::Float(FloatLayout::IeeeQuad) => ieee::Quad::from(self)
+                .partial_cmp(&ieee::Quad::from(other))
+                .expect("number value contains NaN"),
+            Layout::Float(FloatLayout::IeeeOct) => {
+                unimplemented!("IEEE-754 256-bit floats are not yet supported")
+            }
+            Layout::Float(FloatLayout::FloatTapered) => {
+                unimplemented!("512-bit tapered floats are not yet supported")
+            }
         }
     }
 }
@@ -104,106 +151,6 @@ impl Number {
         }
     }
 }
-
-impl MaybeNumber {
-    /// Compares two values according to given arithmetics
-    pub fn partial_cmp(self, num_type: CmpFlag, other: Self) -> Option<Ordering> {
-        match num_type {
-            CmpFlag::Unsigned => self.partial_cmp_uint(other),
-            CmpFlag::Signed => self.partial_cmp_int(other),
-            CmpFlag::ExactEq => self.partial_cmp_f23(other),
-            CmpFlag::RoundingEq => self.partial_cmp_f52(other),
-        }
-    }
-
-    /// Compares two values according to unsigned arithmetics
-    pub fn partial_cmp_uint(self, other: Self) -> Option<Ordering> {
-        match (*self, *other) {
-            (None, None) => Some(Ordering::Equal),
-            (None, Some(_)) | (Some(_), None) => None,
-            (Some(a), Some(b)) => Some(a.cmp_uint(b)),
-        }
-    }
-
-    /// Compares two values according to unsigned arithmetics
-    pub fn partial_cmp_int(self, other: Self) -> Option<Ordering> {
-        match (*self, *other) {
-            (None, None) => Some(Ordering::Equal),
-            (None, Some(_)) | (Some(_), None) => None,
-            (Some(a), Some(b)) => Some(a.cmp_int(b)),
-        }
-    }
-
-    /// Compares two values according to short float arithmetics
-    pub fn partial_cmp_f23(self, other: Self) -> Option<Ordering> {
-        match (*self, *other) {
-            (None, None) => Some(Ordering::Equal),
-            (None, Some(_)) | (Some(_), None) => None,
-            (Some(a), Some(b)) => Some(a.cmp_f23(b)),
-        }
-    }
-
-    /// Compares two values according to long float arithmetics
-    pub fn partial_cmp_f52(self, other: Self) -> Option<Ordering> {
-        match (*self, *other) {
-            (None, None) => Some(Ordering::Equal),
-            (None, Some(_)) | (Some(_), None) => None,
-            (Some(a), Some(b)) => Some(a.cmp_f52(b)),
-        }
-    }
-}
-
-impl Number {
-    /// Compares two values according to given arithmetics
-    pub fn cmp(self, num_type: CmpFlag, other: Self) -> Ordering {
-        match num_type {
-            CmpFlag::Unsigned => self.cmp_uint(other),
-            CmpFlag::Signed => self.cmp_int(other),
-            CmpFlag::ExactEq => self.cmp_f23(other),
-            CmpFlag::RoundingEq => self.cmp_f52(other),
-        }
-    }
-
-    /// Compares two values according to unsigned arithmetics
-    pub fn cmp_uint(self, other: Self) -> Ordering {
-        self.to_clean().bytes.cmp(&other.to_clean().bytes)
-    }
-
-    /// Compares two values according to unsigned arithmetics
-    pub fn cmp_int(self, other: Self) -> Ordering {
-        let mut a = self.to_clean();
-        let mut b = other.to_clean();
-        let rev_a = if a.len > 0 {
-            let sign = &mut a.bytes[a.len as usize - 1];
-            let rev_a = *sign & 0x80 == 0x80;
-            *sign &= 0x7F;
-            rev_a
-        } else {
-            false
-        };
-        let rev_b = if b.len > 0 {
-            let sign = &mut b.bytes[b.len as usize - 1];
-            let rev_b = *sign & 0x80 == 0x80;
-            *sign &= 0x7F;
-            rev_b
-        } else {
-            false
-        };
-        match (rev_a, rev_b) {
-            (true, false) => Ordering::Less,
-            (false, true) => Ordering::Greater,
-            (false, false) => a.bytes.cmp(&b.bytes),
-            (true, true) => a.bytes.cmp(&b.bytes).reverse(),
-        }
-    }
-
-    /// Compares two values according to short float arithmetics
-    pub fn cmp_f23(self, other: Self) -> Ordering { todo!("short float comparison") }
-
-    /// Compares two values according to long float arithmetics
-    pub fn cmp_f52(self, other: Self) -> Ordering { todo!("short long comparison") }
-}
-
 impl Number {
     pub fn step_uint_checked(value: Number, step: i8) -> Option<Number> {
         let u512_max = u512::from_le_bytes([0xFF; 64]);

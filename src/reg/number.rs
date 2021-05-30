@@ -148,10 +148,10 @@ pub struct IntLayout {
     ///
     /// Signed integer: the most significant bit (highest bit) indicates value sign. For the
     /// negative numbers the value is modulo-divided by the maximum number.
-    signed: bool,
+    pub signed: bool,
 
     /// Number of bytes occupied by the number
-    bytes: u16,
+    pub bytes: u16,
 }
 
 impl Display for IntLayout {
@@ -308,13 +308,16 @@ pub struct MaybeNumber(Option<Number>);
 
 impl MaybeNumber {
     /// Creates [`MaybeNumber`] without assigning a value to it
+    #[inline]
     pub fn none() -> MaybeNumber { MaybeNumber(None) }
 
     /// Creates [`MaybeNumber`] assigning a value to it
+    #[inline]
     pub fn some(val: Number) -> MaybeNumber { MaybeNumber(Some(val)) }
 
     /// Transforms internal value layout returning whether this was possible without discarding any
     /// bit information
+    #[inline]
     pub fn reshape(&mut self, to: Layout) -> bool {
         match self.0 {
             None => true,
@@ -368,18 +371,6 @@ pub struct Number {
     /// Number layout used by the value
     layout: Layout,
 }
-
-impl PartialEq for Number {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        (self.layout == other.layout
-            || self.layout.is_signed_int() && other.layout.is_unsigned_int()
-            || self.layout.is_unsigned_int() && other.layout.is_signed_int())
-            && self.to_clean().eq(&other.to_clean())
-    }
-}
-
-impl Eq for Number {}
 
 impl Hash for Number {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -623,16 +614,48 @@ impl Number {
         index as u16 * 8 + 8 - data[index].leading_zeros() as u16 + sig_len
     }
 
+    /// Detects if the number value positive (i.e. `>0`) or not.
+    pub fn is_positive(self) -> bool {
+        if self.layout.is_unsigned_int() {
+            return true;
+        }
+        self[self.layout.sign_byte()] & 0x80 > 0
+    }
+
+    /// Detects if the value is equal to zero
+    pub fn is_zero(self) -> bool {
+        let mut clean = self.to_clean();
+        if self.layout.is_float() {
+            clean = clean.without_sign();
+        }
+        clean.to_u1024_bytes() == u1024::from(0u8)
+    }
+
+    /// Detects if the value is equal to the maximum possible value for the used layout. For floats,
+    /// always `false`.
+    pub fn is_max(self) -> bool {
+        match self.layout {
+            Layout::Integer(int_layout) => {
+                let mut mask = u1024::from(0u8);
+                for i in 0..int_layout.bytes - int_layout.is_signed() as u16 {
+                    mask <<= 1;
+                    mask |= 1u8;
+                }
+                self.to_clean() == mask.into()
+            }
+            _ => false,
+        }
+    }
+
     /// Ensures that all non-value bits are set to zero
     #[inline]
     pub fn clean(&mut self) { self[self.len()..].fill(0); }
 
     /// Returns a copy where all non-value bits are set to zero
     #[inline]
-    pub fn to_clean(self) -> Self {
-        let mut copy = self;
-        copy[self.len()..].fill(0);
-        copy
+    pub fn to_clean(mut self) -> Self {
+        self[self.len()..].fill(0);
+        self
     }
 
     /// Transforms internal value layout returning whether this was possible without discarding any
@@ -652,10 +675,27 @@ impl Number {
         }
     }
 
-    #[doc(hidden)]
-    /// Converts the value into `u1024` integer
+    /// Adds or removes negative sign to the number (negates negative or positive number, depending
+    /// on the method argument value)
     #[inline]
-    pub(super) fn to_u1024(self) -> u1024 { self.to_clean().into() }
+    pub fn applying_sign(mut self, sign: impl Into<bool>) -> Number {
+        if sign.into() {
+            self[self.layout.sign_byte()] |= 0x80;
+        } else {
+            self[self.layout.sign_byte()] &= 0x7F;
+        }
+        self
+    }
+
+    /// Removes negative sign if present (negates negative number)
+    #[inline]
+    pub fn without_sign(mut self) -> Number { self.applying_sign(false) }
+
+    #[doc(hidden)]
+    /// Converts the value into `u1024` integer with the bytes corresponding to the internal
+    /// representation.
+    #[inline]
+    pub(super) fn to_u1024_bytes(self) -> u1024 { self.to_clean().into() }
 }
 
 /// Errors parsing literal values in AluVM assembly code

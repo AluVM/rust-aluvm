@@ -312,9 +312,10 @@ pub enum CmpOp {
     LtR(RegR, Reg32, Reg32),
 
     /// Checks equality of value in two integer arithmetic (`A`) registers putting result into
-    /// `st0`. If both registers are `None`, the `st0` is set to `true`.
+    /// `st0`.None-equality flag specifies value for `st0` for the cases when both of the registers
+    /// are in `None` state.
     #[display("eq:{0}\t{1}{2},{1}{3}")]
-    EqA(SignFlag, RegA, Reg32, Reg32),
+    EqA(/** `st0` value if both of the registers are uninitialized */ bool, RegA, Reg32, Reg32),
 
     /// Checks equality of value in two float arithmetic (`F`) registers putting result into `st0`.
     /// If both registers are `None`, the `st0` is set to `false`.
@@ -350,7 +351,6 @@ pub enum CmpOp {
 
     /// Takes value from `st0` and merges into the value of the destination `A` register. The merge
     /// operation is defined by the [`MergeFlag`] argument.
-    // MergeFlag: add, and, or, set
     #[display("st:{0}\t{0}{1}")]
     St(MergeFlag, RegA, Reg8),
 

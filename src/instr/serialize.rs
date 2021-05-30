@@ -344,6 +344,18 @@ impl Bytecode for PutOp {
         EncodeError: From<<W as Write>::Error>,
     {
         match self {
+            PutOp::ClrA(reg, idx) => {
+                writer.write_u3(reg)?;
+                writer.write_u5(idx)?;
+            }
+            PutOp::ClrF(reg, idx) => {
+                writer.write_u3(reg)?;
+                writer.write_u5(idx)?;
+            }
+            PutOp::ClrR(reg, idx) => {
+                writer.write_u3(reg)?;
+                writer.write_u5(idx)?;
+            }
             PutOp::PutA(reg, reg32, val) | PutOp::PutIfA(reg, reg32, val) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(reg32)?;
@@ -647,7 +659,7 @@ impl Bytecode for CmpOp {
             }
             CmpOp::EqA(flag, reg, idx1, idx2) => {
                 writer.write_u2(u2::with(0b01))?;
-                writer.write_u1(flag)?;
+                writer.write_bool(*flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
@@ -705,7 +717,7 @@ impl Bytecode for CmpOp {
                 (INSTR_LGT, 0b11, _) => CmpOp::LtF(flag.into(), reg.into(), idx1, idx2),
                 (INSTR_CMP, 0b00, 0b0) => CmpOp::GtR(reg.into(), idx1, idx2),
                 (INSTR_CMP, 0b00, 0b1) => CmpOp::LtR(reg.into(), idx1, idx2),
-                (INSTR_CMP, 0b01, _) => CmpOp::EqA(flag.into(), reg.into(), idx1, idx2),
+                (INSTR_CMP, 0b01, _) => CmpOp::EqA(flag.as_u8() == 1, reg.into(), idx1, idx2),
                 (INSTR_CMP, 0b10, _) => CmpOp::EqF(flag.into(), reg.into(), idx1, idx2),
                 (INSTR_CMP, 0b11, _) => CmpOp::EqR(flag.as_u8() == 1, reg.into(), idx1, idx2),
                 _ => unreachable!(),

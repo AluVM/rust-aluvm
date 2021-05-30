@@ -1295,6 +1295,19 @@ impl Registers {
         .into()
     }
 
+    /// Returns value from two registers only if both of them contain a value; otherwise returns
+    /// `None`.
+    #[inline]
+    pub fn get_both(
+        &self,
+        reg1: impl Into<RegARF>,
+        idx1: impl Into<Reg32>,
+        reg2: impl Into<RegARF>,
+        idx2: impl Into<Reg32>,
+    ) -> Option<(Number, Number)> {
+        self.get(reg1, idx1).and_then(|val1| self.get(reg2, idx2).map(|val2| (val1, val2)))
+    }
+
     /// Assigns the provided value to the register bit-wise. Silently discards most significant bits
     /// until the value fits register bit size.
     pub fn set(

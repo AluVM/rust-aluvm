@@ -96,6 +96,14 @@ impl From<SignFlag> for u1 {
     fn from(flag: SignFlag) -> u1 { flag.as_u1() }
 }
 
+impl From<SignFlag> for bool {
+    fn from(flag: SignFlag) -> Self { flag == SignFlag::Signed }
+}
+
+impl From<&SignFlag> for bool {
+    fn from(flag: &SignFlag) -> Self { *flag == SignFlag::Signed }
+}
+
 /// Float equality flag
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum FloatEqFlag {

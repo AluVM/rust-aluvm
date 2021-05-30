@@ -15,6 +15,7 @@ use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
     Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
+use crate::instr::{FloatEqFlag, MergeFlag};
 use crate::reg::{MaybeNumber, Number, Reg32, RegisterSet, Registers};
 use crate::LibSite;
 
@@ -124,7 +125,7 @@ impl InstructionSet for MoveOp {
         match self {
             MoveOp::MovA(reg, idx1, idx2) => {
                 regs.set(reg, idx2, regs.get(reg, idx1));
-                regs.set(reg, idx1, None);
+                regs.set(reg, idx1, MaybeNumber::none());
             }
             MoveOp::DupA(reg, idx1, idx2) => {
                 regs.set(reg, idx2, regs.get(reg, idx1));
@@ -136,7 +137,7 @@ impl InstructionSet for MoveOp {
             }
             MoveOp::MovF(reg, idx1, idx2) => {
                 regs.set(reg, idx2, regs.get(reg, idx1));
-                regs.set(reg, idx1, None);
+                regs.set(reg, idx1, MaybeNumber::none());
             }
             MoveOp::DupF(reg, idx1, idx2) => {
                 regs.set(reg, idx2, regs.get(reg, idx1));
@@ -148,7 +149,7 @@ impl InstructionSet for MoveOp {
             }
             MoveOp::MovR(reg, idx1, idx2) => {
                 regs.set(reg, idx2, regs.get(reg, idx1));
-                regs.set(reg, idx1, None);
+                regs.set(reg, idx1, MaybeNumber::none());
             }
             MoveOp::DupR(reg, idx1, idx2) => {
                 regs.set(reg, idx2, regs.get(reg, idx1));
@@ -200,57 +201,83 @@ impl InstructionSet for CmpOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
             CmpOp::GtA(sign_flag, reg, idx1, idx2) => {
-                regs.st0 = MaybeNumber::partial_cmp_op(sign_flag)(
-                    regs.get(reg, idx1),
-                    regs.get(reg, idx2),
-                ) == Some(Ordering::Greater);
+                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                    val1.applying_sign(sign_flag).cmp(&val2.applying_sign(sign_flag))
+                }) == Some(Ordering::Greater);
             }
-            CmpOp::GtF(_, _, _, _) => {
-                todo!()
+            CmpOp::GtF(eq_flag, reg, idx1, idx2) => {
+                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                    if eq_flag == FloatEqFlag::Rounding {
+                        val1.rounding_cmp(&val2)
+                    } else {
+                        val1.cmp(&val2)
+                    }
+                }) == Some(Ordering::Greater);
             }
             CmpOp::GtR(reg, idx1, idx2) => {
-                regs.st0 = regs.get(reg, idx1).partial_cmp_uint(regs.get(reg, idx2))
+                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| val1.cmp(&val2))
                     == Some(Ordering::Greater);
             }
             CmpOp::LtA(sign_flag, reg, idx1, idx2) => {
-                regs.st0 = MaybeNumber::partial_cmp_op(sign_flag)(
-                    regs.get(reg, idx1),
-                    regs.get(reg, idx2),
-                ) == Some(Ordering::Less);
+                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                    val1.applying_sign(sign_flag).cmp(&val2.applying_sign(sign_flag))
+                }) == Some(Ordering::Less);
             }
-            CmpOp::LtF(_, _, _, _) => {
-                todo!()
+            CmpOp::LtF(eq_flag, reg, idx1, idx2) => {
+                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                    if eq_flag == FloatEqFlag::Rounding {
+                        val1.rounding_cmp(&val2)
+                    } else {
+                        val1.cmp(&val2)
+                    }
+                }) == Some(Ordering::Less);
             }
             CmpOp::LtR(reg, idx1, idx2) => {
-                regs.st0 = regs.get(reg, idx1).partial_cmp_uint(regs.get(reg, idx2))
+                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| val1.cmp(&val2))
                     == Some(Ordering::Less);
             }
-            CmpOp::EqA(sign_flag, reg, idx1, idx2) => {
-                regs.st0 = regs.get(reg, idx1) == regs.get(reg, idx2);
+            CmpOp::EqA(st, reg, idx1, idx2) => {
+                let val1 = regs.get(reg, idx1);
+                let val2 = regs.get(reg, idx2);
+                regs.st0 = if val1.is_none() && val2.is_none() { st } else { val1 == val2 };
             }
-            CmpOp::EqF(_, _, _, _) => {
-                todo!()
+            CmpOp::EqF(eq_flag, reg, idx1, idx2) => {
+                let val1 = regs.get(reg, idx1);
+                let val2 = regs.get(reg, idx2);
+                regs.st0 = if val1.is_none() && val2.is_none() {
+                    false
+                } else if eq_flag == FloatEqFlag::Rounding {
+                    val1.rounding_eq(&val2)
+                } else {
+                    val1 == val2
+                };
             }
             CmpOp::EqR(st, reg, idx1, idx2) => {
-                regs.st0 = regs.get(reg, idx1) == regs.get(reg, idx2);
+                let val1 = regs.get(reg, idx1);
+                let val2 = regs.get(reg, idx2);
+                regs.st0 = if val1.is_none() && val2.is_none() { st } else { val1 == val2 };
             }
-            CmpOp::IfZA(_, _) => {
-                todo!()
+            CmpOp::IfZA(reg, idx) => {
+                regs.st0 = regs.get(reg, idx).map(Number::is_zero).unwrap_or(false)
             }
-            CmpOp::IfZR(_, _) => {
-                todo!()
+            CmpOp::IfZR(reg, idx) => {
+                regs.st0 = regs.get(reg, idx).map(Number::is_zero).unwrap_or(false)
             }
-            CmpOp::IfNA(_, _) => {
-                todo!()
-            }
-            CmpOp::IfNR(_, _) => {
-                todo!()
-            }
+            CmpOp::IfNA(reg, idx) => regs.st0 = regs.get(reg, idx).is_none(),
+            CmpOp::IfNR(reg, idx) => regs.st0 = regs.get(reg, idx).is_none(),
             CmpOp::St(merge_flag, reg, idx) => {
-                regs.a8[0] = if regs.st0 { Some(1) } else { Some(0) };
+                let st = Number::from(regs.st0 as u8);
+                let res = match (*regs.get(reg, idx), merge_flag) {
+                    (None, _) | (_, MergeFlag::Set) => st,
+                    (Some(val), MergeFlag::Add) if val.is_max() => val,
+                    (Some(val), MergeFlag::Add) => val + st,
+                    (Some(val), MergeFlag::And) => val & st,
+                    (Some(val), MergeFlag::Or) => val | st,
+                };
+                regs.set(reg, idx, Some(res));
             }
             CmpOp::StInv => {
-                todo!()
+                regs.st0 = !regs.st0;
             }
         }
         ExecStep::Next
