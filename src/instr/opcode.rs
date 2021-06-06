@@ -150,23 +150,23 @@ pub enum PutOp {
     ClrR(RegR, Reg32),
 
     /// Unconditionally assigns a value to `A` register
-    #[display("put\t\t{0}{1}, {2}")]
+    #[display("put\t\t{2},{0}{1}")]
     PutA(RegA, Reg32, Number),
 
     /// Unconditionally assigns a value to `F` register
-    #[display("put\t\t{0}{1}, {2}")]
+    #[display("put\t\t{2},{0}{1}")]
     PutF(RegF, Reg32, Number),
 
     /// Unconditionally assigns a value to `R` register
-    #[display("put\t\t{0}{1}, {2}")]
+    #[display("put\t\t{2},{0}{1}")]
     PutR(RegR, Reg32, Number),
 
     /// Conditionally assigns a value to `A` register if the register is in uninitialized state
-    #[display("putif\t{0}{1}, {2}")]
+    #[display("putif\t{2},{0}{1}")]
     PutIfA(RegA, Reg32, Number),
 
     /// Conditionally assigns a value to `R` register if the register is in uninitialized state
-    #[display("putif\t{0}{1}, {2}")]
+    #[display("putif\t{2},{0}{1}")]
     PutIfR(RegR, Reg32, Number),
 }
 

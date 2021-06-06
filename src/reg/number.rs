@@ -660,15 +660,14 @@ impl Number {
     /// Ensures that all non-value bits are set to zero
     #[inline]
     pub fn clean(&mut self) {
-        let len = self.len();
-        self[len..].fill(0);
+        let len = self.len() as usize;
+        self.bytes[len..].fill(0);
     }
 
     /// Returns a copy where all non-value bits are set to zero
     #[inline]
     pub fn to_clean(mut self) -> Self {
-        let len = self.len();
-        self[len..].fill(0);
+        self.clean();
         self
     }
 
@@ -739,11 +738,11 @@ impl FromStr for Number {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(if s.starts_with("0x") {
-            u128::from_str_radix(s, 16)?.into()
+            u128::from_str_radix(&s[2..], 16)?.into()
         } else if s.starts_with("0o") {
-            u128::from_str_radix(s, 8)?.into()
+            u128::from_str_radix(&s[2..], 8)?.into()
         } else if s.starts_with("0b") {
-            u128::from_str_radix(s, 2)?.into()
+            u128::from_str_radix(&s[2..], 2)?.into()
         } else if s.contains(&['E', 'e'][..]) {
             ieee::Double::from_str(s)?.into()
         } else if s.starts_with('-') {
@@ -924,15 +923,13 @@ macro_rules! impl_number_bytes_conv {
     ($len:literal) => {
         impl From<Number> for [u8; $len] {
             fn from(mut val: Number) -> Self {
-                assert_eq!(
-                    val.len(),
-                    $len,
+                let len = val.len() as usize;
+                assert!(
+                    val.len() <= $len,
                     "attempt to convert number into a byte array with incorrect length",
                 );
                 let mut bytes = [0u8; $len];
-                let clean = Number::default();
-                val.bytes[$len..].copy_from_slice(&clean.bytes[$len..]);
-                bytes.copy_from_slice(&val.bytes[0..$len]);
+                bytes[..len].copy_from_slice(&val.bytes[..len]);
                 bytes
             }
         }
@@ -968,7 +965,7 @@ macro_rules! impl_number_int_conv {
         impl From<Number> for $ty {
             fn from(val: Number) -> Self {
                 assert!(
-                    val.layout.bits() as u32 <= $len,
+                    val.layout.bytes() as u32 <= $len,
                     "attempt to convert Number into type with lower bit dimension"
                 );
                 $ty::from_le_bytes(<[u8; $len]>::from(val))

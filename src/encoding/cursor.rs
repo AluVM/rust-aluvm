@@ -348,7 +348,7 @@ impl Write for Cursor<&mut [u8]> {
     fn write_value(&mut self, reg: impl RegisterSet, mut value: Number) -> Result<(), CursorError> {
         let len = reg.bits() / 8;
         assert!(
-            len >= value.len(),
+            len <= value.len(),
             "value for the register has larger bit length than the register"
         );
         value.reshape(reg.layout().using_sign(value.layout()));
