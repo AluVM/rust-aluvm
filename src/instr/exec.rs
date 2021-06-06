@@ -9,14 +9,14 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use core::cmp::Ordering;
-use core::ops::{BitAnd, BitOr, BitXor, Shl, Shr};
+use core::ops::{BitAnd, BitOr, BitXor, Shl};
 
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
     Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
 use crate::instr::{FloatEqFlag, MergeFlag};
-use crate::reg::{MaybeNumber, Number, Reg32, RegisterSet, Registers};
+use crate::reg::{MaybeNumber, Number, RegisterSet, Registers};
 use crate::LibSite;
 
 /// Turing machine movement after instruction execution
@@ -237,25 +237,28 @@ impl InstructionSet for CmpOp {
                     == Some(Ordering::Less);
             }
             CmpOp::EqA(st, reg, idx1, idx2) => {
-                let val1 = regs.get(reg, idx1);
-                let val2 = regs.get(reg, idx2);
-                regs.st0 = if val1.is_none() && val2.is_none() { st } else { val1 == val2 };
+                regs.st0 = regs
+                    .get_both(reg, idx1, reg, idx2)
+                    .map(|(val1, val2)| val1 == val2)
+                    .unwrap_or(st);
             }
             CmpOp::EqF(eq_flag, reg, idx1, idx2) => {
-                let val1 = regs.get(reg, idx1);
-                let val2 = regs.get(reg, idx2);
-                regs.st0 = if val1.is_none() && val2.is_none() {
-                    false
-                } else if eq_flag == FloatEqFlag::Rounding {
-                    val1.rounding_eq(&val2)
-                } else {
-                    val1 == val2
-                };
+                regs.st0 = regs
+                    .get_both(reg, idx1, reg, idx2)
+                    .map(|(val1, val2)| {
+                        if eq_flag == FloatEqFlag::Rounding {
+                            val1.rounding_eq(&val2)
+                        } else {
+                            val1 == val2
+                        }
+                    })
+                    .unwrap_or(false);
             }
             CmpOp::EqR(st, reg, idx1, idx2) => {
-                let val1 = regs.get(reg, idx1);
-                let val2 = regs.get(reg, idx2);
-                regs.st0 = if val1.is_none() && val2.is_none() { st } else { val1 == val2 };
+                regs.st0 = regs
+                    .get_both(reg, idx1, reg, idx2)
+                    .map(|(val1, val2)| val1 == val2)
+                    .unwrap_or(st);
             }
             CmpOp::IfZA(reg, idx) => {
                 regs.st0 = regs.get(reg, idx).map(Number::is_zero).unwrap_or(false)
@@ -287,39 +290,20 @@ impl InstructionSet for CmpOp {
 impl InstructionSet for ArithmeticOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            ArithmeticOp::Neg(reg, index) => {
-                regs.get(reg, index).map(|mut blob| {
-                    blob.bytes[reg as usize] ^= 0xFF;
-                    regs.set(reg, index, Some(blob));
-                });
-            }
-            ArithmeticOp::Stp(dir, arithm, reg, index, step) => {
-                regs.op_ap1(
-                    reg,
-                    index,
-                    arithm.is_ap(),
-                    Reg32::Reg1,
-                    Number::step_op(arithm, step.as_u8() as i8 * dir.multiplier()),
-                );
-            }
-            ArithmeticOp::Add(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::add_op(arithm));
-            }
-            ArithmeticOp::Sub(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::sub_op(arithm));
-            }
-            ArithmeticOp::Mul(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::mul_op(arithm));
-            }
-            ArithmeticOp::Div(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::div_op(arithm));
-            }
-            ArithmeticOp::Rem(arithm, reg, src1, src2) => {
-                regs.op_ap2(reg, src1, src2, arithm.is_ap(), Reg32::Reg1, Number::rem_op(arithm));
-            }
             ArithmeticOp::Abs(reg, index) => {
                 todo!()
             }
+            ArithmeticOp::AddA(flags, reg, src, srcdst) => {}
+            ArithmeticOp::AddF(flags, reg, src, srcdst) => {}
+            ArithmeticOp::SubA(flags, reg, src, srcdst) => {}
+            ArithmeticOp::SubF(flags, reg, src, srcdst) => {}
+            ArithmeticOp::MulA(flags, reg, src, srcdst) => {}
+            ArithmeticOp::MulF(flags, reg, src, srcdst) => {}
+            ArithmeticOp::DivA(flags, reg, src, srcdst) => {}
+            ArithmeticOp::DivF(flags, reg, src, srcdst) => {}
+            ArithmeticOp::Rem(reg1, idx1, reg2, idx2, regd, idxd) => {}
+            ArithmeticOp::Stp(reg, idx, step) => {}
+            ArithmeticOp::Neg(reg, idx) => {}
         }
         ExecStep::Next
     }
@@ -328,15 +312,27 @@ impl InstructionSet for ArithmeticOp {
 impl InstructionSet for BitwiseOp {
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         match self {
-            BitwiseOp::And(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, BitAnd::bitand),
-            BitwiseOp::Or(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, BitOr::bitor),
-            BitwiseOp::Xor(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, BitXor::bitxor),
+            BitwiseOp::And(reg, src1, src2, dst) => {
+                regs.op(reg, src1, reg, src2, reg, dst, BitAnd::bitand)
+            }
+            BitwiseOp::Or(reg, src1, src2, dst) => {
+                regs.op(reg, src1, reg, src2, reg, dst, BitOr::bitor)
+            }
+            BitwiseOp::Xor(reg, src1, src2, dst) => {
+                regs.op(reg, src1, reg, src2, reg, dst, BitXor::bitxor)
+            }
             BitwiseOp::Not(reg, idx) => regs.set(reg, idx, !regs.get(reg, idx)),
-            BitwiseOp::Shl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Shl::shl),
+            BitwiseOp::Shl(reg1, shift, reg2, srcdst) => {
+                regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shl::shl)
+            }
             BitwiseOp::ShrA(_, _, _, _, _) => todo!(),
             BitwiseOp::ShrR(_, _, _, _) => todo!(),
-            BitwiseOp::Scl(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Number::scl),
-            BitwiseOp::Scr(reg, src1, src2, dst) => regs.op(reg, src1, src2, dst, Number::scr),
+            BitwiseOp::Scl(reg1, shift, reg2, srcdst) => {
+                regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scl)
+            }
+            BitwiseOp::Scr(reg1, shift, reg2, srcdst) => {
+                regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scr)
+            }
             BitwiseOp::RevA(_, _) => todo!(),
             BitwiseOp::RevR(_, _) => todo!(),
         }

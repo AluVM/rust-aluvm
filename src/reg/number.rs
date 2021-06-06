@@ -91,8 +91,8 @@ impl Layout {
     /// Converts unsigned integer layout into signed; does nothing for float layouts
     #[inline]
     pub fn into_signed(mut self) -> Layout {
-        match self {
-            Layout::Integer(ref mut il) => *il = il.into_signed(),
+        match &mut self {
+            Layout::Integer(il) => *il = il.into_signed(),
             _ => {}
         }
         self
@@ -102,8 +102,8 @@ impl Layout {
     /// Does nothing if any of the layouts are not integer layouts or `other` layout is unsigned.
     #[inline]
     pub fn using_sign(mut self, other: Layout) -> Layout {
-        match (self, other) {
-            (Layout::Integer(ref mut il), Layout::Integer(il2)) => *il = il2.using_sign(il2),
+        match (&mut self, other) {
+            (Layout::Integer(il), Layout::Integer(il2)) => *il = il2.using_sign(il2),
             _ => {}
         }
         self
@@ -418,7 +418,8 @@ impl Index<RangeFull> for Number {
 
 impl IndexMut<RangeFull> for Number {
     fn index_mut(&mut self, _: RangeFull) -> &mut Self::Output {
-        &mut self.bytes[..self.len() as usize]
+        let len = self.len() as usize;
+        &mut self.bytes[..len]
     }
 }
 
@@ -465,7 +466,8 @@ impl Index<RangeFrom<u16>> for Number {
 impl IndexMut<RangeFrom<u16>> for Number {
     fn index_mut(&mut self, index: RangeFrom<u16>) -> &mut Self::Output {
         assert!(index.start < self.len());
-        &mut self.bytes[index.start as usize..self.len() as usize]
+        let len = self.len() as usize;
+        &mut self.bytes[index.start as usize..len]
     }
 }
 
@@ -505,6 +507,14 @@ impl Number {
     /// Creates zero value with a given layout
     #[inline]
     pub fn zero(layout: Layout) -> Number { Number { layout, bytes: [0u8; 1024] } }
+
+    /// Creates value with the specified bit masked
+    #[inline]
+    pub fn masked_bit(bit_no: u16, layout: Layout) -> Number {
+        let mut zero = Number { layout, bytes: [0u8; 1024] };
+        zero.bytes[(bit_no / 8) as usize] = 1 << (bit_no % 8);
+        zero
+    }
 
     #[doc(hidden)]
     /// Constructs number representation from a slice taken directly from the register
@@ -601,7 +611,7 @@ impl Number {
             return 0;
         }
         let mut data = self[..].to_vec();
-        let mut sig_len = if self.layout.is_signed() {
+        let sig_len = if self.layout.is_signed() {
             data[self.layout.sign_byte() as usize] &= 0x7F;
             1
         } else {
@@ -637,7 +647,7 @@ impl Number {
         match self.layout {
             Layout::Integer(int_layout) => {
                 let mut mask = u1024::from(0u8);
-                for i in 0..int_layout.bytes - int_layout.is_signed() as u16 {
+                for _ in 0..int_layout.bytes - int_layout.is_signed() as u16 {
                     mask <<= 1;
                     mask |= 1u8;
                 }
@@ -649,12 +659,16 @@ impl Number {
 
     /// Ensures that all non-value bits are set to zero
     #[inline]
-    pub fn clean(&mut self) { self[self.len()..].fill(0); }
+    pub fn clean(&mut self) {
+        let len = self.len();
+        self[len..].fill(0);
+    }
 
     /// Returns a copy where all non-value bits are set to zero
     #[inline]
     pub fn to_clean(mut self) -> Self {
-        self[self.len()..].fill(0);
+        let len = self.len();
+        self[len..].fill(0);
         self
     }
 
@@ -679,17 +693,18 @@ impl Number {
     /// on the method argument value)
     #[inline]
     pub fn applying_sign(mut self, sign: impl Into<bool>) -> Number {
+        let sign_byte = self.layout.sign_byte();
         if sign.into() {
-            self[self.layout.sign_byte()] |= 0x80;
+            self[sign_byte] |= 0x80;
         } else {
-            self[self.layout.sign_byte()] &= 0x7F;
+            self[sign_byte] &= 0x7F;
         }
         self
     }
 
     /// Removes negative sign if present (negates negative number)
     #[inline]
-    pub fn without_sign(mut self) -> Number { self.applying_sign(false) }
+    pub fn without_sign(self) -> Number { self.applying_sign(false) }
 
     #[doc(hidden)]
     /// Converts the value into `u1024` integer with the bytes corresponding to the internal
@@ -1089,6 +1104,7 @@ impl Display for Step {
                 -1 => f.write_str("dec"),
                 x if x < 0 => f.write_str("sub"),
                 x if x >= 0 => f.write_str("add"),
+                _ => unreachable!(),
             }
         } else {
             f.write_char(',')?;

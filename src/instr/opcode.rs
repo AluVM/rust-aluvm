@@ -437,9 +437,9 @@ pub enum BitwiseOp {
     /// instruction bitcode and differ only in their first two argument bits.
     #[display("shl\t\t{0}{1},{2}{3}")]
     Shl(
-        /** Which of `a` registers to use */ RegA2,
+        /** Which of `A` registers will have a shift value */ RegA2,
         /** Index of `u8` or `u16` register with bitshift value */ Reg32,
-        RegAR,
+        /** Register to shift the value in */ RegAR,
         /** Source & destination register */ Reg32,
     ),
 
@@ -452,10 +452,10 @@ pub enum BitwiseOp {
     #[display("shr{0},\t\t{1}{2},{3}{4}")]
     ShrA(
         /** Sign flag */ SignFlag,
-        /** Which of `a` registers to use */ RegA2,
+        /** Which of `A` registers will have a shift value */ RegA2,
         /** Index of `u8` or `u16` register with bitshift value */ Reg16,
-        RegA,
-        /** Source & destination register */ Reg32,
+        /** Family of `A` registers to shift */ RegA,
+        /** Source & destination `A` register */ Reg32,
     ),
 
     /// Right bit shift for one of the general non-arithmetic registers, filling added bits values
@@ -466,27 +466,39 @@ pub enum BitwiseOp {
     /// instruction bitcode and differ only in their first two argument bits.
     #[display("shr\t\t{0}{1},{2}{3}")]
     ShrR(
-        /** Which of `a` registers to use */ RegA2,
+        /** Which of `A` registers will have a shift value */ RegA2,
         /** Index of `u8` or `u16` register with bitshift value */ Reg32,
-        RegR,
-        /** Source & destination register */ Reg32,
+        /** Family of `R` registers to shift */ RegR,
+        /** Source & destination `R` register */ Reg32,
     ),
 
     /// Left bit shift, cycling the shifted values (most significant bit becomes least
-    /// significant). Does not modify `st0` value.
+    /// significant), putting the result into the first source register. Does not modify `st0`
+    /// value.
     ///
     /// This and the next [`BitwiseOp::Scr`] operation are encoded with the same instruction
     /// bitcode and differ only in their first argument bit.
     #[display("scl\t\t{0}{1},{2}{3}")]
-    Scl(RegA2, Reg32, RegAR, Reg32),
+    Scl(
+        /** Which of `A` registers will have a shift value */ RegA2,
+        /** Index of `u8` or `u16` register with bitshift value */ Reg32,
+        /** Register to shift the value in */ RegAR,
+        /** Source & destination register */ Reg32,
+    ),
 
     /// Right bit shift, cycling the shifted values (least significant bit becomes nost
-    /// significant). Does not modify `st0` value.
+    /// significant), putting the result into the first source register. Does not modify `st0`
+    /// value.
     ///
     /// This and the previous [`BitwiseOp::Scl`] operation are encoded with the same instruction
     /// bitcode and differ only in their first argument bit.
     #[display("scr\t\t{0}{1},{2}{3}")]
-    Scr(RegA2, Reg32, RegAR, Reg32),
+    Scr(
+        /** Which of `A` registers will have a shift value */ RegA2,
+        /** Index of `u8` or `u16` register with bitshift value */ Reg32,
+        /** Register to shift the value in */ RegAR,
+        /** Source & destination register */ Reg32,
+    ),
 
     /// Reverses bit order in the integer arithmetic register. Does not modify `st0` value.
     #[display("rev\t\t{0}{1}")]
