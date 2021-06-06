@@ -948,7 +948,7 @@ macro_rules! impl_number_bytes_conv {
     };
 }
 
-macro_rules! impl_number_le_conv {
+macro_rules! impl_number_int_conv {
     ($ty:ident, $len:literal) => {
         impl From<Number> for $ty {
             fn from(val: Number) -> Self {
@@ -956,14 +956,14 @@ macro_rules! impl_number_le_conv {
                     val.layout.bits() as u32 <= $len,
                     "attempt to convert Number into type with lower bit dimension"
                 );
-                impl_number_le_from!($ty, $len, val)
+                $ty::from_le_bytes(<[u8; $len]>::from(val))
             }
         }
 
         impl From<&$ty> for Number {
             fn from(val: &$ty) -> Self {
                 let mut bytes = [0u8; 1024];
-                let le = impl_number_le_into!($ty, $len, val);
+                let le = val.to_le_bytes();
                 bytes[0..le.len()].copy_from_slice(&le[..]);
                 Number { layout: Layout::unsigned(le.len() as u16), bytes }
             }
@@ -973,7 +973,7 @@ macro_rules! impl_number_le_conv {
     };
 }
 
-macro_rules! impl_number_ieee_conv {
+macro_rules! impl_number_float_conv {
     ($ty:ident, $tys:ident, $len:literal, $layout:ident) => {
         impl From<Number> for $ty {
             fn from(val: Number) -> Self {
@@ -981,44 +981,22 @@ macro_rules! impl_number_ieee_conv {
                     val.layout.bits() as u32 <= $len,
                     "attempt to convert Number into type with lower bit dimension"
                 );
-                impl_number_ieee_from!($tys, $len, val)
+                $ty::from_bits(val.into())
             }
         }
 
         impl From<&$ty> for Number {
             fn from(val: &$ty) -> Self {
+                // TODO: Filter negative zeros
+                // TODO: Filter NaN values
                 let mut bytes = [0u8; 1024];
-                let le = impl_number_ieee_into!($ty, $len, val);
+                let le = val.to_bits().to_le_bytes();
                 bytes[0..le.len()].copy_from_slice(&le[..]);
                 Number { layout: Layout::float(FloatLayout::$layout), bytes }
             }
         }
 
         impl_number_ty_conv!($ty, $len);
-    };
-}
-
-macro_rules! impl_number_le_from {
-    ($ty:ident, $len:literal, $val:ident) => {
-        $ty::from_le_bytes(<[u8; $len]>::from($val))
-    };
-}
-
-macro_rules! impl_number_ieee_from {
-    ($ty:ident, $len:literal, $val:ident) => {
-        $ty::from_bits($val.into())
-    };
-}
-
-macro_rules! impl_number_le_into {
-    ($ty:ident, $len:literal, $val:ident) => {
-        $val.to_le_bytes()
-    };
-}
-
-macro_rules! impl_number_ieee_into {
-    ($ty:ident, $len:literal, $val:ident) => {
-        $val.to_bits().to_le_bytes()
     };
 }
 
@@ -1063,14 +1041,14 @@ impl_number_bytes_conv!(256);
 impl_number_bytes_conv!(512);
 impl_number_bytes_conv!(1024);
 
-impl_number_le_conv!(u8, 1);
-impl_number_le_conv!(u16, 2);
-impl_number_le_conv!(u32, 4);
-impl_number_le_conv!(u64, 8);
-impl_number_le_conv!(u128, 16);
-impl_number_le_conv!(u256, 32);
-impl_number_le_conv!(u512, 64);
-impl_number_le_conv!(u1024, 128);
+impl_number_int_conv!(u8, 1);
+impl_number_int_conv!(u16, 2);
+impl_number_int_conv!(u32, 4);
+impl_number_int_conv!(u64, 8);
+impl_number_int_conv!(u128, 16);
+impl_number_int_conv!(u256, 32);
+impl_number_int_conv!(u512, 64);
+impl_number_int_conv!(u1024, 128);
 
 mod _float_impl {
     use half::bf16;
@@ -1079,19 +1057,19 @@ mod _float_impl {
 
     use super::*;
 
-    impl_number_ieee_conv!(bf16, bf16, 2, BFloat16);
-    impl_number_ieee_conv!(Half, HalfS, 2, IeeeHalf);
-    impl_number_ieee_conv!(Single, SingleS, 4, IeeeSingle);
-    impl_number_ieee_conv!(Double, DoubleS, 8, IeeeDouble);
-    impl_number_ieee_conv!(X87DoubleExtended, X87DoubleExtendedS, 10, X87DoubleExt);
-    impl_number_ieee_conv!(Quad, QuadS, 16, IeeeQuad);
+    impl_number_float_conv!(bf16, bf16, 2, BFloat16);
+    impl_number_float_conv!(Half, HalfS, 2, IeeeHalf);
+    impl_number_float_conv!(Single, SingleS, 4, IeeeSingle);
+    impl_number_float_conv!(Double, DoubleS, 8, IeeeDouble);
+    impl_number_float_conv!(X87DoubleExtended, X87DoubleExtendedS, 10, X87DoubleExt);
+    impl_number_float_conv!(Quad, QuadS, 16, IeeeQuad);
 }
 
-impl_number_le_conv!(i8, 1);
-impl_number_le_conv!(i16, 2);
-impl_number_le_conv!(i32, 4);
-impl_number_le_conv!(i64, 8);
-impl_number_le_conv!(i128, 16);
+impl_number_int_conv!(i8, 1);
+impl_number_int_conv!(i16, 2);
+impl_number_int_conv!(i32, 4);
+impl_number_int_conv!(i64, 8);
+impl_number_int_conv!(i128, 16);
 
 /// Value for step instructions which can be displayed as a part of operation mnemonic
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
