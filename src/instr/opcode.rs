@@ -387,6 +387,14 @@ pub enum ArithmeticOp {
     MulF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Divides values from two integer arithmetic registers and puts result into destination.
+    ///
+    /// Since the division operation may not result in overflow, the overflow flag is used to
+    /// indicate rounding of the result:
+    ///
+    /// Overflow flag is also defines behaviour for zero division `(x/0 if x > 0)`: whether the
+    /// destination must be set to `0` (true) or to None (false).
+    ///
+    /// NB: Impossible arithmetic operation 0/0 always sets destination to `None`.
     #[display("div:{0}\t{1}{2},{1}{3}")]
     DivA(IntFlags, RegA, Reg32, Reg32),
 

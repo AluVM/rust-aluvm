@@ -15,7 +15,7 @@ use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
     Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
-use crate::instr::{FloatEqFlag, MergeFlag};
+use crate::instr::{FloatEqFlag, IntFlags, MergeFlag};
 use crate::reg::{MaybeNumber, Number, RegisterSet, Registers};
 use crate::LibSite;
 
@@ -272,8 +272,9 @@ impl InstructionSet for CmpOp {
                 let st = Number::from(regs.st0 as u8);
                 let res = match (*regs.get(reg, idx), merge_flag) {
                     (None, _) | (_, MergeFlag::Set) => st,
-                    (Some(val), MergeFlag::Add) if val.is_max() => val,
-                    (Some(val), MergeFlag::Add) => val + st,
+                    (Some(val), MergeFlag::Add) => {
+                        val.int_add(st, IntFlags { signed: false, wrap: false }).unwrap_or(val)
+                    }
                     (Some(val), MergeFlag::And) => val & st,
                     (Some(val), MergeFlag::Or) => val | st,
                 };
@@ -293,17 +294,65 @@ impl InstructionSet for ArithmeticOp {
             ArithmeticOp::Abs(reg, index) => {
                 todo!()
             }
-            ArithmeticOp::AddA(flags, reg, src, srcdst) => {}
-            ArithmeticOp::AddF(flags, reg, src, srcdst) => {}
-            ArithmeticOp::SubA(flags, reg, src, srcdst) => {}
-            ArithmeticOp::SubF(flags, reg, src, srcdst) => {}
-            ArithmeticOp::MulA(flags, reg, src, srcdst) => {}
-            ArithmeticOp::MulF(flags, reg, src, srcdst) => {}
-            ArithmeticOp::DivA(flags, reg, src, srcdst) => {}
-            ArithmeticOp::DivF(flags, reg, src, srcdst) => {}
-            ArithmeticOp::Rem(reg1, idx1, reg2, idx2, regd, idxd) => {}
-            ArithmeticOp::Stp(reg, idx, step) => {}
-            ArithmeticOp::Neg(reg, idx) => {}
+            ArithmeticOp::AddA(flags, reg, src, srcdst) => {
+                let res = regs
+                    .get_both(reg, src, reg, srcdst)
+                    .and_then(|(val1, val2)| val1.int_add(val2, flags));
+                regs.set(reg, srcdst, res);
+            }
+            ArithmeticOp::AddF(flags, reg, src, srcdst) => {
+                let res = regs
+                    .get_both(reg, src, reg, srcdst)
+                    .and_then(|(val1, val2)| val1.float_add(val2, flags));
+                regs.set(reg, srcdst, res);
+            }
+            ArithmeticOp::SubA(flags, reg, src, srcdst) => {
+                let res = regs
+                    .get_both(reg, src, reg, srcdst)
+                    .and_then(|(val1, val2)| val1.int_sub(val2, flags));
+                regs.set(reg, srcdst, res);
+            }
+            ArithmeticOp::SubF(flags, reg, src, srcdst) => {
+                let res = regs
+                    .get_both(reg, src, reg, srcdst)
+                    .and_then(|(val1, val2)| val1.float_sub(val2, flags));
+                regs.set(reg, srcdst, res);
+            }
+            ArithmeticOp::MulA(flags, reg, src, srcdst) => {
+                let res = regs
+                    .get_both(reg, src, reg, srcdst)
+                    .and_then(|(val1, val2)| val1.int_mul(val2, flags));
+                regs.set(reg, srcdst, res);
+            }
+            ArithmeticOp::MulF(flags, reg, src, srcdst) => {
+                let res = regs
+                    .get_both(reg, src, reg, srcdst)
+                    .and_then(|(val1, val2)| val1.float_mul(val2, flags));
+                regs.set(reg, srcdst, res);
+            }
+            ArithmeticOp::DivA(flags, reg, src, srcdst) => {
+                let res = regs
+                    .get_both(reg, src, reg, srcdst)
+                    .and_then(|(val1, val2)| val1.int_div(val2, flags));
+                regs.set(reg, srcdst, res);
+            }
+            ArithmeticOp::DivF(flags, reg, src, srcdst) => {
+                let res = regs
+                    .get_both(reg, src, reg, srcdst)
+                    .and_then(|(val1, val2)| val1.float_div(val2, flags));
+                regs.set(reg, srcdst, res);
+            }
+            ArithmeticOp::Rem(reg1, idx1, reg2, idx2, regd, idxd) => {
+                let res =
+                    regs.get_both(reg1, idx1, reg2, idx2).and_then(|(val1, val2)| val1.rem(val2));
+                regs.set(regd, idxd, res);
+            }
+            ArithmeticOp::Stp(reg, idx, step) => {
+                todo!()
+            }
+            ArithmeticOp::Neg(reg, idx) => {
+                todo!()
+            }
         }
         ExecStep::Next
     }

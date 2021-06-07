@@ -9,13 +9,15 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use core::cmp::Ordering;
-use core::ops::Add;
+use core::convert::TryFrom;
+use core::ops::Div;
 
 use half::bf16;
 use rustc_apfloat::ieee;
 
 use super::Number;
-use crate::reg::number::{FloatLayout, Layout};
+use crate::instr::IntFlags;
+use crate::reg::number::{FloatLayout, IntLayout, Layout, NumberLayout};
 
 impl PartialEq for Number {
     #[inline]
@@ -101,8 +103,124 @@ impl Number {
     pub fn rounding_eq(&self, other: &Self) -> bool { self.rounding_cmp(other) == Ordering::Equal }
 }
 
-impl Add for Number {
-    type Output = Number;
+impl Number {
+    /// Addition of two integers with configuration flags for overflow and signed format.
+    ///
+    /// Panics if applied to float number layouts.
+    pub fn int_add(self, rhs: Self, flags: IntFlags) -> Option<Number> {
+        let mut layout = self.layout();
+        assert_eq!(layout, rhs.layout(), "adding numbers with different layout");
+        match layout {
+            // Signed and unsigned integers do not differ in their addition, since we use
+            // two's complement system
+            Layout::Integer(IntLayout { bytes, .. }) => {
+                let val1 = self.to_u1024_bytes();
+                let val2 = rhs.to_u1024_bytes();
+                let (res, overflow) = val1.overflowing_add(val2);
+                if !overflow || flags.wrap {
+                    Some(Number::from(res))
+                } else {
+                    None
+                }
+            }
+            Layout::Float(_) => panic!("integer addition of float numbers"),
+        }
+    }
 
-    fn add(self, rhs: Self) -> Self::Output { todo!() }
+    /// Subtraction of two integers with configuration flags for overflow and signed format.
+    ///
+    /// Panics if applied to float number layouts.
+    pub fn int_sub(self, rhs: Self, flags: IntFlags) -> Option<Number> {
+        let mut layout = self.layout();
+        assert_eq!(layout, rhs.layout(), "subtracting numbers with different layout");
+        match layout {
+            // Signed and unsigned integers do not differ in their subtraction, since we use
+            // two's complement system
+            Layout::Integer(IntLayout { bytes, .. }) => {
+                let val1 = self.to_u1024_bytes();
+                let val2 = rhs.to_u1024_bytes();
+                let (res, overflow) = val1.overflowing_sub(val2);
+                if !overflow || flags.wrap {
+                    Some(Number::from(res))
+                } else {
+                    None
+                }
+            }
+            Layout::Float(_) => panic!("integer subtraction of float numbers"),
+        }
+    }
+
+    /// Multiplication of two integers with configuration flags for overflow and signed format.
+    ///
+    /// Panics if applied to float number layouts.
+    pub fn int_mul(self, rhs: Self, flags: IntFlags) -> Option<Number> {
+        let mut layout = self.layout();
+        assert_eq!(layout, rhs.layout(), "multiplying numbers with different layout");
+        match layout {
+            Layout::Integer(IntLayout { bytes, signed: true }) => {
+                let val1 = self.to_u1024_bytes();
+                let val2 = rhs.to_u1024_bytes();
+                let (res, overflow) = val1.overflowing_mul(val2);
+                if !overflow || flags.wrap {
+                    Some(Number::from(res))
+                } else {
+                    None
+                }
+            }
+            Layout::Integer(IntLayout { bytes, signed: false }) if layout.bits() <= 128 => {
+                let val1 = i128::try_from(self).expect("integer layout is broken");
+                let val2 = i128::try_from(rhs).expect("integer layout is broken");
+                let (res, overflow) = val1.overflowing_mul(val2);
+                if !overflow || flags.wrap {
+                    Some(Number::from(res))
+                } else {
+                    None
+                }
+            }
+            Layout::Integer(IntLayout { bytes, signed: false }) => {
+                todo!("implement booth multiplication algorithm")
+            }
+            Layout::Float(_) => panic!("integer multiplication of float numbers"),
+        }
+    }
+
+    /// Division of two integers with configuration flags for overflow and signed format.
+    ///
+    /// Panics if applied to float number layouts.
+    pub fn int_div(self, rhs: Self, flags: IntFlags) -> Option<Number> {
+        let layout = self.layout();
+        assert_eq!(layout, rhs.layout(), "dividing numbers with different layout");
+
+        if self.is_zero() && rhs.is_zero() {
+            return None;
+        }
+        if rhs.is_zero() {
+            if flags.wrap {
+                return Some(Number::zero(layout));
+            } else {
+                return None;
+            }
+        }
+
+        if flags.wrap {
+            todo!("euclidean division in amplify crate")
+        }
+
+        Some(match layout {
+            Layout::Integer(IntLayout { bytes, signed: true }) => {
+                let val1 = self.to_u1024_bytes();
+                let val2 = rhs.to_u1024_bytes();
+                val1.div(val2).into()
+            }
+            Layout::Integer(IntLayout { bytes, signed: false }) if layout.bits() <= 128 => {
+                let val1 = i128::try_from(self).expect("integer layout is broken");
+                let val2 = i128::try_from(rhs).expect("integer layout is broken");
+                val1.div(val2).into()
+            }
+            Layout::Integer(IntLayout { bytes, signed: false }) => {
+                todo!("implement large signed number division algorithm")
+            }
+            Layout::Float(_) => panic!("integer division of float numbers"),
+        })
+    }
 }
