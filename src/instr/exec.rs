@@ -11,13 +11,15 @@
 use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl, Shr};
 
+use bitcoin_hashes::{ripemd160, sha256, sha512, Hash};
+
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
     Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
 use crate::instr::{FloatEqFlag, IntFlags, MergeFlag, SignFlag};
 use crate::reg::{MaybeNumber, Number, RegisterSet, Registers};
-use crate::LibSite;
+use crate::{LibSite, RegR};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -412,7 +414,32 @@ impl InstructionSet for BytesOp {
 }
 
 impl InstructionSet for DigestOp {
-    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep { todo!() }
+    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
+        match self {
+            DigestOp::Ripemd(src, dst) => {
+                regs.set(
+                    RegR::R160,
+                    dst,
+                    regs.get_s(src).map(|s| ripemd160::Hash::hash(&s).into_inner()),
+                );
+            }
+            DigestOp::Sha256(src, dst) => {
+                regs.set(
+                    RegR::R256,
+                    dst,
+                    regs.get_s(src).map(|s| sha256::Hash::hash(&s).into_inner()),
+                );
+            }
+            DigestOp::Sha512(src, dst) => {
+                regs.set(
+                    RegR::R512,
+                    dst,
+                    regs.get_s(src).map(|s| sha512::Hash::hash(&s).into_inner()),
+                );
+            }
+        }
+        ExecStep::Next
+    }
 }
 
 impl InstructionSet for Secp256k1Op {
@@ -425,7 +452,7 @@ impl InstructionSet for Secp256k1Op {
     fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
         use secp256k1::{PublicKey, SecretKey};
 
-        use crate::{RegA, RegR};
+        use crate::RegA;
         match self {
             Secp256k1Op::Gen(src, dst) => {
                 let res = regs

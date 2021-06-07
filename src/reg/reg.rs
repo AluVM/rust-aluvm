@@ -176,6 +176,14 @@ impl From<Reg32> for u5 {
     fn from(reg32: Reg32) -> Self { u5::with(reg32 as u8) }
 }
 
+impl From<&Reg32> for u8 {
+    fn from(reg32: &Reg32) -> Self { *reg32 as u8 }
+}
+
+impl From<Reg32> for u8 {
+    fn from(reg32: Reg32) -> Self { reg32 as u8 }
+}
+
 impl From<u5> for Reg32 {
     fn from(val: u5) -> Self {
         match val {
@@ -1228,6 +1236,11 @@ impl Registers {
             },
         }
         .into()
+    }
+
+    /// Returns value from one of `S`-registers
+    pub fn get_s(&self, index: impl Into<u8>) -> Option<[u8; u16::MAX as usize]> {
+        self.s16.get(&index.into()).copied()
     }
 
     /// Returns value from two registers only if both of them contain a value; otherwise returns
