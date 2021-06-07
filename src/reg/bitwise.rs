@@ -84,7 +84,19 @@ impl Shr for Number {
 }
 
 impl Number {
-    pub fn scl(src1: Number, src2: Number) -> Number { todo!() }
+    pub fn scl(src: Number, shift: Number) -> Number {
+        let excess = u16::try_from(shift).expect(
+            "shift value in `scl` operation must always be from either `a8` or `a16` registry",
+        );
+        let residue = src >> Number::from(src.len() - excess);
+        (src << shift) | residue
+    }
 
-    pub fn scr(src1: Number, src2: Number) -> Number { todo!() }
+    pub fn scr(src: Number, shift: Number) -> Number {
+        let excess = u16::try_from(shift).expect(
+            "shift value in `scl` operation must always be from either `a8` or `a16` registry",
+        );
+        let residue = src << Number::from(src.len() - excess);
+        (src >> shift) | residue
+    }
 }

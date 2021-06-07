@@ -1,4 +1,4 @@
-# Alure: AluVM runtime environment
+# AluVM rust implementation
 
 Rust implementation of AluVM (arithmetic logic unit virtual machine) and 
 compiler from Alu assembly into bytecode. See [AluVM] specification on

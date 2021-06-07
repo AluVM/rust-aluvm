@@ -922,7 +922,7 @@ impl UpperExp for Number {
 macro_rules! impl_number_bytes_conv {
     ($len:literal) => {
         impl From<Number> for [u8; $len] {
-            fn from(mut val: Number) -> Self {
+            fn from(val: Number) -> Self {
                 let len = val.len() as usize;
                 assert!(
                     val.len() <= $len,
