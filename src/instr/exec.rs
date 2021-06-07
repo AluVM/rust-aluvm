@@ -9,7 +9,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use core::cmp::Ordering;
-use core::ops::{BitAnd, BitOr, BitXor, Shl};
+use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl};
 
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
@@ -115,7 +115,7 @@ impl InstructionSet for PutOp {
             PutOp::PutR(reg, index, number) => regs.set(reg, index, number),
             PutOp::PutIfA(reg, index, number) => regs.set_if(reg, index, number),
             PutOp::PutIfR(reg, index, number) => regs.set_if(reg, index, number),
-        }
+        };
         ExecStep::Next
     }
 }
@@ -290,70 +290,71 @@ impl InstructionSet for CmpOp {
 
 impl InstructionSet for ArithmeticOp {
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
-        match self {
-            ArithmeticOp::Abs(reg, index) => {
-                todo!()
-            }
+        let is_some = match self {
+            ArithmeticOp::Abs(reg, idx) => regs.set(reg, idx, regs.get(reg, idx).map(Number::abs)),
             ArithmeticOp::AddA(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_both(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_add(val2, flags));
-                regs.set(reg, srcdst, res);
+                regs.set(reg, srcdst, res)
             }
             ArithmeticOp::AddF(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_both(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.float_add(val2, flags));
-                regs.set(reg, srcdst, res);
+                regs.set(reg, srcdst, res)
             }
             ArithmeticOp::SubA(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_both(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_sub(val2, flags));
-                regs.set(reg, srcdst, res);
+                regs.set(reg, srcdst, res)
             }
             ArithmeticOp::SubF(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_both(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.float_sub(val2, flags));
-                regs.set(reg, srcdst, res);
+                regs.set(reg, srcdst, res)
             }
             ArithmeticOp::MulA(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_both(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_mul(val2, flags));
-                regs.set(reg, srcdst, res);
+                regs.set(reg, srcdst, res)
             }
             ArithmeticOp::MulF(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_both(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.float_mul(val2, flags));
-                regs.set(reg, srcdst, res);
+                regs.set(reg, srcdst, res)
             }
             ArithmeticOp::DivA(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_both(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_div(val2, flags));
-                regs.set(reg, srcdst, res);
+                regs.set(reg, srcdst, res)
             }
             ArithmeticOp::DivF(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_both(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.float_div(val2, flags));
-                regs.set(reg, srcdst, res);
+                regs.set(reg, srcdst, res) && !res.map(Number::is_nan).unwrap_or(false)
             }
             ArithmeticOp::Rem(reg1, idx1, reg2, idx2, regd, idxd) => {
                 let res =
                     regs.get_both(reg1, idx1, reg2, idx2).and_then(|(val1, val2)| val1.rem(val2));
-                regs.set(regd, idxd, res);
+                regs.set(regd, idxd, res)
             }
-            ArithmeticOp::Stp(reg, idx, step) => {
-                todo!()
-            }
-            ArithmeticOp::Neg(reg, idx) => {
-                todo!()
-            }
-        }
+            ArithmeticOp::Stp(reg, idx, step) => regs.set(
+                reg,
+                idx,
+                regs.get(reg, idx).and_then(|val| {
+                    val.int_add(Number::from(step), IntFlags { signed: false, wrap: false })
+                }),
+            ),
+            ArithmeticOp::Neg(reg, idx) => regs.set(reg, idx, regs.get(reg, idx).map(Number::neg)),
+        };
+        regs.st0 = is_some;
         ExecStep::Next
     }
 }
@@ -370,7 +371,9 @@ impl InstructionSet for BitwiseOp {
             BitwiseOp::Xor(reg, src1, src2, dst) => {
                 regs.op(reg, src1, reg, src2, reg, dst, BitXor::bitxor)
             }
-            BitwiseOp::Not(reg, idx) => regs.set(reg, idx, !regs.get(reg, idx)),
+            BitwiseOp::Not(reg, idx) => {
+                regs.set(reg, idx, !regs.get(reg, idx));
+            }
             BitwiseOp::Shl(reg1, shift, reg2, srcdst) => {
                 regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shl::shl)
             }

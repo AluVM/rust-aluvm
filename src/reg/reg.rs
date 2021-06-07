@@ -1245,12 +1245,14 @@ impl Registers {
 
     /// Assigns the provided value to the register bit-wise. Silently discards most significant bits
     /// until the value fits register bit size.
+    ///
+    /// Returns if the value was not `None`
     pub fn set(
         &mut self,
         reg: impl Into<RegARF>,
         index: impl Into<Reg32>,
         value: impl Into<MaybeNumber>,
-    ) {
+    ) -> bool {
         let index = index.into() as usize;
         let value: Option<Number> = value.into().into();
         match reg.into() {
@@ -1285,16 +1287,24 @@ impl Registers {
                 RegF::F512 => self.f16b[index] = value.map(Number::into),
             },
         }
+        value.is_some()
     }
 
     /// Assigns the provided value to the register bit-wise if the register is not initialized.
     /// Silently discards most significant bits until the value fits register bit size.
     #[inline]
-    pub fn set_if(&mut self, reg: impl Into<RegARF>, index: impl Into<Reg32>, value: Number) {
+    pub fn set_if(
+        &mut self,
+        reg: impl Into<RegARF>,
+        index: impl Into<Reg32>,
+        value: Number,
+    ) -> bool {
         let reg = reg.into();
         let index = index.into();
         if self.get(reg, index).is_none() {
             self.set(reg, index, value)
+        } else {
+            false
         }
     }
 

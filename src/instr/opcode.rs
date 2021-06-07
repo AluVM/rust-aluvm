@@ -359,7 +359,11 @@ pub enum CmpOp {
     StInv,
 }
 
-/// Arithmetic instructions
+/// Arithmetic instructions.
+///
+/// All operations modify the value of `st0` register, setting it to `false` if the destination
+/// is set to `None`. Otherwise, `st0` value is `true`, even if the overflow has occurred (when
+/// `wrap` flag is provided).
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum ArithmeticOp {
     /// Adds values from two integer arithmetic registers and puts result into destination.
@@ -406,7 +410,8 @@ pub enum ArithmeticOp {
     #[display("rem\t\t{0}{1},{2}{3},{4}{5}")]
     Rem(RegA, Reg32, RegA, Reg32, RegA, Reg32),
 
-    /// Increment/decrement register value on a given signed step.
+    /// Increment/decrement register value on a given signed step. Sets the destination to `None`
+    /// in case of overflow.
     #[display("{2:#}\t\t{0}{1}")]
     Stp(RegA, Reg32, Step),
 
@@ -414,7 +419,7 @@ pub enum ArithmeticOp {
     #[display("neg\t\t{0}{1}")]
     Neg(RegAF, Reg16),
 
-    /// Puts absolute value of register into `a8[0]`
+    /// Replaces the register value with its absolute value
     #[display("abs\t\t{0}{1}")]
     Abs(RegAF, Reg16),
 }

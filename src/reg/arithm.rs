@@ -10,7 +10,7 @@
 
 use core::cmp::Ordering;
 use core::convert::TryFrom;
-use core::ops::Div;
+use core::ops::{Div, Neg, Rem};
 
 use half::bf16;
 use rustc_apfloat::{ieee, Float, Status};
@@ -108,12 +108,12 @@ impl Number {
     ///
     /// Panics if applied to float number layouts.
     pub fn int_add(self, rhs: Self, flags: IntFlags) -> Option<Number> {
-        let mut layout = self.layout();
+        let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "adding numbers with different layout");
         match layout {
             // Signed and unsigned integers do not differ in their addition, since we use
             // two's complement system
-            Layout::Integer(IntLayout { bytes, .. }) => {
+            Layout::Integer(IntLayout { .. }) => {
                 let val1 = self.to_u1024_bytes();
                 let val2 = rhs.to_u1024_bytes();
                 let (res, overflow) = val1.overflowing_add(val2);
@@ -131,12 +131,12 @@ impl Number {
     ///
     /// Panics if applied to float number layouts.
     pub fn int_sub(self, rhs: Self, flags: IntFlags) -> Option<Number> {
-        let mut layout = self.layout();
+        let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "subtracting numbers with different layout");
         match layout {
             // Signed and unsigned integers do not differ in their subtraction, since we use
             // two's complement system
-            Layout::Integer(IntLayout { bytes, .. }) => {
+            Layout::Integer(IntLayout { .. }) => {
                 let val1 = self.to_u1024_bytes();
                 let val2 = rhs.to_u1024_bytes();
                 let (res, overflow) = val1.overflowing_sub(val2);
@@ -154,10 +154,10 @@ impl Number {
     ///
     /// Panics if applied to float number layouts.
     pub fn int_mul(self, rhs: Self, flags: IntFlags) -> Option<Number> {
-        let mut layout = self.layout();
+        let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "multiplying numbers with different layout");
         match layout {
-            Layout::Integer(IntLayout { bytes, signed: true }) => {
+            Layout::Integer(IntLayout { signed: true, .. }) => {
                 let val1 = self.to_u1024_bytes();
                 let val2 = rhs.to_u1024_bytes();
                 let (res, overflow) = val1.overflowing_mul(val2);
@@ -167,7 +167,7 @@ impl Number {
                     None
                 }
             }
-            Layout::Integer(IntLayout { bytes, signed: false }) if layout.bits() <= 128 => {
+            Layout::Integer(IntLayout { signed: false, .. }) if layout.bits() <= 128 => {
                 let val1 = i128::try_from(self).expect("integer layout is broken");
                 let val2 = i128::try_from(rhs).expect("integer layout is broken");
                 let (res, overflow) = val1.overflowing_mul(val2);
@@ -177,7 +177,7 @@ impl Number {
                     None
                 }
             }
-            Layout::Integer(IntLayout { bytes, signed: false }) => {
+            Layout::Integer(IntLayout { signed: false, .. }) => {
                 todo!("implement booth multiplication algorithm")
             }
             Layout::Float(_) => panic!("integer multiplication of float numbers"),
@@ -207,17 +207,17 @@ impl Number {
         }
 
         Some(match layout {
-            Layout::Integer(IntLayout { bytes, signed: true }) => {
+            Layout::Integer(IntLayout { signed: true, .. }) => {
                 let val1 = self.to_u1024_bytes();
                 let val2 = rhs.to_u1024_bytes();
                 val1.div(val2).into()
             }
-            Layout::Integer(IntLayout { bytes, signed: false }) if layout.bits() <= 128 => {
+            Layout::Integer(IntLayout { signed: false, .. }) if layout.bits() <= 128 => {
                 let val1 = i128::try_from(self).expect("integer layout is broken");
                 let val2 = i128::try_from(rhs).expect("integer layout is broken");
                 val1.div(val2).into()
             }
-            Layout::Integer(IntLayout { bytes, signed: false }) => {
+            Layout::Integer(IntLayout { signed: false, .. }) => {
                 todo!("implement large signed number division algorithm")
             }
             Layout::Float(_) => panic!("integer division of float numbers"),
@@ -228,7 +228,7 @@ impl Number {
     ///
     /// Panics if applied to integer number layouts.
     pub fn float_add(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
-        let mut layout = self.layout();
+        let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "adding numbers with different layout");
         let (val, status) = match layout {
             Layout::Float(FloatLayout::BFloat16) => todo!("addition of BF16 floats"),
@@ -277,7 +277,7 @@ impl Number {
     ///
     /// Panics if applied to integer number layouts.
     pub fn float_sub(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
-        let mut layout = self.layout();
+        let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "subtracting numbers with different layout");
         let (val, status) = match layout {
             Layout::Float(FloatLayout::BFloat16) => todo!("subtraction of BF16 floats"),
@@ -326,7 +326,7 @@ impl Number {
     ///
     /// Panics if applied to integer number layouts.
     pub fn float_mul(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
-        let mut layout = self.layout();
+        let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "multiplying numbers with different layout");
         let (val, status) = match layout {
             Layout::Float(FloatLayout::BFloat16) => todo!("multiplication of BF16 floats"),
@@ -375,7 +375,7 @@ impl Number {
     ///
     /// Panics if applied to integer number layouts.
     pub fn float_div(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
-        let mut layout = self.layout();
+        let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "dividing numbers with different layout");
         let (val, status) = match layout {
             Layout::Float(FloatLayout::BFloat16) => todo!("division of BF16 floats"),
@@ -419,6 +419,50 @@ impl Number {
             (false, Status::INVALID_OP) => None,
             (false, Status::OVERFLOW | Status::INEXACT) => None,
             _ => Some(val),
+        }
+    }
+}
+
+impl Rem for Number {
+    type Output = Option<Number>;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        if rhs.is_zero() {
+            return None;
+        }
+        let layout = self.layout();
+        Some(match layout {
+            Layout::Integer(IntLayout { signed: true, .. }) => {
+                let val1 = self.to_u1024_bytes();
+                let val2 = rhs.to_u1024_bytes();
+                val1.rem(val2).into()
+            }
+            Layout::Integer(IntLayout { signed: false, .. }) if layout.bits() <= 128 => {
+                let val1 = i128::try_from(self).expect("integer layout is broken");
+                let val2 = i128::try_from(rhs).expect("integer layout is broken");
+                val1.rem(val2).into()
+            }
+            Layout::Integer(IntLayout { .. }) => {
+                todo!("implement large signed number modulo division algorithm")
+            }
+            Layout::Float(_) => panic!("modulo division of float number"),
+        })
+    }
+}
+
+impl Neg for Number {
+    type Output = Number;
+
+    fn neg(self) -> Self::Output { self.applying_sign(self.is_positive()) }
+}
+
+impl Number {
+    /// Returns the absolute value of the number
+    pub fn abs(self) -> Number {
+        if self.is_positive() {
+            self
+        } else {
+            self.applying_sign(false)
         }
     }
 }

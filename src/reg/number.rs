@@ -1110,6 +1110,11 @@ impl Step {
     pub fn as_i16(self) -> i16 { self.0 }
 }
 
+impl From<Step> for Number {
+    #[inline]
+    fn from(step: Step) -> Self { Number::from(step.0) }
+}
+
 impl Display for Step {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
