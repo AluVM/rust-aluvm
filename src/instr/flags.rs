@@ -12,6 +12,7 @@ use core::fmt::{self, Display, Formatter, Write};
 use core::str::FromStr;
 
 use amplify_num::{u1, u2, u3};
+use rustc_apfloat::Round;
 
 /// Errors for parsing string representation for a flag values
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -247,6 +248,17 @@ impl From<&RoundingFlag> for u2 {
 
 impl From<RoundingFlag> for u2 {
     fn from(flag: RoundingFlag) -> u2 { flag.as_u2() }
+}
+
+impl From<RoundingFlag> for Round {
+    fn from(flag: RoundingFlag) -> Self {
+        match flag {
+            RoundingFlag::TowardsZero => Round::TowardZero,
+            RoundingFlag::TowardsNearest => Round::NearestTiesToEven,
+            RoundingFlag::Floor => Round::TowardNegative,
+            RoundingFlag::Ceil => Round::TowardPositive,
+        }
+    }
 }
 
 /// Encoding and overflowing flags for integer numbers

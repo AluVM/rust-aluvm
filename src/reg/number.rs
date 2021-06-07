@@ -16,7 +16,8 @@ use core::ops::{
 use core::str::FromStr;
 
 use amplify_num::{u1024, u256, u512};
-use rustc_apfloat::ieee;
+use half::bf16;
+use rustc_apfloat::{ieee, Float};
 
 use crate::reg::reg::RegisterSet;
 
@@ -639,6 +640,23 @@ impl Number {
             clean = clean.without_sign();
         }
         clean.to_u1024_bytes() == u1024::from(0u8)
+    }
+
+    /// Detects if the value is `NaN`. For integer layouts always false
+    pub fn is_nan(self) -> bool {
+        match self.layout {
+            Layout::Integer(_) => false,
+            Layout::Float(FloatLayout::BFloat16) => bf16::from(self).is_nan(),
+            Layout::Float(FloatLayout::IeeeHalf) => ieee::Half::from(self).is_nan(),
+            Layout::Float(FloatLayout::IeeeSingle) => ieee::Single::from(self).is_nan(),
+            Layout::Float(FloatLayout::IeeeDouble) => ieee::Double::from(self).is_nan(),
+            Layout::Float(FloatLayout::IeeeQuad) => ieee::Quad::from(self).is_nan(),
+            Layout::Float(FloatLayout::IeeeOct) => todo!("512-bit float NaN detection"),
+            Layout::Float(FloatLayout::X87DoubleExt) => {
+                ieee::X87DoubleExtended::from(self).is_nan()
+            }
+            Layout::Float(FloatLayout::FloatTapered) => todo!("tapered float NaN detection"),
+        }
     }
 
     /// Detects if the value is equal to the maximum possible value for the used layout. For floats,

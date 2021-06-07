@@ -13,10 +13,10 @@ use core::convert::TryFrom;
 use core::ops::Div;
 
 use half::bf16;
-use rustc_apfloat::ieee;
+use rustc_apfloat::{ieee, Float, Status};
 
 use super::Number;
-use crate::instr::IntFlags;
+use crate::instr::{IntFlags, RoundingFlag};
 use crate::reg::number::{FloatLayout, IntLayout, Layout, NumberLayout};
 
 impl PartialEq for Number {
@@ -222,5 +222,203 @@ impl Number {
             }
             Layout::Float(_) => panic!("integer division of float numbers"),
         })
+    }
+
+    /// Addition of two floats with configuration flags for rounding.
+    ///
+    /// Panics if applied to integer number layouts.
+    pub fn float_add(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
+        let mut layout = self.layout();
+        assert_eq!(layout, rhs.layout(), "adding numbers with different layout");
+        let (val, status) = match layout {
+            Layout::Float(FloatLayout::BFloat16) => todo!("addition of BF16 floats"),
+            Layout::Float(FloatLayout::IeeeHalf) => {
+                let val1 = ieee::Half::from(self);
+                let val2 = ieee::Half::from(rhs);
+                let res = val1.add_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeSingle) => {
+                let val1 = ieee::Single::from(self);
+                let val2 = ieee::Single::from(rhs);
+                let res = val1.add_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeDouble) => {
+                let val1 = ieee::Double::from(self);
+                let val2 = ieee::Double::from(rhs);
+                let res = val1.add_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeQuad) => {
+                let val1 = ieee::Quad::from(self);
+                let val2 = ieee::Quad::from(rhs);
+                let res = val1.add_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::X87DoubleExt) => {
+                let val1 = ieee::X87DoubleExtended::from(self);
+                let val2 = ieee::X87DoubleExtended::from(rhs);
+                let res = val1.add_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeOct) => unimplemented!("256-bit floats"),
+            Layout::Float(FloatLayout::FloatTapered) => todo!("addition of tapered floats"),
+            Layout::Integer(_) => panic!("float addition of integer numbers"),
+        };
+        match (val.is_nan(), status) {
+            (true, _) => None,
+            (false, Status::OVERFLOW | Status::INEXACT) => None,
+            _ => Some(val),
+        }
+    }
+
+    /// Subtraction of two floats with configuration flags for rounding.
+    ///
+    /// Panics if applied to integer number layouts.
+    pub fn float_sub(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
+        let mut layout = self.layout();
+        assert_eq!(layout, rhs.layout(), "subtracting numbers with different layout");
+        let (val, status) = match layout {
+            Layout::Float(FloatLayout::BFloat16) => todo!("subtraction of BF16 floats"),
+            Layout::Float(FloatLayout::IeeeHalf) => {
+                let val1 = ieee::Half::from(self);
+                let val2 = ieee::Half::from(rhs);
+                let res = val1.sub_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeSingle) => {
+                let val1 = ieee::Single::from(self);
+                let val2 = ieee::Single::from(rhs);
+                let res = val1.sub_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeDouble) => {
+                let val1 = ieee::Double::from(self);
+                let val2 = ieee::Double::from(rhs);
+                let res = val1.sub_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeQuad) => {
+                let val1 = ieee::Quad::from(self);
+                let val2 = ieee::Quad::from(rhs);
+                let res = val1.sub_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::X87DoubleExt) => {
+                let val1 = ieee::X87DoubleExtended::from(self);
+                let val2 = ieee::X87DoubleExtended::from(rhs);
+                let res = val1.sub_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeOct) => unimplemented!("256-bit floats"),
+            Layout::Float(FloatLayout::FloatTapered) => todo!("subtraction of tapered floats"),
+            Layout::Integer(_) => panic!("float subtraction of integer numbers"),
+        };
+        match (val.is_nan(), status) {
+            (true, _) => None,
+            (false, Status::OVERFLOW | Status::INEXACT) => None,
+            _ => Some(val),
+        }
+    }
+
+    /// Multiplication of two floats with configuration flags for rounding.
+    ///
+    /// Panics if applied to integer number layouts.
+    pub fn float_mul(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
+        let mut layout = self.layout();
+        assert_eq!(layout, rhs.layout(), "multiplying numbers with different layout");
+        let (val, status) = match layout {
+            Layout::Float(FloatLayout::BFloat16) => todo!("multiplication of BF16 floats"),
+            Layout::Float(FloatLayout::IeeeHalf) => {
+                let val1 = ieee::Half::from(self);
+                let val2 = ieee::Half::from(rhs);
+                let res = val1.mul_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeSingle) => {
+                let val1 = ieee::Single::from(self);
+                let val2 = ieee::Single::from(rhs);
+                let res = val1.mul_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeDouble) => {
+                let val1 = ieee::Double::from(self);
+                let val2 = ieee::Double::from(rhs);
+                let res = val1.mul_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeQuad) => {
+                let val1 = ieee::Quad::from(self);
+                let val2 = ieee::Quad::from(rhs);
+                let res = val1.mul_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::X87DoubleExt) => {
+                let val1 = ieee::X87DoubleExtended::from(self);
+                let val2 = ieee::X87DoubleExtended::from(rhs);
+                let res = val1.mul_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeOct) => unimplemented!("256-bit floats"),
+            Layout::Float(FloatLayout::FloatTapered) => todo!("multiplication of tapered floats"),
+            Layout::Integer(_) => panic!("float multiplication of integer numbers"),
+        };
+        match (val.is_nan(), status) {
+            (true, _) => None,
+            (false, Status::OVERFLOW | Status::INEXACT) => None,
+            _ => Some(val),
+        }
+    }
+
+    /// Division of two floats with configuration flags for rounding.
+    ///
+    /// Panics if applied to integer number layouts.
+    pub fn float_div(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
+        let mut layout = self.layout();
+        assert_eq!(layout, rhs.layout(), "dividing numbers with different layout");
+        let (val, status) = match layout {
+            Layout::Float(FloatLayout::BFloat16) => todo!("division of BF16 floats"),
+            Layout::Float(FloatLayout::IeeeHalf) => {
+                let val1 = ieee::Half::from(self);
+                let val2 = ieee::Half::from(rhs);
+                let res = val1.div_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeSingle) => {
+                let val1 = ieee::Single::from(self);
+                let val2 = ieee::Single::from(rhs);
+                let res = val1.div_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeDouble) => {
+                let val1 = ieee::Double::from(self);
+                let val2 = ieee::Double::from(rhs);
+                let res = val1.div_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeQuad) => {
+                let val1 = ieee::Quad::from(self);
+                let val2 = ieee::Quad::from(rhs);
+                let res = val1.div_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::X87DoubleExt) => {
+                let val1 = ieee::X87DoubleExtended::from(self);
+                let val2 = ieee::X87DoubleExtended::from(rhs);
+                let res = val1.div_r(val2, flag.into());
+                (Number::from(res.value), res.status)
+            }
+            Layout::Float(FloatLayout::IeeeOct) => unimplemented!("256-bit floats"),
+            Layout::Float(FloatLayout::FloatTapered) => todo!("division of tapered floats"),
+            Layout::Integer(_) => panic!("float division of integer numbers"),
+        };
+        match (val.is_nan(), status) {
+            (true, _) => None,
+            (false, Status::DIV_BY_ZERO) => None,
+            (false, Status::INVALID_OP) => None,
+            (false, Status::OVERFLOW | Status::INEXACT) => None,
+            _ => Some(val),
+        }
     }
 }
