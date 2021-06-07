@@ -9,13 +9,13 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use core::cmp::Ordering;
-use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl};
+use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl, Shr};
 
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
     Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
-use crate::instr::{FloatEqFlag, IntFlags, MergeFlag};
+use crate::instr::{FloatEqFlag, IntFlags, MergeFlag, SignFlag};
 use crate::reg::{MaybeNumber, Number, RegisterSet, Registers};
 use crate::LibSite;
 
@@ -360,7 +360,7 @@ impl InstructionSet for ArithmeticOp {
 }
 
 impl InstructionSet for BitwiseOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
         match self {
             BitwiseOp::And(reg, src1, src2, dst) => {
                 regs.op(reg, src1, reg, src2, reg, dst, BitAnd::bitand)
@@ -377,37 +377,52 @@ impl InstructionSet for BitwiseOp {
             BitwiseOp::Shl(reg1, shift, reg2, srcdst) => {
                 regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shl::shl)
             }
-            BitwiseOp::ShrA(_, _, _, _, _) => todo!(),
-            BitwiseOp::ShrR(_, _, _, _) => todo!(),
+            BitwiseOp::ShrA(flag, reg1, shift, reg2, srcdst) => {
+                let res = regs.get_both(reg1, shift, reg2, srcdst).map(|(shift, val)| {
+                    if flag == SignFlag::Unsigned {
+                        val.shr(shift)
+                    } else {
+                        val.shr_signed(shift)
+                    }
+                });
+                regs.set(reg2, srcdst, res);
+            }
+            BitwiseOp::ShrR(reg1, shift, reg2, srcdst) => {
+                regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shr::shr)
+            }
             BitwiseOp::Scl(reg1, shift, reg2, srcdst) => {
                 regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scl)
             }
             BitwiseOp::Scr(reg1, shift, reg2, srcdst) => {
                 regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scr)
             }
-            BitwiseOp::RevA(_, _) => todo!(),
-            BitwiseOp::RevR(_, _) => todo!(),
+            BitwiseOp::RevA(reg, idx) => {
+                regs.set(reg, idx, regs.get(reg, idx).map(Number::reverse_bits));
+            }
+            BitwiseOp::RevR(reg, idx) => {
+                regs.set(reg, idx, regs.get(reg, idx).map(Number::reverse_bits));
+            }
         }
         ExecStep::Next
     }
 }
 
 impl InstructionSet for BytesOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep { todo!() }
+    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep { todo!() }
 }
 
 impl InstructionSet for DigestOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep { todo!() }
+    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep { todo!() }
 }
 
 impl InstructionSet for Secp256k1Op {
     #[cfg(not(feature = "secp256k1"))]
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+    fn exec(self, _: &mut Registers, _: LibSite) -> ExecStep {
         unimplemented!("AluVM runtime compiled without support for Secp256k1 instructions")
     }
 
     #[cfg(feature = "secp256k1")]
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
         use secp256k1::{PublicKey, SecretKey};
 
         use crate::{RegA, RegR};
@@ -475,14 +490,14 @@ impl InstructionSet for Secp256k1Op {
 
 impl InstructionSet for Curve25519Op {
     #[cfg(not(feature = "curve25519"))]
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
+    fn exec(self, _: &mut Registers, _: LibSite) -> ExecStep {
         unimplemented!("AluVM runtime compiled without support for Curve25519 instructions")
     }
 
     #[cfg(feature = "curve25519")]
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep { todo!() }
+    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep { todo!() }
 }
 
 impl InstructionSet for NOp {
-    fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep { ExecStep::Next }
+    fn exec(self, _: &mut Registers, _: LibSite) -> ExecStep { ExecStep::Next }
 }

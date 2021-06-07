@@ -12,6 +12,7 @@ use core::convert::TryFrom;
 use core::ops::{BitAnd, BitOr, BitXor, Not, Shl, Shr};
 
 use super::{MaybeNumber, Number};
+use crate::reg::number::NumberLayout;
 
 impl Not for MaybeNumber {
     type Output = MaybeNumber;
@@ -64,6 +65,7 @@ impl Shl for Number {
 
     #[inline]
     fn shl(self, rhs: Self) -> Self::Output {
+        assert!(self.layout().is_integer(), "bit shifting float number");
         self.to_u1024_bytes()
             .shl(u16::try_from(rhs).expect("attempt to bitshift left for more than 2^16 bits")
                 as usize)
@@ -76,6 +78,7 @@ impl Shr for Number {
 
     #[inline]
     fn shr(self, rhs: Self) -> Self::Output {
+        assert!(self.layout().is_integer(), "bit shifting float number");
         self.to_u1024_bytes()
             .shr(u16::try_from(rhs).expect("attempt to bitshift right for more than 2^16 bits")
                 as usize)
@@ -84,19 +87,46 @@ impl Shr for Number {
 }
 
 impl Number {
-    pub fn scl(src: Number, shift: Number) -> Number {
+    /// Cyclic bit shift left. Panics if the number is not an integer.
+    pub fn scl(self, shift: Number) -> Number {
+        assert!(self.layout().is_integer(), "bit shifting float number");
         let excess = u16::try_from(shift).expect(
             "shift value in `scl` operation must always be from either `a8` or `a16` registry",
         );
-        let residue = src >> Number::from(src.len() - excess);
-        (src << shift) | residue
+        let residue = self >> Number::from(self.len() - excess);
+        (self << shift) | residue
     }
 
-    pub fn scr(src: Number, shift: Number) -> Number {
+    /// Cyclic bit shift right. Panics if the number is not an integer.
+    pub fn scr(self, shift: Number) -> Number {
+        assert!(self.layout().is_integer(), "bit shifting float number");
         let excess = u16::try_from(shift).expect(
             "shift value in `scl` operation must always be from either `a8` or `a16` registry",
         );
-        let residue = src << Number::from(src.len() - excess);
-        (src >> shift) | residue
+        let residue = self << Number::from(self.len() - excess);
+        (self >> shift) | residue
+    }
+
+    /// Bit shift right for signed value. Panics if the number is not an integer.
+    pub fn shr_signed(self, shift: Number) -> Number {
+        assert!(self.layout().is_integer(), "bit shifting float number");
+        if self.layout().bits() > 128 {
+            todo!("implement signed right bit shift")
+        }
+        let shift = u16::try_from(shift).expect(
+            "shift value in `scl` operation must always be from either `a8` or `a16` registry",
+        );
+        let val = i128::from(self);
+        Number::from(val << shift)
+    }
+
+    /// Reverses the order of bits in the integer. The least significant bit becomes the most
+    /// significant bit, second least-significant bit becomes second most-significant bit, etc.
+    pub fn reverse_bits(mut self) -> Number {
+        assert!(self.layout().is_integer(), "reversing bit order of float");
+        let bytes = &mut self[..];
+        bytes.reverse();
+        bytes.iter_mut().for_each(|byte| *byte = byte.reverse_bits());
+        self
     }
 }
