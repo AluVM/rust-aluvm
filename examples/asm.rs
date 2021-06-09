@@ -20,15 +20,22 @@ use core::convert::TryFrom;
 
 use alure::instr::serialize::disassemble;
 use alure::instr::{ArithmeticOp, CmpOp, ControlFlowOp, Instr, MoveOp, NOp, PutOp, Secp256k1Op};
-use alure::{Lib, Reg16, Reg32, Reg8, RegA, RegAR, RegBlockAR, RegR, Runtime};
+use alure::{
+    Lib, Reg16, Reg32, Reg8, RegA, RegAF, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime,
+};
 use amplify_num::hex::ToHex;
-use amplify_num::u4;
+use amplify_num::{u3, u4};
 
 fn main() {
     let code = aluasm! {
         clr     r1024[5]                        ;
         put     378,a16[8]                      ;
         putif   0xaf67937b5498dc,r128[5]        ;
+        swp     a8[1],a8[2]                     ;
+        swp     f256[8],f256[7]                 ;
+        dup     a256[1],a256[7]                 ;
+        mov     a16[1],a16[2]                   ;
+        mov     r256[8],r256[7]                 ;
         ecgen:secp r256[1],r512[1]              ;
         ecmul:secp a256[1],r512[1],r512[22]     ;
         ecadd:secp r512[22],r512[1]             ;
@@ -38,13 +45,8 @@ fn main() {
     };
 
     /*
-       swp     a8[1], a16[2]                   ;
-       swp     r256[8], r256[7]                ;
-       swp     a256[1], r256[7]                ;
-       mov     a8[1], a16[2]                   ;
-       mov     r256[8], r256[7]                ;
-       mov     a256[1], r256[7]                ;
-       mov     r512[4], a512[3]                ;
+       cpy     a256[1], r256[7]                ;
+       cnv     f512[4], a512[3]                ;
        gt:u    a8[5],a64[9]                    ;
        lt:s    a8[5],a64[9]                    ;
        gt      r160[5],r256[9]                 ;

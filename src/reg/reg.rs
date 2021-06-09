@@ -784,7 +784,7 @@ impl From<u3> for RegR {
 /// superset includes `A`, `F`, and `R`families of registers.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
 #[display(inner)]
-pub enum RegARF {
+pub enum RegAFR {
     /// Arithmetic integer registers (`A` registers)
     #[from]
     A(RegA),
@@ -798,32 +798,32 @@ pub enum RegARF {
     R(RegR),
 }
 
-impl RegisterSet for RegARF {
+impl RegisterSet for RegAFR {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
-            RegARF::A(a) => a.bytes(),
-            RegARF::F(f) => f.bytes(),
-            RegARF::R(r) => r.bytes(),
+            RegAFR::A(a) => a.bytes(),
+            RegAFR::F(f) => f.bytes(),
+            RegAFR::R(r) => r.bytes(),
         }
     }
 
     #[inline]
     fn layout(&self) -> number::Layout {
         match self {
-            RegARF::A(a) => a.layout(),
-            RegARF::F(f) => f.layout(),
-            RegARF::R(r) => r.layout(),
+            RegAFR::A(a) => a.layout(),
+            RegAFR::F(f) => f.layout(),
+            RegAFR::R(r) => r.layout(),
         }
     }
 }
 
-impl RegARF {
+impl RegAFR {
     /// Returns inner A-register type, if any
     #[inline]
     pub fn reg_a(self) -> Option<RegA> {
         match self {
-            RegARF::A(a) => Some(a),
+            RegAFR::A(a) => Some(a),
             _ => None,
         }
     }
@@ -832,7 +832,7 @@ impl RegARF {
     #[inline]
     pub fn reg_f(self) -> Option<RegF> {
         match self {
-            RegARF::F(f) => Some(f),
+            RegAFR::F(f) => Some(f),
             _ => None,
         }
     }
@@ -841,18 +841,18 @@ impl RegARF {
     #[inline]
     pub fn reg_r(self) -> Option<RegR> {
         match self {
-            RegARF::R(r) => Some(r),
+            RegAFR::R(r) => Some(r),
             _ => None,
         }
     }
 }
 
-impl From<RegA2> for RegARF {
+impl From<RegA2> for RegAFR {
     #[inline]
     fn from(reg: RegA2) -> Self { Self::A(reg.into()) }
 }
 
-impl From<RegAF> for RegARF {
+impl From<RegAF> for RegAFR {
     #[inline]
     fn from(reg: RegAF) -> Self {
         match reg {
@@ -862,7 +862,7 @@ impl From<RegAF> for RegARF {
     }
 }
 
-impl From<RegAR> for RegARF {
+impl From<RegAR> for RegAFR {
     #[inline]
     fn from(reg: RegAR) -> Self {
         match reg {
@@ -1041,11 +1041,11 @@ impl From<RegA2> for RegAR {
 /// Block of registers, either integer arithmetic or non-arithmetic (general) registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum RegBlockAR {
-    /// Arithmetic registers (`a` registers)
+    /// Arithmetic integer registers (`A` registers)
     #[display("a")]
     A,
 
-    /// Non-arithmetic (generic) registers (`r` registers)
+    /// Non-arithmetic (generic) registers (`R` registers)
     #[display("r")]
     R,
 }
@@ -1055,6 +1055,32 @@ impl RegBlockAR {
         match self {
             RegBlockAR::A => RegA::with(bits).map(RegAR::A),
             RegBlockAR::R => RegR::with(bits).map(RegAR::R),
+        }
+    }
+}
+
+/// Block of registers, either integer, float arithmetic or non-arithmetic (general) registers
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum RegBlockAFR {
+    /// Arithmetic integer registers (`A` registers)
+    #[display("a")]
+    A,
+
+    /// Arithmetic float registers (`F` registers)
+    #[display("f")]
+    F,
+
+    /// Non-arithmetic (generic) registers (`R` registers)
+    #[display("r")]
+    R,
+}
+
+impl RegBlockAFR {
+    pub fn into_reg(self, bits: u16) -> Option<RegAFR> {
+        match self {
+            RegBlockAFR::A => RegA::with(bits).map(RegAFR::A),
+            RegBlockAFR::F => RegF::with(bits, false).map(RegAFR::F),
+            RegBlockAFR::R => RegR::with(bits).map(RegAFR::R),
         }
     }
 }
@@ -1119,7 +1145,6 @@ impl Default for Registers {
     #[inline]
     fn default() -> Self {
         Registers {
-            a1024: Default::default(),
             a8: Default::default(),
             a16: Default::default(),
             a32: Default::default(),
@@ -1127,6 +1152,7 @@ impl Default for Registers {
             a128: Default::default(),
             a256: Default::default(),
             a512: Default::default(),
+            a1024: Default::default(),
 
             f16b: Default::default(),
             f16: Default::default(),
@@ -1149,10 +1175,13 @@ impl Default for Registers {
             s16: Default::default(),
 
             st0: true,
+            // TODO: Introduce `ca0` register
             cy0: 0,
+            // TODO: Convert into short library references
             cs0: Box::new([LibSite::default(); u16::MAX as usize]),
             cp0: 0,
 
+            // TODO: Make it a part of runtime
             #[cfg(feature = "secp256k1")]
             secp: secp256k1::Secp256k1::new(),
         }
@@ -1199,10 +1228,10 @@ impl Registers {
     }
 
     /// Retrieves register value
-    pub fn get(&self, reg: impl Into<RegARF>, index: impl Into<Reg32>) -> MaybeNumber {
+    pub fn get(&self, reg: impl Into<RegAFR>, index: impl Into<Reg32>) -> MaybeNumber {
         let index = index.into() as usize;
         match reg.into() {
-            RegARF::A(a) => match a {
+            RegAFR::A(a) => match a {
                 RegA::A8 => self.a8[index].map(Number::from),
                 RegA::A16 => self.a16[index].map(Number::from),
                 RegA::A32 => self.a32[index].map(Number::from),
@@ -1213,7 +1242,7 @@ impl Registers {
                 RegA::A1024 => self.a1024[index].map(Number::from),
             },
 
-            RegARF::R(r) => match r {
+            RegAFR::R(r) => match r {
                 RegR::R128 => self.r128[index].map(Number::from),
                 RegR::R160 => self.r160[index].map(Number::from),
                 RegR::R256 => self.r256[index].map(Number::from),
@@ -1224,7 +1253,7 @@ impl Registers {
                 RegR::R8192 => self.r8192[index].map(Number::from),
             },
 
-            RegARF::F(f) => match f {
+            RegAFR::F(f) => match f {
                 RegF::F16B => self.r128[index].map(|slice| Number::with_reg(slice, f)),
                 RegF::F16 => self.r128[index].map(|slice| Number::with_reg(slice, f)),
                 RegF::F32 => self.r128[index].map(|slice| Number::with_reg(slice, f)),
@@ -1248,9 +1277,9 @@ impl Registers {
     #[inline]
     pub fn get_both(
         &self,
-        reg1: impl Into<RegARF>,
+        reg1: impl Into<RegAFR>,
         idx1: impl Into<Reg32>,
-        reg2: impl Into<RegARF>,
+        reg2: impl Into<RegAFR>,
         idx2: impl Into<Reg32>,
     ) -> Option<(Number, Number)> {
         self.get(reg1, idx1).and_then(|val1| self.get(reg2, idx2).map(|val2| (val1, val2)))
@@ -1262,14 +1291,14 @@ impl Registers {
     /// Returns if the value was not `None`
     pub fn set(
         &mut self,
-        reg: impl Into<RegARF>,
+        reg: impl Into<RegAFR>,
         index: impl Into<Reg32>,
         value: impl Into<MaybeNumber>,
     ) -> bool {
         let index = index.into() as usize;
         let value: Option<Number> = value.into().into();
         match reg.into() {
-            RegARF::A(a) => match a {
+            RegAFR::A(a) => match a {
                 RegA::A1024 => self.a1024[index] = value.map(Number::into),
                 RegA::A8 => self.a8[index] = value.map(Number::into),
                 RegA::A16 => self.a16[index] = value.map(Number::into),
@@ -1279,7 +1308,7 @@ impl Registers {
                 RegA::A256 => self.a256[index] = value.map(Number::into),
                 RegA::A512 => self.a512[index] = value.map(Number::into),
             },
-            RegARF::R(r) => match r {
+            RegAFR::R(r) => match r {
                 RegR::R128 => self.r128[index] = value.map(Number::into),
                 RegR::R160 => self.r160[index] = value.map(Number::into),
                 RegR::R256 => self.r256[index] = value.map(Number::into),
@@ -1289,7 +1318,7 @@ impl Registers {
                 RegR::R4096 => self.r4096[index] = value.map(Number::into),
                 RegR::R8192 => self.r8192[index] = value.map(Number::into),
             },
-            RegARF::F(f) => match f {
+            RegAFR::F(f) => match f {
                 RegF::F16B => self.f16b[index] = value.map(Number::into),
                 RegF::F16 => self.f16b[index] = value.map(Number::into),
                 RegF::F32 => self.f16b[index] = value.map(Number::into),
@@ -1308,7 +1337,7 @@ impl Registers {
     #[inline]
     pub fn set_if(
         &mut self,
-        reg: impl Into<RegARF>,
+        reg: impl Into<RegAFR>,
         index: impl Into<Reg32>,
         value: Number,
     ) -> bool {
@@ -1324,11 +1353,11 @@ impl Registers {
     #[inline]
     pub fn op(
         &mut self,
-        reg1: impl Into<RegARF>,
+        reg1: impl Into<RegAFR>,
         src1: impl Into<Reg32>,
-        reg2: impl Into<RegARF>,
+        reg2: impl Into<RegAFR>,
         src2: impl Into<Reg32>,
-        reg3: impl Into<RegARF>,
+        reg3: impl Into<RegAFR>,
         dst: impl Into<Reg32>,
         op: fn(Number, Number) -> Number,
     ) {

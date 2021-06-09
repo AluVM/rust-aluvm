@@ -64,62 +64,38 @@ macro_rules! instr {
         ))
     };
 
+    (swp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+            panic!("Swap operation must be performed between registers of the same type");
+        }
+        Instr::Move(_reg_sfx!(MoveOp, Swp, $reg1)(
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (mov $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+            panic!("Move operation must be performed between registers of the same type");
+        }
+        Instr::Move(_reg_sfx!(MoveOp, Mov, $reg1)(
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (dup $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+            panic!("Dup operation must be performed between registers of the same type");
+        }
+        Instr::Move(_reg_sfx!(MoveOp, Dup, $reg1)(
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+
     /*
-    (swp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        match (_reg_block!($reg1), _reg_block!($reg2)) {
-            (RegBlockAR::A, RegBlockAR::A) => Instr::Move(MoveOp::SwpA(
-                RegA::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
-                _reg_idx!($idx1),
-                RegA::from(_reg_ty!(Reg, $reg2)).reg_a().unwrap(),
-                _reg_idx!($idx2),
-            )),
-            (RegBlockAR::R, RegBlockAR::R) => Instr::Move(MoveOp::SwpR(
-                RegR::from(_reg_ty!(Reg, $reg1)).reg_r().unwrap(),
-                _reg_idx!($idx1),
-                RegR::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
-                _reg_idx!($idx2),
-            )),
-            (RegBlockAR::A, RegBlockAR::R) => Instr::Move(MoveOp::SwpAR(
-                RegAR::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
-                _reg_idx!($idx1),
-                RegAR::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
-                _reg_idx!($idx2),
-            )),
-            (RegBlockAR::R, RegBlockAR::A) => {
-                panic!("Wrong order of registers in `swp` operation. Use A-register first")
-            }
-        }
-    };
-
-    (mov $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        match (_reg_block!($reg1), _reg_block!($reg2)) {
-            (RegBlockAR::A, RegBlockAR::A) => Instr::Move(MoveOp::MovA(
-                Reg::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
-                _reg_idx!($idx1),
-                Reg::from(_reg_ty!(Reg, $reg2)).reg_a().unwrap(),
-                _reg_idx!($idx2),
-            )),
-            (RegBlockAR::R, RegBlockAR::R) => Instr::Move(MoveOp::MovR(
-                Reg::from(_reg_ty!(Reg, $reg1)).reg_r().unwrap(),
-                _reg_idx!($idx1),
-                Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
-                _reg_idx!($idx2),
-            )),
-            (RegBlockAR::A, RegBlockAR::R) => Instr::Move(MoveOp::MovAR(
-                Reg::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
-                _reg_idx!($idx1),
-                Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
-                _reg_idx!($idx2),
-            )),
-            (RegBlockAR::R, RegBlockAR::A) => Instr::Move(MoveOp::MovRA(
-                Reg::from(_reg_ty!(Reg, $reg1)).reg_r().unwrap(),
-                _reg_idx!($idx1),
-                Reg::from(_reg_ty!(Reg, $reg2)).reg_a().unwrap(),
-                _reg_idx!($idx2),
-            )),
-        }
-    };
-
     (gt $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`gt` operation may be applied only to the registers of the same family");
@@ -376,7 +352,7 @@ macro_rules! instr {
     };
      */
     (ecgen: secp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_block!($reg1) != RegBlockAR::R || _reg_block!($reg2) != RegBlockAR::R {
+        if _reg_block!($reg1) != RegBlockAFR::R || _reg_block!($reg2) != RegBlockAFR::R {
             panic!("elliptic curve instruction accept only generic registers (R-registers)");
         } else {
             Instr::Secp256k1(Secp256k1Op::Gen(_reg_idx!($idx1), _reg_idx8!($idx2)))
@@ -392,7 +368,7 @@ macro_rules! instr {
             panic!("ecmul instruction can be used only with registers of the same type");
         } else {
             Instr::Secp256k1(Secp256k1Op::Mul(
-                _reg_block!($reg1),
+                _reg_block_ar!($reg1),
                 _reg_idx!($idx1),
                 _reg_idx!($idx2),
                 _reg_idx!($idx3),
@@ -400,14 +376,14 @@ macro_rules! instr {
         }
     };
     (ecadd: secp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_block!($reg1) != RegBlockAR::R || _reg_block!($reg2) != RegBlockAR::R {
+        if _reg_block!($reg1) != RegBlockAFR::R || _reg_block!($reg2) != RegBlockAFR::R {
             panic!("elliptic curve instruction accept only generic registers (R-registers)");
         } else {
             Instr::Secp256k1(Secp256k1Op::Add(_reg_idx!($idx1), _reg_idx8!($idx2)))
         }
     };
     (ecneg: secp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_block!($reg1) != RegBlockAR::R || _reg_block!($reg2) != RegBlockAR::R {
+        if _reg_block!($reg1) != RegBlockAFR::R || _reg_block!($reg2) != RegBlockAFR::R {
             panic!("elliptic curve instruction accept only generic registers (R-registers)");
         } else {
             Instr::Secp256k1(Secp256k1Op::Neg(_reg_idx!($idx1), _reg_idx8!($idx2)))
@@ -455,10 +431,7 @@ macro_rules! aluasm_inner {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! _reg_block {
-    (ap) => {
-        RegBlockAR::A
-    };
+macro_rules! _reg_block_ar {
     (a8) => {
         RegBlockAR::A
     };
@@ -479,6 +452,9 @@ macro_rules! _reg_block {
     };
     (a512) => {
         RegBlockAR::A
+    };
+    (a1024) => {
+        RegBlockAFR::A
     };
 
     (r128) => {
@@ -509,10 +485,86 @@ macro_rules! _reg_block {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! _reg_sfx {
-    ($a:ident, $b:ident,ap) => {
-        paste! { $a :: [<$b A>] }
+macro_rules! _reg_block {
+    (a8) => {
+        RegBlockAFR::A
     };
+    (a16) => {
+        RegBlockAFR::A
+    };
+    (a32) => {
+        RegBlockAFR::A
+    };
+    (a64) => {
+        RegBlockAFR::A
+    };
+    (a128) => {
+        RegBlockAFR::A
+    };
+    (a256) => {
+        RegBlockAFR::A
+    };
+    (a512) => {
+        RegBlockAFR::A
+    };
+    (a1024) => {
+        RegBlockAFR::A
+    };
+
+    (f16b) => {
+        RegBlockAFR::F
+    };
+    (f16) => {
+        RegBlockAFR::F
+    };
+    (f32) => {
+        RegBlockAFR::F
+    };
+    (f64) => {
+        RegBlockAFR::F
+    };
+    (f80) => {
+        RegBlockAFR::F
+    };
+    (f128) => {
+        RegBlockAFR::F
+    };
+    (f256) => {
+        RegBlockAFR::F
+    };
+    (f512) => {
+        RegBlockAFR::F
+    };
+
+    (r128) => {
+        RegBlockAFR::R
+    };
+    (r160) => {
+        RegBlockAFR::R
+    };
+    (r256) => {
+        RegBlockAFR::R
+    };
+    (r512) => {
+        RegBlockAFR::R
+    };
+    (r1024) => {
+        RegBlockAFR::R
+    };
+    (r2048) => {
+        RegBlockAFR::R
+    };
+    (r4096) => {
+        RegBlockAFR::R
+    };
+    (r8192) => {
+        RegBlockAFR::R
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_sfx {
     ($a:ident, $b:ident,a8) => {
         paste! { $a :: [<$b A>] }
     };
@@ -532,6 +584,9 @@ macro_rules! _reg_sfx {
         paste! { $a :: [<$b A>] }
     };
     ($a:ident, $b:ident,a512) => {
+        paste! { $a :: [<$b A>] }
+    };
+    ($a:ident, $b:ident,a1024) => {
         paste! { $a :: [<$b A>] }
     };
 
@@ -589,9 +644,6 @@ macro_rules! _reg_sfx {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! _reg_ty {
-    ($ident:ident,ap) => {
-        paste! { [<$ident A>] :: AP }
-    };
     ($ident:ident,a8) => {
         paste! { [<$ident A>] :: A8 }
     };
@@ -612,6 +664,34 @@ macro_rules! _reg_ty {
     };
     ($ident:ident,a512) => {
         paste! { [<$ident A>] :: A512 }
+    };
+    ($ident:ident,a1024) => {
+        paste! { [<$ident A>] :: A1024 }
+    };
+
+    ($ident:ident,f16b) => {
+        paste! { [<$ident F>] :: F16B }
+    };
+    ($ident:ident,f16) => {
+        paste! { [<$ident F>] :: F16 }
+    };
+    ($ident:ident,f32) => {
+        paste! { [<$ident F>] :: F32 }
+    };
+    ($ident:ident,f64) => {
+        paste! { [<$ident F>] :: F64 }
+    };
+    ($ident:ident,f80) => {
+        paste! { [<$ident F>] :: F80 }
+    };
+    ($ident:ident,f128) => {
+        paste! { [<$ident F>] :: F128 }
+    };
+    ($ident:ident,f256) => {
+        paste! { [<$ident F>] :: F256 }
+    };
+    ($ident:ident,f512) => {
+        paste! { [<$ident F>] :: F512 }
     };
 
     ($ident:ident,r128) => {
