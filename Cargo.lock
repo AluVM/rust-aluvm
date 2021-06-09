@@ -3,16 +3,14 @@
 version = 3
 
 [[package]]
-name = "alure"
+name = "aluvm"
 version = "0.1.0"
 dependencies = [
  "amplify_derive",
  "amplify_num",
  "bitcoin_hashes",
  "curve25519-dalek",
- "half",
  "paste",
- "rustc_apfloat",
  "secp256k1",
 ]
 
