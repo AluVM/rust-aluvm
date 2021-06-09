@@ -10,7 +10,9 @@ dependencies = [
  "amplify_num",
  "bitcoin_hashes",
  "curve25519-dalek",
+ "half",
  "paste",
+ "rustc_apfloat",
  "secp256k1",
 ]
 
