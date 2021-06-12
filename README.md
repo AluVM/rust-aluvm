@@ -23,9 +23,9 @@ For more details on AluVM, please check [the specification][AluVM]
 
 ## Design
 
-The robusness lies at the very core of AluVM. It is designed to avoid any
-undefined behaviour. Specificly,
-* All registers may be in the undefined statel
+The robustness lies at the very core of AluVM. It is designed to avoid any
+undefined behaviour. Specifically,
+* All registers may be in the undefined state;
 * Impossible/incorrect operations put destination register into a special 
   *undefined state*;
 * Code always extended to 2^16 bytes with zeros, which corresponds to 
@@ -39,7 +39,7 @@ undefined behaviour. Specificly,
 * Data segment is always signed;
 * Code commits to the used ISA extensions;
 * Libraries identified by the signature;
-* Code does not runs if not all libraries are present;
+* Code does not run if not all libraries are present;
 
 ![Comparison table](doc/comparison.png)
 
@@ -117,8 +117,8 @@ Check [the specification][AluVM] for the details.
 - Concept was presented on 19th of May 2021 
   ([check the recoding](https://youtu.be/Mma0oyiVbSE))
 - v0.1 release of Rust AluVM implementation on 28th of May 2021
-  ([ISA & API docs](https://docs.rs/aluvm/0.1.0/aluvm/))
+  ([ISA & API docs](https://docs.rs/aluvm/0.1.0/alure/))
 - v0.2 release with multiple enhancements on 9 Jun 2021
-  ([ISA & API docs](https://docs.rs/aluvm/0.2![img.png](img.png).0/aluvm/))
+  ([ISA & API docs](https://docs.rs/aluvm/0.2.1/aluvm/))
 
 [AluVM]: https://github.com/internet2-org/aluvm-spec

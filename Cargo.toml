@@ -1,11 +1,11 @@
 [package]
 name = "aluvm"
 description = "AluVM rust implementation"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Dr Maxim Orlovsky <orlovsky@pandoracore.com>"]
 edition = "2018"
 license = "MIT"
-repository = "https://github.com/internet2-org/alure"
+repository = "https://github.com/internet2-org/rust-aluvm"
 homepage = "https://lnp-bp.org"
 keywords = ["virtual-machine", "emulator", "declarative", "risc"]
 categories = ["no-std", "embedded", "compilers", "cryptography", "emulators"]
@@ -13,7 +13,7 @@ readme = "README.md"
 exclude = [".github", "test"]
 
 [lib]
-name = "alure"
+name = "aluvm"
 
 [dependencies]
 amplify_num = "0.1"
