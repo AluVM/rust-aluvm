@@ -11,16 +11,16 @@
 extern crate alloc;
 
 #[macro_use]
-extern crate alure;
+extern crate aluvm;
 
 #[macro_use]
 extern crate paste;
 
 use core::convert::TryFrom;
 
-use alure::instr::serialize::disassemble;
-use alure::instr::{ArithmeticOp, CmpOp, ControlFlowOp, Instr, MoveOp, NOp, PutOp, Secp256k1Op};
-use alure::{
+use aluvm::instr::serialize::disassemble;
+use aluvm::instr::{ArithmeticOp, CmpOp, ControlFlowOp, Instr, MoveOp, NOp, PutOp, Secp256k1Op};
+use aluvm::{
     Lib, Reg16, Reg32, Reg8, RegA, RegAF, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime,
 };
 use amplify_num::hex::ToHex;
@@ -36,6 +36,8 @@ fn main() {
         dup     a256[1],a256[7]                 ;
         mov     a16[1],a16[2]                   ;
         mov     r256[8],r256[7]                 ;
+        cpy     a256[1], a256[7]                ;
+        cnfa    f128[4], a128[3]                ;
         ecgen:secp r256[1],r512[1]              ;
         ecmul:secp a256[1],r512[1],r512[22]     ;
         ecadd:secp r512[22],r512[1]             ;
@@ -45,8 +47,6 @@ fn main() {
     };
 
     /*
-       cpy     a256[1], r256[7]                ;
-       cnv     f512[4], a512[3]                ;
        gt:u    a8[5],a64[9]                    ;
        lt:s    a8[5],a64[9]                    ;
        gt      r160[5],r256[9]                 ;

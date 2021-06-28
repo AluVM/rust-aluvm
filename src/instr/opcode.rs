@@ -259,7 +259,7 @@ pub enum MoveOp {
     /// `false`. Otherwise sets `st0` to `true`.
     ///
     /// NB: operation always treats integers as signed integers.
-    #[display("cnv\t\t{0}{1},{2}{3}")]
+    #[display("cnaf\t\t{0}{1},{2}{3}")]
     CnvAF(RegA, Reg32, RegF, Reg32),
 
     /// Conversion operation: converts value of a float arithmetic register to an integer register
@@ -268,7 +268,7 @@ pub enum MoveOp {
     /// `false`. Otherwise sets `st0` to `true`.
     ///
     /// NB: operation always treats integers as signed integers.
-    #[display("cnv\t\t{0}{1},{2}{3}")]
+    #[display("cnfa\t\t{0}{1},{2}{3}")]
     CnvFA(RegF, Reg32, RegA, Reg32),
 }
 

@@ -12,7 +12,7 @@
 #[macro_export]
 macro_rules! aluasm {
     ($( $tt:tt )+) => { {
-        let mut code: Vec<::alure::Instr<::alure::instr::NOp>> = vec![];
+        let mut code: Vec<::aluvm::Instr<::aluvm::instr::NOp>> = vec![];
         aluasm_inner! { code => $( $tt )+ };
         code
     } }
@@ -92,6 +92,41 @@ macro_rules! instr {
         Instr::Move(_reg_sfx!(MoveOp, Dup, $reg1)(
             _reg_ty!(Reg, $reg1),
             _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (cpy $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+            panic!("Copy operation must be performed between registers of the same type");
+        }
+        Instr::Move(_reg_sfx!(MoveOp, Cpy, $reg1)(
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_ty!(Reg, $reg2),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (cnv $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        Instr::Move(_reg_sfx!(MoveOp, Cnv, $reg1)(
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_ty!(Reg, $reg2),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (cnaf $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        Instr::Move(MoveOp::CnvAF(
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_ty!(Reg, $reg2),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (cnfa $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        Instr::Move(MoveOp::CnvFA(
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_ty!(Reg, $reg2),
             _reg_idx!($idx2),
         ))
     }};
