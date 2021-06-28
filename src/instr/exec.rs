@@ -19,7 +19,7 @@ use super::{
     Instr, MoveOp, NOp, PutOp, Secp256k1Op,
 };
 use crate::instr::{FloatEqFlag, IntFlags, MergeFlag, SignFlag};
-use crate::reg::{MaybeNumber, Number, RegisterSet, Registers};
+use crate::reg::{MaybeNumber, Number, NumberLayout, RegisterSet, Registers};
 use crate::{ByteStr, LibSite, Reg32, RegA, RegR};
 
 /// Turing machine movement after instruction execution
@@ -474,7 +474,7 @@ impl InstructionSet for BytesOp {
                 let s1 = regs.get_s(reg1);
                 let s2 = regs.get_s(reg2);
                 regs.st0 = match (s1, s2) {
-                    (Some(s1), Some(s2)) => s1 == s1,
+                    (Some(s1), Some(s2)) => s1 == s2,
                     (None, None) => true,
                     _ => false,
                 };
@@ -503,14 +503,84 @@ impl InstructionSet for BytesOp {
                     regs.set(RegA::A16, Reg32::Reg1, MaybeNumber::none());
                 })
             }
-            BytesOp::Rev(reg1, reg2) => {}
-            BytesOp::Con(reg1, reg2, no, offset, len) => {}
-            BytesOp::Extr(src, dst, index, offset) => {}
-            BytesOp::Inj(src, dst, index, offset) => {}
-            BytesOp::Join(src1, src2, dst) => {}
-            BytesOp::Splt(flag, offset, src, dst1, dst2) => {}
-            BytesOp::Ins(flag, offset, src, dst) => {}
-            BytesOp::Del(flag, reg1, offset1, reg2, offset2, flag1, flag2, src, dst) => {}
+            BytesOp::Rev(reg1, reg2) => {
+                let mut f = || -> Option<()> {
+                    let mut s = regs.get_s(reg1)?.clone();
+                    let bs = s.as_mut();
+                    bs.reverse();
+                    regs.s16.insert(reg2, s);
+                    Some(())
+                };
+                f().unwrap_or_else(|| {
+                    regs.st0 = false;
+                    regs.set(RegA::A16, Reg32::Reg1, MaybeNumber::none());
+                })
+            }
+            BytesOp::Con(reg1, reg2, no, offset, len) => {
+                todo!()
+            }
+            BytesOp::Extr(src, dst, index, offset) => {
+                let mut f = || -> Option<()> {
+                    let s = regs.get_s(src)?.clone();
+                    let offset = regs.a16[offset as u8 as usize]?;
+                    let end = offset.saturating_add(dst.layout().bytes());
+                    let num = Number::from_slice(&s.as_ref()[offset as usize..=end as usize]);
+                    regs.set(dst, index, num);
+                    Some(())
+                };
+                f().unwrap_or_else(|| {
+                    regs.st0 = false;
+                    regs.set(dst, index, MaybeNumber::none());
+                })
+            }
+            BytesOp::Inj(src, dst, index, offset) => {
+                let mut f = || -> Option<()> {
+                    let mut s = regs.get_s(src)?.clone();
+                    let val = regs.get(dst, index).map(|v| v)?;
+                    let offset = regs.a16[offset as u8 as usize]?;
+                    let end = offset.saturating_add(dst.layout().bytes() - 1);
+                    s.adjust_len(end, true);
+                    s.as_mut()[offset as usize..=end as usize].copy_from_slice(val.as_ref());
+                    regs.s16.insert(src as u8, s);
+                    Some(())
+                };
+                f().unwrap_or_else(|| {
+                    regs.st0 = false;
+                    regs.set(dst, index, MaybeNumber::none());
+                })
+            }
+            BytesOp::Join(src1, src2, dst) => {
+                let mut f = || -> Option<()> {
+                    let (s1, s2) = regs.get_both_s(src1, src2)?;
+                    let len = s1.len() + s2.len();
+                    if len > u16::MAX as usize + 1 {
+                        return None;
+                    }
+                    let mut d = s1.clone();
+                    if len == u16::MAX as usize + 1 {
+                        d.adjust_len((len - 1) as u16, true);
+                    } else {
+                        d.adjust_len(len as u16, false);
+                    }
+                    let mut d = ByteStr::with(s1);
+                    d.as_mut()[s1.len()..].copy_from_slice(s2.as_ref());
+                    regs.s16.insert(dst, d);
+                    Some(())
+                };
+                f().unwrap_or_else(|| {
+                    regs.st0 = false;
+                    regs.s16.remove(&dst);
+                })
+            }
+            BytesOp::Splt(flag, offset, src, dst1, dst2) => {
+                todo!()
+            }
+            BytesOp::Ins(flag, offset, src, dst) => {
+                todo!()
+            }
+            BytesOp::Del(flag, reg1, offset1, reg2, offset2, flag1, flag2, src, dst) => {
+                todo!()
+            }
         }
         ExecStep::Next
     }

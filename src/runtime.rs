@@ -144,6 +144,13 @@ impl AsRef<[u8]> for ByteStr {
     fn as_ref(&self) -> &[u8] { &self.bytes[..self.len()] }
 }
 
+impl AsMut<[u8]> for ByteStr {
+    fn as_mut(&mut self) -> &mut [u8] {
+        let len = self.len();
+        &mut self.bytes[..len]
+    }
+}
+
 impl ByteStr {
     /// Constructs blob from slice of bytes.
     ///

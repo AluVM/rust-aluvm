@@ -628,6 +628,9 @@ pub enum BytesOp {
     /// equal to the bit dimension of the destination register. If the bit size of the destination
     /// plus the initial offset exceeds string length the rest of the destination register bits is
     /// filled with zeros and `st0` is set to `false`. Otherwise, `st0` value is not modified.
+    ///
+    /// If the source string register - or offset register is uninitialized, sets destination to
+    /// uninitialized state and `st0` to `false`.
     #[display("extr\ts16{0},a16{1},{2}{3}")]
     Extr(/** `s` register index */ Reg32, RegR, Reg16, /** `a16` register with offset */ Reg16),
 
@@ -638,7 +641,12 @@ pub enum BytesOp {
     /// the maximum string register length (2^16 bytes), than the destination register is set to
     /// `None` state and `st0` is set to `false`. Otherwise, `st0` value is not modified.
     #[display("inj\t\ts16{0},a16{1},{2}{3}")]
-    Inj(/** `s` register index */ Reg32, RegR, Reg16, /** `a16` register with offset */ Reg16),
+    Inj(
+        /** `s` register index acting as the source and destination */ Reg32,
+        RegR,
+        Reg16,
+        /** `a16` register with offset */ Reg16,
+    ),
 
     /// Join bytestrings from two registers into destination, overwriting its value. If the length
     /// of the joined string exceeds the maximum string register length (2^16 bytes), than the
@@ -769,7 +777,10 @@ pub enum BytesOp {
         /** Destination `s` register */ u8,
     ),
 
-    /// Revert byte order of the string
+    /// Revert byte order of the string.
+    ///
+    /// If the source string register is uninitialized, resets destination to the uninitialized
+    /// state and sets `st0` to `false`.
     #[display("rev\t\ts16[{0}],s16[{1}]")]
     Rev(/** Source */ u8, /** Destination */ u8),
 }
