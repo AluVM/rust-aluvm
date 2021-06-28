@@ -761,21 +761,21 @@ pub enum BytesOp {
 #[non_exhaustive]
 pub enum DigestOp {
     /// Computes RIPEMD160 hash value
-    #[display("rmd:160\ts16{0},r160{1}")]
+    #[display("ripemd\ts16{0},r160{1}")]
     Ripemd(
         /** Index of string register */ Reg32,
         /** Index of `r160` register to save result to */ Reg8,
     ),
 
     /// Computes SHA256 hash value
-    #[display("sha2:256\ts16{0},r256{1}")]
+    #[display("sha2\ts16{0},r256{1}")]
     Sha256(
         /** Index of string register */ Reg32,
         /** Index of `r256` register to save result to */ Reg8,
     ),
 
     /// Computes SHA256 hash value
-    #[display("sha2:512\ts16{0},r512{1}")]
+    #[display("sha2\ts16{0},r512{1}")]
     Sha512(
         /** Index of string register */ Reg32,
         /** Index of `r512` register to save result to */ Reg8,

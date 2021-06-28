@@ -18,8 +18,8 @@ extern crate paste;
 
 use aluvm::instr::serialize::disassemble;
 use aluvm::instr::{
-    ArithmeticOp, CmpOp, ControlFlowOp, FloatEqFlag, Instr, IntFlags, MergeFlag, MoveOp, NOp,
-    PutOp, RoundingFlag, Secp256k1Op, SignFlag,
+    ArithmeticOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags, MergeFlag, MoveOp,
+    NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
 };
 use aluvm::{Lib, Reg16, Reg32, Reg8, RegA, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime, Step};
 use amplify_num::hex::ToHex;
@@ -66,6 +66,8 @@ fn main() {
         sub     7682,a16[4]                     ;
         neg     a64[16]                         ;
         abs     f128[11]                        ;
+        ripemd  s16[9],r160[7]                  ;
+        sha2    s16[19],r256[1]                 ;
         secpgen r256[1],r512[1]                 ;
         secpmul a256[1],r512[1],r512[22]        ;
         secpadd r512[22],r512[1]                ;

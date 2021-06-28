@@ -449,6 +449,16 @@ macro_rules! instr {
         Instr::Arithmetic(ArithmeticOp::Abs(_reg_ty!(Reg, $reg).into(), _reg_idx16!($idx)))
     };
 
+    (ripemd s16[$idx1:literal],r160[$idx2:literal]) => {
+        Instr::Digest(DigestOp::Ripemd(_reg_idx!($idx1), _reg_idx8!($idx2)))
+    };
+    (sha2 s16[$idx1:literal],r256[$idx2:literal]) => {
+        Instr::Digest(DigestOp::Sha256(_reg_idx!($idx1), _reg_idx8!($idx2)))
+    };
+    (sha2 s16[$idx1:literal],r512[$idx2:literal]) => {
+        Instr::Digest(DigestOp::Sha512(_reg_idx!($idx1), _reg_idx8!($idx2)))
+    };
+
     (secpgen $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         if _reg_block!($reg1) != RegBlockAFR::R || _reg_block!($reg2) != RegBlockAFR::R {
             panic!("elliptic curve instruction accept only generic registers (R-registers)");
