@@ -414,9 +414,10 @@ pub enum ArithmeticOp {
     #[display("rem\t\t{0}{1},{2}{3}")]
     Rem(RegA, Reg32, RegA, Reg32),
 
-    /// Increment/decrement register value on a given signed step. Sets the destination to `None`
-    /// in case of overflow.
-    #[display("{2:#}\t\t{0}{1}")]
+    /// Increment/decrement register value on a given signed step.
+    ///
+    /// Sets the destination to `None` and `st0` to `false` in case of overflow.
+    #[display("{2:#}\t\t{2}{0}{1}")]
     Stp(RegA, Reg32, Step),
 
     /// Negates most significant bit

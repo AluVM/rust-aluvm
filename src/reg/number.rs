@@ -18,7 +18,6 @@ use core::ops::{
 };
 use core::str::FromStr;
 
-use amplify_num::hex::ToHex;
 use amplify_num::{u1024, u256, u512};
 use half::bf16;
 use rustc_apfloat::{ieee, Float};
@@ -780,7 +779,17 @@ impl Debug for Number {
         let len = self.layout.bytes() as usize;
         f.debug_struct("Number")
             .field("layout", &self.layout)
-            .field("bytes", &self.bytes[..len].to_hex())
+            .field("bytes", {
+                #[cfg(feature = "std")]
+                {
+                    use amplify_num::hex::ToHex;
+                    &self.bytes[..len].to_hex()
+                }
+                #[cfg(not(feature = "std"))]
+                {
+                    &self.bytes[..len]
+                }
+            })
             .finish()
     }
 }
@@ -1120,6 +1129,9 @@ impl_number_int_conv!(i128, 16);
 pub struct Step(#[from] i16);
 
 impl Step {
+    /// Constructs step from a value
+    pub fn with(val: i16) -> Self { Self(val) }
+
     /// Returns step value
     pub fn as_i16(self) -> i16 { self.0 }
 }
@@ -1131,8 +1143,8 @@ impl From<Step> for Number {
 
 impl Display for Step {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let val = self.0;
         if f.alternate() {
-            let val = self.0;
             match val {
                 1 => f.write_str("inc"),
                 -1 => f.write_str("dec"),
@@ -1140,9 +1152,11 @@ impl Display for Step {
                 x if x >= 0 => f.write_str("add"),
                 _ => unreachable!(),
             }
+        } else if val.abs() > 1 {
+            Display::fmt(&if val >= 0 { val } else { -val }, f)?;
+            f.write_char(',')
         } else {
-            f.write_char(',')?;
-            Display::fmt(&self.0, f)
+            Ok(())
         }
     }
 }

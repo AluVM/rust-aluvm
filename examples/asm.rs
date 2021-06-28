@@ -21,7 +21,7 @@ use aluvm::instr::{
     ArithmeticOp, CmpOp, ControlFlowOp, FloatEqFlag, Instr, IntFlags, MergeFlag, MoveOp, NOp,
     PutOp, RoundingFlag, Secp256k1Op, SignFlag,
 };
-use aluvm::{Lib, Reg32, Reg8, RegA, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime};
+use aluvm::{Lib, Reg16, Reg32, Reg8, RegA, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime, Step};
 use amplify_num::hex::ToHex;
 
 fn main() {
@@ -60,6 +60,12 @@ fn main() {
         mul:c   f32[12],f32[13]                 ;
         div:f   f32[12],f32[13]                 ;
         rem     a64[8],a8[2]                    ;
+        inc     a16[3]                          ;
+        add     5,a16[4]                        ;
+        dec     a16[3]                          ;
+        sub     7682,a16[4]                     ;
+        neg     a64[16]                         ;
+        abs     f128[11]                        ;
         secpgen r256[1],r512[1]                 ;
         secpmul a256[1],r512[1],r512[22]        ;
         secpadd r512[22],r512[1]                ;
@@ -67,17 +73,6 @@ fn main() {
         ret                                     ;
         jmp     0                               ;
     };
-
-    /*
-        len     a512[6]                         ;
-        cnt     a256[6]                         ;
-        st2a                                    ;
-        a2st                                    ;
-        inc:c   a16[3]                          ;
-        inc:u   a16[4],5                        ;
-        dec:u   a16[3]                          ;
-        dec:c   a16[4],5                        ;
-    */
 
     println!("Instructions:\n{:#?}\n", code);
     let lib = Lib::<NOp>::with(code).unwrap();

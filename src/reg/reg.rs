@@ -941,7 +941,7 @@ impl From<u4> for RegAF {
     fn from(val: u4) -> Self {
         match val.as_u8() {
             0..=7 => RegAF::A(RegA::from(u3::with(val.as_u8()))),
-            _ => RegAF::F(RegF::from(u3::with(val.as_u8() + 8))),
+            _ => RegAF::F(RegF::from(u3::with(val.as_u8() - 8))),
         }
     }
 }
@@ -1029,7 +1029,7 @@ impl From<u4> for RegAR {
     fn from(val: u4) -> Self {
         match val.as_u8() {
             0..=7 => RegAR::A(RegA::from(u3::with(val.as_u8()))),
-            _ => RegAR::R(RegR::from(u3::with(val.as_u8() + 8))),
+            _ => RegAR::R(RegR::from(u3::with(val.as_u8() - 8))),
         }
     }
 }

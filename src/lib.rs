@@ -134,6 +134,6 @@ pub use encoding::CursorError;
 pub use instr::{Instr, InstructionSet};
 pub use reg::{
     MaybeNumber, Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAFR, RegBlockAR,
-    RegF, RegR, Registers,
+    RegF, RegR, Registers, Step,
 };
 pub use runtime::{ByteStr, Lib, LibHash, LibSite, Runtime};

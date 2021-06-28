@@ -422,51 +422,33 @@ macro_rules! instr {
             ))
         }
     };
-
-    /*
+    (inc $reg:ident[$idx:literal]) => {
+        Instr::Arithmetic(ArithmeticOp::Stp(_reg_tya!(Reg, $reg), _reg_idx!($idx), Step::with(1)))
+    };
+    (add $step:literal, $reg:ident[$idx:literal]) => {
+        Instr::Arithmetic(ArithmeticOp::Stp(
+            _reg_tya!(Reg, $reg),
+            _reg_idx!($idx),
+            Step::with($step),
+        ))
+    };
+    (dec $reg:ident[$idx:literal]) => {
+        Instr::Arithmetic(ArithmeticOp::Stp(_reg_tya!(Reg, $reg), _reg_idx!($idx), Step::with(-1)))
+    };
+    (sub $step:literal, $reg:ident[$idx:literal]) => {
+        Instr::Arithmetic(ArithmeticOp::Stp(
+            _reg_tya!(Reg, $reg),
+            _reg_idx!($idx),
+            Step::with($step * -1),
+        ))
+    };
     (neg $reg:ident[$idx:literal]) => {
-        Instr::Arithmetic(ArithmeticOp::Neg(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
-    };
-    (inc: $flag:ident $reg:ident[$idx:literal]) => {
-        Instr::Arithmetic(ArithmeticOp::Stp(
-            IncDec::Inc,
-            _arithmetic_flag!($flag),
-            _reg_ty!(Reg, $reg),
-            _reg_idx!($idx),
-            u4::try_from(1).unwrap(),
-        ))
-    };
-    (inc: $flag:ident $reg:ident[$idx:literal], $step:expr) => {
-        Instr::Arithmetic(ArithmeticOp::Stp(
-            IncDec::Inc,
-            _arithmetic_flag!($flag),
-            _reg_ty!(Reg, $reg),
-            _reg_idx!($idx),
-            u4::try_from($step).expect("scalar value for increment must be in 0..16 range"),
-        ))
-    };
-    (dec: $flag:ident $reg:ident[$idx:literal]) => {
-        Instr::Arithmetic(ArithmeticOp::Stp(
-            IncDec::Dec,
-            _arithmetic_flag!($flag),
-            _reg_ty!(Reg, $reg),
-            _reg_idx!($idx),
-            u4::try_from(1).unwrap(),
-        ))
-    };
-    (dec: $flag:ident $reg:ident[$idx:literal], $step:expr) => {
-        Instr::Arithmetic(ArithmeticOp::Stp(
-            IncDec::Dec,
-            _arithmetic_flag!($flag),
-            _reg_ty!(Reg, $reg),
-            _reg_idx!($idx),
-            u4::try_from($step).expect("scalar value for decrement must be in 0..16 range"),
-        ))
+        Instr::Arithmetic(ArithmeticOp::Neg(_reg_ty!(Reg, $reg).into(), _reg_idx16!($idx)))
     };
     (abs $reg:ident[$idx:literal]) => {
-        Instr::Arithmetic(ArithmeticOp::Abs(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
+        Instr::Arithmetic(ArithmeticOp::Abs(_reg_ty!(Reg, $reg).into(), _reg_idx16!($idx)))
     };
-     */
+
     (secpgen $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         if _reg_block!($reg1) != RegBlockAFR::R || _reg_block!($reg2) != RegBlockAFR::R {
             panic!("elliptic curve instruction accept only generic registers (R-registers)");
