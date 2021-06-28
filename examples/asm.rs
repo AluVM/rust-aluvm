@@ -48,6 +48,9 @@ fn main() {
         lt:r    f64[5],f64[9]                   ;
         gt      r160[5],r256[9]                 ;
         lt      r160[5],r256[9]                 ;
+        eq      a8[5],a8[9]      .none=true     ;
+        eq      r160[5],r160[9]  .none=false    ;
+        eq:e    f64[19],f64[29]                 ;
         secpgen r256[1],r512[1]                 ;
         secpmul a256[1],r512[1],r512[22]        ;
         secpadd r512[22],r512[1]                ;
@@ -57,8 +60,6 @@ fn main() {
     };
 
     /*
-        eq      a8[5],a64[9]                    ;
-        eq      r160[5],r160[9]                 ;
         len     a512[6]                         ;
         cnt     a256[6]                         ;
         st2a                                    ;

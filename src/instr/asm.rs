@@ -261,24 +261,51 @@ macro_rules! instr {
             _reg_idx!($idx2),
         ))
     }};
-    /*
-    (eq $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        match (_reg_block!($reg1), _reg_block!($reg2)) {
-            (RegBlockAR::A, RegBlockAR::A) => Instr::Cmp(CmpOp::EqA(
-                Reg::from(_reg_ty!(Reg, $reg1)).reg_a().unwrap(),
-                _reg_idx!($idx1),
-                Reg::from(_reg_ty!(Reg, $reg2)).reg_a().unwrap(),
-                _reg_idx!($idx2),
-            )),
-            (RegBlockAR::R, RegBlockAR::R) => Instr::Cmp(CmpOp::EqR(
-                Reg::from(_reg_ty!(Reg, $reg1)).reg_r().unwrap(),
-                _reg_idx!($idx1),
-                Reg::from(_reg_ty!(Reg, $reg2)).reg_r().unwrap(),
-                _reg_idx!($idx2),
-            )),
-            _ => panic!("Wrong order of registers in `swp` operation. Use A-register first"),
+    (eq $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal], $bool:literal) => {{
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+            panic!(
+                "Equivalence check must be performed between registers of the same type and size"
+            );
         }
-    };
+        match _reg_block!($reg1) {
+            RegBlockAFR::A => Instr::Cmp(CmpOp::EqA(
+                $bool,
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            )),
+            RegBlockAFR::R => Instr::Cmp(CmpOp::EqR(
+                $bool,
+                _reg_tyr!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            )),
+            _ => panic!("Wrong registers for `eq` operation"),
+        }
+    }};
+    (eq: e $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`eq` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::EqF(
+            FloatEqFlag::Exact,
+            _reg_tyf!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    (eq: r $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!("`eq` operation may be applied only to the registers of the same family");
+        }
+        Instr::Cmp(CmpOp::EqF(
+            FloatEqFlag::Rounding,
+            _reg_tyf!(Reg, $reg1),
+            _reg_idx!($idx1),
+            _reg_idx!($idx2),
+        ))
+    }};
+    /*
     (len $reg:ident[$idx:literal]) => {
         Instr::Cmp(CmpOp::Len(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
     };
@@ -454,6 +481,14 @@ macro_rules! aluasm_inner {
     };
     { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
         $code.push(instr!{ $op $( $arg [ $idx ]  ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ .none=true ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ , true });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ .none=false ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ , false });
         aluasm_inner! { $code => $( $tt )* }
     };
     { $code:ident => $op:ident : $flag:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {

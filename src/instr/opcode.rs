@@ -315,7 +315,7 @@ pub enum CmpOp {
     /// Checks equality of value in two integer arithmetic (`A`) registers putting result into
     /// `st0`.None-equality flag specifies value for `st0` for the cases when both of the registers
     /// are in `None` state.
-    #[display("eq:{0}\t{1}{2},{1}{3}")]
+    #[display("eq\t\t{1}{2},{1}{3} .none={0}")]
     EqA(/** `st0` value if both of the registers are uninitialized */ bool, RegA, Reg32, Reg32),
 
     /// Checks equality of value in two float arithmetic (`F`) registers putting result into `st0`.
@@ -326,7 +326,7 @@ pub enum CmpOp {
     /// Checks equality of value in two non-arithmetic (`R`) registers putting result into `st0`.
     /// None-equality flag specifies value for `st0` for the cases when both of the registers
     /// are in `None` state.
-    #[display("eq\t\t{1}{2},{1}{3},{0}")]
+    #[display("eq\t\t{1}{2},{1}{3} .none={0}")]
     EqR(/** `st0` value if both of the registers are uninitialized */ bool, RegR, Reg32, Reg32),
 
     // ---
