@@ -20,7 +20,7 @@ use super::{
 };
 use crate::instr::{FloatEqFlag, IntFlags, MergeFlag, SignFlag};
 use crate::reg::{MaybeNumber, Number, RegisterSet, Registers};
-use crate::{LibSite, RegR};
+use crate::{ByteStr, LibSite, Reg32, RegA, RegR};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -411,33 +411,136 @@ impl InstructionSet for BitwiseOp {
 }
 
 impl InstructionSet for BytesOp {
-    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep { todo!() }
+    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
+        match self {
+            BytesOp::Put(reg, bytes) => {
+                regs.s16.insert(reg, bytes);
+            }
+            BytesOp::Mov(reg1, reg2) => {
+                regs.s16.remove(&reg1).and_then(|bs| regs.s16.insert(reg2, bs));
+            }
+            BytesOp::Swp(reg1, reg2) => {
+                let bs1 = regs.s16.remove(&reg1);
+                regs.s16.remove(&reg1).and_then(|bs2| regs.s16.insert(reg1, bs2));
+                bs1.and_then(|bs1| regs.s16.insert(reg2, bs1));
+            }
+            BytesOp::Fill(reg, offset1, offset2, value, flag) => {
+                let mut f = || -> Option<()> {
+                    let o1 = regs.a16[offset1.to_usize()]?;
+                    let o2 = regs.a16[offset2.to_usize()]?;
+                    let range = o1..=o2;
+                    let val = regs.a8[value.to_usize()]?;
+                    let bs = regs.s16.entry(reg).or_insert(ByteStr::default());
+                    if bs.len() <= *range.end() as usize && !flag {
+                        return None;
+                    }
+                    bs.fill(o1..=o2, val);
+                    Some(())
+                };
+                f().unwrap_or_else(|| regs.st0 = false);
+            }
+            BytesOp::Len(src, reg, dst) => {
+                let mut f = || -> Option<()> {
+                    let s = regs.get_s(src)?;
+                    let len = s.len();
+                    if !reg.int_layout().fits_usize(len) {
+                        return None;
+                    }
+                    regs.set(reg, dst, len as u32);
+                    Some(())
+                };
+                f().unwrap_or_else(|| {
+                    regs.st0 = false;
+                    regs.set(reg, dst, MaybeNumber::none());
+                });
+            }
+            BytesOp::Cnt(src, byte, dst) => {
+                let mut f = || -> Option<()> {
+                    let val = regs.a8[byte as u8 as usize]?;
+                    let bs = regs.s16.get(&src)?;
+                    let count = bs.as_ref().into_iter().filter(|b| **b == val).count();
+                    if !RegA::A16.int_layout().fits_usize(count) {
+                        return None;
+                    }
+                    regs.set(RegA::A16, dst, count as u32);
+                    Some(())
+                };
+                f().unwrap_or_else(|| {
+                    regs.st0 = false;
+                    regs.set(RegA::A16, dst, MaybeNumber::none());
+                });
+            }
+            BytesOp::Eq(reg1, reg2) => {
+                let s1 = regs.get_s(reg1);
+                let s2 = regs.get_s(reg2);
+                regs.st0 = match (s1, s2) {
+                    (Some(s1), Some(s2)) => s1 == s1,
+                    (None, None) => true,
+                    _ => false,
+                };
+            }
+            BytesOp::Find(reg1, reg2) => {
+                let mut f = || -> Option<()> {
+                    let (s1, s2) = regs.get_both_s(reg1, reg2)?;
+                    let r1 = s1.bytes.as_ref();
+                    let r2 = s2.bytes.as_ref();
+                    let len = r2.len();
+                    let mut count = 0usize;
+                    for i in 0..r1.len() {
+                        if r1[i..len] == r2[..len] {
+                            count += 1;
+                        }
+                    }
+                    if count > u16::MAX as usize {
+                        regs.st0 = false;
+                        count -= 1;
+                    }
+                    regs.set(RegA::A16, Reg32::Reg1, count as u16);
+                    Some(())
+                };
+                f().unwrap_or_else(|| {
+                    regs.st0 = false;
+                    regs.set(RegA::A16, Reg32::Reg1, MaybeNumber::none());
+                })
+            }
+            BytesOp::Rev(reg1, reg2) => {}
+            BytesOp::Con(reg1, reg2, no, offset, len) => {}
+            BytesOp::Extr(src, dst, index, offset) => {}
+            BytesOp::Inj(src, dst, index, offset) => {}
+            BytesOp::Join(src1, src2, dst) => {}
+            BytesOp::Splt(flag, offset, src, dst1, dst2) => {}
+            BytesOp::Ins(flag, offset, src, dst) => {}
+            BytesOp::Del(flag, reg1, offset1, reg2, offset2, flag1, flag2, src, dst) => {}
+        }
+        ExecStep::Next
+    }
 }
 
 impl InstructionSet for DigestOp {
     fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
+        let none;
         match self {
             DigestOp::Ripemd(src, dst) => {
-                regs.set(
-                    RegR::R160,
-                    dst,
-                    regs.get_s(src).map(|s| ripemd160::Hash::hash(&s).into_inner()),
-                );
+                let s = regs.get_s(src);
+                none = s.is_none();
+                let hash = s.map(|s| ripemd160::Hash::hash(&s.bytes[..]).into_inner());
+                regs.set(RegR::R160, dst, hash);
             }
             DigestOp::Sha256(src, dst) => {
-                regs.set(
-                    RegR::R256,
-                    dst,
-                    regs.get_s(src).map(|s| sha256::Hash::hash(&s).into_inner()),
-                );
+                let s = regs.get_s(src);
+                none = s.is_none();
+                let hash = s.map(|s| sha256::Hash::hash(&s.bytes[..]).into_inner());
+                regs.set(RegR::R256, dst, hash);
             }
             DigestOp::Sha512(src, dst) => {
-                regs.set(
-                    RegR::R512,
-                    dst,
-                    regs.get_s(src).map(|s| sha512::Hash::hash(&s).into_inner()),
-                );
+                let s = regs.get_s(src);
+                none = s.is_none();
+                let hash = s.map(|s| sha512::Hash::hash(&s.bytes[..]).into_inner());
+                regs.set(RegR::R512, dst, hash);
             }
+        }
+        if none {
+            regs.st0 = false;
         }
         ExecStep::Next
     }
@@ -453,7 +556,6 @@ impl InstructionSet for Secp256k1Op {
     fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
         use secp256k1::{PublicKey, SecretKey};
 
-        use crate::RegA;
         match self {
             Secp256k1Op::Gen(src, dst) => {
                 let res = regs

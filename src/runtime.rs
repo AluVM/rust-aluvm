@@ -13,6 +13,7 @@ use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use core::fmt::{self, Display, Formatter};
 use core::marker::PhantomData;
+use core::ops::RangeInclusive;
 
 use bitcoin_hashes::Hash;
 
@@ -68,7 +69,7 @@ where
     pub fn lib_hash(&self) -> LibHash { LibHash::hash(&*self.bytecode.bytes) }
 
     /// Calculates length of bytecode encoding in bytes
-    pub fn byte_count(&self) -> u16 { self.bytecode.len }
+    pub fn byte_count(&self) -> usize { self.bytecode.len() }
 
     /// Returns bytecode reference
     pub fn bytecode(&self) -> &[u8] { &self.bytecode.as_ref() }
@@ -117,22 +118,30 @@ impl LibSite {
     pub fn with(pos: u16, lib: LibHash) -> LibSite { LibSite { lib, pos } }
 }
 
-/// Large binary bytestring object
+/// Large binary bytestring object.
+///
+/// NB: Since byte string length is expressed with `u16` integer, it is 0-based, i.e. one character
+/// string has length of `0`.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct ByteStr {
-    /// Slice length
-    pub len: u16,
+    /// Adjusted slice length.
+    ///
+    /// Values from `0` to `u16:MAX` represent string length (with `0` meaning "no value is
+    /// stored").
+    ///
+    /// `None` value indicates that the data occupy full length (i.e. `u16::MAX + 1`).
+    len: Option<u16>,
 
     /// Slice bytes
     pub bytes: Box<[u8; u16::MAX as usize]>,
 }
 
 impl Default for ByteStr {
-    fn default() -> ByteStr { ByteStr { len: 0, bytes: Box::new([0u8; u16::MAX as usize]) } }
+    fn default() -> ByteStr { ByteStr { len: Some(0), bytes: Box::new([0u8; u16::MAX as usize]) } }
 }
 
 impl AsRef<[u8]> for ByteStr {
-    fn as_ref(&self) -> &[u8] { &self.bytes[..self.len as usize] }
+    fn as_ref(&self) -> &[u8] { &self.bytes[..self.len()] }
 }
 
 impl ByteStr {
@@ -141,9 +150,37 @@ impl ByteStr {
     /// Panics if the length of the slice is greater than `u16::MAX` bytes.
     pub fn with(slice: impl AsRef<[u8]>) -> ByteStr {
         let len = slice.as_ref().len();
+        assert!(len <= u16::MAX as usize + 1);
         let mut bytes = [0u8; u16::MAX as usize];
         bytes[0..len].copy_from_slice(slice.as_ref());
-        ByteStr { len: len as u16, bytes: Box::new(bytes) }
+        ByteStr {
+            len: if len > u16::MAX as usize { None } else { Some(len as u16) },
+            bytes: Box::new(bytes),
+        }
+    }
+
+    /// Returns correct length of the string, in range `0 ..= u16::MAX + 1`
+    #[inline]
+    pub fn len(&self) -> usize { self.len.map(|len| len as usize).unwrap_or(u16::MAX as usize + 1) }
+
+    /// Adjusts the length of the string if necessary
+    #[inline]
+    pub fn adjust_len(&mut self, new_len: u16, inclusive: bool) {
+        match (self.len, new_len, inclusive) {
+            (Some(_), u16::MAX, true) => self.len = None,
+            (Some(len), new, true) if len <= new => self.len = Some(new + 1),
+            (Some(len), new, false) if len < new => self.len = Some(new),
+            _ => {}
+        }
+    }
+
+    /// Fills range within a string with the provided byte value, increasing string length if
+    /// necessary
+    pub fn fill(&mut self, range: RangeInclusive<u16>, val: u8) {
+        let start = *range.start();
+        let end = *range.end();
+        self.adjust_len(end, true);
+        self.bytes[start as usize..=end as usize].fill(val);
     }
 }
 
@@ -151,20 +188,15 @@ impl ByteStr {
 impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify_num::hex::ToHex;
-        let vec = Vec::from(&self.bytes[..self.len as usize]);
+        let vec = Vec::from(&self.bytes[..self.len()]);
         if let Ok(s) = String::from_utf8(vec) {
             f.write_str("\"")?;
             f.write_str(&s)?;
             f.write_str("\"")
-        } else if f.alternate() && self.len > 4 {
-            write!(
-                f,
-                "{}..{}",
-                self.bytes[..4].to_hex(),
-                self.bytes[(self.len as usize - 4)..].to_hex()
-            )
+        } else if f.alternate() && self.len() > 4 {
+            write!(f, "{}..{}", self.bytes[..4].to_hex(), self.bytes[(self.len() - 4)..].to_hex())
         } else {
-            f.write_str(&self.bytes[0usize..(self.len as usize)].to_hex())
+            f.write_str(&self.bytes[0usize..(self.len())].to_hex())
         }
     }
 }
@@ -172,8 +204,8 @@ impl Display for ByteStr {
 #[cfg(not(feature = "std"))]
 impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let vec = Vec::from(&self.bytes[..self.len as usize]);
-        write!(f, "{:#04X?}", &self.bytes[0usize..(self.len as usize)])
+        let vec = Vec::from(&self.bytes[..self.len()]);
+        write!(f, "{:#04X?}", &self.bytes[0usize..(self.len())])
     }
 }
 

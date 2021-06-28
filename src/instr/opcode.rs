@@ -560,25 +560,36 @@ pub enum BytesOp {
     ///   `st0` value to `false`;
     /// - if the flag is `false`, the destination register is set to `None` and `st0` is set to
     ///   `false`.
+    ///
     /// If both of the offsets lie within the length of the string, the `st0` register value is not
     /// modified.
+    ///
+    /// If any of the offsets or value registers are unset, sets `st0` to `false` and does not
+    /// change destination value.
     #[display("fill\ts16[{0}],{1}..{2},{3}")]
     Fill(
         /** `s` register index */ u8,
         /** `a16` register holding first offset */ Reg32,
-        /** `a16` register holding second offset */ Reg32,
+        /** `a16` register holding second offset (inclusive) */ Reg32,
         /** `a8` register index holding the value */ Reg32,
         /** Exception handling flag */ bool,
     ),
 
-    /// Put length of the string into the destination register. If `a8` register is specified and
-    /// the value does not fit into it, the destination is set to `None` and `st0` to `false`.
-    /// Otherwise `st0` value is not changed.
+    /// Put length of the string into the destination register.
+    ///
+    /// If the string register is empty, or destination register can't fit the length, sets `st0`
+    /// to `false` and destination register to `None`.
     #[display("len\t\ts16[{0}],a16[0]")]
     Len(/** `s` register index */ u8, RegA, Reg32),
 
-    /// Count number of byte occurrences from the `a8` register with the provided index within the
-    /// string and stores that value into `a16` register with the provided index.
+    /// Count number of byte occurrences from the `a8` register within the string and stores that
+    /// value into destination `a16` register.
+    ///
+    /// If the string register is empty, or destination register can't fit the length, sets `st0`
+    /// to `false` and destination register to `None`.
+    ///
+    /// If the source byte value register is uninitialized, sets destination register to `None` and
+    /// `st0` to `false`.
     #[display("cnt\ts16[{0}],{1},a16[0]")]
     Cnt(
         /** `s` register index */ u8,
@@ -586,7 +597,9 @@ pub enum BytesOp {
         /** `a16` destination register index */ Reg16,
     ),
 
-    /// Check equality of two strings, putting result into `st0`
+    /// Check equality of two strings, putting result into `st0`.
+    ///
+    /// If both of strings are uninitialized, `st0` assigned `true` value.
     #[display("cmp\t\ts16[{0}],s16[{0}]")]
     Eq(u8, u8),
 
@@ -602,8 +615,13 @@ pub enum BytesOp {
         /** `u16` register index to save the length of the conjoint fragment */ Reg32,
     ),
 
-    /// Count number of occurrences of one string within another putting result to `a16[0]`
-    #[display("find\ts16[{0}],s16[{1}],a16[0]")]
+    /// Count number of occurrences of one string within another putting result to `a16[1]`,
+    ///
+    /// If the first or the second string is `None`, sets `st0` to `false` and `a16[1]` to `None`.
+    ///
+    /// If the number of occurrences is `u16::MAX + 1`, sets `a16[1]` to `u16::MAX` and `st0` to
+    /// `false`.
+    #[display("find\ts16[{0}],s16[{1}],a16[1]")]
     Find(/** `s` register with string */ u8, /** `s` register with matching fragment */ u8),
 
     /// Extract byte string slice into general `r` register. The length of the extracted string is
@@ -640,7 +658,6 @@ pub enum BytesOp {
     ///         ^       ^
     ///         |       +-- Split offset (`offset`)
     ///         +-- Source string length (`src_len`)
-    /// </pre>
     ///
     /// `offset == 0`:
     ///   (1) first, second <- None; `st0` <- false
@@ -658,6 +675,7 @@ pub enum BytesOp {
     ///   (5,7) first <- ok, second <- None; `st0` <- false
     ///   (6,8) first <- ok, second <- zero-len
     /// `offset > src_len`: operation succeeds anyway, `st0` value is not changed
+    /// </pre>
     ///
     /// Rule on `st0` changes: if at least one of the destination registers is set to `None`, or
     /// `offset` value exceeds source string length, `st0` is set to `false`; otherwise its value
@@ -683,7 +701,6 @@ pub enum BytesOp {
     ///         ^       ^
     ///         |       +-- Insert offset (`offset`)
     ///         +-- Destination string length (`dst_len`)
-    /// </pre>
     ///
     /// `offset < dst_len && src_len + dst_len > 2^16`:
     ///   (6) Set destination to `None`
@@ -698,6 +715,7 @@ pub enum BytesOp {
     ///   (5) Fill destination from `dst_let` to `offset` with zeros and cut source string part
     ///       exceeding `2^16`
     ///   (6-8) Use `src_len` instead of `offset` and use flag value from the first section
+    /// </pre>
     ///
     /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
     #[display("ins:{3}\ts16[{0}],s16[{1}],a16{2}")]
@@ -722,7 +740,6 @@ pub enum BytesOp {
     ///     |               |       +-- End offset (`offset_end`)
     ///     |               +-- Source string length (`src_len`)
     ///     +-- Start offset (`offset_start`)
-    /// </pre>
     ///
     /// `offset_start > src_len`:
     ///   (1) set destination to `None`
@@ -732,6 +749,7 @@ pub enum BytesOp {
     ///   (3) set destination to the fragment of the string `offset_start..src_len`
     ///   (4) set destination to the fragment of the string `offset_start..src_len` and extend
     ///       its length up to `offset_end - offset_start` with trailing zeros.
+    /// </pre>
     ///
     /// `flag1` and `flag2` arguments indicate whether `st0` should be set to `false` if
     /// `offset_start > src_len` and `offset_end > src_len && offser_start <= src_len`.
@@ -760,7 +778,10 @@ pub enum BytesOp {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[non_exhaustive]
 pub enum DigestOp {
-    /// Computes RIPEMD160 hash value
+    /// Computes RIPEMD160 hash value.
+    ///
+    /// Sets `st0` to `false` and destination register to `None` if the source register does not
+    /// contain a value
     #[display("ripemd\ts16{0},r160{1}")]
     Ripemd(
         /** Index of string register */ Reg32,
@@ -768,6 +789,9 @@ pub enum DigestOp {
     ),
 
     /// Computes SHA256 hash value
+    ///
+    /// Sets `st0` to `false` and destination register to `None` if the source register does not
+    /// contain a value
     #[display("sha2\ts16{0},r256{1}")]
     Sha256(
         /** Index of string register */ Reg32,
@@ -775,6 +799,9 @@ pub enum DigestOp {
     ),
 
     /// Computes SHA256 hash value
+    ///
+    /// Sets `st0` to `false` and destination register to `None` if the source register does not
+    /// contain a value
     #[display("sha2\ts16{0},r512{1}")]
     Sha512(
         /** Index of string register */ Reg32,

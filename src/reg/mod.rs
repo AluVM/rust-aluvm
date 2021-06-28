@@ -15,7 +15,7 @@ pub mod number;
 #[allow(clippy::module_inception)]
 mod reg;
 
-pub use number::{MaybeNumber, Number, Step};
+pub use number::{FloatLayout, Layout, MaybeNumber, Number, NumberLayout, Step};
 pub use reg::{
     Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR,
     RegisterSet, Registers,

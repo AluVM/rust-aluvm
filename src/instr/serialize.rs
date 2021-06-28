@@ -81,11 +81,14 @@ where
     <I as IntoIterator>::Item: InstructionSet,
 {
     let mut bytecode = ByteStr::default();
-    let mut writer = Cursor::with(&mut bytecode.bytes[..]);
-    for instr in code.into_iter() {
-        instr.write(&mut writer)?;
-    }
-    bytecode.len = writer.pos();
+    let pos = {
+        let mut writer = Cursor::with(&mut bytecode.bytes[..]);
+        for instr in code.into_iter() {
+            instr.write(&mut writer)?;
+        }
+        writer.pos()
+    };
+    bytecode.adjust_len(pos, false);
     Ok(bytecode)
 }
 
@@ -1035,7 +1038,8 @@ impl Bytecode for BitwiseOp {
 impl Bytecode for BytesOp {
     fn byte_count(&self) -> u16 {
         match self {
-            BytesOp::Put(_, ByteStr { len, .. }) => 4u16.saturating_add(*len),
+            BytesOp::Put(_, s) if s.len() > u16::MAX as usize => u16::MAX,
+            BytesOp::Put(_, s) => 4u16.saturating_add(s.len() as u16),
             BytesOp::Mov(_, _) | BytesOp::Swp(_, _) => 3,
             BytesOp::Fill(_, _, _, _, _) => 3,
             BytesOp::Len(_, _, _) | BytesOp::Cnt(_, _, _) | BytesOp::Eq(_, _) => 3,

@@ -17,7 +17,7 @@ use half::bf16;
 use rustc_apfloat::ieee;
 
 use crate::reg::{number, Number};
-use crate::{LibSite, MaybeNumber};
+use crate::{ByteStr, LibSite, MaybeNumber};
 
 /// Common set of methods handled by different sets and families of VM registers
 pub trait RegisterSet {
@@ -163,6 +163,11 @@ pub enum Reg32 {
     /// Register with index `[32]`
     #[display("[32]")]
     Reg32 = 31,
+}
+
+impl Reg32 {
+    /// Returns `usize` representation of the register index
+    pub fn to_usize(self) -> usize { self as u8 as usize }
 }
 
 impl Default for Reg32 {
@@ -476,6 +481,10 @@ impl RegA {
             _ => return None,
         })
     }
+
+    /// Returns integer layout [`IntLayout`] specific for this register
+    #[inline]
+    pub fn int_layout(self) -> number::IntLayout { number::IntLayout::unsigned(self.bytes()) }
 }
 
 impl From<&RegA> for u3 {
@@ -1121,7 +1130,7 @@ pub struct Registers {
     pub(crate) r8192: [Option<[u8; 1024]>; 32],
 
     /// String and bytestring registers
-    pub(crate) s16: BTreeMap<u8, [u8; u16::MAX as usize]>,
+    pub(crate) s16: BTreeMap<u8, ByteStr>,
 
     /// Control flow register which stores result of equality, comparison, boolean check and
     /// overflowing operations. Initialized with `true`.
@@ -1269,9 +1278,8 @@ impl Registers {
     }
 
     /// Returns value from one of `S`-registers
-    pub fn get_s(&self, index: impl Into<u8>) -> Option<[u8; u16::MAX as usize]> {
-        self.s16.get(&index.into()).copied()
-    }
+    #[inline]
+    pub fn get_s(&self, index: impl Into<u8>) -> Option<&ByteStr> { self.s16.get(&index.into()) }
 
     /// Returns value from two registers only if both of them contain a value; otherwise returns
     /// `None`.
@@ -1284,6 +1292,13 @@ impl Registers {
         idx2: impl Into<Reg32>,
     ) -> Option<(Number, Number)> {
         self.get(reg1, idx1).and_then(|val1| self.get(reg2, idx2).map(|val2| (val1, val2)))
+    }
+
+    /// Returns value from two string (`S`) registers only if both of them contain a value;
+    /// otherwise returns `None`.
+    #[inline]
+    pub fn get_both_s(&self, idx1: u8, idx2: u8) -> Option<(&ByteStr, &ByteStr)> {
+        self.get_s(idx1).and_then(|val1| self.get_s(idx2).map(|val2| (val1, val2)))
     }
 
     /// Assigns the provided value to the register bit-wise. Silently discards most significant bits

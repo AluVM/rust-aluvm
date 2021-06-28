@@ -52,7 +52,9 @@ macro_rules! aluasm {
         };
 
         let mut code: Vec<Instr<NOp>> = vec![];
-        aluasm_inner! { code => $( $tt )+ };
+        #[allow(unreachable_code)] {
+            aluasm_inner! { code => $( $tt )+ };
+        }
         code
     } }
 }
