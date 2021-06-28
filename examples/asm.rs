@@ -77,6 +77,7 @@ fn main() {
 
     */
 
+    println!("Instructions:\n{:#?}\n", code);
     let lib = Lib::<NOp>::with(code).unwrap();
     println!("Serialization:\n{}\n", lib.bytecode().to_hex());
     let asm: Vec<Instr> = disassemble(lib.bytecode()).unwrap();

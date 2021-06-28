@@ -9,13 +9,16 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use core::fmt::{self, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, Write};
+use core::fmt::{
+    self, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, Write,
+};
 use core::hash::{Hash, Hasher};
 use core::ops::{
     Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
 use core::str::FromStr;
 
+use amplify_num::hex::ToHex;
 use amplify_num::{u1024, u256, u512};
 use half::bf16;
 use rustc_apfloat::{ieee, Float};
@@ -364,7 +367,7 @@ impl Display for MaybeNumber {
 }
 
 /// Type holding number of any layout
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 pub struct Number {
     /// Internal number representation, up to the possible maximum size of any supported number
     /// layout
@@ -769,6 +772,16 @@ impl FromStr for Number {
         } else {
             u128::from_str(s)?.into()
         })
+    }
+}
+
+impl Debug for Number {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let len = self.layout.bytes() as usize;
+        f.debug_struct("Number")
+            .field("layout", &self.layout)
+            .field("bytes", &self.bytes[..len].to_hex())
+            .finish()
     }
 }
 
