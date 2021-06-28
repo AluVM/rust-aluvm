@@ -647,13 +647,15 @@ impl Bytecode for CmpOp {
             }
 
             CmpOp::GtR(reg, idx1, idx2) => {
-                writer.write_u3(u3::with(0b000))?;
+                writer.write_u2(u2::with(0b00))?;
+                writer.write_u1(u1::with(0b0))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
             CmpOp::LtR(reg, idx1, idx2) => {
-                writer.write_u3(u3::with(0b001))?;
+                writer.write_u2(u2::with(0b00))?;
+                writer.write_u1(u1::with(0b1))?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;

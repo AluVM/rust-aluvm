@@ -155,31 +155,22 @@ macro_rules! instr {
         }
     }};
 
-    /*
     (gt $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`gt` operation may be applied only to the registers of the same family");
         }
-        if _reg_block!($reg1) != RegBlockAR::R {
-            panic!(
-                "`gt` operation for arithmetic registers requires prefix specifying used \
-                 arithmetics"
-            );
+        if _reg_block!($reg1) != RegBlockAFR::R {
+            panic!("`gt` operation for arithmetic registers requires suffix");
         }
-        Instr::Cmp(CmpOp::GtR(
-            _reg_ty!(Reg, $reg1).into(),
-            _reg_idx16!($idx1),
-            _reg_ty!(Reg, $reg2).into(),
-            _reg_idx!($idx2),
-        ))
+        Instr::Cmp(CmpOp::GtR(_reg_tyr!(Reg, $reg1), _reg_idx!($idx1), _reg_idx!($idx2)))
     }};
     (gt: u $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`gt` operation may be applied only to the registers of the same family");
         }
         Instr::Cmp(CmpOp::GtA(
-            NumType::Unsigned,
-            _reg_ty!(Reg, $reg1).into(),
+            SignFlag::Unsigned,
+            _reg_tya!(Reg, $reg1),
             _reg_idx!($idx1),
             _reg_idx!($idx2),
         ))
@@ -189,58 +180,50 @@ macro_rules! instr {
             panic!("`gt` operation may be applied only to the registers of the same family");
         }
         Instr::Cmp(CmpOp::GtA(
-            NumType::Signed,
-            _reg_ty!(Reg, $reg1).into(),
+            SignFlag::Signed,
+            _reg_tya!(Reg, $reg1),
             _reg_idx!($idx1),
             _reg_idx!($idx2),
         ))
     }};
-    (gt: f $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (gt: e $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`gt` operation may be applied only to the registers of the same family");
         }
-        Instr::Cmp(CmpOp::GtA(
-            NumType::Float23,
-            _reg_ty!(Reg, $reg1).into(),
+        Instr::Cmp(CmpOp::GtF(
+            FloatEqFlag::Exact,
+            _reg_tyf!(Reg, $reg1),
             _reg_idx!($idx1),
             _reg_idx!($idx2),
         ))
     }};
-    (gt: d $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (gt: r $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
-            panic!("`lt` operation may be applied only to the registers of the same family");
+            panic!("`gt` operation may be applied only to the registers of the same family");
         }
-        Instr::Cmp(CmpOp::GtA(
-            NumType::Float52,
-            _reg_ty!(Reg, $reg1).into(),
+        Instr::Cmp(CmpOp::GtF(
+            FloatEqFlag::Rounding,
+            _reg_tyf!(Reg, $reg1),
             _reg_idx!($idx1),
             _reg_idx!($idx2),
         ))
     }};
     (lt $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
-            panic!("`gt` operation may be applied only to the registers of the same family");
+            panic!("`lt` operation may be applied only to the registers of the same family");
         }
-        if _reg_block!($reg1) != RegBlockAR::R {
-            panic!(
-                "`gt` operation for arithmetic registers requires prefix specifying used \
-                 arithmetics"
-            );
+        if _reg_block!($reg1) != RegBlockAFR::R {
+            panic!("`lt` operation for arithmetic registers requires suffix");
         }
-        Instr::Cmp(CmpOp::LtR(
-            _reg_ty!(Reg, $reg1).into(),
-            _reg_idx16!($idx1),
-            _reg_ty!(Reg, $reg2).into(),
-            _reg_idx!($idx2),
-        ))
+        Instr::Cmp(CmpOp::LtR(_reg_tyr!(Reg, $reg1), _reg_idx!($idx1), _reg_idx!($idx2)))
     }};
     (lt: u $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`lt` operation may be applied only to the registers of the same family");
         }
         Instr::Cmp(CmpOp::LtA(
-            NumType::Unsigned,
-            _reg_ty!(Reg, $reg1).into(),
+            SignFlag::Unsigned,
+            _reg_tya!(Reg, $reg1),
             _reg_idx!($idx1),
             _reg_idx!($idx2),
         ))
@@ -250,34 +233,35 @@ macro_rules! instr {
             panic!("`lt` operation may be applied only to the registers of the same family");
         }
         Instr::Cmp(CmpOp::LtA(
-            NumType::Signed,
-            _reg_ty!(Reg, $reg1).into(),
+            SignFlag::Signed,
+            _reg_tya!(Reg, $reg1),
             _reg_idx!($idx1),
             _reg_idx!($idx2),
         ))
     }};
-    (lt: f $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (lt: e $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`lt` operation may be applied only to the registers of the same family");
         }
-        Instr::Cmp(CmpOp::LtA(
-            NumType::Float23,
-            _reg_ty!(Reg, $reg1).into(),
+        Instr::Cmp(CmpOp::LtF(
+            FloatEqFlag::Exact,
+            _reg_tyf!(Reg, $reg1),
             _reg_idx!($idx1),
             _reg_idx!($idx2),
         ))
     }};
-    (lt: d $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (lt: r $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`lt` operation may be applied only to the registers of the same family");
         }
-        Instr::Cmp(CmpOp::LtA(
-            NumType::Float52,
-            _reg_ty!(Reg, $reg1).into(),
+        Instr::Cmp(CmpOp::LtF(
+            FloatEqFlag::Rounding,
+            _reg_tyf!(Reg, $reg1),
             _reg_idx!($idx1),
             _reg_idx!($idx2),
         ))
     }};
+    /*
     (eq $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         match (_reg_block!($reg1), _reg_block!($reg2)) {
             (RegBlockAR::A, RegBlockAR::A) => Instr::Cmp(CmpOp::EqA(
@@ -411,7 +395,7 @@ macro_rules! instr {
         Instr::Arithmetic(ArithmeticOp::Abs(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
     };
      */
-    (ecgen: secp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+    (secpgen $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         if _reg_block!($reg1) != RegBlockAFR::R || _reg_block!($reg2) != RegBlockAFR::R {
             panic!("elliptic curve instruction accept only generic registers (R-registers)");
         } else {
@@ -419,10 +403,7 @@ macro_rules! instr {
         }
     };
     (
-        ecmul: secp
-        $reg1:ident[$idx1:literal],
-        $reg2:ident[$idx2:literal],
-        $reg3:ident[$idx3:literal]
+        secpmul $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal], $reg3:ident[$idx3:literal]
     ) => {
         if _reg_ty!(Reg, $reg2) != _reg_ty!(Reg, $reg3) {
             panic!("ecmul instruction can be used only with registers of the same type");
@@ -435,14 +416,14 @@ macro_rules! instr {
             ))
         }
     };
-    (ecadd: secp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+    (secpadd $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         if _reg_block!($reg1) != RegBlockAFR::R || _reg_block!($reg2) != RegBlockAFR::R {
             panic!("elliptic curve instruction accept only generic registers (R-registers)");
         } else {
             Instr::Secp256k1(Secp256k1Op::Add(_reg_idx!($idx1), _reg_idx8!($idx2)))
         }
     };
-    (ecneg: secp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+    (secpneg $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         if _reg_block!($reg1) != RegBlockAFR::R || _reg_block!($reg2) != RegBlockAFR::R {
             panic!("elliptic curve instruction accept only generic registers (R-registers)");
         } else {
@@ -808,7 +789,7 @@ macro_rules! _reg_tya {
         paste! { [<$ident A>] :: A1024 }
     };
     ($ident:ident, $other:ident) => {
-        unreachable!()
+        panic!("Operation requires `A` register")
     };
 }
 
@@ -840,7 +821,7 @@ macro_rules! _reg_tyf {
         paste! { [<$ident F>] :: F512 }
     };
     ($ident:ident, $other:ident) => {
-        unreachable!()
+        panic!("Operation requires `F` register")
     };
 }
 
@@ -872,7 +853,7 @@ macro_rules! _reg_tyr {
         paste! { [<$ident R>] :: R8192 }
     };
     ($ident:ident, $other:ident) => {
-        unreachable!()
+        panic!("Operation requires `R` register")
     };
 }
 

@@ -284,7 +284,7 @@ pub enum CmpOp {
     /// Compares value of two integer arithmetic registers setting `st0` to `true` if the first
     /// parameter is lesser (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("gt:{0}\t{1}{2},{1}{3}")]
+    #[display("lt:{0}\t{1}{2},{1}{3}")]
     LtA(SignFlag, RegA, Reg32, Reg32),
 
     /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
@@ -296,7 +296,7 @@ pub enum CmpOp {
     /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
     /// parameter is lesser (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("gt:{0}\t{1}{2},{1}{3}")]
+    #[display("lt:{0}\t{1}{2},{1}{3}")]
     LtF(FloatEqFlag, RegF, Reg32, Reg32),
 
     // ----
