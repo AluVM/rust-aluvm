@@ -343,10 +343,10 @@ impl InstructionSet for ArithmeticOp {
                     .and_then(|(val1, val2)| val1.float_div(val2, flags));
                 regs.set(reg, srcdst, res) && !res.map(Number::is_nan).unwrap_or(false)
             }
-            ArithmeticOp::Rem(reg1, idx1, reg2, idx2, regd, idxd) => {
+            ArithmeticOp::Rem(reg1, idx1, reg2, idx2) => {
                 let res =
                     regs.get_both(reg1, idx1, reg2, idx2).and_then(|(val1, val2)| val1.rem(val2));
-                regs.set(regd, idxd, res)
+                regs.set(reg2, idx2, res)
             }
             ArithmeticOp::Stp(reg, idx, step) => regs.set(
                 reg,

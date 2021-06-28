@@ -407,9 +407,12 @@ pub enum ArithmeticOp {
     #[display("div:{0}\t{1}{2},{1}{3}")]
     DivF(RoundingFlag, RegF, Reg32, Reg32),
 
-    /// Modulo division
-    #[display("rem\t\t{0}{1},{2}{3},{4}{5}")]
-    Rem(RegA, Reg32, RegA, Reg32, RegA, Reg32),
+    /// Modulo division.
+    ///
+    /// Puts a reminder of the division of source register on destination register into the
+    /// destination.
+    #[display("rem\t\t{0}{1},{2}{3}")]
+    Rem(RegA, Reg32, RegA, Reg32),
 
     /// Increment/decrement register value on a given signed step. Sets the destination to `None`
     /// in case of overflow.

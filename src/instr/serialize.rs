@@ -753,8 +753,8 @@ impl Bytecode for ArithmeticOp {
             | ArithmeticOp::MulA(_, _, _, _)
             | ArithmeticOp::MulF(_, _, _, _)
             | ArithmeticOp::DivA(_, _, _, _)
-            | ArithmeticOp::DivF(_, _, _, _) => 3,
-            ArithmeticOp::Rem(_, _, _, _, _, _) => 4,
+            | ArithmeticOp::DivF(_, _, _, _)
+            | ArithmeticOp::Rem(_, _, _, _) => 3,
             ArithmeticOp::Stp(_, _, _) => 4,
             ArithmeticOp::Neg(_, _) | ArithmeticOp::Abs(_, _) => 2,
         }
@@ -768,7 +768,7 @@ impl Bytecode for ArithmeticOp {
             ArithmeticOp::SubF(_, _, _, _) | ArithmeticOp::SubA(_, _, _, _) => INSTR_SUB,
             ArithmeticOp::MulF(_, _, _, _) | ArithmeticOp::MulA(_, _, _, _) => INSTR_MUL,
             ArithmeticOp::DivF(_, _, _, _) | ArithmeticOp::DivA(_, _, _, _) => INSTR_DIV,
-            ArithmeticOp::Rem(_, _, _, _, _, _) => INSTR_REM,
+            ArithmeticOp::Rem(_, _, _, _) => INSTR_REM,
             ArithmeticOp::Stp(_, _, _) => INSTR_STP,
             ArithmeticOp::Neg(_, _) => INSTR_NEG,
             ArithmeticOp::Abs(_, _) => INSTR_ABS,
@@ -810,13 +810,11 @@ impl Bytecode for ArithmeticOp {
                 writer.write_u5(src2)?;
                 writer.write_u3(reg)?;
             }
-            ArithmeticOp::Rem(reg1, src1, reg2, src2, reg3, dst) => {
+            ArithmeticOp::Rem(reg1, src1, reg2, src2) => {
                 writer.write_u3(reg1)?;
                 writer.write_u5(src1)?;
                 writer.write_u3(reg2)?;
                 writer.write_u5(src2)?;
-                writer.write_u3(reg3)?;
-                writer.write_u5(dst)?;
             }
         }
         Ok(())
@@ -860,9 +858,7 @@ impl Bytecode for ArithmeticOp {
                     let src1 = reader.read_u5()?.into();
                     let reg2 = reader.read_u3()?.into();
                     let src2 = reader.read_u5()?.into();
-                    let reg3 = reader.read_u3()?.into();
-                    let dst = reader.read_u5()?.into();
-                    Self::Rem(reg1, src1, reg2, src2, reg3, dst)
+                    Self::Rem(reg1, src1, reg2, src2)
                 }
                 INSTR_ABS => Self::Abs(reader.read_u4()?.into(), reader.read_u4()?.into()),
                 x => unreachable!("instruction {:#010b} classified as arithmetic operation", x),

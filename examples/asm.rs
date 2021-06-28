@@ -20,8 +20,8 @@ use core::convert::TryFrom;
 
 use aluvm::instr::serialize::disassemble;
 use aluvm::instr::{
-    ArithmeticOp, CmpOp, ControlFlowOp, FloatEqFlag, Instr, MergeFlag, MoveOp, NOp, PutOp,
-    Secp256k1Op, SignFlag,
+    ArithmeticOp, CmpOp, ControlFlowOp, FloatEqFlag, Instr, IntFlags, MergeFlag, MoveOp, NOp,
+    PutOp, Secp256k1Op, SignFlag,
 };
 use aluvm::{
     Lib, Reg16, Reg32, Reg8, RegA, RegAF, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime,
@@ -55,6 +55,12 @@ fn main() {
         ifz     r2048[17]                       ;
         inv     st0                             ;
         st:s    a8[1]                           ;
+        add:uc  a32[12],a32[13]                 ;
+        add:sw  a32[12],a32[13]                 ;
+        sub:sc  a32[12],a32[13]                 ;
+        mul:uw  a32[12],a32[13]                 ;
+        div:cu  a32[12],a32[13]                 ;
+        rem     a64[8],a8[2]                    ;
         secpgen r256[1],r512[1]                 ;
         secpmul a256[1],r512[1],r512[22]        ;
         secpadd r512[22],r512[1]                ;
@@ -64,6 +70,8 @@ fn main() {
     };
 
     /*
+        add:z   f32[12],f32[13]                 ;
+        add:n   f32[12],f32[13]                 ;
         len     a512[6]                         ;
         cnt     a256[6]                         ;
         st2a                                    ;
@@ -72,18 +80,6 @@ fn main() {
         inc:u   a16[4],5                        ;
         dec:u   a16[3]                          ;
         dec:c   a16[4],5                        ;
-        add:c   a32[12],a32[13]                 ;
-        add:u   a32[12],a32[13]                 ;
-        add:a   a32[12],a32[13]                 ;
-        add:cs  a32[12],a32[13]                 ;
-        add:us  a32[12],a32[13]                 ;
-        add:as  a32[12],a32[13]                 ;
-        add:f   a32[12],a32[13]                 ;
-        add:af  a32[12],a32[13]                 ;
-        sub:c   a32[12],a32[13]                 ;
-        mul:c   a32[12],a32[13]                 ;
-        div:c   a32[12],a32[13]                 ;
-        rem:u   a64[8],a8[2]                    ;
     */
 
     println!("Instructions:\n{:#?}\n", code);

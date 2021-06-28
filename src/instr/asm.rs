@@ -325,8 +325,69 @@ macro_rules! instr {
     (inv st0) => {
         Instr::Cmp(CmpOp::StInv)
     };
-    /*
 
+    (add: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+            panic!("addition must be performed between registers of the same type and size");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::AddA(
+                _int_flags!($flag),
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            ))
+        }
+    };
+    (sub: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+            panic!("subtraction must be performed between registers of the same type and size");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::SubA(
+                _int_flags!($flag),
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            ))
+        }
+    };
+    (mul: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+            panic!("multiplication must be performed between registers of the same type and size");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::MulA(
+                _int_flags!($flag),
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            ))
+        }
+    };
+    (div: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+            panic!("division must be performed between registers of the same type and size");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::DivA(
+                _int_flags!($flag),
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            ))
+        }
+    };
+    (rem $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        if _reg_block!($reg1) != RegBlockAFR::A || _reg_block!($reg2) != RegBlockAFR::A {
+            panic!("modulo division must be performed only using integer arithmetic registers");
+        } else {
+            Instr::Arithmetic(ArithmeticOp::Rem(
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_tya!(Reg, $reg2),
+                _reg_idx!($idx2),
+            ))
+        }
+    };
+
+    /*
     (neg $reg:ident[$idx:literal]) => {
         Instr::Arithmetic(ArithmeticOp::Neg(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
     };
@@ -365,66 +426,6 @@ macro_rules! instr {
             _reg_idx!($idx),
             u4::try_from($step).expect("scalar value for decrement must be in 0..16 range"),
         ))
-    };
-    (add: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_block!($reg1) != RegBlockAR::A || _reg_block!($reg2) != RegBlockAR::A {
-            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
-        } else {
-            Instr::Arithmetic(ArithmeticOp::Add(
-                _arithmetic_flag!($flag),
-                _reg_ty!(Reg, $reg1),
-                _reg_idx!($idx1),
-                _reg_idx!($idx2),
-            ))
-        }
-    };
-    (sub: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_block!($reg1) != RegBlockAR::A || _reg_block!($reg2) != RegBlockAR::A {
-            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
-        } else {
-            Instr::Arithmetic(ArithmeticOp::Sub(
-                _arithmetic_flag!($flag),
-                _reg_ty!(Reg, $reg1),
-                _reg_idx!($idx1),
-                _reg_idx!($idx2),
-            ))
-        }
-    };
-    (mul: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_block!($reg1) != RegBlockAR::A || _reg_block!($reg2) != RegBlockAR::A {
-            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
-        } else {
-            Instr::Arithmetic(ArithmeticOp::Mul(
-                _arithmetic_flag!($flag),
-                _reg_ty!(Reg, $reg1),
-                _reg_idx!($idx1),
-                _reg_idx!($idx2),
-            ))
-        }
-    };
-    (div: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_block!($reg1) != RegBlockAR::A || _reg_block!($reg2) != RegBlockAR::A {
-            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
-        } else {
-            Instr::Arithmetic(ArithmeticOp::Div(
-                _arithmetic_flag!($flag),
-                _reg_ty!(Reg, $reg1),
-                _reg_idx!($idx1),
-                _reg_idx!($idx2),
-            ))
-        }
-    };
-    (rem: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_block!($reg1) != RegBlockAR::A || _reg_block!($reg2) != RegBlockAR::A {
-            panic!("arithmetic instruction accept only arithmetic registers (A-registers)");
-        } else {
-            Instr::Arithmetic(ArithmeticOp::Div(
-                _arithmetic_flag!($flag),
-                _reg_ty!(Reg, $reg1),
-                _reg_idx!($idx1),
-                _reg_idx!($idx2),
-            ))
-        }
     };
     (abs $reg:ident[$idx:literal]) => {
         Instr::Arithmetic(ArithmeticOp::Abs(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
@@ -938,5 +939,34 @@ macro_rules! _merge_flag {
     };
     (o) => {
         MergeFlag::Or
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _int_flags {
+    (uc) => {
+        IntFlags::unsigned_checked()
+    };
+    (cu) => {
+        IntFlags::unsigned_checked()
+    };
+    (sc) => {
+        IntFlags::signed_checked()
+    };
+    (cs) => {
+        IntFlags::signed_checked()
+    };
+    (uw) => {
+        IntFlags::unsigned_wrapped()
+    };
+    (wu) => {
+        IntFlags::unsigned_wrapped()
+    };
+    (sw) => {
+        IntFlags::signed_wrapped()
+    };
+    (ws) => {
+        IntFlags::signed_wrapped()
     };
 }
