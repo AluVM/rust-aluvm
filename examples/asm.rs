@@ -16,18 +16,13 @@ extern crate aluvm;
 #[macro_use]
 extern crate paste;
 
-use core::convert::TryFrom;
-
 use aluvm::instr::serialize::disassemble;
 use aluvm::instr::{
     ArithmeticOp, CmpOp, ControlFlowOp, FloatEqFlag, Instr, IntFlags, MergeFlag, MoveOp, NOp,
-    PutOp, Secp256k1Op, SignFlag,
+    PutOp, RoundingFlag, Secp256k1Op, SignFlag,
 };
-use aluvm::{
-    Lib, Reg16, Reg32, Reg8, RegA, RegAF, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime,
-};
+use aluvm::{Lib, Reg32, Reg8, RegA, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime};
 use amplify_num::hex::ToHex;
-use amplify_num::{u3, u4};
 
 fn main() {
     let code = aluasm! {
@@ -60,6 +55,10 @@ fn main() {
         sub:sc  a32[12],a32[13]                 ;
         mul:uw  a32[12],a32[13]                 ;
         div:cu  a32[12],a32[13]                 ;
+        add:z   f32[12],f32[13]                 ;
+        sub:n   f32[12],f32[13]                 ;
+        mul:c   f32[12],f32[13]                 ;
+        div:f   f32[12],f32[13]                 ;
         rem     a64[8],a8[2]                    ;
         secpgen r256[1],r512[1]                 ;
         secpmul a256[1],r512[1],r512[22]        ;
@@ -70,8 +69,6 @@ fn main() {
     };
 
     /*
-        add:z   f32[12],f32[13]                 ;
-        add:n   f32[12],f32[13]                 ;
         len     a512[6]                         ;
         cnt     a256[6]                         ;
         st2a                                    ;

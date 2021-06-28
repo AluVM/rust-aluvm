@@ -327,51 +327,87 @@ macro_rules! instr {
     };
 
     (add: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
-            panic!("addition must be performed between registers of the same type and size");
-        } else {
-            Instr::Arithmetic(ArithmeticOp::AddA(
+        match (_reg_block!($reg1), _reg_block!($reg2)) {
+            (RegBlockAFR::A, RegBlockAFR::A) => Instr::Arithmetic(ArithmeticOp::AddA(
                 _int_flags!($flag),
                 _reg_tya!(Reg, $reg1),
                 _reg_idx!($idx1),
                 _reg_idx!($idx2),
-            ))
+            )),
+            (RegBlockAFR::F, RegBlockAFR::F) => Instr::Arithmetic(ArithmeticOp::AddF(
+                _rounding_flag!($flag),
+                _reg_tyf!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            )),
+            (a, b) if a == b => panic!("addition requires integer or float registers"),
+            (_, _) if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) => {
+                panic!("addition must be performed between registers of the same size")
+            }
+            (_, _) => panic!("addition must be performed between registers of the same type"),
         }
     };
     (sub: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
-            panic!("subtraction must be performed between registers of the same type and size");
-        } else {
-            Instr::Arithmetic(ArithmeticOp::SubA(
+        match (_reg_block!($reg1), _reg_block!($reg2)) {
+            (RegBlockAFR::A, RegBlockAFR::A) => Instr::Arithmetic(ArithmeticOp::SubA(
                 _int_flags!($flag),
                 _reg_tya!(Reg, $reg1),
                 _reg_idx!($idx1),
                 _reg_idx!($idx2),
-            ))
+            )),
+            (RegBlockAFR::F, RegBlockAFR::F) => Instr::Arithmetic(ArithmeticOp::SubF(
+                _rounding_flag!($flag),
+                _reg_tyf!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            )),
+            (a, b) if a == b => panic!("subtraction requires integer or float registers"),
+            (_, _) if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) => {
+                panic!("subtraction must be performed between registers of the same size")
+            }
+            (_, _) => panic!("subtraction must be performed between registers of the same type"),
         }
     };
     (mul: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
-            panic!("multiplication must be performed between registers of the same type and size");
-        } else {
-            Instr::Arithmetic(ArithmeticOp::MulA(
+        match (_reg_block!($reg1), _reg_block!($reg2)) {
+            (RegBlockAFR::A, RegBlockAFR::A) => Instr::Arithmetic(ArithmeticOp::MulA(
                 _int_flags!($flag),
                 _reg_tya!(Reg, $reg1),
                 _reg_idx!($idx1),
                 _reg_idx!($idx2),
-            ))
+            )),
+            (RegBlockAFR::F, RegBlockAFR::F) => Instr::Arithmetic(ArithmeticOp::MulF(
+                _rounding_flag!($flag),
+                _reg_tyf!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            )),
+            (a, b) if a == b => panic!("multiplication requires integer or float registers"),
+            (_, _) if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) => {
+                panic!("multiplication must be performed between registers of the same size")
+            }
+            (_, _) => panic!("multiplication must be performed between registers of the same type"),
         }
     };
     (div: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
-        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
-            panic!("division must be performed between registers of the same type and size");
-        } else {
-            Instr::Arithmetic(ArithmeticOp::DivA(
+        match (_reg_block!($reg1), _reg_block!($reg2)) {
+            (RegBlockAFR::A, RegBlockAFR::A) => Instr::Arithmetic(ArithmeticOp::DivA(
                 _int_flags!($flag),
                 _reg_tya!(Reg, $reg1),
                 _reg_idx!($idx1),
                 _reg_idx!($idx2),
-            ))
+            )),
+            (RegBlockAFR::F, RegBlockAFR::F) => Instr::Arithmetic(ArithmeticOp::DivF(
+                _rounding_flag!($flag),
+                _reg_tyf!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            )),
+            (a, b) if a == b => panic!("division requires integer or float registers"),
+            (_, _) if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) => {
+                panic!("division must be performed between registers of the same size")
+            }
+            (_, _) => panic!("division must be performed between registers of the same type"),
         }
     };
     (rem $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
@@ -833,7 +869,7 @@ macro_rules! _reg_tya {
         paste! { [<$ident A>] :: A1024 }
     };
     ($ident:ident, $other:ident) => {
-        panic!("Operation requires `A` register")
+        panic!("operation requires `A` register")
     };
 }
 
@@ -865,7 +901,7 @@ macro_rules! _reg_tyf {
         paste! { [<$ident F>] :: F512 }
     };
     ($ident:ident, $other:ident) => {
-        panic!("Operation requires `F` register")
+        panic!("operation requires `F` register")
     };
 }
 
@@ -897,7 +933,7 @@ macro_rules! _reg_tyr {
         paste! { [<$ident R>] :: R8192 }
     };
     ($ident:ident, $other:ident) => {
-        panic!("Operation requires `R` register")
+        panic!("operation requires `R` register")
     };
 }
 
@@ -944,6 +980,26 @@ macro_rules! _merge_flag {
 
 #[doc(hidden)]
 #[macro_export]
+macro_rules! _rounding_flag {
+    (z) => {
+        RoundingFlag::TowardsZero
+    };
+    (n) => {
+        RoundingFlag::TowardsNearest
+    };
+    (f) => {
+        RoundingFlag::Floor
+    };
+    (c) => {
+        RoundingFlag::Ceil
+    };
+    ($other:ident) => {
+        panic!("wrong float rounding flag")
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
 macro_rules! _int_flags {
     (uc) => {
         IntFlags::unsigned_checked()
@@ -968,5 +1024,8 @@ macro_rules! _int_flags {
     };
     (ws) => {
         IntFlags::signed_wrapped()
+    };
+    ($other:ident) => {
+        panic!("wrong integer operation flags")
     };
 }
