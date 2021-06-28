@@ -449,6 +449,55 @@ macro_rules! instr {
         Instr::Arithmetic(ArithmeticOp::Abs(_reg_ty!(Reg, $reg).into(), _reg_idx16!($idx)))
     };
 
+    (and $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal], $reg3:ident[$idx3:literal]) => {
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2)
+            || _reg_ty!(Reg, $reg2) != _reg_ty!(Reg, $reg3)
+        {
+            panic!("`and` operation must use the same type of registers for all of its operands");
+        } else if _reg_block!($reg1) != RegBlockAFR::A && _reg_block!($reg1) != RegBlockAFR::R {
+            panic!("`and` operation requires integer arithmetic or generic registers");
+        } else {
+            Instr::Bitwise(BitwiseOp::And(
+                _reg_ty!(Reg, $reg1).into(),
+                _reg_idx16!($idx1),
+                _reg_idx16!($idx2),
+                _reg_idx16!($idx3),
+            ))
+        }
+    };
+    (or $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal], $reg3:ident[$idx3:literal]) => {
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2)
+            || _reg_ty!(Reg, $reg2) != _reg_ty!(Reg, $reg3)
+        {
+            panic!("`or` operation must use the same type of registers for all of its operands");
+        } else if _reg_block!($reg1) != RegBlockAFR::A && _reg_block!($reg1) != RegBlockAFR::R {
+            panic!("`or` operation requires integer arithmetic or generic registers");
+        } else {
+            Instr::Bitwise(BitwiseOp::Or(
+                _reg_ty!(Reg, $reg1).into(),
+                _reg_idx16!($idx1),
+                _reg_idx16!($idx2),
+                _reg_idx16!($idx3),
+            ))
+        }
+    };
+    (xor $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal], $reg3:ident[$idx3:literal]) => {
+        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2)
+            || _reg_ty!(Reg, $reg2) != _reg_ty!(Reg, $reg3)
+        {
+            panic!("`xor` operation must use the same type of registers for all of its operands");
+        } else if _reg_block!($reg1) != RegBlockAFR::A && _reg_block!($reg1) != RegBlockAFR::R {
+            panic!("`xor` operation requires integer arithmetic or generic registers");
+        } else {
+            Instr::Bitwise(BitwiseOp::Xor(
+                _reg_ty!(Reg, $reg1).into(),
+                _reg_idx16!($idx1),
+                _reg_idx16!($idx2),
+                _reg_idx16!($idx3),
+            ))
+        }
+    };
+
     (ripemd s16[$idx1:literal],r160[$idx2:literal]) => {
         Instr::Digest(DigestOp::Ripemd(_reg_idx!($idx1), _reg_idx8!($idx2)))
     };
