@@ -20,8 +20,8 @@ use core::convert::TryFrom;
 
 use aluvm::instr::serialize::disassemble;
 use aluvm::instr::{
-    ArithmeticOp, CmpOp, ControlFlowOp, FloatEqFlag, Instr, MoveOp, NOp, PutOp, Secp256k1Op,
-    SignFlag,
+    ArithmeticOp, CmpOp, ControlFlowOp, FloatEqFlag, Instr, MergeFlag, MoveOp, NOp, PutOp,
+    Secp256k1Op, SignFlag,
 };
 use aluvm::{
     Lib, Reg16, Reg32, Reg8, RegA, RegAF, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime,
@@ -51,6 +51,10 @@ fn main() {
         eq      a8[5],a8[9]      .none=true     ;
         eq      r160[5],r160[9]  .none=false    ;
         eq:e    f64[19],f64[29]                 ;
+        ifn     a32[32]                         ;
+        ifz     r2048[17]                       ;
+        inv     st0                             ;
+        st:s    a8[1]                           ;
         secpgen r256[1],r512[1]                 ;
         secpmul a256[1],r512[1],r512[22]        ;
         secpadd r512[22],r512[1]                ;

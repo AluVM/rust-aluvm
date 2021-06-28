@@ -352,11 +352,11 @@ pub enum CmpOp {
 
     /// Takes value from `st0` and merges into the value of the destination `A` register. The merge
     /// operation is defined by the [`MergeFlag`] argument.
-    #[display("st:{0}\t{0}{1}")]
+    #[display("st:{0}\t{1}{2}")]
     St(MergeFlag, RegA, Reg8),
 
     /// Inverses value in `st0` register
-    #[display("stinv")]
+    #[display("inv\t\tst0")]
     StInv,
 }
 

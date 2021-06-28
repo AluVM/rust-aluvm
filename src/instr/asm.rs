@@ -305,19 +305,27 @@ macro_rules! instr {
             _reg_idx!($idx2),
         ))
     }};
+    (ifn $reg:ident[$idx:literal]) => {
+        match _reg_block!($reg) {
+            RegBlockAFR::A => Instr::Cmp(CmpOp::IfNA(_reg_tya!(Reg, $reg), _reg_idx!($idx))),
+            RegBlockAFR::R => Instr::Cmp(CmpOp::IfNR(_reg_tyr!(Reg, $reg), _reg_idx!($idx))),
+            _ => panic!("Wrong registers for `ifn` operation"),
+        }
+    };
+    (ifz $reg:ident[$idx:literal]) => {
+        match _reg_block!($reg) {
+            RegBlockAFR::A => Instr::Cmp(CmpOp::IfZA(_reg_tya!(Reg, $reg), _reg_idx!($idx))),
+            RegBlockAFR::R => Instr::Cmp(CmpOp::IfZR(_reg_tyr!(Reg, $reg), _reg_idx!($idx))),
+            _ => panic!("Wrong registers for `ifz` operation"),
+        }
+    };
+    (st: $flag:ident $reg:ident[$idx:literal]) => {
+        Instr::Cmp(CmpOp::St(_merge_flag!($flag), _reg_tya!(Reg, $reg), _reg_idx8!($idx)))
+    };
+    (inv st0) => {
+        Instr::Cmp(CmpOp::StInv)
+    };
     /*
-    (len $reg:ident[$idx:literal]) => {
-        Instr::Cmp(CmpOp::Len(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
-    };
-    (cnt $reg:ident[$idx:literal]) => {
-        Instr::Cmp(CmpOp::Cnt(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
-    };
-    (st2a) => {
-        Instr::Cmp(CmpOp::St2A)
-    };
-    (a2st) => {
-        Instr::Cmp(CmpOp::A2St)
-    };
 
     (neg $reg:ident[$idx:literal]) => {
         Instr::Arithmetic(ArithmeticOp::Neg(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
@@ -913,5 +921,22 @@ macro_rules! _reg_idx8 {
 macro_rules! _reg_idx16 {
     ($idx:literal) => {
         paste! { Reg16::[<Reg $idx>] }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _merge_flag {
+    (s) => {
+        MergeFlag::Set
+    };
+    (a) => {
+        MergeFlag::Add
+    };
+    (n) => {
+        MergeFlag::And
+    };
+    (o) => {
+        MergeFlag::Or
     };
 }
