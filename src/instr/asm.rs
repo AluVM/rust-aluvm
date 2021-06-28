@@ -9,15 +9,101 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+/// Macro compiler for AluVM assembler.
+///
+/// # Example
+///
+/// ```
+/// # use paste::paste;
+/// # use aluvm::*;
+/// # use aluvm::instr::NOp;
+///
+/// let code = aluasm! {
+///         clr     r1024[5]                        ;
+///         put     378,a16[8]                      ;
+///         putif   0xaf67937b5498dc,r128[5]        ;
+///         swp     a8[1],a8[2]                     ;
+///         swp     f256[8],f256[7]                 ;
+///         dup     a256[1],a256[7]                 ;
+///         mov     a16[1],a16[2]                   ;
+///         mov     r256[8],r256[7]                 ;
+///         cpy     a256[1],a256[7]                 ;
+///         ret                                     ;
+///         jmp     0                               ;
+/// };
+///
+/// let lib = Lib::<NOp>::with(code).unwrap();
+/// let mut runtime = Runtime::with(lib);
+/// match runtime.main() {
+///     Ok(true) => println!("success"),
+///     Ok(false) => println!("execution reported validation failure"),
+///     Err(err) => eprintln!("{}", err),
+/// }
+/// ```
 #[macro_export]
 macro_rules! aluasm {
     ($( $tt:tt )+) => { {
-        let mut code: Vec<::aluvm::Instr<::aluvm::instr::NOp>> = vec![];
+        use aluvm::instr::{
+            ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
+            MergeFlag, MoveOp, NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
+        };
+        use aluvm::{
+            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, Step,
+        };
+
+        let mut code: Vec<Instr<NOp>> = vec![];
         aluasm_inner! { code => $( $tt )+ };
         code
     } }
 }
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! aluasm_inner {
+    { $code:ident => } => { };
+    { $code:ident => $op:ident ; $($tt:tt)* } => {
+        $code.push(instr!{ $op });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:literal ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:ident ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident : $flag:ident $( $arg:ident ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op : $flag $( $arg ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ .none=true ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ , true });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ .none=false ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ , false });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident : $flag:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op : $flag $( $arg [ $idx ]  ),+ });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $arglit:literal , $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $arglit , $arg [ $idx ] });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident : $flag:ident $arg:ident [ $idx:literal ], $arglit:expr ; $($tt:tt)* } => {
+        $code.push(instr!{ $op : $flag $arg [ $idx ], $arglit });
+        aluasm_inner! { $code => $( $tt )* }
+    };
+}
+
+#[doc(hidden)]
 #[macro_export]
 macro_rules! instr {
     (fail) => {
@@ -603,52 +689,6 @@ macro_rules! instr {
         } else {
             Instr::Secp256k1(Secp256k1Op::Neg(_reg_idx!($idx1), _reg_idx8!($idx2)))
         }
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! aluasm_inner {
-    { $code:ident => } => { };
-    { $code:ident => $op:ident ; $($tt:tt)* } => {
-        $code.push(instr!{ $op });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $( $arg:literal ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg ),+ });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $( $arg:ident ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg ),+ });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident : $flag:ident $( $arg:ident ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op : $flag $( $arg ),+ });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ .none=true ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ , true });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ .none=false ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ , false });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident : $flag:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op : $flag $( $arg [ $idx ]  ),+ });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $arglit:literal , $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $arglit , $arg [ $idx ] });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident : $flag:ident $arg:ident [ $idx:literal ], $arglit:expr ; $($tt:tt)* } => {
-        $code.push(instr!{ $op : $flag $arg [ $idx ], $arglit });
-        aluasm_inner! { $code => $( $tt )* }
     };
 }
 

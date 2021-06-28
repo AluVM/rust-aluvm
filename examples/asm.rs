@@ -17,13 +17,8 @@ extern crate aluvm;
 extern crate paste;
 
 use aluvm::instr::serialize::disassemble;
-use aluvm::instr::{
-    ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
-    MergeFlag, MoveOp, NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
-};
-use aluvm::{
-    Lib, Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime, Step,
-};
+use aluvm::instr::{Instr, NOp};
+use aluvm::{Lib, Runtime};
 use amplify_num::hex::ToHex;
 
 fn main() {

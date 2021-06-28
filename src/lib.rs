@@ -112,9 +112,8 @@
 //! [AluVM]: https://github.com/internet2-org/aluvm-spec
 
 // TODO: Implement string operations
+// TODO: Complete assembly compiler on string operations
 // TODO: Implement operations on Edwards curves
-// TODO: Complete assembly compiler
-// TODO: Add additional operations for checking
 
 extern crate alloc;
 
