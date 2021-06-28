@@ -135,6 +135,25 @@ macro_rules! instr {
             (_, _) => panic!("Conversion operation between unsupported register types"),
         }
     }};
+    (spy $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        match (_reg_block!($reg1), _reg_block!($reg2)) {
+            (RegBlockAFR::A, RegBlockAFR::R) => Instr::Move(MoveOp::SpyAR(
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_tyr!(Reg, $reg2),
+                _reg_idx!($idx2),
+            )),
+            (RegBlockAFR::R, RegBlockAFR::A) => Instr::Move(MoveOp::SpyAR(
+                _reg_tya!(Reg, $reg2),
+                _reg_idx!($idx2),
+                _reg_tyr!(Reg, $reg1),
+                _reg_idx!($idx1),
+            )),
+            (_, _) => {
+                panic!("Swap-conversion operation is supported only between A and R registers")
+            }
+        }
+    }};
 
     /*
     (gt $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
@@ -819,6 +838,38 @@ macro_rules! _reg_tyf {
     };
     ($ident:ident,f512) => {
         paste! { [<$ident F>] :: F512 }
+    };
+    ($ident:ident, $other:ident) => {
+        unreachable!()
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_tyr {
+    ($ident:ident,r128) => {
+        paste! { [<$ident R>] :: R128 }
+    };
+    ($ident:ident,r160) => {
+        paste! { [<$ident R>] :: R160 }
+    };
+    ($ident:ident,r256) => {
+        paste! { [<$ident R>] :: R256 }
+    };
+    ($ident:ident,r512) => {
+        paste! { [<$ident R>] :: R512 }
+    };
+    ($ident:ident,r1024) => {
+        paste! { [<$ident R>] :: R1024 }
+    };
+    ($ident:ident,r2048) => {
+        paste! { [<$ident R>] :: R2048 }
+    };
+    ($ident:ident,r4096) => {
+        paste! { [<$ident R>] :: R4096 }
+    };
+    ($ident:ident,r8192) => {
+        paste! { [<$ident R>] :: R8192 }
     };
     ($ident:ident, $other:ident) => {
         unreachable!()

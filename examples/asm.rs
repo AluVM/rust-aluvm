@@ -38,6 +38,7 @@ fn main() {
         mov     r256[8],r256[7]                 ;
         cpy     a256[1],a256[7]                 ;
         cnv     f128[4],a128[3]                 ;
+        spy     a1024[15],r1024[24]             ;
         ecgen:secp r256[1],r512[1]              ;
         ecmul:secp a256[1],r512[1],r512[22]     ;
         ecadd:secp r512[22],r512[1]             ;
