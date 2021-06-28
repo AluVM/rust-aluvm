@@ -497,6 +497,67 @@ macro_rules! instr {
             ))
         }
     };
+    (shl $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        Instr::Bitwise(BitwiseOp::Shl(
+            _reg_tya2!(Reg, $reg2),
+            _reg_idx!($idx2),
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+        ))
+    };
+    (shr: u $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        Instr::Bitwise(BitwiseOp::ShrA(
+            SignFlag::Unsigned,
+            _reg_tya2!(Reg, $reg2),
+            _reg_idx16!($idx2),
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+        ))
+    };
+    (shr: s $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        Instr::Bitwise(BitwiseOp::ShrA(
+            SignFlag::Signed,
+            _reg_tya2!(Reg, $reg2),
+            _reg_idx16!($idx2),
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+        ))
+    };
+    (shr $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        Instr::Bitwise(BitwiseOp::ShrR(
+            _reg_tya2!(Reg, $reg2),
+            _reg_idx!($idx2),
+            _reg_ty!(Reg, $reg1),
+            _reg_idx!($idx1),
+        ))
+    };
+    (scl $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        Instr::Bitwise(BitwiseOp::Scl(
+            _reg_tya2!(Reg, $reg2),
+            _reg_idx!($idx2),
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+        ))
+    };
+    (scr $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+        Instr::Bitwise(BitwiseOp::Scr(
+            _reg_tya2!(Reg, $reg2),
+            _reg_idx!($idx2),
+            _reg_ty!(Reg, $reg1).into(),
+            _reg_idx!($idx1),
+        ))
+    };
+    (rev $reg:ident[$idx:literal]) => {
+        match _reg_block!($reg) {
+            RegBlockAFR::A => {
+                Instr::Bitwise(BitwiseOp::RevA(_reg_tya!(Reg, $reg), _reg_idx!($idx)))
+            }
+            RegBlockAFR::R => {
+                Instr::Bitwise(BitwiseOp::RevR(_reg_tyr!(Reg, $reg), _reg_idx!($idx)))
+            }
+            _ => panic!("Wrong registers for `rev` operation"),
+        }
+    };
 
     (ripemd s16[$idx1:literal],r160[$idx2:literal]) => {
         Instr::Digest(DigestOp::Ripemd(_reg_idx!($idx1), _reg_idx8!($idx2)))
@@ -879,6 +940,17 @@ macro_rules! _reg_ty {
     };
     ($ident:ident,r8192) => {
         paste! { [<$ident R>] :: R8192 }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_tya2 {
+    ($ident:ident,a8) => {
+        paste! { [<$ident A2>] :: A8 }
+    };
+    ($ident:ident,a16) => {
+        paste! { [<$ident A2>] :: A16 }
     };
 }
 

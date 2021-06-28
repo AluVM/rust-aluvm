@@ -21,7 +21,9 @@ use aluvm::instr::{
     ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
     MergeFlag, MoveOp, NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
 };
-use aluvm::{Lib, Reg16, Reg32, Reg8, RegA, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime, Step};
+use aluvm::{
+    Lib, Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, Runtime, Step,
+};
 use amplify_num::hex::ToHex;
 
 fn main() {
@@ -68,6 +70,13 @@ fn main() {
         abs     f128[11]                        ;
         and     a32[5],a32[6],a32[5]            ;
         xor     r128[5],r128[6],r128[5]         ;
+        shr:u   a256[12],a16[2]                 ;
+        shr:s   a256[12],a16[2]                 ;
+        shl     r256[24],a16[22]                ;
+        shr     r256[24],a16[22]                ;
+        scr     r256[24],a16[22]                ;
+        scl     r256[24],a16[22]                ;
+        rev     a512[28]                        ;
         ripemd  s16[9],r160[7]                  ;
         sha2    s16[19],r256[1]                 ;
         secpgen r256[1],r512[1]                 ;
