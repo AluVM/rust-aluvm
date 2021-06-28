@@ -107,28 +107,33 @@ macro_rules! instr {
         ))
     }};
     (cnv $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
-        Instr::Move(_reg_sfx!(MoveOp, Cnv, $reg1)(
-            _reg_ty!(Reg, $reg1),
-            _reg_idx!($idx1),
-            _reg_ty!(Reg, $reg2),
-            _reg_idx!($idx2),
-        ))
-    }};
-    (cnaf $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
-        Instr::Move(MoveOp::CnvAF(
-            _reg_ty!(Reg, $reg1),
-            _reg_idx!($idx1),
-            _reg_ty!(Reg, $reg2),
-            _reg_idx!($idx2),
-        ))
-    }};
-    (cnfa $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
-        Instr::Move(MoveOp::CnvFA(
-            _reg_ty!(Reg, $reg1),
-            _reg_idx!($idx1),
-            _reg_ty!(Reg, $reg2),
-            _reg_idx!($idx2),
-        ))
+        match (_reg_block!($reg1), _reg_block!($reg2)) {
+            (RegBlockAFR::A, RegBlockAFR::F) => Instr::Move(MoveOp::CnvAF(
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_tyf!(Reg, $reg2),
+                _reg_idx!($idx2),
+            )),
+            (RegBlockAFR::F, RegBlockAFR::A) => Instr::Move(MoveOp::CnvFA(
+                _reg_tyf!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_tya!(Reg, $reg2),
+                _reg_idx!($idx2),
+            )),
+            (RegBlockAFR::A, RegBlockAFR::A) => Instr::Move(MoveOp::CnvA(
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx2),
+            )),
+            (RegBlockAFR::F, RegBlockAFR::F) => Instr::Move(MoveOp::CnvF(
+                _reg_tyf!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_tyf!(Reg, $reg1),
+                _reg_idx!($idx2),
+            )),
+            (_, _) => panic!("Conversion operation between unsupported register types"),
+        }
     }};
 
     /*
@@ -753,6 +758,70 @@ macro_rules! _reg_ty {
     };
     ($ident:ident,r8192) => {
         paste! { [<$ident R>] :: R8192 }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_tya {
+    ($ident:ident,a8) => {
+        paste! { [<$ident A>] :: A8 }
+    };
+    ($ident:ident,a16) => {
+        paste! { [<$ident A>] :: A16 }
+    };
+    ($ident:ident,a32) => {
+        paste! { [<$ident A>] :: A32 }
+    };
+    ($ident:ident,a64) => {
+        paste! { [<$ident A>] :: A64 }
+    };
+    ($ident:ident,a128) => {
+        paste! { [<$ident A>] :: A128 }
+    };
+    ($ident:ident,a256) => {
+        paste! { [<$ident A>] :: A256 }
+    };
+    ($ident:ident,a512) => {
+        paste! { [<$ident A>] :: A512 }
+    };
+    ($ident:ident,a1024) => {
+        paste! { [<$ident A>] :: A1024 }
+    };
+    ($ident:ident, $other:ident) => {
+        unreachable!()
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_tyf {
+    ($ident:ident,f16b) => {
+        paste! { [<$ident F>] :: F16B }
+    };
+    ($ident:ident,f16) => {
+        paste! { [<$ident F>] :: F16 }
+    };
+    ($ident:ident,f32) => {
+        paste! { [<$ident F>] :: F32 }
+    };
+    ($ident:ident,f64) => {
+        paste! { [<$ident F>] :: F64 }
+    };
+    ($ident:ident,f80) => {
+        paste! { [<$ident F>] :: F80 }
+    };
+    ($ident:ident,f128) => {
+        paste! { [<$ident F>] :: F128 }
+    };
+    ($ident:ident,f256) => {
+        paste! { [<$ident F>] :: F256 }
+    };
+    ($ident:ident,f512) => {
+        paste! { [<$ident F>] :: F512 }
+    };
+    ($ident:ident, $other:ident) => {
+        unreachable!()
     };
 }
 

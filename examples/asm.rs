@@ -36,8 +36,8 @@ fn main() {
         dup     a256[1],a256[7]                 ;
         mov     a16[1],a16[2]                   ;
         mov     r256[8],r256[7]                 ;
-        cpy     a256[1], a256[7]                ;
-        cnfa    f128[4], a128[3]                ;
+        cpy     a256[1],a256[7]                 ;
+        cnv     f128[4],a128[3]                 ;
         ecgen:secp r256[1],r512[1]              ;
         ecmul:secp a256[1],r512[1],r512[22]     ;
         ecadd:secp r512[22],r512[1]             ;
