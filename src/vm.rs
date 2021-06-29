@@ -79,14 +79,24 @@ where
     /// or initialized to 0 offset of the first used library if [`Vm::new`], [`Vm::default`] or
     /// [`Vm::with`] were used).
     ///
-    /// If the code lacks some of the libraries, does not executes any code and instantly returns
-    /// [`NoLibraryError`]. The state of the registers remains unmodified in this case.
+    /// # Returns
+    ///
+    /// Value of the `st0` register at the end of the program execution.
+    ///
+    /// If the code does not has a library matching entry point value does not executes any code and
+    /// instantly returns [`NoLibraryError`]. The state of the registers remains unmodified in this
+    /// case.
     pub fn main(&mut self) -> Result<bool, NoLibraryError> { self.call(self.entrypoint) }
 
     /// Executes the program starting from the provided entry point.
     ///
-    /// If the code lacks some of the libraries, does not executes any code and instantly returns
-    /// [`NoLibraryError`]. The state of the registers remains unmodified in this case.
+    /// # Returns
+    ///
+    /// Value of the `st0` register at the end of the program execution.
+    ///
+    /// If the code does not has a library matching entry point value does not executes any code and
+    /// instantly returns [`NoLibraryError`]. The state of the registers remains unmodified in this
+    /// case.
     pub fn call(&mut self, mut method: LibSite) -> Result<bool, NoLibraryError> {
         while let Some(m) = self
             .libs

@@ -40,4 +40,18 @@ jobs:
         with:
           command: clippy
           args: --workspace --all-features
-
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install rustc 1.52.0
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: doc
+      - uses: actions-rs/cargo@v1
+        name: Clippy
+        with:
+          command: doc
+          args: --workspace --all-features

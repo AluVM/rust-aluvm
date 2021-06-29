@@ -19,7 +19,6 @@ extern crate paste;
 use aluvm::instr::serialize::disassemble;
 use aluvm::instr::{Instr, NOp};
 use aluvm::{Lib, Vm};
-use amplify_num::hex::ToHex;
 
 fn main() {
     let code = aluasm! {
@@ -84,7 +83,7 @@ fn main() {
 
     println!("Instructions:\n{:#?}\n", code);
     let lib = Lib::<NOp>::with(code, None).unwrap();
-    println!("Serialization:\n{}\n", lib.bytecode().to_hex());
+    println!("Hex representation:\n{}\n", lib);
     let asm: Vec<Instr> = disassemble(lib.bytecode()).unwrap();
     println!("Assembly:");
     for instr in asm {

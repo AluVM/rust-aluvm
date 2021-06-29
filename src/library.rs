@@ -52,7 +52,7 @@ where
     E: InstructionSet,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str(&E::ids().into_iter().collect::<Vec<_>>().join("+"))?;
+        f.write_str(&Instr::<E>::ids().into_iter().collect::<Vec<_>>().join("+"))?;
         f.write_str(":")?;
         Display::fmt(&self.code_segment, f)?;
         f.write_str(":")?;
