@@ -15,22 +15,22 @@ use core::fmt::{self, Display, Formatter};
 use core::marker::PhantomData;
 
 use amplify_num::u24;
-use bitcoin_hashes::Hash;
+use bitcoin_hashes::{Hash, HashEngine};
 
-use crate::encoding::Read;
+use crate::bytecoder::Read;
 use crate::instr::serialize::{Bytecode, DecodeError, EncodeError};
 use crate::instr::{ExecStep, NOp};
 use crate::{ByteStr, Cursor, Instr, InstructionSet, Registers};
 
-const LIB_HASH_MIDSTATE: [u8; 32] = [
+const LIB_ID_MIDSTATE: [u8; 32] = [
     156, 224, 228, 230, 124, 17, 108, 57, 56, 179, 202, 242, 195, 15, 80, 137, 211, 243, 147, 108,
     71, 99, 110, 96, 125, 179, 62, 234, 221, 198, 240, 201,
 ];
 
 sha256t_hash_newtype!(
-    LibHash,
-    LibHashTag,
-    LIB_HASH_MIDSTATE,
+    LibId,
+    LibIdTag,
+    LIB_ID_MIDSTATE,
     64,
     doc = "Library reference: a hash of the library code",
     false
@@ -65,7 +65,7 @@ where
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str("ISAE: ")?;
-        f.write_str(&Instr::<E>::ids().into_iter().collect::<Vec<_>>().join("+"))?;
+        f.write_str(&Instr::<E>::isa_string())?;
         f.write_str("\nCODE: ")?;
         Display::fmt(&self.code_segment, f)?;
         f.write_str("\nDATA: ")?;
@@ -100,7 +100,7 @@ where
         <I as IntoIterator>::Item: InstructionSet,
     {
         let mut code_segment = ByteStr::default();
-        let mut writer = Cursor::with(&mut code_segment.bytes[..], vec![]);
+        let mut writer = Cursor::with(&mut code_segment.bytes[..], Vec::new());
         for instr in code.into_iter() {
             instr.write(&mut writer)?;
         }
@@ -117,7 +117,7 @@ where
 
     /// Disassembles library into a set of instructions
     pub fn disassemble(&self) -> Result<Vec<Instr<E>>, DecodeError> {
-        let mut code = vec![];
+        let mut code = Vec::new();
         let mut reader = Cursor::with(&self.code_segment, &*self.data_segment);
         while !reader.is_end() {
             code.push(Instr::read(&mut reader)?);
@@ -125,21 +125,41 @@ where
         Ok(code)
     }
 
-    /// Returns hash identifier [`LibHash`], representing the library in a unique way.
+    /// Returns hash identifier [`LibId`], representing the library in a unique way.
     ///
-    /// Lib hash is computed as SHA256 tagged hash of the serialized library bytecode.
-    pub fn lib_hash(&self) -> LibHash { LibHash::hash(&*self.code_segment.bytes) }
+    /// Lib ID is computed as SHA256 tagged hash of the serialized library segments (ISAE, code,
+    /// data).
+    #[inline]
+    pub fn id(&self) -> LibId {
+        let mut engine = LibId::engine();
+        let isae = &*self.isae_segment();
+        let code = &self.code_segment();
+        let data = &self.data_segment();
+        engine.input(&(isae.len() as u8).to_le_bytes()[..]);
+        engine.input(isae);
+        engine.input(&(code.len() as u16).to_le_bytes()[..]);
+        engine.input(code);
+        engine.input(&u24::with(data.len() as u32).to_le_bytes()[..]);
+        engine.input(data);
+        LibId::from_engine(engine)
+    }
+
+    /// Returns ISA data
+    #[inline]
+    pub fn isae_segment(&self) -> Box<[u8]> { Instr::<E>::isa_id() }
 
     /// Returns reference to code segment
+    #[inline]
     pub fn code_segment(&self) -> &[u8] { self.code_segment.as_ref() }
 
     /// Returns reference to data segment
+    #[inline]
     pub fn data_segment(&self) -> &[u8] { self.data_segment.as_ref() }
 
     /// Executes library code starting at entrypoint
     pub fn run(&self, entrypoint: u16, registers: &mut Registers) -> Option<LibSite> {
         let mut cursor = Cursor::with(&self.code_segment.bytes[..], &*self.data_segment);
-        let lib_hash = self.lib_hash();
+        let lib_hash = self.id();
         cursor.seek(entrypoint);
 
         while !cursor.is_eof() {
@@ -161,7 +181,7 @@ where
 #[display("{pos:#06X}@{lib}")]
 pub struct LibSite {
     /// Library hash
-    pub lib: LibHash,
+    pub lib: LibId,
 
     /// Offset from the beginning of the code, in bytes
     pub pos: u16,
@@ -170,5 +190,5 @@ pub struct LibSite {
 impl LibSite {
     /// Constricts library site reference from a given position and library hash
     /// value
-    pub fn with(pos: u16, lib: LibHash) -> LibSite { LibSite { lib, pos } }
+    pub fn with(pos: u16, lib: LibId) -> LibSite { LibSite { lib, pos } }
 }

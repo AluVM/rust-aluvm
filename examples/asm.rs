@@ -90,7 +90,7 @@ fn main() {
         println!("\t\t{}", instr);
     }
 
-    print!("\nExecuting the program ... ");
+    print!("\nExecuting the program #{}... ", lib.id());
     let mut runtime = Vm::with(lib);
     match runtime.main() {
         Ok(true) => println!("success"),

@@ -9,7 +9,9 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use alloc::vec::Vec;
 use core::convert::TryInto;
+#[cfg(feature = "std")]
 use core::fmt::{self, Debug, Display, Formatter};
 
 use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
@@ -310,7 +312,7 @@ where
         let offset = self.read_u24()?.as_u32() as usize;
         let end = offset + self.read_u16()? as usize;
         let max = u24::MAX.as_u32() as usize;
-        let st0 = if end > self.data.as_ref().len() { true } else { false };
+        let st0 = end > self.data.as_ref().len();
         let data = &self.data.as_ref()[offset.min(max)..end.min(max)];
         Ok((data, st0))
     }

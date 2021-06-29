@@ -17,15 +17,15 @@ use core::ops::RangeInclusive;
 use amplify_num::{u1, u2, u3, u5};
 use bitcoin_hashes::Hash;
 
-use super::bitcode::*;
-use crate::encoding::{CursorError, Read, Write};
+use super::opcodes::*;
+use crate::bytecoder::{CursorError, Read, Write};
 use crate::instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, MoveOp, NOp,
     PutOp, Secp256k1Op,
 };
 use crate::number::MaybeNumber;
 use crate::reg::{RegAR, RegBlockAR};
-use crate::{ByteStr, Instr, InstructionSet, LibHash, LibSite};
+use crate::{ByteStr, Instr, InstructionSet, LibId, LibSite};
 
 /// Errors decoding bytecode
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -286,11 +286,11 @@ impl Bytecode for ControlFlowOp {
             INSTR_ROUTINE => Self::Routine(reader.read_u16()?),
             INSTR_CALL => Self::Call(LibSite::with(
                 reader.read_u16()?,
-                LibHash::from_inner(reader.read_bytes32()?),
+                LibId::from_inner(reader.read_bytes32()?),
             )),
             INSTR_EXEC => Self::Exec(LibSite::with(
                 reader.read_u16()?,
-                LibHash::from_inner(reader.read_bytes32()?),
+                LibId::from_inner(reader.read_bytes32()?),
             )),
             INSTR_RET => Self::Ret,
             x => unreachable!("instruction {:#010b} classified as control flow operation", x),
