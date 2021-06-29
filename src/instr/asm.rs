@@ -14,6 +14,7 @@
 /// # Example
 ///
 /// ```
+/// # extern crate alloc;
 /// # use paste::paste;
 /// # use aluvm::*;
 /// # use aluvm::instr::NOp;

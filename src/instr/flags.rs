@@ -11,6 +11,8 @@
 
 //! Flags used by operation codes
 
+use alloc::borrow::ToOwned;
+use alloc::string::String;
 use core::fmt::{self, Display, Formatter, Write};
 use core::str::FromStr;
 

@@ -9,7 +9,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use alloc::vec::Vec;
+use alloc::boxed::Box;
 use core::fmt::{self, Display, Formatter};
 use core::ops::RangeInclusive;
 
@@ -110,7 +110,6 @@ impl Display for ByteStr {
 #[cfg(not(feature = "std"))]
 impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let vec = Vec::from(&self.bytes[..self.len()]);
         write!(f, "{:#04X?}", &self.bytes[0usize..(self.len())])
     }
 }

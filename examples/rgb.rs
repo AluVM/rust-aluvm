@@ -12,7 +12,7 @@
 use aluvm::{Reg32, RegA};
 
 /// Example extension set of operations which are required for RGB
-// TODO: Move to RGB Core Library
+// TODO(#3) Move to RGB Core Library
 pub enum RgbOp {
     /// Counts number of metatdata of specific type
     CountMeta(u16, RegA, Reg32),

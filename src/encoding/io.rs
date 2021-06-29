@@ -13,8 +13,15 @@ use amplify_num::{u1, u2, u3, u4, u5, u6, u7};
 
 use crate::reg::{Number, RegisterSet};
 
-// TODO: Make it sealed
-pub trait Read {
+mod private {
+    use super::super::Cursor;
+
+    pub trait Sealed {}
+
+    impl<T> Sealed for Cursor<T> where T: AsRef<[u8]> {}
+}
+
+pub trait Read: private::Sealed {
     type Error;
 
     fn is_end(&self) -> bool;
@@ -35,7 +42,7 @@ pub trait Read {
     fn read_value(&mut self, reg: impl RegisterSet) -> Result<Number, Self::Error>;
 }
 
-pub trait Write {
+pub trait Write: private::Sealed {
     type Error;
 
     fn write_bool(&mut self, data: bool) -> Result<(), Self::Error>;

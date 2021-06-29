@@ -12,6 +12,8 @@
 //! Module defining number layout (integer, signed/unsigned, float etc) and universal in-memory
 //! number representation.
 
+use alloc::format;
+use alloc::string::String;
 use core::fmt::{
     self, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, Write,
 };
@@ -800,7 +802,7 @@ impl Debug for Number {
                 }
                 #[cfg(not(feature = "std"))]
                 {
-                    &self.bytes[..len]
+                    &format!("{:#04X?}", &self.bytes[0..len])
                 }
             })
             .finish()
