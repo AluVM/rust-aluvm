@@ -9,9 +9,12 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+use core::fmt::{self, Display, Formatter};
 use core::marker::PhantomData;
 
-use bitcoin_hashes::Hash;
+use bitcoin_hashes::{sha256, Hash};
 
 use crate::instr::serialize::{compile, Bytecode, EncodeError};
 use crate::instr::{ExecStep, NOp};
@@ -21,6 +24,8 @@ const LIB_HASH_MIDSTATE: [u8; 32] = [
     156, 224, 228, 230, 124, 17, 108, 57, 56, 179, 202, 242, 195, 15, 80, 137, 211, 243, 147, 108,
     71, 99, 110, 96, 125, 179, 62, 234, 221, 198, 240, 201,
 ];
+
+pub const DATA_SEGMENT_LIMIT: usize = 1 << 24;
 
 sha256t_hash_newtype!(
     LibHash,
@@ -32,47 +37,62 @@ sha256t_hash_newtype!(
 );
 
 /// AluVM executable code library
-#[derive(Debug, Display)]
-#[display("{bytecode}", alt = "{bytecode:#}")]
+#[derive(Debug)]
 pub struct Lib<E = NOp>
 where
     E: InstructionSet,
 {
-    bytecode: ByteStr,
+    code_segment: ByteStr,
+    data_segment: Box<[u8]>,
     instruction_set: PhantomData<E>,
+}
+
+impl<E> Display for Lib<E>
+where
+    E: InstructionSet,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(&E::ids().into_iter().collect::<Vec<_>>().join("+"))?;
+        f.write_str(":")?;
+        Display::fmt(&self.code_segment, f)?;
+        f.write_str(":")?;
+        write!(f, "#{}", sha256::Hash::hash(&self.data_segment))
+    }
 }
 
 impl<E> Lib<E>
 where
     E: InstructionSet,
 {
-    /// Constructs library for the provided instructions by encoding them into
-    /// bytecode
-    pub fn with<I>(code: I) -> Result<Lib<E>, EncodeError>
+    /// Constructs library for the provided instructions by encoding them into bytecode
+    pub fn with<I>(code: I, data: Option<&[u8]>) -> Result<Lib<E>, EncodeError>
     where
         I: IntoIterator,
         <I as IntoIterator>::Item: InstructionSet,
     {
-        let bytecode = compile::<E, _>(code)?;
-        Ok(Lib { bytecode, instruction_set: PhantomData::<E>::default() })
+        let code_segment = compile::<E, _>(code)?;
+        let len = data.map(<[u8]>::len).unwrap_or_default();
+        if len >= DATA_SEGMENT_LIMIT {
+            return Err(EncodeError::DataSegmentTooLarge(len));
+        }
+        let data_segment = data.map(|c| Box::from(c)).unwrap_or_default();
+        Ok(Lib { code_segment, data_segment, instruction_set: PhantomData::<E>::default() })
     }
 
-    /// Returns hash identifier [`LibHash`], representing the library in a
-    /// unique way.
+    /// Returns hash identifier [`LibHash`], representing the library in a unique way.
     ///
-    /// Lib hash is computed as SHA256 tagged hash of the serialized library
-    /// bytecode.
-    pub fn lib_hash(&self) -> LibHash { LibHash::hash(&*self.bytecode.bytes) }
+    /// Lib hash is computed as SHA256 tagged hash of the serialized library bytecode.
+    pub fn lib_hash(&self) -> LibHash { LibHash::hash(&*self.code_segment.bytes) }
 
     /// Calculates length of bytecode encoding in bytes
-    pub fn byte_count(&self) -> usize { self.bytecode.len() }
+    pub fn byte_count(&self) -> usize { self.code_segment.len() }
 
     /// Returns bytecode reference
-    pub fn bytecode(&self) -> &[u8] { &self.bytecode.as_ref() }
+    pub fn bytecode(&self) -> &[u8] { &self.code_segment.as_ref() }
 
     /// Executes library code starting at entrypoint
     pub fn run(&self, entrypoint: u16, registers: &mut Registers) -> Option<LibSite> {
-        let mut cursor = Cursor::with(&self.bytecode.bytes[..]);
+        let mut cursor = Cursor::with(&self.code_segment.bytes[..]);
         let lib_hash = self.lib_hash();
         cursor.seek(entrypoint);
 
@@ -94,7 +114,7 @@ impl<E> AsRef<[u8]> for Lib<E>
 where
     E: InstructionSet,
 {
-    fn as_ref(&self) -> &[u8] { self.bytecode.as_ref() }
+    fn as_ref(&self) -> &[u8] { self.code_segment.as_ref() }
 }
 
 /// Location within a library

@@ -49,6 +49,9 @@ pub enum EncodeError {
     /// Number of instructions ({0}) exceeds limit of 2^16
     TooManyInstructions(usize),
 
+    /// The size of the data segment exceeds 2^24
+    DataSegmentTooLarge(usize),
+
     /// Cursor error
     #[display(inner)]
     #[from]

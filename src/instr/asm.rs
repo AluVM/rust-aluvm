@@ -32,7 +32,7 @@
 ///         jmp     0                               ;
 /// };
 ///
-/// let lib = Lib::<NOp>::with(code).unwrap();
+/// let lib = Lib::<NOp>::with(code, None).unwrap();
 /// let mut runtime = Vm::with(lib);
 /// match runtime.main() {
 ///     Ok(true) => println!("success"),
