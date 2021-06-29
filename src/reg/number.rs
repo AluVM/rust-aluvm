@@ -751,7 +751,6 @@ impl Number {
 #[derive(Clone, Eq, PartialEq, Debug, Display, From)]
 #[cfg_attr(feature = "std", derive(Error))]
 #[display(inner)]
-#[allow(clippy::branches_sharing_code)]
 #[non_exhaustive]
 pub enum LiteralParseError {
     /// Error parsing decimal literal

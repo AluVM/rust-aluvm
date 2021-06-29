@@ -11,6 +11,7 @@
 
 //! Instruction serialization and deserialization from bytecode.
 
+use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::ops::RangeInclusive;
 
@@ -30,7 +31,6 @@ use crate::{ByteStr, Instr, InstructionSet, LibHash, LibSite};
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(doc_comments)]
 #[cfg_attr(feature = "std", derive(Error))]
-#[allow(clippy::branches_sharing_code)]
 pub enum DecodeError {
     /// Cursor error
     #[display(inner)]
@@ -46,7 +46,6 @@ pub enum DecodeError {
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(doc_comments)]
 #[cfg_attr(feature = "std", derive(Error))]
-#[allow(clippy::branches_sharing_code)]
 pub enum EncodeError {
     /// Number of instructions ({0}) exceeds limit of 2^16
     TooManyInstructions(usize),
@@ -368,17 +367,17 @@ impl Bytecode for PutOp {
             PutOp::PutA(reg, reg32, val) | PutOp::PutIfA(reg, reg32, val) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(reg32)?;
-                writer.write_value(*reg, *val)?;
+                writer.write_value(*reg, **val)?;
             }
             PutOp::PutF(reg, reg32, val) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(reg32)?;
-                writer.write_value(*reg, *val)?;
+                writer.write_value(*reg, **val)?;
             }
             PutOp::PutR(reg, reg32, val) | PutOp::PutIfR(reg, reg32, val) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(reg32)?;
-                writer.write_value(*reg, *val)?;
+                writer.write_value(*reg, **val)?;
             }
         }
         Ok(())
@@ -395,23 +394,23 @@ impl Bytecode for PutOp {
             INSTR_CLRR => Self::ClrR(reader.read_u3()?.into(), reader.read_u5()?.into()),
             INSTR_PUTA => {
                 let reg = reader.read_u3()?.into();
-                Self::PutA(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
+                Self::PutA(reg, reader.read_u5()?.into(), Box::new(reader.read_value(reg)?))
             }
             INSTR_PUTF => {
                 let reg = reader.read_u3()?.into();
-                Self::PutF(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
+                Self::PutF(reg, reader.read_u5()?.into(), Box::new(reader.read_value(reg)?))
             }
             INSTR_PUTR => {
                 let reg = reader.read_u3()?.into();
-                Self::PutR(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
+                Self::PutR(reg, reader.read_u5()?.into(), Box::new(reader.read_value(reg)?))
             }
             INSTR_PUTIFA => {
                 let reg = reader.read_u3()?.into();
-                Self::PutIfA(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
+                Self::PutIfA(reg, reader.read_u5()?.into(), Box::new(reader.read_value(reg)?))
             }
             INSTR_PUTIFR => {
                 let reg = reader.read_u3()?.into();
-                Self::PutIfR(reg, reader.read_u5()?.into(), reader.read_value(reg)?)
+                Self::PutIfR(reg, reader.read_u5()?.into(), Box::new(reader.read_value(reg)?))
             }
             x => unreachable!("instruction {:#010b} classified as put operation", x),
         })
@@ -1172,7 +1171,9 @@ impl Bytecode for BytesOp {
         DecodeError: From<<R as Read>::Error>,
     {
         Ok(match reader.read_u8()? {
-            INSTR_PUT => Self::Put(reader.read_u8()?, ByteStr::with(reader.read_slice()?)),
+            INSTR_PUT => {
+                Self::Put(reader.read_u8()?, Box::new(ByteStr::with(reader.read_slice()?)))
+            }
             INSTR_MVS => Self::Mov(reader.read_u8()?, reader.read_u8()?),
             INSTR_SWP => Self::Swp(reader.read_u8()?, reader.read_u8()?),
             INSTR_FIND => Self::Find(reader.read_u8()?, reader.read_u8()?),

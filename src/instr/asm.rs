@@ -43,6 +43,9 @@
 #[macro_export]
 macro_rules! aluasm {
     ($( $tt:tt )+) => { {
+        use core::str::FromStr;
+        use alloc::boxed::Box;
+
         use aluvm::instr::{
             ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
             MergeFlag, MoveOp, NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
@@ -141,7 +144,7 @@ macro_rules! instr {
         Instr::Put(_reg_sfx!(PutOp, Put, $reg)(
             _reg_ty!(Reg, $reg),
             _reg_idx!($idx),
-            ::core::str::FromStr::from_str(stringify!($val)).expect("invalid hex literal"),
+            Box::new(FromStr::from_str(stringify!($val)).expect("invalid hex literal")),
         ))
     };
 
@@ -149,7 +152,7 @@ macro_rules! instr {
         Instr::Put(_reg_sfx!(PutOp, PutIf, $reg)(
             _reg_ty!(Reg, $reg),
             _reg_idx!($idx),
-            ::core::str::FromStr::from_str(stringify!($val)).expect("invalid hex literal"),
+            Box::new(FromStr::from_str(stringify!($val)).expect("invalid hex literal")),
         ))
     };
 

@@ -144,11 +144,11 @@ impl InstructionSet for PutOp {
             PutOp::ClrA(reg, index) => regs.set(reg, index, MaybeNumber::none()),
             PutOp::ClrF(reg, index) => regs.set(reg, index, MaybeNumber::none()),
             PutOp::ClrR(reg, index) => regs.set(reg, index, MaybeNumber::none()),
-            PutOp::PutA(reg, index, number) => regs.set(reg, index, number),
-            PutOp::PutF(reg, index, number) => regs.set(reg, index, number),
-            PutOp::PutR(reg, index, number) => regs.set(reg, index, number),
-            PutOp::PutIfA(reg, index, number) => regs.set_if(reg, index, number),
-            PutOp::PutIfR(reg, index, number) => regs.set_if(reg, index, number),
+            PutOp::PutA(reg, index, number) => regs.set(reg, index, *number),
+            PutOp::PutF(reg, index, number) => regs.set(reg, index, *number),
+            PutOp::PutR(reg, index, number) => regs.set(reg, index, *number),
+            PutOp::PutIfA(reg, index, number) => regs.set_if(reg, index, *number),
+            PutOp::PutIfR(reg, index, number) => regs.set_if(reg, index, *number),
         };
         ExecStep::Next
     }
@@ -461,7 +461,7 @@ impl InstructionSet for BytesOp {
     fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
         match self {
             BytesOp::Put(reg, bytes) => {
-                regs.s16.insert(reg, bytes);
+                regs.s16.insert(reg, *bytes);
             }
             BytesOp::Mov(reg1, reg2) => {
                 regs.s16.remove(&reg1).and_then(|bs| regs.s16.insert(reg2, bs));

@@ -11,6 +11,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(dead_code, missing_docs, warnings)]
+// TODO: Remove this once `amplify_derive` become clippy-compatible
+#![allow(clippy::branches_sharing_code)]
 
 //! Rust implementation of AluVM (arithmetic logic unit virtual machine) and assembler from Alu
 //! Assembly language into bytecode.

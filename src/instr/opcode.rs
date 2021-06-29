@@ -9,7 +9,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#![allow(clippy::branches_sharing_code)]
+use alloc::boxed::Box;
 
 use amplify_num::u6;
 
@@ -153,23 +153,23 @@ pub enum PutOp {
 
     /// Unconditionally assigns a value to `A` register
     #[display("put\t\t{2},{0}{1}")]
-    PutA(RegA, Reg32, Number),
+    PutA(RegA, Reg32, Box<Number>),
 
     /// Unconditionally assigns a value to `F` register
     #[display("put\t\t{2},{0}{1}")]
-    PutF(RegF, Reg32, Number),
+    PutF(RegF, Reg32, Box<Number>),
 
     /// Unconditionally assigns a value to `R` register
     #[display("put\t\t{2},{0}{1}")]
-    PutR(RegR, Reg32, Number),
+    PutR(RegR, Reg32, Box<Number>),
 
     /// Conditionally assigns a value to `A` register if the register is in uninitialized state
     #[display("putif\t{2},{0}{1}")]
-    PutIfA(RegA, Reg32, Number),
+    PutIfA(RegA, Reg32, Box<Number>),
 
     /// Conditionally assigns a value to `R` register if the register is in uninitialized state
     #[display("putif\t{2},{0}{1}")]
-    PutIfR(RegR, Reg32, Number),
+    PutIfR(RegR, Reg32, Box<Number>),
 }
 
 /// Instructions moving and swapping register values
@@ -539,7 +539,7 @@ pub enum BitwiseOp {
 pub enum BytesOp {
     /// Put bytestring into a byte string register
     #[display("put\t\ts16[{0}],{1}")]
-    Put(/** Destination `s` register index */ u8, ByteStr),
+    Put(/** Destination `s` register index */ u8, Box<ByteStr>),
 
     /// Move bytestring value between registers
     #[display("mov\t\ts16[{0}],s16[{1}]")]
