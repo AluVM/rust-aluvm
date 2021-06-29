@@ -18,7 +18,7 @@ extern crate paste;
 
 use aluvm::instr::serialize::disassemble;
 use aluvm::instr::{Instr, NOp};
-use aluvm::{Lib, Runtime};
+use aluvm::{Lib, Vm};
 use amplify_num::hex::ToHex;
 
 fn main() {
@@ -92,7 +92,7 @@ fn main() {
     }
 
     print!("\nExecuting the program ... ");
-    let mut runtime = Runtime::with(lib);
+    let mut runtime = Vm::with(lib);
     match runtime.main() {
         Ok(true) => println!("success"),
         Ok(false) => println!("execution reported validation failure"),

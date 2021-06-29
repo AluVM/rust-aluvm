@@ -125,14 +125,16 @@ extern crate bitcoin_hashes;
 
 mod encoding;
 pub mod instr;
+mod library;
 mod reg;
-mod runtime;
+mod vm;
 
 pub(crate) use encoding::Cursor;
 pub use encoding::CursorError;
 pub use instr::{Instr, InstructionSet};
+pub use library::{Lib, LibHash, LibSite};
 pub use reg::{
-    MaybeNumber, Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAFR, RegBlockAR,
-    RegF, RegR, Registers, Step,
+    number, ByteStr, MaybeNumber, Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR,
+    RegBlockAFR, RegBlockAR, RegF, RegR, Registers,
 };
-pub use runtime::{ByteStr, Lib, LibHash, LibSite, Runtime};
+pub use vm::Vm;

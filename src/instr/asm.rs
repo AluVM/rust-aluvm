@@ -33,7 +33,7 @@
 /// };
 ///
 /// let lib = Lib::<NOp>::with(code).unwrap();
-/// let mut runtime = Runtime::with(lib);
+/// let mut runtime = Vm::with(lib);
 /// match runtime.main() {
 ///     Ok(true) => println!("success"),
 ///     Ok(false) => println!("execution reported validation failure"),
@@ -48,7 +48,7 @@ macro_rules! aluasm {
             MergeFlag, MoveOp, NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
         };
         use aluvm::{
-            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, Step,
+            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, number,
         };
 
         let mut code: Vec<Instr<NOp>> = vec![];
@@ -511,23 +511,31 @@ macro_rules! instr {
         }
     };
     (inc $reg:ident[$idx:literal]) => {
-        Instr::Arithmetic(ArithmeticOp::Stp(_reg_tya!(Reg, $reg), _reg_idx!($idx), Step::with(1)))
+        Instr::Arithmetic(ArithmeticOp::Stp(
+            _reg_tya!(Reg, $reg),
+            _reg_idx!($idx),
+            number::Step::with(1),
+        ))
     };
     (add $step:literal, $reg:ident[$idx:literal]) => {
         Instr::Arithmetic(ArithmeticOp::Stp(
             _reg_tya!(Reg, $reg),
             _reg_idx!($idx),
-            Step::with($step),
+            number::Step::with($step),
         ))
     };
     (dec $reg:ident[$idx:literal]) => {
-        Instr::Arithmetic(ArithmeticOp::Stp(_reg_tya!(Reg, $reg), _reg_idx!($idx), Step::with(-1)))
+        Instr::Arithmetic(ArithmeticOp::Stp(
+            _reg_tya!(Reg, $reg),
+            _reg_idx!($idx),
+            number::Step::with(-1),
+        ))
     };
     (sub $step:literal, $reg:ident[$idx:literal]) => {
         Instr::Arithmetic(ArithmeticOp::Stp(
             _reg_tya!(Reg, $reg),
             _reg_idx!($idx),
-            Step::with($step * -1),
+            number::Step::with($step * -1),
         ))
     };
     (neg $reg:ident[$idx:literal]) => {

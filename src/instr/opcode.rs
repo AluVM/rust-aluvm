@@ -17,7 +17,7 @@ use crate::instr::{
     DeleteFlag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, RoundingFlag, SignFlag, SplitFlag,
 };
 use crate::reg::{
-    Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, Step,
+    number, Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR,
 };
 use crate::{ByteStr, InstructionSet, LibSite};
 
@@ -418,7 +418,7 @@ pub enum ArithmeticOp {
     ///
     /// Sets the destination to `None` and `st0` to `false` in case of overflow.
     #[display("{2:#}\t\t{2}{0}{1}")]
-    Stp(RegA, Reg32, Step),
+    Stp(RegA, Reg32, number::Step),
 
     /// Negates most significant bit
     #[display("neg\t\t{0}{1}")]
