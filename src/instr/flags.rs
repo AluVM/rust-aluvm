@@ -9,6 +9,8 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+//! Flags used by operation codes
+
 use core::fmt::{self, Display, Formatter, Write};
 use core::str::FromStr;
 
@@ -451,30 +453,71 @@ impl From<MergeFlag> for u2 {
     fn from(flag: MergeFlag) -> u2 { flag.as_u2() }
 }
 
-/// Flags for bytestring split operation
+/// Flags for bytestring split operation.
+///
+/// If offset exceeds the length of the string in the register, than the behaviour of
+/// [`crate::instr::BytesOp::Splt`] op code is defined by this flag. Please check its description
+/// for more details.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum SplitFlag {
+    /// If the offset is equal to zero, exceeds or equal to the length of the source string sets
+    /// first and second destination register to `None`; `st0` to `false`.
+    ///
+    /// Matches case (1) in [`crate::instr::BytesOp::Splt`] description
     #[display("n")]
     NoneNone = 0,
 
+    /// If the offset is equal to zero, sets first destination register to `None`, second is set to
+    /// `None` only if the string in the source register is empty; `st0` in both cases is set
+    /// to `false`.
+    ///
+    /// Matches case (2) in [`crate::instr::BytesOp::Splt`] description
     #[display("nn")]
     NoneNoneOnEmpty = 1,
 
+    /// If the offset is equal to zero, sets first destination register to `None`, second is set to
+    /// an empty string if the string in the source register is empty; `st0` in both cases is
+    /// set to `false`.
+    ///
+    /// Matches case (3) in [`crate::instr::BytesOp::Splt`] description
     #[display("nz")]
     NoneZeroOnEmpty = 2,
 
+    /// If the offset is equal to zero, sets first destination register to empty string, second is
+    /// set to an empty string if the string in the source register is empty; `st0` value
+    /// remain unchanged.
+    ///
+    /// Matches case (4) in [`crate::instr::BytesOp::Splt`] description
     #[display("ee")]
     ZeroZeroOnEmpty = 3,
 
+    /// If the offset exceeds the length of the source string sets the first destination register
+    /// to the source string (<=offset in len) and second to `None`; `st0` value is set to
+    /// `false`.
+    ///
+    /// Matches case (5) in [`crate::instr::BytesOp::Splt`] description
     #[display("cn")]
     CutNone = 4,
 
+    /// If the offset exceeds the length of the source string sets the first destination register
+    /// to the source string (<=offset in len) and second to zero-length string; `st0` value is
+    /// set to `false`.
+    ///
+    /// Matches case (6) in [`crate::instr::BytesOp::Splt`] description
     #[display("cz")]
     CutZero = 5,
 
+    /// If the offset exceeds the length of the source string sets the first destination register
+    /// to zero-length string and second to `None`; `st0` value is set to `false`.
+    ///
+    /// Matches case (7) in [`crate::instr::BytesOp::Splt`] description
     #[display("zn")]
     ZeroNone = 6,
 
+    /// If the offset exceeds the length of the source string sets both the first and second
+    /// destination registers to zero-length string; `st0` value is set to `false`.
+    ///
+    /// Matches case (8) in [`crate::instr::BytesOp::Splt`] description
     #[display("zz")]
     ZeroZero = 7,
 }

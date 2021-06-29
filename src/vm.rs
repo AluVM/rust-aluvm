@@ -9,6 +9,8 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+//! Alu virtual machine
+
 use alloc::collections::BTreeMap;
 
 use crate::instr::NOp;
@@ -41,6 +43,9 @@ impl<E> Vm<E>
 where
     E: InstructionSet,
 {
+    /// Constructs new virtual machine with no code in it.
+    ///
+    /// Calling [`Vm::main`] on it will result in machine termination with `st0` set to `false`.
     pub fn new() -> Vm<E> {
         Vm {
             libs: Default::default(),
@@ -49,6 +54,7 @@ where
         }
     }
 
+    /// Constructs new virtual machine using the provided library.
     pub fn with(lib: Lib<E>) -> Vm<E> {
         let mut runtime = Vm::new();
         runtime.entrypoint = LibSite::with(0, lib.lib_hash());
@@ -66,10 +72,21 @@ where
         self.libs.insert(lib.lib_hash(), lib).is_none()
     }
 
+    /// Sets new entry point value (used when calling [`Vm::main`])
     pub fn set_entrypoint(&mut self, entrypoint: LibSite) { self.entrypoint = entrypoint; }
 
+    /// Executes the program starting from the provided entry point (set with [`Vm::set_entrypoint`]
+    /// or initialized to 0 offset of the first used library if [`Vm::new`], [`Vm::default`] or
+    /// [`Vm::with`] were used).
+    ///
+    /// If the code lacks some of the libraries, does not executes any code and instantly returns
+    /// [`NoLibraryError`]. The state of the registers remains unmodified in this case.
     pub fn main(&mut self) -> Result<bool, NoLibraryError> { self.call(self.entrypoint) }
 
+    /// Executes the program starting from the provided entry point.
+    ///
+    /// If the code lacks some of the libraries, does not executes any code and instantly returns
+    /// [`NoLibraryError`]. The state of the registers remains unmodified in this case.
     pub fn call(&mut self, mut method: LibSite) -> Result<bool, NoLibraryError> {
         while let Some(m) = self
             .libs

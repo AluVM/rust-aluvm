@@ -9,6 +9,9 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+//! Module defining number layout (integer, signed/unsigned, float etc) and universal in-memory
+//! number representation.
+
 use core::fmt::{
     self, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, Write,
 };

@@ -482,7 +482,7 @@ impl RegA {
         })
     }
 
-    /// Returns integer layout [`IntLayout`] specific for this register
+    /// Returns integer layout [`number::IntLayout`] specific for this register
     #[inline]
     pub fn int_layout(self) -> number::IntLayout { number::IntLayout::unsigned(self.bytes()) }
 }
@@ -1061,6 +1061,8 @@ pub enum RegBlockAR {
 }
 
 impl RegBlockAR {
+    /// Converts value into specific register matching the provided bit dimension. If the register
+    /// with the given dimension does not exists, returns `None`.
     pub fn into_reg(self, bits: u16) -> Option<RegAR> {
         match self {
             RegBlockAR::A => RegA::with(bits).map(RegAR::A),
@@ -1086,6 +1088,8 @@ pub enum RegBlockAFR {
 }
 
 impl RegBlockAFR {
+    /// Converts value into specific register matching the provided bit dimension. If the register
+    /// with the given dimension does not exists, returns `None`.
     pub fn into_reg(self, bits: u16) -> Option<RegAFR> {
         match self {
             RegBlockAFR::A => RegA::with(bits).map(RegAFR::A),
@@ -1095,6 +1099,7 @@ impl RegBlockAFR {
     }
 }
 
+/// Structure keeping state of all registers
 #[derive(Clone, Debug)]
 pub struct Registers {
     // Arithmetic integer registers:
@@ -1146,7 +1151,7 @@ pub struct Registers {
     /// Defines "top" of the call stack
     cp0: u16,
 
-    /// Secp256k1 context object (used by [`Secp256k1Op`] instructions)
+    /// Secp256k1 context object (used by [`crate::instr::Secp256k1Op`] instructions)
     #[cfg(feature = "secp256k1")]
     pub(crate) secp: secp256k1::Secp256k1<secp256k1::All>,
 }
@@ -1191,7 +1196,7 @@ impl Default for Registers {
             cs0: Box::new([LibSite::default(); u16::MAX as usize]),
             cp0: 0,
 
-            // TODO: Make it a part of runtime
+            // TODO: Make it a part of the vm
             #[cfg(feature = "secp256k1")]
             secp: secp256k1::Secp256k1::new(),
         }
@@ -1199,6 +1204,10 @@ impl Default for Registers {
 }
 
 impl Registers {
+    /// Initializes register state. Sets `st0` to `true`, counters to zero, call stack to empty and
+    /// the rest of registers to `None` value.
+    ///
+    /// Performs exactly the same as [`Registers::default()`].
     #[inline]
     pub fn new() -> Registers { Registers::default() }
 
@@ -1366,6 +1375,9 @@ impl Registers {
         }
     }
 
+    /// Executes provided operation (as callback function) if and only if all the provided registers
+    /// contain a value (initialized). Otherwise, sets destination to `None` and does not calls the
+    /// callback.
     #[inline]
     pub fn op(
         &mut self,
@@ -1384,6 +1396,7 @@ impl Registers {
         self.set(reg3.into(), dst, reg_val);
     }
 
+    /// Returns vale of `st0` register
     #[inline]
     pub fn status(&self) -> bool { self.st0 }
 }

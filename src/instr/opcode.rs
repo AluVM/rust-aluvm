@@ -25,6 +25,7 @@ use crate::{ByteStr, InstructionSet, LibSite};
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[display("nop")]
 pub enum NOp {
+    /// Non-operation op code.
     NOp,
 }
 
@@ -737,7 +738,7 @@ pub enum BytesOp {
     /// Delete bytes in a given range, shifting the remaining bytes leftward. The start offset is
     /// the least offset from one of the `a16` register provided in `offset` arguments, the end
     /// offset is the greatest one. If any of the offsets exceeds the length of the string in
-    /// the destination register, operation behaviour is defined by the provided [`DelFlag`]
+    /// the destination register, operation behaviour is defined by the provided [`DeleteFlag`]
     /// argument.
     ///
     /// <pre>

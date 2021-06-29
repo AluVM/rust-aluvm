@@ -10,6 +10,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![deny(dead_code, missing_docs, warnings)]
 
 //! Rust implementation of AluVM (arithmetic logic unit virtual machine) and assembler from Alu
 //! Assembly language into bytecode.
@@ -127,7 +128,7 @@ mod encoding;
 pub mod instr;
 mod library;
 mod reg;
-mod vm;
+pub mod vm;
 
 pub(crate) use encoding::Cursor;
 pub use encoding::CursorError;

@@ -457,6 +457,7 @@ impl InstructionSet for BytesOp {
     #[inline]
     fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
+    #[allow(warnings)]
     fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
         match self {
             BytesOp::Put(reg, bytes) => {
@@ -772,7 +773,7 @@ impl InstructionSet for Curve25519Op {
     }
 
     #[cfg(feature = "curve25519")]
-    fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep { todo!() }
+    fn exec(self, _regs: &mut Registers, _site: LibSite) -> ExecStep { todo!() }
 }
 
 impl InstructionSet for NOp {
