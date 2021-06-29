@@ -75,7 +75,7 @@ where
         if len >= DATA_SEGMENT_LIMIT {
             return Err(EncodeError::DataSegmentTooLarge(len));
         }
-        let data_segment = data.map(|c| Box::from(c)).unwrap_or_default();
+        let data_segment = data.map(Box::from).unwrap_or_default();
         Ok(Lib { code_segment, data_segment, instruction_set: PhantomData::<E>::default() })
     }
 
@@ -88,7 +88,7 @@ where
     pub fn byte_count(&self) -> usize { self.code_segment.len() }
 
     /// Returns bytecode reference
-    pub fn bytecode(&self) -> &[u8] { &self.code_segment.as_ref() }
+    pub fn bytecode(&self) -> &[u8] { self.code_segment.as_ref() }
 
     /// Executes library code starting at entrypoint
     pub fn run(&self, entrypoint: u16, registers: &mut Registers) -> Option<LibSite> {

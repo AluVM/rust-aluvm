@@ -1379,6 +1379,7 @@ impl Registers {
     /// contain a value (initialized). Otherwise, sets destination to `None` and does not calls the
     /// callback.
     #[inline]
+    #[allow(clippy::too_many_arguments)]
     pub fn op(
         &mut self,
         reg1: impl Into<RegAFR>,

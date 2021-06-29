@@ -835,7 +835,7 @@ impl Bytecode for ArithmeticOp {
     {
         let instr = reader.read_u8()?;
 
-        Ok(if instr >= INSTR_ADD && instr <= INSTR_DIV {
+        Ok(if (INSTR_ADD..=INSTR_DIV).contains(&instr) {
             let code = reader.read_u1()?.into();
             let flags = reader.read_u2()?;
             let src1 = reader.read_u5()?.into();
@@ -991,7 +991,7 @@ impl Bytecode for BitwiseOp {
     {
         let instr = reader.read_u8()?;
 
-        Ok(if instr >= INSTR_AND && instr <= INSTR_XOR {
+        Ok(if (INSTR_AND..=INSTR_XOR).contains(&instr) {
             let reg = reader.read_u4()?.into();
             let src1 = reader.read_u4()?.into();
             let src2 = reader.read_u4()?.into();
@@ -1022,7 +1022,7 @@ impl Bytecode for BitwiseOp {
             let reg = reader.read_u3()?;
             let idx = reader.read_u5()?.into();
             let shift2 = u5::with(shift.as_u8() << 1 | sign.as_u8()).into();
-            let regar = RegAR::from(block.into(), reg.into());
+            let regar = RegAR::from(block, reg);
             match (code.as_u8(), block.as_u8()) {
                 (0b0, _) => Self::Shl(a2, shift2, regar, idx),
                 (0b1, 0b0) => Self::ShrA(sign.into(), a2, shift.into(), reg.into(), idx),

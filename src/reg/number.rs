@@ -98,9 +98,8 @@ impl Layout {
     /// Converts unsigned integer layout into signed; does nothing for float layouts
     #[inline]
     pub fn into_signed(mut self) -> Layout {
-        match &mut self {
-            Layout::Integer(il) => *il = il.into_signed(),
-            _ => {}
+        if let Layout::Integer(il) = &mut self {
+            *il = il.into_signed()
         }
         self
     }
@@ -109,9 +108,8 @@ impl Layout {
     /// Does nothing if any of the layouts are not integer layouts or `other` layout is unsigned.
     #[inline]
     pub fn using_sign(mut self, other: Layout) -> Layout {
-        match (&mut self, other) {
-            (Layout::Integer(il), Layout::Integer(il2)) => *il = il2.using_sign(il2),
-            _ => {}
+        if let (Layout::Integer(il), Layout::Integer(il2)) = (&mut self, other) {
+            *il = il2.using_sign(il2)
         }
         self
     }
@@ -583,7 +581,7 @@ impl Number {
             return Err(amplify_num::hex::Error::InvalidLength(1024, len));
         }
         let mut bytes = [0u8; 1024];
-        let hex = Vec::<u8>::from_hex(&s)?;
+        let hex = Vec::<u8>::from_hex(s)?;
         bytes[0..len].copy_from_slice(&hex);
         Ok(Number { layout: Layout::unsigned(hex.len() as u16), bytes })
     }
@@ -601,6 +599,7 @@ impl Number {
 
     /// Returns length of the used portion of the value
     #[inline]
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u16 { self.layout.bytes() }
 
     /// Returns number layout used by the value
@@ -773,12 +772,12 @@ impl FromStr for Number {
     type Err = LiteralParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(if s.starts_with("0x") {
-            u128::from_str_radix(&s[2..], 16)?.into()
-        } else if s.starts_with("0o") {
-            u128::from_str_radix(&s[2..], 8)?.into()
-        } else if s.starts_with("0b") {
-            u128::from_str_radix(&s[2..], 2)?.into()
+        Ok(if let Some(s) = s.strip_prefix("0x") {
+            u128::from_str_radix(s, 16)?.into()
+        } else if let Some(s) = s.strip_prefix("0o") {
+            u128::from_str_radix(s, 8)?.into()
+        } else if let Some(s) = s.strip_prefix("0b") {
+            u128::from_str_radix(s, 2)?.into()
         } else if s.contains(&['E', 'e'][..]) {
             ieee::Double::from_str(s)?.into()
         } else if s.starts_with('-') {

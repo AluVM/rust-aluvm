@@ -65,6 +65,10 @@ impl ByteStr {
     #[inline]
     pub fn len(&self) -> usize { self.len.map(|len| len as usize).unwrap_or(u16::MAX as usize + 1) }
 
+    /// Returns when the string has a zero length
+    #[inline]
+    pub fn is_empty(&self) -> bool { self.len == Some(0) }
+
     /// Adjusts the length of the string if necessary
     #[inline]
     pub fn adjust_len(&mut self, new_len: u16, inclusive: bool) {
