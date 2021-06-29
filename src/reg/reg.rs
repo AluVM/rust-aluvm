@@ -1313,7 +1313,7 @@ impl Registers {
     /// Assigns the provided value to the register bit-wise. Silently discards most significant bits
     /// until the value fits register bit size.
     ///
-    /// Returns if the value was not `None`
+    /// Returns `true` if the value was not `None`
     pub fn set(
         &mut self,
         reg: impl Into<RegAFR>,
@@ -1359,12 +1359,14 @@ impl Registers {
 
     /// Assigns the provided value to the register bit-wise if the register is not initialized.
     /// Silently discards most significant bits until the value fits register bit size.
+    ///
+    /// Returns `true` if the value was not `None` and the register was initialized.
     #[inline]
     pub fn set_if(
         &mut self,
         reg: impl Into<RegAFR>,
         index: impl Into<Reg32>,
-        value: Number,
+        value: impl Into<MaybeNumber>,
     ) -> bool {
         let reg = reg.into();
         let index = index.into();

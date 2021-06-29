@@ -12,7 +12,7 @@
 use core::convert::TryInto;
 use core::fmt::{self, Debug, Display, Formatter};
 
-use amplify_num::{u1, u2, u3, u4, u5, u6, u7};
+use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::{Read, Write};
 use crate::reg::{Number, RegisterSet};
@@ -35,39 +35,52 @@ pub enum CursorError {
 }
 
 /// Cursor for accessing byte string data bounded by `u16::MAX` length
-pub struct Cursor<T>
+pub struct Cursor<T, D>
 where
     T: AsRef<[u8]>,
+    D: AsRef<[u8]>,
 {
     bytecode: T,
     byte_pos: u16,
     bit_pos: u3,
     eof: bool,
+    data: D,
 }
 
-impl<T> Debug for Cursor<T>
+#[cfg(feature = "std")]
+impl<T, D> Debug for Cursor<T, D>
 where
     T: AsRef<[u8]>,
+    D: AsRef<[u8]>,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use bitcoin_hashes::hex::ToHex;
+        use amplify_num::hex::ToHex;
         f.debug_struct("Cursor")
-            .field("bytecode", &self.bytecode.as_ref().to_hex())
+            .field("bytecode", &self.as_ref().to_hex())
             .field("byte_pos", &self.byte_pos)
             .field("bit_pos", &self.bit_pos)
             .field("eof", &self.eof)
+            .field("data", &self.data.as_ref().to_hex())
             .finish()
     }
 }
 
-impl<T> Display for Cursor<T>
+#[cfg(feature = "std")]
+impl<T, D> Display for Cursor<T, D>
 where
     T: AsRef<[u8]>,
+    D: AsRef<[u8]>,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use bitcoin_hashes::hex::ToHex;
+        use amplify_num::hex::ToHex;
         write!(f, "{}:{} @ ", self.byte_pos, self.bit_pos)?;
-        let hex = self.bytecode.as_ref().to_hex();
+        let hex = self.as_ref().to_hex();
+        if f.alternate() {
+            write!(f, "{}..{}", &hex[..4], &hex[hex.len() - 4..])?;
+        } else {
+            f.write_str(&hex)?;
+        }
+        let hex = self.data.as_ref().to_hex();
         if f.alternate() {
             write!(f, "{}..{}", &hex[..4], &hex[hex.len() - 4..])
         } else {
@@ -76,30 +89,48 @@ where
     }
 }
 
-impl<T> Cursor<T>
+impl<T, D> Cursor<T, D>
 where
     T: AsRef<[u8]>,
+    D: AsRef<[u8]>,
 {
     /// Creates cursor from the provided byte string
-    pub fn with(bytecode: T) -> Cursor<T> {
-        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, eof: false }
+    ///
+    /// # Panics
+    ///
+    /// If the length of the bytecode exceeds `u16::MAX` or length of the data `u24::MAX`
+    #[inline]
+    pub fn with(bytecode: T, data: D) -> Cursor<T, D> {
+        assert!(bytecode.as_ref().len() <= u16::MAX as usize + 1);
+        assert!(data.as_ref().len() <= u24::MAX.as_u32() as usize + 1);
+        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, eof: false, data }
     }
 
     /// Returns whether cursor is at the upper length boundary for any byte
     /// string (equal to `u16::MAX`)
+    #[inline]
     pub fn is_eof(&self) -> bool { self.eof }
 
     /// Returns current byte offset of the cursor. Does not accounts bits.
+    #[inline]
     pub fn pos(&self) -> u16 { self.byte_pos }
 
     /// Sets current cursor byte offset to the provided value
+    #[inline]
     pub fn seek(&mut self, byte_pos: u16) { self.byte_pos = byte_pos; }
+
+    /// Converts writer into data accumulated from the instructions (i.e. data segment)
+    #[inline]
+    pub fn into_data(self) -> D { self.data }
+
+    #[inline]
+    fn as_ref(&self) -> &[u8] { self.bytecode.as_ref() }
 
     fn extract(&mut self, bit_count: u3) -> Result<u8, CursorError> {
         if self.eof {
             return Err(CursorError::Eof);
         }
-        let byte = self.bytecode.as_ref()[self.byte_pos as usize];
+        let byte = self.as_ref()[self.byte_pos as usize];
         let mut mask = 0x00u8;
         let mut cnt = bit_count.as_u8();
         while cnt > 0 {
@@ -145,16 +176,47 @@ where
     }
 }
 
-impl Read for Cursor<&[u8]> {
+impl<T, D> Cursor<T, D>
+where
+    T: AsRef<[u8]> + AsMut<[u8]>,
+    D: AsRef<[u8]>,
+{
+    fn as_mut(&mut self) -> &mut [u8] { self.bytecode.as_mut() }
+}
+
+impl<T> Cursor<T, Vec<u8>>
+where
+    T: AsRef<[u8]> + AsMut<[u8]>,
+{
+    fn write_unique(&mut self, bytes: &[u8]) -> Result<u24, CursorError> {
+        // We write the value only if the value is not yet present in the data segment
+        let len = bytes.len();
+        let offset = self.data.len();
+        if let Some(offset) = self.data.windows(len).position(|window| window == bytes) {
+            Ok(u24::with(offset as u32))
+        } else if offset + len > u24::MAX.as_u32() as usize + 1 {
+            Err(CursorError::OutOfBoundaries(offset + len))
+        } else {
+            self.data.extend(bytes);
+            Ok(u24::with(offset as u32))
+        }
+    }
+}
+
+impl<T, D> Read for Cursor<T, D>
+where
+    T: AsRef<[u8]>,
+    D: AsRef<[u8]>,
+{
     type Error = CursorError;
 
-    fn is_end(&self) -> bool { self.byte_pos as usize >= self.bytecode.len() }
+    fn is_end(&self) -> bool { self.byte_pos as usize >= self.as_ref().len() }
 
     fn peek_u8(&self) -> Result<u8, CursorError> {
         if self.eof {
             return Err(CursorError::Eof);
         }
-        Ok(self.bytecode[self.byte_pos as usize])
+        Ok(self.as_ref()[self.byte_pos as usize])
     }
 
     fn read_bool(&mut self) -> Result<bool, CursorError> {
@@ -197,7 +259,7 @@ impl Read for Cursor<&[u8]> {
         if self.eof {
             return Err(CursorError::Eof);
         }
-        let byte = self.bytecode[self.byte_pos as usize];
+        let byte = self.as_ref()[self.byte_pos as usize];
         self.inc_bytes(1).map(|_| byte)
     }
 
@@ -207,7 +269,7 @@ impl Read for Cursor<&[u8]> {
         }
         let pos = self.byte_pos as usize;
         let mut buf = [0u8; 2];
-        buf.copy_from_slice(&self.bytecode[pos..pos + 2]);
+        buf.copy_from_slice(&self.as_ref()[pos..pos + 2]);
         let word = u16::from_le_bytes(buf);
         self.inc_bytes(2).map(|_| word)
     }
@@ -218,9 +280,20 @@ impl Read for Cursor<&[u8]> {
         }
         let pos = self.byte_pos as usize;
         let mut buf = [0u8; 2];
-        buf.copy_from_slice(&self.bytecode[pos..pos + 2]);
+        buf.copy_from_slice(&self.as_ref()[pos..pos + 2]);
         let word = i16::from_le_bytes(buf);
         self.inc_bytes(2).map(|_| word)
+    }
+
+    fn read_u24(&mut self) -> Result<u24, CursorError> {
+        if self.eof {
+            return Err(CursorError::Eof);
+        }
+        let pos = self.byte_pos as usize;
+        let mut buf = [0u8; 3];
+        buf.copy_from_slice(&self.as_ref()[pos..pos + 3]);
+        let word = u24::from_le_bytes(buf);
+        self.inc_bytes(3).map(|_| word)
     }
 
     fn read_bytes32(&mut self) -> Result<[u8; 32], CursorError> {
@@ -229,132 +302,155 @@ impl Read for Cursor<&[u8]> {
         }
         let pos = self.byte_pos as usize;
         let mut buf = [0u8; 32];
-        buf.copy_from_slice(&self.bytecode[pos..pos + 32]);
+        buf.copy_from_slice(&self.as_ref()[pos..pos + 32]);
         self.inc_bytes(32).map(|_| buf)
     }
 
-    fn read_slice(&mut self) -> Result<&[u8], CursorError> {
-        if self.eof {
-            return Err(CursorError::Eof);
-        }
-        let len = self.read_u16()? as usize;
-        let pos = self.byte_pos as usize;
-        self.inc_bytes(2u16 + len as u16).map(|_| &self.bytecode[pos..pos + len])
+    fn read_data(&mut self) -> Result<(&[u8], bool), CursorError> {
+        let offset = self.read_u24()?.as_u32() as usize;
+        let end = offset + self.read_u16()? as usize;
+        let max = u24::MAX.as_u32() as usize;
+        let st0 = if end > self.data.as_ref().len() { true } else { false };
+        let data = &self.data.as_ref()[offset.min(max)..end.min(max)];
+        Ok((data, st0))
     }
 
-    fn read_value(&mut self, reg: impl RegisterSet) -> Result<Number, CursorError> {
-        if self.eof {
+    fn read_number(&mut self, reg: impl RegisterSet) -> Result<Number, CursorError> {
+        let offset = self.read_u24()?.as_u32() as usize;
+        let end = offset + reg.bytes() as usize;
+        if end > self.data.as_ref().len() {
             return Err(CursorError::Eof);
         }
-        let len = (reg.bits() / 8u16) as usize;
-        let pos = self.byte_pos as usize;
-        let value = Number::from_slice(&self.bytecode[pos..pos + len]);
-        self.inc_bytes(len as u16).map(|_| value)
+        Ok(Number::from_slice(&self.data.as_ref()[offset..end]))
     }
 }
 
-impl Write for Cursor<&mut [u8]> {
+impl<T> Write for Cursor<T, Vec<u8>>
+where
+    T: AsRef<[u8]> + AsMut<[u8]>,
+{
     type Error = CursorError;
 
     fn write_bool(&mut self, data: bool) -> Result<(), CursorError> {
         let data = if data { 1u8 } else { 0u8 } << self.bit_pos.as_u8();
-        self.bytecode[self.byte_pos as usize] |= data;
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(1))
     }
 
     fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), Self::Error> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
-        self.bytecode[self.byte_pos as usize] |= data;
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(1))
     }
 
     fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), CursorError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
-        self.bytecode[self.byte_pos as usize] |= data;
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(2))
     }
 
     fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), CursorError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
-        self.bytecode[self.byte_pos as usize] |= data;
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(3))
     }
 
     fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), CursorError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
-        self.bytecode[self.byte_pos as usize] |= data;
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(4))
     }
 
     fn write_u5(&mut self, data: impl Into<u5>) -> Result<(), CursorError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
-        self.bytecode[self.byte_pos as usize] |= data;
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(5))
     }
 
     fn write_u6(&mut self, data: impl Into<u6>) -> Result<(), CursorError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
-        self.bytecode[self.byte_pos as usize] |= data;
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(6))
     }
 
     fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), CursorError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
-        self.bytecode[self.byte_pos as usize] |= data;
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(7))
     }
 
     fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), CursorError> {
-        self.bytecode[self.byte_pos as usize] = data.into();
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] = data.into();
         self.inc_bytes(1)
     }
 
     fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), CursorError> {
         let data = data.into().to_le_bytes();
-        self.bytecode[self.byte_pos as usize] = data[0];
-        self.bytecode[self.byte_pos as usize + 1] = data[1];
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] = data[0];
+        self.as_mut()[pos + 1] = data[1];
         self.inc_bytes(2)
     }
 
     fn write_i16(&mut self, data: impl Into<i16>) -> Result<(), Self::Error> {
         let data = data.into().to_le_bytes();
-        self.bytecode[self.byte_pos as usize] = data[0];
-        self.bytecode[self.byte_pos as usize + 1] = data[1];
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] = data[0];
+        self.as_mut()[pos + 1] = data[1];
         self.inc_bytes(2)
+    }
+
+    fn write_u24(&mut self, data: impl Into<u24>) -> Result<(), CursorError> {
+        let data = data.into().to_le_bytes();
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] = data[0];
+        self.as_mut()[pos + 1] = data[1];
+        self.as_mut()[pos + 2] = data[2];
+        self.inc_bytes(3)
     }
 
     fn write_bytes32(&mut self, data: [u8; 32]) -> Result<(), CursorError> {
         let from = self.byte_pos as usize;
         let to = from + 32;
-        self.bytecode[from..to].copy_from_slice(&data);
+        self.as_mut()[from..to].copy_from_slice(&data);
         self.inc_bytes(32)
     }
 
-    fn write_slice(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), CursorError> {
+    fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), CursorError> {
         // We control that `self.byte_pos + bytes.len() < u16` at buffer
         // allocation time, so if we panic here this means we have a bug in
         // out allocation code and has to kill the process and report this issue
-        let len = bytes.as_ref().len();
+        let bytes = bytes.as_ref();
+        let len = bytes.len();
         if len >= u16::MAX as usize {
             return Err(CursorError::OutOfBoundaries(len));
         }
-        self.write_u16(len as u16)?;
-        let from = self.byte_pos as usize;
-        let to = from + len;
-        self.bytecode[from..to].copy_from_slice(bytes.as_ref());
-        self.inc_bytes(2u16 + len as u16)
+        let offset = self.write_unique(bytes)?;
+        self.write_u24(offset)?;
+        self.write_u16(len as u16)
     }
 
-    fn write_value(&mut self, reg: impl RegisterSet, mut value: Number) -> Result<(), CursorError> {
-        let len = reg.bits() / 8;
+    fn write_number(
+        &mut self,
+        reg: impl RegisterSet,
+        mut value: Number,
+    ) -> Result<(), CursorError> {
+        let len = reg.bytes();
         assert!(
             len <= value.len(),
             "value for the register has larger bit length than the register"
         );
         value.reshape(reg.layout().using_sign(value.layout()));
-        let from = self.byte_pos as usize;
-        let to = from + value.len() as usize;
-        self.bytecode[from..to].copy_from_slice(&value[..]);
-        self.inc_bytes(len as u16)
+        let offset = self.write_unique(&value[..])?;
+        self.write_u24(offset)
     }
 }

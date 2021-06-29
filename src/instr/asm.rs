@@ -33,9 +33,9 @@
 ///         jmp     0                               ;
 /// };
 ///
-/// let lib = Lib::<NOp>::with(code, None).unwrap();
-/// let mut runtime = Vm::with(lib);
-/// match runtime.main() {
+/// let lib = Lib::<NOp>::assemble(code).unwrap();
+/// let mut vm = Vm::with(lib);
+/// match vm.main() {
 ///     Ok(true) => println!("success"),
 ///     Ok(false) => println!("execution reported validation failure"),
 ///     Err(err) => eprintln!("{}", err),
@@ -44,7 +44,6 @@
 #[macro_export]
 macro_rules! aluasm {
     ($( $tt:tt )+) => { {
-        use core::str::FromStr;
         use alloc::boxed::Box;
 
         use aluvm::instr::{
@@ -52,8 +51,9 @@ macro_rules! aluasm {
             MergeFlag, MoveOp, NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
         };
         use aluvm::{
-            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, number,
+            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterSet
         };
+        use aluvm::number::{self, Number, MaybeNumber};
 
         let mut code: Vec<Instr<NOp>> = vec![];
         #[allow(unreachable_code)] {
@@ -141,21 +141,26 @@ macro_rules! instr {
         Instr::Put(_reg_sfx!(PutOp, Clr, $reg)(_reg_ty!(Reg, $reg), _reg_idx!($idx)))
     };
 
-    (put $val:literal, $reg:ident[$idx:literal]) => {
+    (put $val:literal, $reg:ident[$idx:literal]) => {{
+        let mut number: Number = stringify!($val).parse().expect("invalid number literal");
+        let reg = _reg_ty!(Reg, $reg);
+        number.reshape(reg.layout());
         Instr::Put(_reg_sfx!(PutOp, Put, $reg)(
-            _reg_ty!(Reg, $reg),
+            reg,
             _reg_idx!($idx),
-            Box::new(FromStr::from_str(stringify!($val)).expect("invalid hex literal")),
+            Box::new(MaybeNumber::from(number)),
         ))
-    };
-
-    (putif $val:literal, $reg:ident[$idx:literal]) => {
+    }};
+    (putif $val:literal, $reg:ident[$idx:literal]) => {{
+        let mut number: Number = stringify!($val).parse().expect("invalid number literal");
+        let reg = _reg_ty!(Reg, $reg);
+        number.reshape(reg.layout());
         Instr::Put(_reg_sfx!(PutOp, PutIf, $reg)(
-            _reg_ty!(Reg, $reg),
+            reg,
             _reg_idx!($idx),
-            Box::new(FromStr::from_str(stringify!($val)).expect("invalid hex literal")),
+            Box::new(MaybeNumber::from(number)),
         ))
-    };
+    }};
 
     (swp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {

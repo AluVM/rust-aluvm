@@ -141,14 +141,40 @@ impl InstructionSet for PutOp {
 
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            PutOp::ClrA(reg, index) => regs.set(reg, index, MaybeNumber::none()),
-            PutOp::ClrF(reg, index) => regs.set(reg, index, MaybeNumber::none()),
-            PutOp::ClrR(reg, index) => regs.set(reg, index, MaybeNumber::none()),
-            PutOp::PutA(reg, index, number) => regs.set(reg, index, *number),
-            PutOp::PutF(reg, index, number) => regs.set(reg, index, *number),
-            PutOp::PutR(reg, index, number) => regs.set(reg, index, *number),
-            PutOp::PutIfA(reg, index, number) => regs.set_if(reg, index, *number),
-            PutOp::PutIfR(reg, index, number) => regs.set_if(reg, index, *number),
+            PutOp::ClrA(reg, index) => {
+                regs.set(reg, index, MaybeNumber::none());
+            }
+            PutOp::ClrF(reg, index) => {
+                regs.set(reg, index, MaybeNumber::none());
+            }
+            PutOp::ClrR(reg, index) => {
+                regs.set(reg, index, MaybeNumber::none());
+            }
+            PutOp::PutA(reg, index, number) => {
+                if !regs.set(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
+            PutOp::PutF(reg, index, number) => {
+                if !regs.set(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
+            PutOp::PutR(reg, index, number) => {
+                if !regs.set(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
+            PutOp::PutIfA(reg, index, number) => {
+                if !regs.set_if(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
+            PutOp::PutIfR(reg, index, number) => {
+                if !regs.set_if(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
         };
         ExecStep::Next
     }
@@ -460,8 +486,11 @@ impl InstructionSet for BytesOp {
     #[allow(warnings)]
     fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
         match self {
-            BytesOp::Put(reg, bytes) => {
+            BytesOp::Put(reg, bytes, st0) => {
                 regs.s16.insert(reg, *bytes);
+                if st0 {
+                    regs.st0 = false
+                }
             }
             BytesOp::Mov(reg1, reg2) => {
                 regs.s16.remove(&reg1).and_then(|bs| regs.s16.insert(reg2, bs));

@@ -9,7 +9,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify_num::{u1, u2, u3, u4, u5, u6, u7};
+use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use crate::reg::{Number, RegisterSet};
 
@@ -18,7 +18,12 @@ mod private {
 
     pub trait Sealed {}
 
-    impl<T> Sealed for Cursor<T> where T: AsRef<[u8]> {}
+    impl<T, D> Sealed for Cursor<T, D>
+    where
+        T: AsRef<[u8]>,
+        D: AsRef<[u8]>,
+    {
+    }
 }
 
 pub trait Read: private::Sealed {
@@ -37,9 +42,10 @@ pub trait Read: private::Sealed {
     fn read_u8(&mut self) -> Result<u8, Self::Error>;
     fn read_u16(&mut self) -> Result<u16, Self::Error>;
     fn read_i16(&mut self) -> Result<i16, Self::Error>;
+    fn read_u24(&mut self) -> Result<u24, Self::Error>;
     fn read_bytes32(&mut self) -> Result<[u8; 32], Self::Error>;
-    fn read_slice(&mut self) -> Result<&[u8], Self::Error>;
-    fn read_value(&mut self, reg: impl RegisterSet) -> Result<Number, Self::Error>;
+    fn read_data(&mut self) -> Result<(&[u8], bool), Self::Error>;
+    fn read_number(&mut self, reg: impl RegisterSet) -> Result<Number, Self::Error>;
 }
 
 pub trait Write: private::Sealed {
@@ -56,7 +62,8 @@ pub trait Write: private::Sealed {
     fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), Self::Error>;
     fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), Self::Error>;
     fn write_i16(&mut self, data: impl Into<i16>) -> Result<(), Self::Error>;
+    fn write_u24(&mut self, data: impl Into<u24>) -> Result<(), Self::Error>;
     fn write_bytes32(&mut self, data: [u8; 32]) -> Result<(), Self::Error>;
-    fn write_slice(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), Self::Error>;
-    fn write_value(&mut self, reg: impl RegisterSet, value: Number) -> Result<(), Self::Error>;
+    fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), Self::Error>;
+    fn write_number(&mut self, reg: impl RegisterSet, value: Number) -> Result<(), Self::Error>;
 }

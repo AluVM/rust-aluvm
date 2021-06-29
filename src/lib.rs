@@ -138,6 +138,6 @@ pub use instr::{Instr, InstructionSet};
 pub use library::{Lib, LibHash, LibSite};
 pub use reg::{
     number, ByteStr, MaybeNumber, Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR,
-    RegBlockAFR, RegBlockAR, RegF, RegR, Registers,
+    RegBlockAFR, RegBlockAR, RegF, RegR, RegisterSet, Registers,
 };
 pub use vm::Vm;
