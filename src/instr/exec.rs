@@ -564,7 +564,7 @@ impl InstructionSet for BytesOp {
                 })
             }
             BytesOp::Con(reg1, reg2, no, offset, len) => {
-                todo!()
+                todo!("(#6) complete bytestring opcode implementation")
             }
             BytesOp::Extr(src, dst, index, offset) => {
                 let mut f = || -> Option<()> {
@@ -620,13 +620,13 @@ impl InstructionSet for BytesOp {
                 })
             }
             BytesOp::Splt(flag, offset, src, dst1, dst2) => {
-                todo!()
+                todo!("#(6) complete bytestring opcode implementation")
             }
             BytesOp::Ins(flag, offset, src, dst) => {
-                todo!()
+                todo!("#(6) complete bytestring opcode implementation")
             }
             BytesOp::Del(flag, reg1, offset1, reg2, offset2, flag1, flag2, src, dst) => {
-                todo!()
+                todo!("#(6) complete bytestring opcode implementation")
             }
         }
         ExecStep::Next
@@ -773,7 +773,9 @@ impl InstructionSet for Curve25519Op {
     }
 
     #[cfg(feature = "curve25519")]
-    fn exec(self, _regs: &mut Registers, _site: LibSite) -> ExecStep { todo!() }
+    fn exec(self, _regs: &mut Registers, _site: LibSite) -> ExecStep {
+        todo!("(#8) implement operations on Edwards curves")
+    }
 }
 
 impl InstructionSet for NOp {

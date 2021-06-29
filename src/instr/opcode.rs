@@ -607,7 +607,7 @@ pub enum BytesOp {
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
     /// fragment"), putting it to the destination `u16` registers. If strings have no conjoint
     /// fragment sets destination to `None`.
-    #[display("cn\ts16[{0}],s16[{1}],u16{2},u16{3}")]
+    #[display("con\ts16[{0}],s16[{1}],u16{2},u16{3}")]
     Con(
         /** First source string register */ u8,
         /** Second source string register */ u8,

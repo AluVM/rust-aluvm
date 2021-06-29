@@ -12,7 +12,5 @@ use_try_shorthand = true
 use_small_heuristics = "Max"
 wrap_comments = true
 comment_width = 100
-report_fixme = "Always"
-report_todo = "Unnumbered"
 license_template_path = "license_header"
 unstable_features = true

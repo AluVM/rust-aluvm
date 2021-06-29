@@ -670,11 +670,11 @@ impl Number {
             Layout::Float(FloatLayout::IeeeSingle) => ieee::Single::from(self).is_nan(),
             Layout::Float(FloatLayout::IeeeDouble) => ieee::Double::from(self).is_nan(),
             Layout::Float(FloatLayout::IeeeQuad) => ieee::Quad::from(self).is_nan(),
-            Layout::Float(FloatLayout::IeeeOct) => todo!("512-bit float NaN detection"),
+            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float NaN detection"),
             Layout::Float(FloatLayout::X87DoubleExt) => {
                 ieee::X87DoubleExtended::from(self).is_nan()
             }
-            Layout::Float(FloatLayout::FloatTapered) => todo!("tapered float NaN detection"),
+            Layout::Float(FloatLayout::FloatTapered) => todo!("(#5) tapered float NaN detection"),
         }
     }
 
@@ -834,7 +834,7 @@ impl Display for Number {
                 Display::fmt(&ieee::X87DoubleExtended::from(self), f)
             }
             _ => {
-                // TODO: Implement Display for the rest of float layouts
+                // TODO(#16) Implement Display for the rest of float layouts
                 f.write_str("<not supported float layout for display>")
             }
         }
@@ -853,7 +853,7 @@ impl LowerHex for Number {
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 128 => {
                 LowerHex::fmt(&u128::from(self), f)
             }
-            // TODO: Use LowerHex implementation once it will be done in amplify_num
+            // TODO(#16) Use LowerHex implementation once it will be done in amplify_num
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 256 => {
                 #[cfg(feature = "std")]
                 {
@@ -884,8 +884,8 @@ impl LowerHex for Number {
                     f.write_str("<hex display requires std library>")
                 }
             }
-            // TODO: Use LowerHex implementation once it will be done in `half` crate
-            /* TODO: Use LowerHex implementation once it will be done in `rustc_apfloat`
+            // TODO(#16) Use LowerHex implementation once it will be done in `half` crate
+            /* TODO(#16) Use LowerHex implementation once it will be done in `rustc_apfloat`
             Layout::Float(FloatLayout::BFloat16) => LowerHex::fmt(&half::bf16::from(self), f),
             Layout::Float(FloatLayout::IeeeHalf) => LowerHex::fmt(&ieee::Half::from(self), f),
             Layout::Float(FloatLayout::IeeeSingle) => LowerHex::fmt(&ieee::Single::from(self), f),
@@ -896,7 +896,7 @@ impl LowerHex for Number {
             }
              */
             _ => {
-                // TODO: Implement Display for the rest of float layouts
+                // TODO(#16) Implement Display for the rest of float layouts
                 f.write_str("<not supported float layout for display>")
             }
         }
@@ -919,9 +919,9 @@ impl Octal for Number {
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 128 => {
                 Octal::fmt(&u128::from(self), f)
             }
-            // TODO: Use LowerHex implementation once it will be done in amplify_num
-            // TODO: Use LowerHex implementation once it will be done in `half` crate
-            /* TODO: Use LowerHex implementation once it will be done in `rustc_apfloat`
+            // TODO(#16) Use LowerHex implementation once it will be done in amplify_num
+            // TODO(#16) Use LowerHex implementation once it will be done in `half` crate
+            /* TODO(#16) Use LowerHex implementation once it will be done in `rustc_apfloat`
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 256 => {
                 Octal::fmt(&u256::from(self), f)
             }
@@ -938,7 +938,7 @@ impl Octal for Number {
                 Octal::fmt(&ieee::X87DoubleExtended::from(self), f)
             }*/
             _ => {
-                // TODO: Implement Display for the rest of float layouts
+                // TODO(#16) Implement Display for the rest of float layouts
                 f.write_str("<not supported float layout for display>")
             }
         }
@@ -949,9 +949,9 @@ impl LowerExp for Number {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.layout {
             Layout::Integer(_) => Display::fmt(self, f),
-            // TODO: Use LowerHex implementation once it will be done in amplify_num
-            // TODO: Use LowerHex implementation once it will be done in `half` crate
-            /* TODO: Use LowerHex implementation once it will be done in `rustc_apfloat`
+            // TODO(#16) Use LowerHex implementation once it will be done in amplify_num
+            // TODO(#16) Use LowerHex implementation once it will be done in `half` crate
+            /* TODO(#16) Use LowerHex implementation once it will be done in `rustc_apfloat`
             Layout::Float(FloatLayout::BFloat16) => LowerExp::fmt(&half::bf16::from(self), f),
             Layout::Float(FloatLayout::IeeeHalf) => LowerExp::fmt(&ieee::Half::from(self), f),
             Layout::Float(FloatLayout::IeeeSingle) => LowerExp::fmt(&ieee::Single::from(self), f),
@@ -961,7 +961,7 @@ impl LowerExp for Number {
                 LowerExp::fmt(&ieee::X87DoubleExtended::from(self), f)
             }*/
             _ => {
-                // TODO: Implement LowerExp for the rest of float layouts
+                // TODO(#16) Implement LowerExp for the rest of float layouts
                 f.write_str("<not supported float layout for display>")
             }
         }
@@ -1055,8 +1055,8 @@ macro_rules! impl_number_float_conv {
 
         impl From<&$ty> for Number {
             fn from(val: &$ty) -> Self {
-                // TODO: Filter negative zeros
-                // TODO: Filter NaN values
+                // TODO(#17) Filter negative zeros
+                // TODO(#17) Filter NaN values
                 let mut bytes = [0u8; 1024];
                 let le = val.to_bits().to_le_bytes();
                 bytes[0..le.len()].copy_from_slice(&le[..]);

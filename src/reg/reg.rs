@@ -1119,9 +1119,9 @@ pub struct Registers {
     pub(crate) f64: [Option<ieee::Double>; 32],
     pub(crate) f80: [Option<ieee::X87DoubleExtended>; 32],
     pub(crate) f128: [Option<ieee::Quad>; 32],
-    // TODO: Replace with `ieee::Oct` once it will be implemented
+    // TODO(#4) Replace with `ieee::Oct` once it will be implemented
     pub(crate) f256: [Option<u256>; 32],
-    // TODO: Implement tapered floating point type
+    // TODO(#5) Implement tapered floating point type
     pub(crate) f512: [Option<u512>; 32],
 
     // Non-arithmetic registers:
@@ -1190,13 +1190,13 @@ impl Default for Registers {
             s16: Default::default(),
 
             st0: true,
-            // TODO: Introduce `ca0` register
+            // TODO(#2) Introduce `ca0` register
             cy0: 0,
-            // TODO: Convert into short library references
+            // TODO(#13) Convert into short library references
             cs0: Box::new([LibSite::default(); u16::MAX as usize]),
             cp0: 0,
 
-            // TODO: Make it a part of the vm
+            // TODO(#14) Make it a part of the vm
             #[cfg(feature = "secp256k1")]
             secp: secp256k1::Secp256k1::new(),
         }

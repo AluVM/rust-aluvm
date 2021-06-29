@@ -49,9 +49,9 @@ jobs:
         with:
           toolchain: nightly
           override: true
-          components: doc
+          components: rust-docs
       - uses: actions-rs/cargo@v1
         name: Clippy
         with:
-          command: rust-docs
+          command: doc
           args: --workspace --all-features

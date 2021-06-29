@@ -107,7 +107,10 @@ impl Number {
 impl Number {
     /// Addition of two integers with configuration flags for overflow and signed format.
     ///
-    /// Panics if applied to float number layouts.
+    /// # Panics
+    ///
+    /// - if applied to float number layouts
+    /// - if numbers in arguments has different layout.
     pub fn int_add(self, rhs: Self, flags: IntFlags) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "adding numbers with different layout");
@@ -130,7 +133,10 @@ impl Number {
 
     /// Subtraction of two integers with configuration flags for overflow and signed format.
     ///
-    /// Panics if applied to float number layouts.
+    /// # Panics
+    ///
+    /// - if applied to float number layouts
+    /// - if numbers in arguments has different layout.
     pub fn int_sub(self, rhs: Self, flags: IntFlags) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "subtracting numbers with different layout");
@@ -153,7 +159,10 @@ impl Number {
 
     /// Multiplication of two integers with configuration flags for overflow and signed format.
     ///
-    /// Panics if applied to float number layouts.
+    /// # Panics
+    ///
+    /// - if applied to float number layouts
+    /// - if numbers in arguments has different layout.
     pub fn int_mul(self, rhs: Self, flags: IntFlags) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "multiplying numbers with different layout");
@@ -179,7 +188,7 @@ impl Number {
                 }
             }
             Layout::Integer(IntLayout { signed: false, .. }) => {
-                todo!("implement booth multiplication algorithm")
+                todo!("(#9) implement booth multiplication algorithm")
             }
             Layout::Float(_) => panic!("integer multiplication of float numbers"),
         }
@@ -187,7 +196,10 @@ impl Number {
 
     /// Division of two integers with configuration flags for overflow and signed format.
     ///
-    /// Panics if applied to float number layouts.
+    /// # Panics
+    ///
+    /// - if applied to float number layouts
+    /// - if numbers in arguments has different layout.
     pub fn int_div(self, rhs: Self, flags: IntFlags) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "dividing numbers with different layout");
@@ -204,7 +216,7 @@ impl Number {
         }
 
         if flags.wrap {
-            todo!("euclidean division in amplify crate")
+            todo!("(#10) euclidean division in amplify crate")
         }
 
         Some(match layout {
@@ -219,7 +231,7 @@ impl Number {
                 val1.div(val2).into()
             }
             Layout::Integer(IntLayout { signed: false, .. }) => {
-                todo!("implement large signed number division algorithm")
+                todo!("(#11) implement large signed number division algorithm")
             }
             Layout::Float(_) => panic!("integer division of float numbers"),
         })
@@ -227,12 +239,15 @@ impl Number {
 
     /// Addition of two floats with configuration flags for rounding.
     ///
-    /// Panics if applied to integer number layouts.
+    /// # Panics
+    ///
+    /// - if applied to float number layouts
+    /// - if numbers in arguments has different layout.
     pub fn float_add(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "adding numbers with different layout");
         let (val, status) = match layout {
-            Layout::Float(FloatLayout::BFloat16) => todo!("addition of BF16 floats"),
+            Layout::Float(FloatLayout::BFloat16) => todo!("(#12) addition of BF16 floats"),
             Layout::Float(FloatLayout::IeeeHalf) => {
                 let val1 = ieee::Half::from(self);
                 let val2 = ieee::Half::from(rhs);
@@ -263,8 +278,8 @@ impl Number {
                 let res = val1.add_r(val2, flag.into());
                 (Number::from(res.value), res.status)
             }
-            Layout::Float(FloatLayout::IeeeOct) => unimplemented!("256-bit floats"),
-            Layout::Float(FloatLayout::FloatTapered) => todo!("addition of tapered floats"),
+            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float addition"),
+            Layout::Float(FloatLayout::FloatTapered) => todo!("(#5) tapered float addition"),
             Layout::Integer(_) => panic!("float addition of integer numbers"),
         };
         match (val.is_nan(), status) {
@@ -276,12 +291,15 @@ impl Number {
 
     /// Subtraction of two floats with configuration flags for rounding.
     ///
-    /// Panics if applied to integer number layouts.
+    /// # Panics
+    ///
+    /// - if applied to float number layouts
+    /// - if numbers in arguments has different layout.
     pub fn float_sub(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "subtracting numbers with different layout");
         let (val, status) = match layout {
-            Layout::Float(FloatLayout::BFloat16) => todo!("subtraction of BF16 floats"),
+            Layout::Float(FloatLayout::BFloat16) => todo!("(#12) subtraction of BF16 floats"),
             Layout::Float(FloatLayout::IeeeHalf) => {
                 let val1 = ieee::Half::from(self);
                 let val2 = ieee::Half::from(rhs);
@@ -312,8 +330,8 @@ impl Number {
                 let res = val1.sub_r(val2, flag.into());
                 (Number::from(res.value), res.status)
             }
-            Layout::Float(FloatLayout::IeeeOct) => unimplemented!("256-bit floats"),
-            Layout::Float(FloatLayout::FloatTapered) => todo!("subtraction of tapered floats"),
+            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float subtraction"),
+            Layout::Float(FloatLayout::FloatTapered) => todo!("(#5) tapered float subtraction"),
             Layout::Integer(_) => panic!("float subtraction of integer numbers"),
         };
         match (val.is_nan(), status) {
@@ -325,12 +343,15 @@ impl Number {
 
     /// Multiplication of two floats with configuration flags for rounding.
     ///
-    /// Panics if applied to integer number layouts.
+    /// # Panics
+    ///
+    /// - if applied to float number layouts
+    /// - if numbers in arguments has different layout.
     pub fn float_mul(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "multiplying numbers with different layout");
         let (val, status) = match layout {
-            Layout::Float(FloatLayout::BFloat16) => todo!("multiplication of BF16 floats"),
+            Layout::Float(FloatLayout::BFloat16) => todo!("(#12) multiplication of BF16 floats"),
             Layout::Float(FloatLayout::IeeeHalf) => {
                 let val1 = ieee::Half::from(self);
                 let val2 = ieee::Half::from(rhs);
@@ -361,8 +382,8 @@ impl Number {
                 let res = val1.mul_r(val2, flag.into());
                 (Number::from(res.value), res.status)
             }
-            Layout::Float(FloatLayout::IeeeOct) => unimplemented!("256-bit floats"),
-            Layout::Float(FloatLayout::FloatTapered) => todo!("multiplication of tapered floats"),
+            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float multiplication"),
+            Layout::Float(FloatLayout::FloatTapered) => todo!("(#5) tapered float multiplication"),
             Layout::Integer(_) => panic!("float multiplication of integer numbers"),
         };
         match (val.is_nan(), status) {
@@ -374,12 +395,15 @@ impl Number {
 
     /// Division of two floats with configuration flags for rounding.
     ///
-    /// Panics if applied to integer number layouts.
+    /// # Panics
+    ///
+    /// - if applied to float number layouts
+    /// - if numbers in arguments has different layout.
     pub fn float_div(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "dividing numbers with different layout");
         let (val, status) = match layout {
-            Layout::Float(FloatLayout::BFloat16) => todo!("division of BF16 floats"),
+            Layout::Float(FloatLayout::BFloat16) => todo!("(#12) division of BF16 floats"),
             Layout::Float(FloatLayout::IeeeHalf) => {
                 let val1 = ieee::Half::from(self);
                 let val2 = ieee::Half::from(rhs);
@@ -410,8 +434,8 @@ impl Number {
                 let res = val1.div_r(val2, flag.into());
                 (Number::from(res.value), res.status)
             }
-            Layout::Float(FloatLayout::IeeeOct) => unimplemented!("256-bit floats"),
-            Layout::Float(FloatLayout::FloatTapered) => todo!("division of tapered floats"),
+            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float division"),
+            Layout::Float(FloatLayout::FloatTapered) => todo!("(#5) tapered float division"),
             Layout::Integer(_) => panic!("float division of integer numbers"),
         };
         match (val.is_nan(), status) {
@@ -444,7 +468,7 @@ impl Rem for Number {
                 val1.rem(val2).into()
             }
             Layout::Integer(IntLayout { .. }) => {
-                todo!("implement large signed number modulo division algorithm")
+                todo!("(#11) implement large signed number modulo division algorithm")
             }
             Layout::Float(_) => panic!("modulo division of float number"),
         })

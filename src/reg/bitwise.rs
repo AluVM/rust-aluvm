@@ -112,7 +112,7 @@ impl Number {
     pub fn shr_signed(self, shift: Number) -> Number {
         assert!(self.layout().is_integer(), "bit shifting float number");
         if self.layout().bits() > 128 {
-            todo!("implement signed right bit shift")
+            todo!("(#15) implement signed right bit shift")
         }
         let shift = u16::try_from(shift).expect(
             "shift value in `scl` operation must always be from either `a8` or `a16` registry",
