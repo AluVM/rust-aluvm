@@ -63,6 +63,7 @@ where
             .field("bit_pos", &self.bit_pos)
             .field("eof", &self.eof)
             .field("data", &self.data.as_ref().to_hex())
+//            .field("libs", &self.libs)
             .finish()
     }
 }

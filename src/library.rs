@@ -10,9 +10,11 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use alloc::boxed::Box;
+use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 use core::fmt::{self, Display, Formatter};
 use core::marker::PhantomData;
+use core::ops::Index;
 
 use amplify_num::u24;
 use bitcoin_hashes::{Hash, HashEngine};
@@ -54,6 +56,7 @@ pub struct Lib<E = NOp>
 where
     E: InstructionSet,
 {
+    libs_segment: LibSeg,
     code_segment: ByteStr,
     data_segment: Box<[u8]>,
     instruction_set: PhantomData<E>,
@@ -78,7 +81,7 @@ impl<E> Lib<E>
 where
     E: InstructionSet,
 {
-    /// Constructs library from bytecode and data
+    /// Constructs library from segments
     pub fn with(bytecode: Vec<u8>, data: Vec<u8>) -> Result<Lib<E>, Error> {
         if bytecode.len() > u16::MAX as usize {
             return Err(Error::CodeSegmentTooLarge(bytecode.len()));
@@ -87,6 +90,7 @@ where
             return Err(Error::DataSegmentTooLarge(data.len()));
         }
         Ok(Self {
+            libs_segment: LibSeg::default(),
             code_segment: ByteStr::with(bytecode),
             data_segment: Box::from(data),
             instruction_set: Default::default(),
@@ -109,6 +113,7 @@ where
         code_segment.adjust_len(pos, false);
 
         Ok(Lib {
+            libs_segment: Default::default(),
             code_segment,
             data_segment: Box::from(data),
             instruction_set: PhantomData::<E>::default(),
@@ -157,6 +162,10 @@ where
     pub fn data_segment(&self) -> &[u8] { self.data_segment.as_ref() }
 
     /// Executes library code starting at entrypoint
+    ///
+    /// # Returns
+    ///
+    /// Location for the external code jump, if any
     pub fn run(&self, entrypoint: u16, registers: &mut Registers) -> Option<LibSite> {
         let mut cursor = Cursor::with(&self.code_segment.bytes[..], &*self.data_segment);
         let lib_hash = self.id();
@@ -191,4 +200,49 @@ impl LibSite {
     /// Constricts library site reference from a given position and library hash
     /// value
     pub fn with(pos: u16, lib: LibId) -> LibSite { LibSite { lib, pos } }
+}
+
+/// Library segment data
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct LibSeg {
+    set: BTreeSet<LibId>,
+    table: BTreeMap<u16, LibId>,
+}
+
+impl LibSeg {
+    /// Returns library id with a given index
+    #[inline]
+    pub fn lib_at(&self, index: u16) -> Option<LibId> { self.table.get(&index).copied() }
+
+    /// Returns index of a library
+    #[inline]
+    pub fn lib_index(&self, lib: LibId) -> Option<u16> {
+        self.set.iter().position(|l| *l == lib).map(|i| i as u16)
+    }
+
+    /// Adds library to the collection
+    pub fn insert(&mut self, lib: LibId) -> Result<u16, ()> {
+        if self.set.len() >= u16::MAX as usize {
+            return Err(());
+        }
+        self.set.insert(lib);
+        let index = self.lib_index(lib).expect("BTreeSet is broken");
+        self.table.insert(index, lib);
+        Ok(index)
+    }
+}
+
+impl Index<u16> for LibSeg {
+    type Output = LibId;
+
+    #[inline]
+    fn index(&self, index: u16) -> &Self::Output {
+        self.table.get(&index).expect("Unknown library")
+    }
+}
+
+impl Display for LibSeg {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.set.iter().try_for_each(|lib| write!(f, "#{}", lib))
+    }
 }
