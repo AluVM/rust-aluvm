@@ -9,7 +9,10 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use alloc::boxed::Box;
 use alloc::collections::BTreeSet;
+use alloc::string::String;
+use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl, Shr};
 
@@ -41,13 +44,23 @@ pub enum ExecStep {
 
 /// Trait for instructions
 pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
-    /// ISA IDs used by the provided instruction set.
+    /// ISA Extensions used by the provided instruction set.
     ///
     /// Each id must be up to 8 bytes and consist of upper case latin alphanumeric characters,
     /// starting with non-number.
+    fn isa_ids() -> BTreeSet<&'static str>;
+
+    /// ISA Extension IDs represented as a standard string (space-separated)
     ///
-    /// Concatenated length of the ISA IDs joined via '+' character must not exceed 64 bytes.
-    fn ids() -> BTreeSet<&'static str>;
+    /// Concatenated length of the ISA IDs joined via ' ' character must not exceed 128 bytes.
+    #[inline]
+    fn isa_string() -> String { Self::isa_ids().into_iter().collect::<Vec<_>>().join(" ") }
+
+    /// ISA Extension IDs encoded in a standard way (space-separated)
+    ///
+    /// Concatenated length of the ISA IDs joined via ' ' character must not exceed 128 bytes.
+    #[inline]
+    fn isa_id() -> Box<[u8]> { Self::isa_string().as_bytes().into() }
 
     /// Executes given instruction taking all registers as input and output.
     ///
@@ -67,12 +80,12 @@ where
     Extension: InstructionSet,
 {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> {
+    fn isa_ids() -> BTreeSet<&'static str> {
         let mut set = BTreeSet::new();
         set.insert("ALU");
-        set.extend(DigestOp::ids());
-        set.extend(Secp256k1Op::ids());
-        set.extend(Curve25519Op::ids());
+        set.extend(DigestOp::isa_ids());
+        set.extend(Secp256k1Op::isa_ids());
+        set.extend(Curve25519Op::isa_ids());
         set
     }
 
@@ -99,7 +112,7 @@ where
 
 impl InstructionSet for ControlFlowOp {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     fn exec(self, regs: &mut Registers, site: LibSite) -> ExecStep {
         match self {
@@ -137,18 +150,44 @@ impl InstructionSet for ControlFlowOp {
 
 impl InstructionSet for PutOp {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
-            PutOp::ClrA(reg, index) => regs.set(reg, index, MaybeNumber::none()),
-            PutOp::ClrF(reg, index) => regs.set(reg, index, MaybeNumber::none()),
-            PutOp::ClrR(reg, index) => regs.set(reg, index, MaybeNumber::none()),
-            PutOp::PutA(reg, index, number) => regs.set(reg, index, *number),
-            PutOp::PutF(reg, index, number) => regs.set(reg, index, *number),
-            PutOp::PutR(reg, index, number) => regs.set(reg, index, *number),
-            PutOp::PutIfA(reg, index, number) => regs.set_if(reg, index, *number),
-            PutOp::PutIfR(reg, index, number) => regs.set_if(reg, index, *number),
+            PutOp::ClrA(reg, index) => {
+                regs.set(reg, index, MaybeNumber::none());
+            }
+            PutOp::ClrF(reg, index) => {
+                regs.set(reg, index, MaybeNumber::none());
+            }
+            PutOp::ClrR(reg, index) => {
+                regs.set(reg, index, MaybeNumber::none());
+            }
+            PutOp::PutA(reg, index, number) => {
+                if !regs.set(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
+            PutOp::PutF(reg, index, number) => {
+                if !regs.set(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
+            PutOp::PutR(reg, index, number) => {
+                if !regs.set(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
+            PutOp::PutIfA(reg, index, number) => {
+                if !regs.set_if(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
+            PutOp::PutIfR(reg, index, number) => {
+                if !regs.set_if(reg, index, *number) {
+                    regs.st0 = false;
+                }
+            }
         };
         ExecStep::Next
     }
@@ -156,7 +195,7 @@ impl InstructionSet for PutOp {
 
 impl InstructionSet for MoveOp {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
@@ -236,7 +275,7 @@ impl InstructionSet for MoveOp {
 
 impl InstructionSet for CmpOp {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         match self {
@@ -330,7 +369,7 @@ impl InstructionSet for CmpOp {
 
 impl InstructionSet for ArithmeticOp {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     fn exec(self, regs: &mut Registers, _: LibSite) -> ExecStep {
         let is_some = match self {
@@ -404,7 +443,7 @@ impl InstructionSet for ArithmeticOp {
 
 impl InstructionSet for BitwiseOp {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
         match self {
@@ -455,13 +494,16 @@ impl InstructionSet for BitwiseOp {
 
 impl InstructionSet for BytesOp {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     #[allow(warnings)]
     fn exec(self, regs: &mut Registers, _site: LibSite) -> ExecStep {
         match self {
-            BytesOp::Put(reg, bytes) => {
+            BytesOp::Put(reg, bytes, st0) => {
                 regs.s16.insert(reg, *bytes);
+                if st0 {
+                    regs.st0 = false
+                }
             }
             BytesOp::Mov(reg1, reg2) => {
                 regs.s16.remove(&reg1).and_then(|bs| regs.s16.insert(reg2, bs));
@@ -635,7 +677,7 @@ impl InstructionSet for BytesOp {
 
 impl InstructionSet for DigestOp {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> {
+    fn isa_ids() -> BTreeSet<&'static str> {
         let mut set = BTreeSet::new();
         set.insert("BPDIGEST");
         set
@@ -673,11 +715,11 @@ impl InstructionSet for DigestOp {
 impl InstructionSet for Secp256k1Op {
     #[cfg(not(feature = "secp256k1"))]
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     #[cfg(feature = "secp256k1")]
     #[inline]
-    fn ids() -> BTreeSet<&'static str> {
+    fn isa_ids() -> BTreeSet<&'static str> {
         let mut set = BTreeSet::new();
         set.insert("SECP256K1");
         set
@@ -757,11 +799,11 @@ impl InstructionSet for Secp256k1Op {
 impl InstructionSet for Curve25519Op {
     #[cfg(not(feature = "secp256k1"))]
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     #[cfg(feature = "secp256k1")]
     #[inline]
-    fn ids() -> BTreeSet<&'static str> {
+    fn isa_ids() -> BTreeSet<&'static str> {
         let mut set = BTreeSet::new();
         set.insert("ED25519");
         set
@@ -780,7 +822,7 @@ impl InstructionSet for Curve25519Op {
 
 impl InstructionSet for NOp {
     #[inline]
-    fn ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     fn exec(self, _: &mut Registers, _: LibSite) -> ExecStep { ExecStep::Next }
 }

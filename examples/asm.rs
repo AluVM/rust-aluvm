@@ -17,8 +17,7 @@ extern crate aluvm;
 #[macro_use]
 extern crate paste;
 
-use aluvm::instr::serialize::disassemble;
-use aluvm::instr::{Instr, NOp};
+use aluvm::instr::NOp;
 use aluvm::{Lib, Vm};
 
 fn main() {
@@ -83,15 +82,15 @@ fn main() {
     };
 
     println!("Instructions:\n{:#?}\n", code);
-    let lib = Lib::<NOp>::with(code, None).unwrap();
-    println!("Hex representation:\n{}\n", lib);
-    let asm: Vec<Instr> = disassemble(lib.bytecode()).unwrap();
+    let lib = Lib::<NOp>::assemble(code).unwrap();
+    println!("\n{}\n", lib);
+    let code = lib.disassemble().unwrap();
     println!("Assembly:");
-    for instr in asm {
+    for instr in code {
         println!("\t\t{}", instr);
     }
 
-    print!("\nExecuting the program ... ");
+    print!("\nExecuting the program #{}... ", lib.id());
     let mut runtime = Vm::with(lib);
     match runtime.main() {
         Ok(true) => println!("success"),

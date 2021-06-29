@@ -10,7 +10,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 mod cursor;
-mod io;
+mod rw;
 
 pub use cursor::{Cursor, CursorError};
-pub use io::{Read, Write};
+pub use rw::{Read, Write};

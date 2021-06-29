@@ -17,7 +17,7 @@ use crate::instr::{
     DeleteFlag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, RoundingFlag, SignFlag, SplitFlag,
 };
 use crate::reg::{
-    number, Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR,
+    number, MaybeNumber, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR,
 };
 use crate::{ByteStr, InstructionSet, LibSite};
 
@@ -151,25 +151,54 @@ pub enum PutOp {
     #[display("clr\t\t{0}{1}")]
     ClrR(RegR, Reg32),
 
-    /// Unconditionally assigns a value to `A` register
+    /// Unconditionally assigns a value to `A` register.
+    ///
+    /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
+    ///     this instruction is assembled and the data are not present in the data segment (their
+    ///     offset + length exceeds data segment size) the operation will set destination register
+    ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
     #[display("put\t\t{2},{0}{1}")]
-    PutA(RegA, Reg32, Box<Number>),
+    PutA(RegA, Reg32, Box<MaybeNumber>),
 
     /// Unconditionally assigns a value to `F` register
+    ///
+    /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
+    ///     this instruction is assembled and the data are not present in the data segment (their
+    ///     offset + length exceeds data segment size) the operation will set destination register
+    ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
     #[display("put\t\t{2},{0}{1}")]
-    PutF(RegF, Reg32, Box<Number>),
+    PutF(RegF, Reg32, Box<MaybeNumber>),
 
     /// Unconditionally assigns a value to `R` register
+    ///
+    /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
+    ///     this instruction is assembled and the data are not present in the data segment (their
+    ///     offset + length exceeds data segment size) the operation will set destination register
+    ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
     #[display("put\t\t{2},{0}{1}")]
-    PutR(RegR, Reg32, Box<Number>),
+    PutR(RegR, Reg32, Box<MaybeNumber>),
 
-    /// Conditionally assigns a value to `A` register if the register is in uninitialized state
+    /// Conditionally assigns a value to `A` register if the register is in uninitialized state.
+    /// If the register is initialized, sets `st0` to `false`.
+    ///
+    /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
+    ///     this instruction is assembled and the data are not present in the data segment (their
+    ///     offset + length exceeds data segment size) _and_ the destination register is
+    ///     initialized, the operation will set destination register into undefined state and `st0`
+    ///     to `false`. Otherwise, `st0` value is changed according to the general operation rules.
     #[display("putif\t{2},{0}{1}")]
-    PutIfA(RegA, Reg32, Box<Number>),
+    PutIfA(RegA, Reg32, Box<MaybeNumber>),
 
-    /// Conditionally assigns a value to `R` register if the register is in uninitialized state
+    /// Conditionally assigns a value to `R` register if the register is in uninitialized state.
+    /// If the register is initialized, sets `st0` to `false`.
+    ///
+    /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
+    ///     this instruction is assembled and the data are not present in the data segment (their
+    ///     offset + length exceeds data segment size) _and_ the destination register is
+    ///     initialized, the operation will set destination register into undefined state and `st0`
+    ///     to `false`. Otherwise, `st0` value is changed according to the general operation rules.
     #[display("putif\t{2},{0}{1}")]
-    PutIfR(RegR, Reg32, Box<Number>),
+    PutIfR(RegR, Reg32, Box<MaybeNumber>),
 }
 
 /// Instructions moving and swapping register values
@@ -468,7 +497,7 @@ pub enum BitwiseOp {
     ///
     /// This, [`BitwiseOp::Shl`] and [`BitwiseOp::ShrR`] operations are encoded with the same
     /// instruction bitcode and differ only in their first two argument bits.
-    #[display("shr{0},\t\t{1}{2},{3}{4}")]
+    #[display("shr:{0}\t{1}{2},{3}{4}")]
     ShrA(
         /** Sign flag */ SignFlag,
         /** Which of `A` registers will have a shift value */ RegA2,
@@ -538,8 +567,20 @@ pub enum BitwiseOp {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum BytesOp {
     /// Put bytestring into a byte string register
+    ///
+    /// Data are kept in the separate data segment, thus when the instruction is pared from the
+    /// code segment it knows only data offset and length. If this offset or length exceeds the
+    /// size of the data segment, the instruction truncates the string to the part that is present
+    /// in the data segment (or zero-length string if the offset exceeds data segment length) and
+    /// sets `st0` to `false`. Otherwise, `st0` is unaffected.
     #[display("put\t\ts16[{0}],{1}")]
-    Put(/** Destination `s` register index */ u8, Box<ByteStr>),
+    Put(
+        /** Destination `s` register index */ u8,
+        Box<ByteStr>,
+        /** Indicates that the operation must set `st0` to false; i.e. string data are not
+         * complete */
+        bool,
+    ),
 
     /// Move bytestring value between registers
     #[display("mov\t\ts16[{0}],s16[{1}]")]

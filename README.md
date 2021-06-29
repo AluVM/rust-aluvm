@@ -18,7 +18,9 @@ ISA extensions) is blockchain environments, consensus-critical computations,
 multiparty computing (including deterministic machine learning), 
 client-side-validation, sandboxed Internet2 computing and genetic algorithms.
 
-For more details on AluVM, please check [the specification][AluVM]
+For more details on AluVM, please check [the specification][AluVM], watch
+detailed presentation on [YoTube](https://www.youtube.com/watch?v=brfWta7XXFQ)
+or [check slides] from the presentation.
 
 
 ## Design
@@ -122,3 +124,4 @@ Check [the specification][AluVM] for the details.
   ([ISA & API docs](https://docs.rs/aluvm/0.2.1/aluvm/))
 
 [AluVM]: https://github.com/internet2-org/aluvm-spec
+[slides]: https://github.com/LNP-BP/presentations/blob/master/Presentation%20slides/Single-use-seals.pdf

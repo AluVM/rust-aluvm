@@ -812,10 +812,13 @@ impl Debug for Number {
 impl Display for Number {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.layout {
-            Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 128 => {
+            Layout::Integer(IntLayout { signed: false, .. }) if self.min_bit_len() > 12 => {
+                write!(f, "0x{:X}", self)
+            }
+            Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 16 => {
                 Display::fmt(&i128::from(self), f)
             }
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 128 => {
+            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 16 => {
                 Display::fmt(&u128::from(self), f)
             }
             Layout::Integer(IntLayout { signed: false, .. }) if self.min_bit_len() < 256 => {
@@ -847,27 +850,27 @@ impl LowerHex for Number {
         use amplify_num::hex::ToHex;
 
         match self.layout {
-            Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 128 => {
+            Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 16 => {
                 LowerHex::fmt(&i128::from(self), f)
             }
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 128 => {
+            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 16 => {
                 LowerHex::fmt(&u128::from(self), f)
             }
             // TODO(#16) Use LowerHex implementation once it will be done in amplify_num
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 256 => {
+            Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 32 => {
                 #[cfg(feature = "std")]
                 {
-                    f.write_str(&u256::from(self).to_le_bytes().to_hex())
+                    f.write_str(&u256::from(self).to_be_bytes().to_hex())
                 }
                 #[cfg(not(feature = "std"))]
                 {
                     f.write_str("<hex display requires std library>")
                 }
             }
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 512 => {
+            Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 32 => {
                 #[cfg(feature = "std")]
                 {
-                    f.write_str(&u512::from(self).to_le_bytes().to_hex())
+                    f.write_str(&u512::from(self).to_be_bytes().to_hex())
                 }
                 #[cfg(not(feature = "std"))]
                 {
@@ -877,7 +880,7 @@ impl LowerHex for Number {
             Layout::Integer(IntLayout { .. }) => {
                 #[cfg(feature = "std")]
                 {
-                    f.write_str(&u1024::from(self).to_le_bytes().to_hex())
+                    f.write_str(&u1024::from(self).to_be_bytes().to_hex())
                 }
                 #[cfg(not(feature = "std"))]
                 {
@@ -913,10 +916,10 @@ impl UpperHex for Number {
 impl Octal for Number {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.layout {
-            Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 128 => {
+            Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 16 => {
                 Octal::fmt(&i128::from(self), f)
             }
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 128 => {
+            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 16 => {
                 Octal::fmt(&u128::from(self), f)
             }
             // TODO(#16) Use LowerHex implementation once it will be done in amplify_num

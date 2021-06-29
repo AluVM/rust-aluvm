@@ -14,14 +14,14 @@
 use alloc::collections::BTreeMap;
 
 use crate::instr::NOp;
-use crate::{InstructionSet, Lib, LibHash, LibSite, Registers};
+use crate::{InstructionSet, Lib, LibId, LibSite, Registers};
 
 /// Error returned by [`Vm::call`] method when the code calls to a library
 /// not known to the runtime
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[display("call to unknown library {0:#}")]
 #[cfg_attr(feature = "std", derive(Error))]
-pub struct NoLibraryError(LibHash);
+pub struct NoLibraryError(LibId);
 
 /// Alu virtual machine providing single-core execution environment
 #[derive(Getters, Debug, Default)]
@@ -30,7 +30,7 @@ where
     E: InstructionSet,
 {
     /// Libraries known to the runtime, identified by their hashes
-    libs: BTreeMap<LibHash, Lib<E>>,
+    libs: BTreeMap<LibId, Lib<E>>,
 
     /// Entrypoint for the main function
     entrypoint: LibSite,
@@ -57,7 +57,7 @@ where
     /// Constructs new virtual machine using the provided library.
     pub fn with(lib: Lib<E>) -> Vm<E> {
         let mut runtime = Vm::new();
-        runtime.entrypoint = LibSite::with(0, lib.lib_hash());
+        runtime.entrypoint = LibSite::with(0, lib.id());
         runtime.add_lib(lib);
         runtime
     }
@@ -68,9 +68,7 @@ where
     ///
     /// `true` if the library was already known and `false` otherwise.
     #[inline]
-    pub fn add_lib(&mut self, lib: Lib<E>) -> bool {
-        self.libs.insert(lib.lib_hash(), lib).is_none()
-    }
+    pub fn add_lib(&mut self, lib: Lib<E>) -> bool { self.libs.insert(lib.id(), lib).is_none() }
 
     /// Sets new entry point value (used when calling [`Vm::main`])
     pub fn set_entrypoint(&mut self, entrypoint: LibSite) { self.entrypoint = entrypoint; }

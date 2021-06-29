@@ -126,18 +126,18 @@ extern crate amplify_derive;
 #[macro_use]
 extern crate bitcoin_hashes;
 
-mod encoding;
+mod bytecoder;
 pub mod instr;
 mod library;
 mod reg;
 pub mod vm;
 
-pub(crate) use encoding::Cursor;
-pub use encoding::CursorError;
+pub(crate) use bytecoder::Cursor;
+pub use bytecoder::CursorError;
 pub use instr::{Instr, InstructionSet};
-pub use library::{Lib, LibHash, LibSite};
+pub use library::{Lib, LibId, LibSite};
 pub use reg::{
     number, ByteStr, MaybeNumber, Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR,
-    RegBlockAFR, RegBlockAR, RegF, RegR, Registers,
+    RegBlockAFR, RegBlockAR, RegF, RegR, RegisterSet, Registers,
 };
 pub use vm::Vm;

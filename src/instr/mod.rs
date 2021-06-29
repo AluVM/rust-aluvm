@@ -12,20 +12,21 @@
 //! Alu instruction set
 
 mod asm;
-mod bitcode;
 mod exec;
 mod flags;
-mod opcode;
+#[allow(clippy::module_inception)]
+mod instr;
+mod opcodes;
 pub mod serialize;
 
-pub use bitcode::*;
 pub use exec::{ExecStep, InstructionSet};
 pub use flags::{
     DeleteFlag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, ParseFlagError, RoundingFlag,
     SignFlag, SplitFlag,
 };
-pub use opcode::{
+pub use instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp,
     NOp, PutOp, Secp256k1Op,
 };
+pub use opcodes::*;
 pub use serialize::Bytecode;
