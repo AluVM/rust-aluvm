@@ -109,27 +109,27 @@ pub enum ControlFlowOp {
     Succ,
 
     /// Unconditionally jumps to an offset. Increments `cy0`.
-    #[display("jmp\t\t{0:#06X}")]
+    #[display("jmp     {0:#06X}")]
     Jmp(u16),
 
     /// Jumps to an offset if `st0` == true, otherwise does nothing. Increments `cy0`.
-    #[display("jif\t\t{0:#06X}")]
+    #[display("jif     {0:#06X}")]
     Jif(u16),
 
     /// Jumps to other location in the current code with ability to return back (calls a
     /// subroutine). Increments `cy0` and pushes offset of the instruction which follows current
     /// one to `cs0`.
-    #[display("routine\t{0:#06X}")]
+    #[display("routine {0:#06X}")]
     Routine(u16),
 
     /// Calls code from an external library identified by the hash of its code. Increments `cy0`
     /// and `cp0` and pushes offset of the instruction which follows current one to `cs0`.
-    #[display("call\t{0}")]
+    #[display("call    {0}")]
     Call(LibSite),
 
     /// Passes execution to other library without an option to return. Does not increment `cy0` and
     /// `cp0` counters and does not add anything to the call stack `cs0`.
-    #[display("exec\t{0}")]
+    #[display("exec    {0}")]
     Exec(LibSite),
 
     /// Returns execution flow to the previous location from the top of `cs0`. Does not change the
@@ -142,15 +142,15 @@ pub enum ControlFlowOp {
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum PutOp {
     /// Cleans a value of `A` register (sets it to undefined state)
-    #[display("clr\t\t{0}{1}")]
+    #[display("clr     {0}{1}")]
     ClrA(RegA, Reg32),
 
     /// Cleans a value of `F` register (sets it to undefined state)
-    #[display("clr\t\t{0}{1}")]
+    #[display("clr     {0}{1}")]
     ClrF(RegF, Reg32),
 
     /// Cleans a value of `R` register (sets it to undefined state)
-    #[display("clr\t\t{0}{1}")]
+    #[display("clr     {0}{1}")]
     ClrR(RegR, Reg32),
 
     /// Unconditionally assigns a value to `A` register.
@@ -159,7 +159,7 @@ pub enum PutOp {
     ///     this instruction is assembled and the data are not present in the data segment (their
     ///     offset + length exceeds data segment size) the operation will set destination register
     ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
-    #[display("put\t\t{2},{0}{1}")]
+    #[display("put     {2},{0}{1}")]
     PutA(RegA, Reg32, Box<MaybeNumber>),
 
     /// Unconditionally assigns a value to `F` register
@@ -168,7 +168,7 @@ pub enum PutOp {
     ///     this instruction is assembled and the data are not present in the data segment (their
     ///     offset + length exceeds data segment size) the operation will set destination register
     ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
-    #[display("put\t\t{2},{0}{1}")]
+    #[display("put     {2},{0}{1}")]
     PutF(RegF, Reg32, Box<MaybeNumber>),
 
     /// Unconditionally assigns a value to `R` register
@@ -177,7 +177,7 @@ pub enum PutOp {
     ///     this instruction is assembled and the data are not present in the data segment (their
     ///     offset + length exceeds data segment size) the operation will set destination register
     ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
-    #[display("put\t\t{2},{0}{1}")]
+    #[display("put     {2},{0}{1}")]
     PutR(RegR, Reg32, Box<MaybeNumber>),
 
     /// Conditionally assigns a value to `A` register if the register is in uninitialized state.
@@ -188,7 +188,7 @@ pub enum PutOp {
     ///     offset + length exceeds data segment size) _and_ the destination register is
     ///     initialized, the operation will set destination register into undefined state and `st0`
     ///     to `false`. Otherwise, `st0` value is changed according to the general operation rules.
-    #[display("putif\t{2},{0}{1}")]
+    #[display("putif   {2},{0}{1}")]
     PutIfA(RegA, Reg32, Box<MaybeNumber>),
 
     /// Conditionally assigns a value to `R` register if the register is in uninitialized state.
@@ -199,7 +199,7 @@ pub enum PutOp {
     ///     offset + length exceeds data segment size) _and_ the destination register is
     ///     initialized, the operation will set destination register into undefined state and `st0`
     ///     to `false`. Otherwise, `st0` value is changed according to the general operation rules.
-    #[display("putif\t{2},{0}{1}")]
+    #[display("putif   {2},{0}{1}")]
     PutIfR(RegR, Reg32, Box<MaybeNumber>),
 }
 
@@ -209,42 +209,42 @@ pub enum MoveOp {
     /// Move operation: moves value of one of the integer arithmetic registers into another integer
     /// arithmetic register of the same bit size, clearing its previous value and setting the
     /// source to `None`.
-    #[display("mov\t\t{0}{1},{0}{2}")]
+    #[display("mov     {0}{1},{0}{2}")]
     MovA(RegA, Reg32, Reg32),
 
     /// Duplicate operation: duplicates value of one of the integer arithmetic registers into
     /// another integer arithmetic register of the same bit size, clearing its previous value.
-    #[display("dup\t\t{0}{1},{0}{2}")]
+    #[display("dup     {0}{1},{0}{2}")]
     DupA(RegA, Reg32, Reg32),
 
     /// Swap operation: swaps value of two integer arithmetic registers of the same bit size.
-    #[display("swp\t\t{0}{1},{0}{2}")]
+    #[display("swp     {0}{1},{0}{2}")]
     SwpA(RegA, Reg32, Reg32),
 
     /// Move operation: moves value of one of the float arithmetic registers into another float
     /// arithmetic register of the same bit size, clearing its previous value and setting the
     /// source to `None`.
-    #[display("mov\t\t{0}{1},{0}{2}")]
+    #[display("mov     {0}{1},{0}{2}")]
     MovF(RegF, Reg32, Reg32),
 
     /// Duplicate operation: duplicates value of one of the float arithmetic registers into
     /// another float arithmetic register of the same bit size, clearing its previous value.
-    #[display("dup\t\t{0}{1},{0}{2}")]
+    #[display("dup     {0}{1},{0}{2}")]
     DupF(RegF, Reg32, Reg32),
 
     /// Swap operation: swaps value of two float arithmetic registers of the same bit size.
-    #[display("swp\t\t{0}{1},{0}{2}")]
+    #[display("swp     {0}{1},{0}{2}")]
     SwpF(RegF, Reg32, Reg32),
 
     /// Move operation: moves value of one of the general non-arithmetic registers into another
     /// general non- arithmetic register of the same bit size, clearing its previous value and
     /// setting the source to `None`.
-    #[display("mov\t\t{0}{1},{0}{2}")]
+    #[display("mov     {0}{1},{0}{2}")]
     MovR(RegR, Reg32, Reg32),
 
     /// Duplicate operation: duplicates value of one of the general non-arithmetic registers into
     /// another general non-arithmetic register of the same bit size, clearing its previous value.
-    #[display("dup\t\t{0}{1},{0}{2}")]
+    #[display("dup     {0}{1},{0}{2}")]
     DupR(RegR, Reg32, Reg32),
 
     // ----
@@ -252,7 +252,7 @@ pub enum MoveOp {
     /// register treating value as unsigned: if the value does not fit destination bit dimension,
     /// truncates the most significant bits until they fit, setting `st0` value to `false`.
     /// Otherwise, the operation sets `st0` to `true`.
-    #[display("cpy\t\t{0}{1},{2}{3}")]
+    #[display("cpy     {0}{1},{2}{3}")]
     CpyA(RegA, Reg32, RegA, Reg32),
 
     /// Conversion operation: copies value from one of the integer arithmetic registers to a
@@ -261,28 +261,28 @@ pub enum MoveOp {
     /// value to `false`. Otherwise, fills the difference between source and destination bit length
     /// with the value taken from the most significant source bit (sign bit) and sets `st0` to
     /// `true`.
-    #[display("cnv\t\t{0}{1},{2}{3}")]
+    #[display("cnv     {0}{1},{2}{3}")]
     CnvA(RegA, Reg32, RegA, Reg32),
 
     /// Conversion operation: converts value from one of the float arithmetic registers to a
     /// destination register according to floating encoding rules. If the value does not fit
     /// destination bit dimension, truncates the most significant non-sign bits until they fit,
     /// setting `st0` value to `false`. Otherwise sets `st0` to `true`.
-    #[display("cnv\t\t{0}{1},{2}{3}")]
+    #[display("cnv     {0}{1},{2}{3}")]
     CnvF(RegF, Reg32, RegF, Reg32),
 
     /// Copy operation: copies value from one of the general non-arithmetic registers to a
     /// destination register. If the value does not fit destination bit dimension,
     /// truncates the most significant bits until they fit, setting `st0` value to `false`.
     /// Otherwise, extends most significant bits with zeros and sets `st0` to `true`.
-    #[display("cpy\t\t{0}{1},{2}{3}")]
+    #[display("cpy     {0}{1},{2}{3}")]
     CpyR(RegR, Reg32, RegR, Reg32),
 
     /// Swap-copy operation: swaps value one of the integer arithmetic registers with a value of an
     /// general non-arithmetic register. If any of the values do not fit destination bit
     /// dimensions, truncates the most significant bits until they fit, setting `st0` value to
     /// `false`. Otherwise, extends most significant bits with zeros and sets `st0` to `true`.
-    #[display("spy\t\t{0}{1},{2}{3}")]
+    #[display("spy     {0}{1},{2}{3}")]
     SpyAR(RegA, Reg32, RegR, Reg32),
 
     /// Conversion operation: converts value of an integer arithmetic register to a float register
@@ -291,7 +291,7 @@ pub enum MoveOp {
     /// `false`. Otherwise sets `st0` to `true`.
     ///
     /// NB: operation always treats integers as signed integers.
-    #[display("cnv\t\t{0}{1},{2}{3}")]
+    #[display("cnv     {0}{1},{2}{3}")]
     CnvAF(RegA, Reg32, RegF, Reg32),
 
     /// Conversion operation: converts value of a float arithmetic register to an integer register
@@ -300,7 +300,7 @@ pub enum MoveOp {
     /// `false`. Otherwise sets `st0` to `true`.
     ///
     /// NB: operation always treats integers as signed integers.
-    #[display("cnv\t\t{0}{1},{2}{3}")]
+    #[display("cnv     {0}{1},{2}{3}")]
     CnvFA(RegF, Reg32, RegA, Reg32),
 }
 
@@ -310,85 +310,85 @@ pub enum CmpOp {
     /// Compares value of two integer arithmetic registers setting `st0` to `true` if the first
     /// parameter is greater (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("gt:{0}\t{1}{2},{1}{3}")]
+    #[display("gt:{0}    {1}{2},{1}{3}")]
     GtA(SignFlag, RegA, Reg32, Reg32),
 
     /// Compares value of two integer arithmetic registers setting `st0` to `true` if the first
     /// parameter is lesser (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("lt:{0}\t{1}{2},{1}{3}")]
+    #[display("lt:{0}    {1}{2},{1}{3}")]
     LtA(SignFlag, RegA, Reg32, Reg32),
 
     /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
     /// parameter is greater (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("gt:{0}\t{1}{2},{1}{3}")]
+    #[display("gt:{0}    {1}{2},{1}{3}")]
     GtF(FloatEqFlag, RegF, Reg32, Reg32),
 
     /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
     /// parameter is lesser (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("lt:{0}\t{1}{2},{1}{3}")]
+    #[display("lt:{0}    {1}{2},{1}{3}")]
     LtF(FloatEqFlag, RegF, Reg32, Reg32),
 
     // ----
     /// Compares value of two general non-arithmetic registers setting `st0` to `true` if the first
     /// parameter is greater (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("gt\t\t{0}{1},{0}{2}")]
+    #[display("gt      {0}{1},{0}{2}")]
     GtR(RegR, Reg32, Reg32),
 
     /// Compares value of two general non-arithmetic registers setting `st0` to `true` if the first
     /// parameter is lesser (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("lt\t\t{0}{1},{0}{2}")]
+    #[display("lt      {0}{1},{0}{2}")]
     LtR(RegR, Reg32, Reg32),
 
     /// Checks equality of value in two integer arithmetic (`A`) registers putting result into
     /// `st0`.None-equality flag specifies value for `st0` for the cases when both of the registers
     /// are in `None` state.
-    #[display("eq\t\t{1}{2},{1}{3} .none={0}")]
+    #[display("eq      {1}{2},{1}{3} .none={0}")]
     EqA(/** `st0` value if both of the registers are uninitialized */ bool, RegA, Reg32, Reg32),
 
     /// Checks equality of value in two float arithmetic (`F`) registers putting result into `st0`.
     /// If both registers are `None`, the `st0` is set to `false`.
-    #[display("eq:{0}\t{1}{2},{1}{3}")]
+    #[display("eq:{0}    {1}{2},{1}{3}")]
     EqF(FloatEqFlag, RegF, Reg32, Reg32),
 
     /// Checks equality of value in two non-arithmetic (`R`) registers putting result into `st0`.
     /// None-equality flag specifies value for `st0` for the cases when both of the registers
     /// are in `None` state.
-    #[display("eq\t\t{1}{2},{1}{3} .none={0}")]
+    #[display("eq      {1}{2},{1}{3} .none={0}")]
     EqR(/** `st0` value if both of the registers are uninitialized */ bool, RegR, Reg32, Reg32),
 
     // ---
     /// Checks if the value in `A` register is equal to zero, setting `st0` to `true` in this case.
     /// Otherwise, sets `st0` to false (including when the register is in the undefined state).
-    #[display("ifz\t\t{0}{1}")]
+    #[display("ifz     {0}{1}")]
     IfZA(RegA, Reg32),
 
     /// Checks if the value in `R` register is equal to zero, setting `st0` to `true` in this case.
     /// Otherwise, sets `st0` to false (including when the register is in the undefined state).
-    #[display("ifz\t\t{0}{1}")]
+    #[display("ifz     {0}{1}")]
     IfZR(RegR, Reg32),
 
     /// Checks if the value in `A` register is in an undefined state, setting `st0` to `true` in
     /// this case. Otherwise, sets `st0` to false.
-    #[display("ifn\t\t{0}{1}")]
+    #[display("ifn     {0}{1}")]
     IfNA(RegA, Reg32),
 
     /// Checks if the value in `R` register is in an undefined state, setting `st0` to `true` in
     /// this case. Otherwise, sets `st0` to false.
-    #[display("ifn\t\t{0}{1}")]
+    #[display("ifn     {0}{1}")]
     IfNR(RegR, Reg32),
 
     /// Takes value from `st0` and merges into the value of the destination `A` register. The merge
     /// operation is defined by the [`MergeFlag`] argument.
-    #[display("st:{0}\t{1}{2}")]
+    #[display("st:{0}    {1}{2}")]
     St(MergeFlag, RegA, Reg8),
 
     /// Inverses value in `st0` register
-    #[display("inv\t\tst0")]
+    #[display("inv     st0")]
     StInv,
 }
 
@@ -400,27 +400,27 @@ pub enum CmpOp {
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum ArithmeticOp {
     /// Adds values from two integer arithmetic registers and puts result into destination.
-    #[display("add:{0}\t{1}{2},{1}{3}")]
+    #[display("add:{0}  {1}{2},{1}{3}")]
     AddA(IntFlags, RegA, Reg32, Reg32),
 
     /// Adds values from two float arithmetic registers and puts result into destination.
-    #[display("add:{0}\t{1}{2},{1}{3}")]
+    #[display("add:{0}   {1}{2},{1}{3}")]
     AddF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Subtracts values from two integer arithmetic registers and puts result into destination.
-    #[display("sub:{0}\t{1}{2},{1}{3}")]
+    #[display("sub:{0}  {1}{2},{1}{3}")]
     SubA(IntFlags, RegA, Reg32, Reg32),
 
     /// Subtracts values from two float arithmetic registers and puts result into destination.
-    #[display("sub:{0}\t{1}{2},{1}{3}")]
+    #[display("sub:{0}   {1}{2},{1}{3}")]
     SubF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Multiplies values from two integer arithmetic registers and puts result into destination.
-    #[display("mul:{0}\t{1}{2},{1}{3}")]
+    #[display("mul:{0}  {1}{2},{1}{3}")]
     MulA(IntFlags, RegA, Reg32, Reg32),
 
     /// Multiplies values from two float arithmetic registers and puts result into destination.
-    #[display("mul:{0}\t{1}{2},{1}{3}")]
+    #[display("mul:{0}   {1}{2},{1}{3}")]
     MulF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Divides values from two integer arithmetic registers and puts result into destination.
@@ -432,32 +432,32 @@ pub enum ArithmeticOp {
     /// destination must be set to `0` (true) or to None (false).
     ///
     /// NB: Impossible arithmetic operation 0/0 always sets destination to `None`.
-    #[display("div:{0}\t{1}{2},{1}{3}")]
+    #[display("div:{0}  {1}{2},{1}{3}")]
     DivA(IntFlags, RegA, Reg32, Reg32),
 
     /// Divides values from two float arithmetic registers and puts result into destination.
-    #[display("div:{0}\t{1}{2},{1}{3}")]
+    #[display("div:{0}   {1}{2},{1}{3}")]
     DivF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Modulo division.
     ///
     /// Puts a reminder of the division of source register on destination register into the
     /// destination.
-    #[display("rem\t\t{0}{1},{2}{3}")]
+    #[display("rem     {0}{1},{2}{3}")]
     Rem(RegA, Reg32, RegA, Reg32),
 
     /// Increment/decrement register value on a given signed step.
     ///
     /// Sets the destination to `None` and `st0` to `false` in case of overflow.
-    #[display("{2:#}\t\t{2}{0}{1}")]
+    #[display("{2:#}     {2}{0}{1}")]
     Stp(RegA, Reg32, Step),
 
     /// Negates most significant bit
-    #[display("neg\t\t{0}{1}")]
+    #[display("neg     {0}{1}")]
     Neg(RegAF, Reg16),
 
     /// Replaces the register value with its absolute value
-    #[display("abs\t\t{0}{1}")]
+    #[display("abs     {0}{1}")]
     Abs(RegAF, Reg16),
 }
 
@@ -465,19 +465,19 @@ pub enum ArithmeticOp {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum BitwiseOp {
     /// Bitwise AND operation
-    #[display("and\t\t{0}{1},{0}{2},{0}{3}")]
+    #[display("and     {0}{1},{0}{2},{0}{3}")]
     And(RegAR, /** Source 1 */ Reg16, /** Source 2 */ Reg16, /** Operation destination */ Reg16),
 
     /// Bitwise OR operation
-    #[display("or\t\t{0}{1},{0}{2},{0}{3}")]
+    #[display("or      {0}{1},{0}{2},{0}{3}")]
     Or(RegAR, /** Source 1 */ Reg16, /** Source 2 */ Reg16, /** Operation destination */ Reg16),
 
     /// Bitwise XOR operation
-    #[display("xor\t\t{0}{1},{0}{2},{0}{3}")]
+    #[display("xor     {0}{1},{0}{2},{0}{3}")]
     Xor(RegAR, /** Source 1 */ Reg16, /** Source 2 */ Reg16, /** Operation destination */ Reg16),
 
     /// Bitwise inversion
-    #[display("not\t\t{0}{1}")]
+    #[display("not     {0}{1}")]
     Not(RegAR, Reg16),
 
     /// Left bit shift, filling added bits values with zeros. Sets `st0` value to the value of the
@@ -485,7 +485,7 @@ pub enum BitwiseOp {
     ///
     /// This, [`BitwiseOp::ShrA`] and [`BitwiseOp::ShrR`] operations are encoded with the same
     /// instruction bitcode and differ only in their first two argument bits.
-    #[display("shl\t\t{0}{1},{2}{3}")]
+    #[display("shl     {0}{1},{2}{3}")]
     Shl(
         /** Which of `A` registers will have a shift value */ RegA2,
         /** Index of `u8` or `u16` register with bitshift value */ Reg32,
@@ -499,7 +499,7 @@ pub enum BitwiseOp {
     ///
     /// This, [`BitwiseOp::Shl`] and [`BitwiseOp::ShrR`] operations are encoded with the same
     /// instruction bitcode and differ only in their first two argument bits.
-    #[display("shr:{0}\t{1}{2},{3}{4}")]
+    #[display("shr:{0}   {1}{2},{3}{4}")]
     ShrA(
         /** Sign flag */ SignFlag,
         /** Which of `A` registers will have a shift value */ RegA2,
@@ -514,7 +514,7 @@ pub enum BitwiseOp {
     ///
     /// This, [`BitwiseOp::Shl`] and [`BitwiseOp::ShrA`] operations are encoded with the same
     /// instruction bitcode and differ only in their first two argument bits.
-    #[display("shr\t\t{0}{1},{2}{3}")]
+    #[display("shr     {0}{1},{2}{3}")]
     ShrR(
         /** Which of `A` registers will have a shift value */ RegA2,
         /** Index of `u8` or `u16` register with bitshift value */ Reg32,
@@ -528,7 +528,7 @@ pub enum BitwiseOp {
     ///
     /// This and the next [`BitwiseOp::Scr`] operation are encoded with the same instruction
     /// bitcode and differ only in their first argument bit.
-    #[display("scl\t\t{0}{1},{2}{3}")]
+    #[display("scl     {0}{1},{2}{3}")]
     Scl(
         /** Which of `A` registers will have a shift value */ RegA2,
         /** Index of `u8` or `u16` register with bitshift value */ Reg32,
@@ -542,7 +542,7 @@ pub enum BitwiseOp {
     ///
     /// This and the previous [`BitwiseOp::Scl`] operation are encoded with the same instruction
     /// bitcode and differ only in their first argument bit.
-    #[display("scr\t\t{0}{1},{2}{3}")]
+    #[display("scr     {0}{1},{2}{3}")]
     Scr(
         /** Which of `A` registers will have a shift value */ RegA2,
         /** Index of `u8` or `u16` register with bitshift value */ Reg32,
@@ -551,11 +551,11 @@ pub enum BitwiseOp {
     ),
 
     /// Reverses bit order in the integer arithmetic register. Does not modify `st0` value.
-    #[display("rev\t\t{0}{1}")]
+    #[display("rev     {0}{1}")]
     RevA(RegA, Reg32),
 
     /// Reverses bit order in the generic non-arithmetic register. Does not modify `st0` value.
-    #[display("rev\t\t{0}{1}")]
+    #[display("rev     {0}{1}")]
     RevR(RegR, Reg32),
 }
 
@@ -575,7 +575,7 @@ pub enum BytesOp {
     /// size of the data segment, the instruction truncates the string to the part that is present
     /// in the data segment (or zero-length string if the offset exceeds data segment length) and
     /// sets `st0` to `false`. Otherwise, `st0` is unaffected.
-    #[display("put\t\ts16[{0}],{1}")]
+    #[display("put     s16[{0}],{1}")]
     Put(
         /** Destination `s` register index */ u8,
         Box<ByteStr>,
@@ -585,11 +585,11 @@ pub enum BytesOp {
     ),
 
     /// Move bytestring value between registers
-    #[display("mov\t\ts16[{0}],s16[{1}]")]
+    #[display("mov     s16[{0}],s16[{1}]")]
     Mov(/** Source `s` register index */ u8, /** Destination `s` register index */ u8),
 
     /// Swap bytestring value between registers
-    #[display("swp\t\ts16[{0}],s16[{1}]")]
+    #[display("swp     s16[{0}],s16[{1}]")]
     Swp(/** First `s` register index */ u8, /** Second `s` register index */ u8),
 
     /// Fill segment of bytestring with specific byte value, setting the length of the string in
@@ -610,7 +610,7 @@ pub enum BytesOp {
     ///
     /// If any of the offsets or value registers are unset, sets `st0` to `false` and does not
     /// change destination value.
-    #[display("fill\ts16[{0}],{1}..{2},{3}")]
+    #[display("fill    s16[{0}],{1}..{2},{3}")]
     Fill(
         /** `s` register index */ u8,
         /** `a16` register holding first offset */ Reg32,
@@ -623,7 +623,7 @@ pub enum BytesOp {
     ///
     /// If the string register is empty, or destination register can't fit the length, sets `st0`
     /// to `false` and destination register to `None`.
-    #[display("len\t\ts16[{0}],a16[0]")]
+    #[display("len     s16[{0}],a16[0]")]
     Len(/** `s` register index */ u8, RegA, Reg32),
 
     /// Count number of byte occurrences from the `a8` register within the string and stores that
@@ -634,7 +634,7 @@ pub enum BytesOp {
     ///
     /// If the source byte value register is uninitialized, sets destination register to `None` and
     /// `st0` to `false`.
-    #[display("cnt\ts16[{0}],{1},a16[0]")]
+    #[display("cnt     s16[{0}],{1},a16[0]")]
     Cnt(
         /** `s` register index */ u8,
         /** `a8` register with the byte value */ Reg16,
@@ -644,13 +644,13 @@ pub enum BytesOp {
     /// Check equality of two strings, putting result into `st0`.
     ///
     /// If both of strings are uninitialized, `st0` assigned `true` value.
-    #[display("cmp\t\ts16[{0}],s16[{0}]")]
+    #[display("cmp     s16[{0}],s16[{0}]")]
     Eq(u8, u8),
 
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
     /// fragment"), putting it to the destination `u16` registers. If strings have no conjoint
     /// fragment sets destination to `None`.
-    #[display("con\ts16[{0}],s16[{1}],u16{2},u16{3}")]
+    #[display("con     s16[{0}],s16[{1}],u16{2},u16{3}")]
     Con(
         /** First source string register */ u8,
         /** Second source string register */ u8,
@@ -665,7 +665,7 @@ pub enum BytesOp {
     ///
     /// If the number of occurrences is `u16::MAX + 1`, sets `a16[1]` to `u16::MAX` and `st0` to
     /// `false`.
-    #[display("find\ts16[{0}],s16[{1}],a16[1]")]
+    #[display("find    s16[{0}],s16[{1}],a16[1]")]
     Find(/** `s` register with string */ u8, /** `s` register with matching fragment */ u8),
 
     /// Extract byte string slice into general `r` register. The length of the extracted string is
@@ -675,7 +675,7 @@ pub enum BytesOp {
     ///
     /// If the source string register - or offset register is uninitialized, sets destination to
     /// uninitialized state and `st0` to `false`.
-    #[display("extr\ts16{0},a16{1},{2}{3}")]
+    #[display("extr    s16{0},a16{1},{2}{3}")]
     Extr(/** `s` register index */ Reg32, RegR, Reg16, /** `a16` register with offset */ Reg16),
 
     /// Inject general `R` register value at a given position to string register, replacing value
@@ -684,7 +684,7 @@ pub enum BytesOp {
     /// are initialized with zeros. If the length of the inserted string plus insert offset exceeds
     /// the maximum string register length (2^16 bytes), than the destination register is set to
     /// `None` state and `st0` is set to `false`. Otherwise, `st0` value is not modified.
-    #[display("inj\t\ts16{0},a16{1},{2}{3}")]
+    #[display("inj     s16{0},a16{1},{2}{3}")]
     Inj(
         /** `s` register index acting as the source and destination */ Reg32,
         RegR,
@@ -696,7 +696,7 @@ pub enum BytesOp {
     /// of the joined string exceeds the maximum string register length (2^16 bytes), than the
     /// destination register is set to `None` state and `st0` is set to `false`. Otherwise,
     /// `st0` value is not modified.
-    #[display("join\ts16[{0}],s16[{1}],s16[{2}]")]
+    #[display("join    s16[{0}],s16[{1}],s16[{2}]")]
     Join(/** Source 1 */ u8, /** Source 2 */ u8, /** Destination */ u8),
 
     /// Split bytestring at a given offset taken from `a16` register into two destination strings,
@@ -732,7 +732,7 @@ pub enum BytesOp {
     /// Rule on `st0` changes: if at least one of the destination registers is set to `None`, or
     /// `offset` value exceeds source string length, `st0` is set to `false`; otherwise its value
     /// is not modified
-    #[display("splt:{2}\ts16[{0}],a16{1},s16[{3}],s16[{4}]")]
+    #[display("splt:{2}  s16[{0}],a16{1},s16[{3}],s16[{4}]")]
     Splt(
         SplitFlag,
         /** `a16` register index with offset value */ Reg32,
@@ -770,7 +770,7 @@ pub enum BytesOp {
     /// </pre>
     ///
     /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
-    #[display("ins:{3}\ts16[{0}],s16[{1}],a16{2}")]
+    #[display("ins:{3}   s16[{0}],s16[{1}],a16{2}")]
     Ins(
         InsertFlag,
         /** `a16` register index with offset value for insert location */ Reg32,
@@ -806,7 +806,7 @@ pub enum BytesOp {
     /// `flag1` and `flag2` arguments indicate whether `st0` should be set to `false` if
     /// `offset_start > src_len` and `offset_end > src_len && offser_start <= src_len`.
     /// In all other cases, `st0` value is not modified.
-    #[display("del:{6}\ts16[{0}],s16[{1}],{2}{3},{4}{5}")]
+    #[display("del:{6}   s16[{0}],s16[{1}],{2}{3},{4}{5}")]
     Del(
         DeleteFlag,
         RegA2,
@@ -825,7 +825,7 @@ pub enum BytesOp {
     ///
     /// If the source string register is uninitialized, resets destination to the uninitialized
     /// state and sets `st0` to `false`.
-    #[display("rev\t\ts16[{0}],s16[{1}]")]
+    #[display("rev     s16[{0}],s16[{1}]")]
     Rev(/** Source */ u8, /** Destination */ u8),
 }
 
@@ -837,7 +837,7 @@ pub enum DigestOp {
     ///
     /// Sets `st0` to `false` and destination register to `None` if the source register does not
     /// contain a value
-    #[display("ripemd\ts16{0},r160{1}")]
+    #[display("ripemd  s16{0},r160{1}")]
     Ripemd(
         /** Index of string register */ Reg32,
         /** Index of `r160` register to save result to */ Reg8,
@@ -847,7 +847,7 @@ pub enum DigestOp {
     ///
     /// Sets `st0` to `false` and destination register to `None` if the source register does not
     /// contain a value
-    #[display("sha2\ts16{0},r256{1}")]
+    #[display("sha2    s16{0},r256{1}")]
     Sha256(
         /** Index of string register */ Reg32,
         /** Index of `r256` register to save result to */ Reg8,
@@ -857,7 +857,7 @@ pub enum DigestOp {
     ///
     /// Sets `st0` to `false` and destination register to `None` if the source register does not
     /// contain a value
-    #[display("sha2\ts16{0},r512{1}")]
+    #[display("sha2    s16{0},r512{1}")]
     Sha512(
         /** Index of string register */ Reg32,
         /** Index of `r512` register to save result to */ Reg8,
@@ -870,14 +870,14 @@ pub enum Secp256k1Op {
     /// Generates new elliptic curve point value saved into destination
     /// register in `r512` set using scalar value from the source `r256`
     /// register
-    #[display("secpgen\tr256{0},r512{1}")]
+    #[display("secpgen r256{0},r512{1}")]
     Gen(
         /** Register containing scalar */ Reg32,
         /** Destination register to put G * scalar */ Reg8,
     ),
 
     /// Multiplies elliptic curve point on a scalar
-    #[display("secpmul\t{0}256{1},r512{2},r512{3}")]
+    #[display("secpmul {0}256{1},r512{2},r512{3}")]
     Mul(
         /** Use `a` or `r` register as scalar source */ RegBlockAR,
         /** Scalar register index */ Reg32,
@@ -886,11 +886,11 @@ pub enum Secp256k1Op {
     ),
 
     /// Adds two elliptic curve points
-    #[display("secpadd\tr512{0},r512{1}")]
+    #[display("secpadd r512{0},r512{1}")]
     Add(/** Source 1 */ Reg32, /** Source 2 and destination */ Reg8),
 
     /// Negates elliptic curve point
-    #[display("secpneg\tr512{0},r512{1}")]
+    #[display("secpneg r512{0},r512{1}")]
     Neg(/** Register hilding EC point to negate */ Reg32, /** Destination register */ Reg8),
 }
 
@@ -900,14 +900,14 @@ pub enum Curve25519Op {
     /// Generates new elliptic curve point value saved into destination
     /// register in `r512` set using scalar value from the source `r256`
     /// register
-    #[display("edgen\tr256{0},r512{1}")]
+    #[display("edgen   r256{0},r512{1}")]
     Gen(
         /** Register containing scalar */ Reg32,
         /** Destination register to put G * scalar */ Reg8,
     ),
 
     /// Multiplies elliptic curve point on a scalar
-    #[display("edmul\t{0}256{1},r512{2},r512{3}")]
+    #[display("edmul   {0}256{1},r512{2},r512{3}")]
     Mul(
         /** Use `a` or `r` register as scalar source */ RegBlockAR,
         /** Scalar register index */ Reg32,
@@ -916,7 +916,7 @@ pub enum Curve25519Op {
     ),
 
     /// Adds two elliptic curve points
-    #[display("edadd\tr512{0},r512{1},r512{2},{3}")]
+    #[display("edadd   r512{0},r512{1},r512{2},{3}")]
     Add(
         /** Source 1 */ Reg32,
         /** Source 2 */ Reg32,
@@ -925,6 +925,6 @@ pub enum Curve25519Op {
     ),
 
     /// Negates elliptic curve point
-    #[display("edneg\tr512{0},r512{1}")]
+    #[display("edneg   r512{0},r512{1}")]
     Neg(/** Register hilding EC point to negate */ Reg32, /** Destination register */ Reg8),
 }

@@ -113,6 +113,7 @@ where
         }
     }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { 0..=u8::MAX }
 
     fn instr_byte(&self) -> u8 {
@@ -240,6 +241,7 @@ impl Bytecode for ControlFlowOp {
         }
     }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_FAIL..=INSTR_RET }
 
     fn instr_byte(&self) -> u8 {
@@ -304,6 +306,7 @@ impl Bytecode for PutOp {
         }
     }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_CLRA..=INSTR_PUTIFR }
 
     fn instr_byte(&self) -> u8 {
@@ -421,8 +424,10 @@ impl Bytecode for PutOp {
 }
 
 impl Bytecode for MoveOp {
+    #[inline]
     fn byte_count(&self) -> u16 { 3 }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_MOV..=INSTR_CFA }
 
     fn instr_byte(&self) -> u8 {
@@ -597,6 +602,7 @@ impl Bytecode for CmpOp {
         }
     }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_LGT..=INSTR_STINV }
 
     fn instr_byte(&self) -> u8 {
@@ -766,6 +772,7 @@ impl Bytecode for ArithmeticOp {
         }
     }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_ADD..=INSTR_REM }
 
     fn instr_byte(&self) -> u8 {
@@ -889,6 +896,7 @@ impl Bytecode for BitwiseOp {
         }
     }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_AND..=INSTR_REVR }
 
     fn instr_byte(&self) -> u8 {
@@ -1052,6 +1060,7 @@ impl Bytecode for BytesOp {
         }
     }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_PUT..=INSTR_REV }
 
     fn instr_byte(&self) -> u8 {
@@ -1237,8 +1246,10 @@ impl Bytecode for BytesOp {
 }
 
 impl Bytecode for DigestOp {
+    #[inline]
     fn byte_count(&self) -> u16 { 3 }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_RIPEMD..=INSTR_SHA512 }
 
     fn instr_byte(&self) -> u8 {
@@ -1291,6 +1302,7 @@ impl Bytecode for Secp256k1Op {
         }
     }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_SECP_GEN..=INSTR_SECP_NEG }
 
     fn instr_byte(&self) -> u8 {
@@ -1358,6 +1370,7 @@ impl Bytecode for Curve25519Op {
         }
     }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_ED_GEN..=INSTR_ED_NEG }
 
     fn instr_byte(&self) -> u8 {
@@ -1423,12 +1436,16 @@ impl Bytecode for Curve25519Op {
 }
 
 impl Bytecode for ReservedOp {
+    #[inline]
     fn byte_count(&self) -> u16 { 1 }
 
+    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_RESV_FROM..=INSTR_ISAE_TO }
 
+    #[inline]
     fn instr_byte(&self) -> u8 { self.0 }
 
+    #[inline]
     fn write_args<W>(&self, _writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
@@ -1436,14 +1453,11 @@ impl Bytecode for ReservedOp {
         Ok(())
     }
 
+    #[inline]
     fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
-        let instr = reader.read_u8()?;
-        if instr != INSTR_NOP {
-            unreachable!("instruction {:#010b} classified as NOP operation", instr)
-        }
-        Ok(ReservedOp(instr))
+        Ok(ReservedOp(reader.read_u8()?))
     }
 }

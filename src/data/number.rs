@@ -638,7 +638,7 @@ impl Number {
             0
         };
         let mut index = self.len() as usize - 1;
-        while data[index].count_ones() > 0 && index > 0 {
+        while data[index].count_ones() == 0 && index > 0 {
             index -= 1;
         }
         index as u16 * 8 + 8 - data[index].leading_zeros() as u16 + sig_len
@@ -708,18 +708,19 @@ impl Number {
         self
     }
 
-    /// Transforms internal value layout returning whether this was possible without discarding any
-    /// bit information
+    /// Transforms internal value layout returning whether this has required discarding some of bits
     pub fn reshape(&mut self, to: Layout) -> bool {
         match (self.layout, to) {
+            (from, to) if from == to => false,
             // We need to change only bit dimensions
             (
-                Layout::Integer(IntLayout { signed: false, bytes: len1 }),
+                Layout::Integer(IntLayout { signed: false, .. }),
                 Layout::Integer(IntLayout { signed: false, bytes: len2 }),
             ) => {
+                let bit_len = self.min_bit_len();
                 self.layout = to;
                 self.clean();
-                len1 > len2
+                bit_len > len2 * 8
             }
             (from, to) => unimplemented!("Number layout reshape from {} to {}", from, to),
         }
@@ -1049,7 +1050,7 @@ macro_rules! impl_number_float_conv {
         impl From<Number> for $ty {
             fn from(val: Number) -> Self {
                 assert!(
-                    val.layout.bits() as u32 <= $len,
+                    val.layout.bytes() as u32 <= $len,
                     "attempt to convert Number into type with lower bit dimension"
                 );
                 $ty::from_bits(val.into())

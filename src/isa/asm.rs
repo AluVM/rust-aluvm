@@ -154,7 +154,11 @@ macro_rules! instr {
     };
 
     (put $val:literal, $reg:ident[$idx:literal]) => {{
-        let mut number: Number = stringify!($val).parse().expect("invalid number literal");
+        let s = stringify!($val);
+        let mut number = s
+            .parse::<Number>()
+            .or_else(|_| s.parse::<::rustc_apfloat::ieee::Single>().map(Number::from))
+            .expect(&format!("invalid number literal `{}`", s));
         let reg = _reg_ty!(Reg, $reg);
         number.reshape(reg.layout());
         Instr::Put(_reg_sfx!(PutOp, Put, $reg)(
@@ -164,7 +168,11 @@ macro_rules! instr {
         ))
     }};
     (putif $val:literal, $reg:ident[$idx:literal]) => {{
-        let mut number: Number = stringify!($val).parse().expect("invalid number literal");
+        let s = stringify!($val);
+        let mut number = s
+            .parse::<Number>()
+            .or_else(|_| s.parse::<::rustc_apfloat::ieee::Single>().map(Number::from))
+            .expect(&format!("invalid number literal `{}`", s));
         let reg = _reg_ty!(Reg, $reg);
         number.reshape(reg.layout());
         Instr::Put(_reg_sfx!(PutOp, PutIf, $reg)(

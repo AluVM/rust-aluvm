@@ -119,9 +119,11 @@ impl Number {
             Layout::Integer(IntLayout { .. }) => {
                 let val1 = self.to_u1024_bytes();
                 let val2 = rhs.to_u1024_bytes();
-                let (res, overflow) = val1.overflowing_add(val2);
+                let (res, mut overflow) = val1.overflowing_add(val2);
+                let mut res = Number::from(res);
+                overflow |= res.reshape(layout);
                 if !overflow || flags.wrap {
-                    Some(Number::from(res))
+                    Some(res)
                 } else {
                     None
                 }
@@ -145,9 +147,11 @@ impl Number {
             Layout::Integer(IntLayout { .. }) => {
                 let val1 = self.to_u1024_bytes();
                 let val2 = rhs.to_u1024_bytes();
-                let (res, overflow) = val1.overflowing_sub(val2);
+                let (res, mut overflow) = val1.overflowing_sub(val2);
+                let mut res = Number::from(res);
+                overflow |= res.reshape(layout);
                 if !overflow || flags.wrap {
-                    Some(Number::from(res))
+                    Some(res)
                 } else {
                     None
                 }
@@ -169,9 +173,11 @@ impl Number {
             Layout::Integer(IntLayout { signed: true, .. }) => {
                 let val1 = self.to_u1024_bytes();
                 let val2 = rhs.to_u1024_bytes();
-                let (res, overflow) = val1.overflowing_mul(val2);
+                let (res, mut overflow) = val1.overflowing_mul(val2);
+                let mut res = Number::from(res);
+                overflow |= res.reshape(layout);
                 if !overflow || flags.wrap {
-                    Some(Number::from(res))
+                    Some(res)
                 } else {
                     None
                 }
@@ -179,9 +185,11 @@ impl Number {
             Layout::Integer(IntLayout { signed: false, .. }) if layout.bits() <= 128 => {
                 let val1 = i128::try_from(self).expect("integer layout is broken");
                 let val2 = i128::try_from(rhs).expect("integer layout is broken");
-                let (res, overflow) = val1.overflowing_mul(val2);
+                let (res, mut overflow) = val1.overflowing_mul(val2);
+                let mut res = Number::from(res);
+                overflow |= res.reshape(layout);
                 if !overflow || flags.wrap {
-                    Some(Number::from(res))
+                    Some(res)
                 } else {
                     None
                 }
@@ -222,12 +230,16 @@ impl Number {
             Layout::Integer(IntLayout { signed: true, .. }) => {
                 let val1 = self.to_u1024_bytes();
                 let val2 = rhs.to_u1024_bytes();
-                val1.div(val2).into()
+                let mut res = Number::from(val1.div(val2));
+                debug_assert!(!res.reshape(layout));
+                res
             }
             Layout::Integer(IntLayout { signed: false, .. }) if layout.bits() <= 128 => {
                 let val1 = i128::try_from(self).expect("integer layout is broken");
                 let val2 = i128::try_from(rhs).expect("integer layout is broken");
-                val1.div(val2).into()
+                let mut res = Number::from(val1.div(val2));
+                debug_assert!(!res.reshape(layout));
+                res
             }
             Layout::Integer(IntLayout { signed: false, .. }) => {
                 todo!("(#11) implement large signed number division algorithm")

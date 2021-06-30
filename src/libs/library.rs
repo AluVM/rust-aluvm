@@ -362,16 +362,37 @@ where
         cursor.seek(entrypoint);
 
         while !cursor.is_eof() {
+            #[cfg(all(debug_assertions, feature = "std"))]
+            let pos = cursor.pos();
+
             let instr = Instr::<E>::read(&mut cursor).ok()?;
             let next = instr.exec(registers, LibSite::with(cursor.pos(), lib_hash));
+
+            #[cfg(all(debug_assertions, feature = "std"))]
+            eprint!("\n@{:06}> {:48}; st0={}", pos, instr.to_string(), registers.st0);
+
             if !registers.acc_complexity(instr) {
+                #[cfg(all(debug_assertions, feature = "std"))]
+                eprintln!();
                 return None;
             }
             match next {
-                ExecStep::Stop => return None,
+                ExecStep::Stop => {
+                    #[cfg(all(debug_assertions, feature = "std"))]
+                    eprintln!();
+                    return None;
+                }
                 ExecStep::Next => continue,
-                ExecStep::Jump(pos) => cursor.seek(pos),
-                ExecStep::Call(site) => return Some(site),
+                ExecStep::Jump(pos) => {
+                    #[cfg(all(debug_assertions, feature = "std"))]
+                    eprint!(" -> {}", pos);
+                    cursor.seek(pos)
+                }
+                ExecStep::Call(site) => {
+                    #[cfg(all(debug_assertions, feature = "std"))]
+                    eprint!(" -> {}", site);
+                    return Some(site);
+                }
             }
         }
 

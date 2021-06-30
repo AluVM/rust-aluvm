@@ -315,7 +315,8 @@ where
         if end > self.data.as_ref().len() {
             return Err(CodeEofError);
         }
-        Ok(Number::from_slice(&self.data.as_ref()[offset..end]))
+        Ok(Number::with(&self.data.as_ref()[offset..end], reg.layout())
+            .expect("read_number is broken"))
     }
 }
 

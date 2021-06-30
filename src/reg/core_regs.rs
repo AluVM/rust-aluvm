@@ -11,6 +11,7 @@
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
+use alloc::string::ToString;
 use core::fmt::{self, Debug, Formatter};
 
 use amplify::num::{u1024, u256, u512};
@@ -292,13 +293,13 @@ impl CoreRegs {
             },
             RegAFR::F(f) => match f {
                 RegF::F16B => self.f16b[index] = value.map(Number::into),
-                RegF::F16 => self.f16b[index] = value.map(Number::into),
-                RegF::F32 => self.f16b[index] = value.map(Number::into),
-                RegF::F64 => self.f16b[index] = value.map(Number::into),
-                RegF::F80 => self.f16b[index] = value.map(Number::into),
-                RegF::F128 => self.f16b[index] = value.map(Number::into),
-                RegF::F256 => self.f16b[index] = value.map(Number::into),
-                RegF::F512 => self.f16b[index] = value.map(Number::into),
+                RegF::F16 => self.f16[index] = value.map(Number::into),
+                RegF::F32 => self.f32[index] = value.map(Number::into),
+                RegF::F64 => self.f64[index] = value.map(Number::into),
+                RegF::F80 => self.f80[index] = value.map(Number::into),
+                RegF::F128 => self.f128[index] = value.map(Number::into),
+                RegF::F256 => self.f256[index] = value.map(Number::into),
+                RegF::F512 => self.f512[index] = value.map(Number::into),
             },
         }
         value.is_some()
@@ -387,7 +388,7 @@ impl Debug for CoreRegs {
         write!(f, "{}st0{}={}{} ", reg, eq, val, self.st0)?;
         write!(f, "{}cy0{}={}{} ", reg, eq, val, self.cy0)?;
         write!(f, "{}ca0{}={}{} ", reg, eq, val, self.ca0)?;
-        let cl = self.cl0.map(|v| v.to_string()).unwrap_or(s!("~"));
+        let cl = self.cl0.map(|v| v.to_string()).unwrap_or("~".to_string());
         write!(f, "{}cl0{}={}{} ", reg, eq, val, cl)?;
         write!(f, "{}cp0{}={}{} ", reg, eq, val, self.cp0)?;
         write!(f, "\n\t\t{}cs0{}={}", reg, eq, val)?;

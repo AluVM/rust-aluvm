@@ -475,7 +475,14 @@ impl InstructionSet for ArithmeticOp {
                 reg,
                 idx,
                 regs.get(reg, idx).and_then(|val| {
-                    val.int_add(Number::from(*step), IntFlags { signed: false, wrap: false })
+                    if step.as_i16() < 0 {
+                        val.int_sub(Number::from(-step.as_i16()), IntFlags {
+                            signed: false,
+                            wrap: false,
+                        })
+                    } else {
+                        val.int_add(Number::from(*step), IntFlags { signed: false, wrap: false })
+                    }
                 }),
             ),
             ArithmeticOp::Neg(reg, idx) => regs.set(reg, idx, regs.get(reg, idx).map(Number::neg)),
