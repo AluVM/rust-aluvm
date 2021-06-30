@@ -20,7 +20,8 @@ use bitcoin_hashes::{Hash, HashEngine};
 
 use super::{Cursor, Read};
 use crate::data::ByteStr;
-use crate::isa::{Bytecode, DecodeError, EncodeError, ExecStep, Instr, InstructionSet, ReservedOp};
+use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet, ReservedOp};
+use crate::libs::CodeEofError;
 use crate::reg::CoreRegs;
 
 const LIB_ID_MIDSTATE: [u8; 32] = [
@@ -68,17 +69,52 @@ where
     }
 }
 
+/// Errors while processing binary-encoded segment data
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[cfg_attr(feature = "std", derive(Error))]
+#[display(doc_comments)]
+pub enum SegmentError {
+    /// the size of the code segment exceeds 2^16
+    CodeSegmentTooLarge(usize),
+
+    /// the size of the data segment exceeds 2^24
+    DataSegmentTooLarge(usize),
+}
+
+/// Errors while assembling library from the instruction set
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[display(inner)]
+pub enum AssemblerError {
+    /// Error assembling code and data segments
+    #[from]
+    Bytecode(BytecodeError),
+
+    /// Error assembling library segment
+    #[from]
+    LibSegOverflow(LibSegOverflow),
+}
+
+#[cfg(feature = "std")]
+impl ::std::error::Error for AssemblerError {
+    fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
+        match self {
+            AssemblerError::Bytecode(err) => Some(err),
+            AssemblerError::LibSegOverflow(err) => Some(err),
+        }
+    }
+}
+
 impl<E> Lib<E>
 where
     E: InstructionSet,
 {
     /// Constructs library from segments
-    pub fn with(bytecode: Vec<u8>, data: Vec<u8>, libs: LibSeg) -> Result<Lib<E>, EncodeError> {
+    pub fn with(bytecode: Vec<u8>, data: Vec<u8>, libs: LibSeg) -> Result<Lib<E>, SegmentError> {
         if bytecode.len() > u16::MAX as usize {
-            return Err(EncodeError::CodeSegmentTooLarge(bytecode.len()));
+            return Err(SegmentError::CodeSegmentTooLarge(bytecode.len()));
         }
         if data.len() > u24::MAX.as_u32() as usize {
-            return Err(EncodeError::DataSegmentTooLarge(data.len()));
+            return Err(SegmentError::DataSegmentTooLarge(data.len()));
         }
         Ok(Self {
             libs_segment: libs,
@@ -89,7 +125,7 @@ where
     }
 
     /// Assembles library from the provided instructions by encoding them into bytecode
-    pub fn assemble<Isae>(code: &[Isae]) -> Result<Lib<E>, EncodeError>
+    pub fn assemble<Isae>(code: &[Isae]) -> Result<Lib<E>, AssemblerError>
     where
         Isae: InstructionSet,
     {
@@ -114,7 +150,7 @@ where
     }
 
     /// Disassembles library into a set of instructions
-    pub fn disassemble(&self) -> Result<Vec<Instr<E>>, DecodeError> {
+    pub fn disassemble(&self) -> Result<Vec<Instr<E>>, CodeEofError> {
         let mut code = Vec::new();
         let mut reader = Cursor::with(&self.code_segment, &*self.data_segment, &self.libs_segment);
         while !reader.is_end() {

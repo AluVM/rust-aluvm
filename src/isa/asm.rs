@@ -38,9 +38,8 @@
 /// let lib = Lib::<ReservedOp>::assemble(&code).unwrap();
 /// let mut vm = Vm::with(lib);
 /// match vm.main() {
-///     Ok(true) => println!("success"),
-///     Ok(false) => println!("execution reported validation failure"),
-///     Err(err) => eprintln!("{}", err),
+///     true => println!("success"),
+///     false => println!("failure"),
 /// }
 /// ```
 #[macro_export]

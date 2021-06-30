@@ -16,33 +16,9 @@ use core::fmt::{self, Debug, Display, Formatter};
 
 use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
-use super::{LibId, LibSeg, LibSegOverflow, Read, Write};
+use super::{CodeEofError, LibId, LibSeg, Read, Write, WriteError};
 use crate::data::Number;
 use crate::reg::RegisterFamily;
-
-// I had an idea of putting Read/Write functionality into `amplify` crate,
-// but it is quire specific to the fact that it uses `u16`-sized underlying
-// bytestring, which is specific to client-side-validation and this VM and not
-// generic enough to become part of the `amplify` library
-
-/// Errors with cursor-based operations
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
-#[display(doc_comments)]
-#[cfg_attr(feature = "std", derive(Error))]
-pub enum CursorError {
-    /// Attempt to read or write after end of data
-    Eof,
-
-    /// Attempt to read or write at a position outside of data boundaries ({0})
-    OutOfBoundaries(usize),
-
-    /// Library with id {0} is not a part of libs segment
-    LibAbsent(LibId),
-
-    #[from(LibSegOverflow)]
-    /// Unable to add a library to the library segment: maximum number of libraries (2^16) exceeded
-    LibSegOverflow,
-}
 
 /// Cursor for accessing byte string data bounded by `u16::MAX` length
 pub(crate) struct Cursor<'a, T, D>
@@ -150,9 +126,9 @@ where
     #[inline]
     fn as_ref(&self) -> &[u8] { self.bytecode.as_ref() }
 
-    fn extract(&mut self, bit_count: u3) -> Result<u8, CursorError> {
+    fn extract(&mut self, bit_count: u3) -> Result<u8, CodeEofError> {
         if self.eof {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         let byte = self.as_ref()[self.byte_pos as usize];
         let mut mask = 0x00u8;
@@ -167,34 +143,32 @@ where
         self.inc_bits(bit_count).map(|_| val)
     }
 
-    fn inc_bits(&mut self, bit_count: u3) -> Result<(), CursorError> {
+    fn inc_bits(&mut self, bit_count: u3) -> Result<(), CodeEofError> {
         if self.eof {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         let pos = self.bit_pos.as_u8() + bit_count.as_u8();
         self.bit_pos = u3::with(pos % 8);
         self._inc_bytes_inner(pos as u16 / 8)
     }
 
-    fn inc_bytes(&mut self, byte_count: u16) -> Result<(), CursorError> {
+    fn inc_bytes(&mut self, byte_count: u16) -> Result<(), CodeEofError> {
         assert_eq!(
             self.bit_pos.as_u8(),
             0,
             "attempt to access (multiple) bytes at a non-byte aligned position"
         );
         if self.eof {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         self._inc_bytes_inner(byte_count)
     }
 
-    fn _inc_bytes_inner(&mut self, byte_count: u16) -> Result<(), CursorError> {
+    fn _inc_bytes_inner(&mut self, byte_count: u16) -> Result<(), CodeEofError> {
         if byte_count == 1 && self.byte_pos == u16::MAX {
             self.eof = true
         } else {
-            self.byte_pos = self.byte_pos.checked_add(byte_count).ok_or(
-                CursorError::OutOfBoundaries(self.byte_pos as usize + byte_count as usize),
-            )?;
+            self.byte_pos = self.byte_pos.checked_add(byte_count).ok_or(CodeEofError)?;
         }
         Ok(())
     }
@@ -214,14 +188,14 @@ where
     T: AsRef<[u8]> + AsMut<[u8]>,
     Self: 'a,
 {
-    fn write_unique(&mut self, bytes: &[u8]) -> Result<u24, CursorError> {
+    fn write_unique(&mut self, bytes: &[u8]) -> Result<u24, WriteError> {
         // We write the value only if the value is not yet present in the data segment
         let len = bytes.len();
         let offset = self.data.len();
         if let Some(offset) = self.data.windows(len).position(|window| window == bytes) {
             Ok(u24::with(offset as u32))
         } else if offset + len > u24::MAX.as_u32() as usize + 1 {
-            Err(CursorError::OutOfBoundaries(offset + len))
+            Err(WriteError::DataNotFittingSegment)
         } else {
             self.data.extend(bytes);
             Ok(u24::with(offset as u32))
@@ -235,64 +209,62 @@ where
     D: AsRef<[u8]>,
     Self: 'a,
 {
-    type Error = CursorError;
-
     fn is_end(&self) -> bool { self.byte_pos as usize >= self.as_ref().len() }
 
-    fn peek_u8(&self) -> Result<u8, CursorError> {
+    fn peek_u8(&self) -> Result<u8, CodeEofError> {
         if self.eof {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         Ok(self.as_ref()[self.byte_pos as usize])
     }
 
-    fn read_bool(&mut self) -> Result<bool, CursorError> {
+    fn read_bool(&mut self) -> Result<bool, CodeEofError> {
         if self.eof {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         let byte = self.extract(u3::with(1))?;
         Ok(byte == 0x01)
     }
 
-    fn read_u1(&mut self) -> Result<u1, Self::Error> {
+    fn read_u1(&mut self) -> Result<u1, CodeEofError> {
         Ok(self.extract(u3::with(1))?.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u2(&mut self) -> Result<u2, CursorError> {
+    fn read_u2(&mut self) -> Result<u2, CodeEofError> {
         Ok(self.extract(u3::with(2))?.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u3(&mut self) -> Result<u3, CursorError> {
+    fn read_u3(&mut self) -> Result<u3, CodeEofError> {
         Ok(self.extract(u3::with(3))?.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u4(&mut self) -> Result<u4, CursorError> {
+    fn read_u4(&mut self) -> Result<u4, CodeEofError> {
         Ok(self.extract(u3::with(4))?.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u5(&mut self) -> Result<u5, CursorError> {
+    fn read_u5(&mut self) -> Result<u5, CodeEofError> {
         Ok(self.extract(u3::with(5))?.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u6(&mut self) -> Result<u6, CursorError> {
+    fn read_u6(&mut self) -> Result<u6, CodeEofError> {
         Ok(self.extract(u3::with(6))?.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u7(&mut self) -> Result<u7, CursorError> {
+    fn read_u7(&mut self) -> Result<u7, CodeEofError> {
         Ok(self.extract(u3::with(7))?.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u8(&mut self) -> Result<u8, CursorError> {
+    fn read_u8(&mut self) -> Result<u8, CodeEofError> {
         if self.eof {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         let byte = self.as_ref()[self.byte_pos as usize];
         self.inc_bytes(1).map(|_| byte)
     }
 
-    fn read_u16(&mut self) -> Result<u16, CursorError> {
+    fn read_u16(&mut self) -> Result<u16, CodeEofError> {
         if self.eof {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         let pos = self.byte_pos as usize;
         let mut buf = [0u8; 2];
@@ -301,9 +273,9 @@ where
         self.inc_bytes(2).map(|_| word)
     }
 
-    fn read_i16(&mut self) -> Result<i16, Self::Error> {
+    fn read_i16(&mut self) -> Result<i16, CodeEofError> {
         if self.eof {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         let pos = self.byte_pos as usize;
         let mut buf = [0u8; 2];
@@ -312,9 +284,9 @@ where
         self.inc_bytes(2).map(|_| word)
     }
 
-    fn read_u24(&mut self) -> Result<u24, CursorError> {
+    fn read_u24(&mut self) -> Result<u24, CodeEofError> {
         if self.eof {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         let pos = self.byte_pos as usize;
         let mut buf = [0u8; 3];
@@ -324,11 +296,11 @@ where
     }
 
     #[inline]
-    fn read_lib(&mut self) -> Result<LibId, CursorError> {
+    fn read_lib(&mut self) -> Result<LibId, CodeEofError> {
         Ok(self.libs.at(self.read_u16()?).unwrap_or_default())
     }
 
-    fn read_data(&mut self) -> Result<(&[u8], bool), CursorError> {
+    fn read_data(&mut self) -> Result<(&[u8], bool), CodeEofError> {
         let offset = self.read_u24()?.as_u32() as usize;
         let end = offset + self.read_u16()? as usize;
         let max = u24::MAX.as_u32() as usize;
@@ -337,11 +309,11 @@ where
         Ok((data, st0))
     }
 
-    fn read_number(&mut self, reg: impl RegisterFamily) -> Result<Number, CursorError> {
+    fn read_number(&mut self, reg: impl RegisterFamily) -> Result<Number, CodeEofError> {
         let offset = self.read_u24()?.as_u32() as usize;
         let end = offset + reg.bytes() as usize;
         if end > self.data.as_ref().len() {
-            return Err(CursorError::Eof);
+            return Err(CodeEofError);
         }
         Ok(Number::from_slice(&self.data.as_ref()[offset..end]))
     }
@@ -352,108 +324,106 @@ where
     T: AsRef<[u8]> + AsMut<[u8]>,
     Self: 'a,
 {
-    type Error = CursorError;
-
-    fn write_bool(&mut self, data: bool) -> Result<(), CursorError> {
+    fn write_bool(&mut self, data: bool) -> Result<(), WriteError> {
         let data = if data { 1u8 } else { 0u8 } << self.bit_pos.as_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(1))
+        self.inc_bits(u3::with(1)).map_err(WriteError::from)
     }
 
-    fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), Self::Error> {
+    fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), WriteError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(1))
+        self.inc_bits(u3::with(1)).map_err(WriteError::from)
     }
 
-    fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), CursorError> {
+    fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), WriteError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(2))
+        self.inc_bits(u3::with(2)).map_err(WriteError::from)
     }
 
-    fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), CursorError> {
+    fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), WriteError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(3))
+        self.inc_bits(u3::with(3)).map_err(WriteError::from)
     }
 
-    fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), CursorError> {
+    fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), WriteError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(4))
+        self.inc_bits(u3::with(4)).map_err(WriteError::from)
     }
 
-    fn write_u5(&mut self, data: impl Into<u5>) -> Result<(), CursorError> {
+    fn write_u5(&mut self, data: impl Into<u5>) -> Result<(), WriteError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(5))
+        self.inc_bits(u3::with(5)).map_err(WriteError::from)
     }
 
-    fn write_u6(&mut self, data: impl Into<u6>) -> Result<(), CursorError> {
+    fn write_u6(&mut self, data: impl Into<u6>) -> Result<(), WriteError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(6))
+        self.inc_bits(u3::with(6)).map_err(WriteError::from)
     }
 
-    fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), CursorError> {
+    fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), WriteError> {
         let data = data.into().as_u8() << self.bit_pos.as_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(7))
+        self.inc_bits(u3::with(7)).map_err(WriteError::from)
     }
 
-    fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), CursorError> {
+    fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), WriteError> {
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] = data.into();
-        self.inc_bytes(1)
+        self.inc_bytes(1).map_err(WriteError::from)
     }
 
-    fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), CursorError> {
+    fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), WriteError> {
         let data = data.into().to_le_bytes();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] = data[0];
         self.as_mut()[pos + 1] = data[1];
-        self.inc_bytes(2)
+        self.inc_bytes(2).map_err(WriteError::from)
     }
 
-    fn write_i16(&mut self, data: impl Into<i16>) -> Result<(), Self::Error> {
+    fn write_i16(&mut self, data: impl Into<i16>) -> Result<(), WriteError> {
         let data = data.into().to_le_bytes();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] = data[0];
         self.as_mut()[pos + 1] = data[1];
-        self.inc_bytes(2)
+        self.inc_bytes(2).map_err(WriteError::from)
     }
 
-    fn write_u24(&mut self, data: impl Into<u24>) -> Result<(), CursorError> {
+    fn write_u24(&mut self, data: impl Into<u24>) -> Result<(), WriteError> {
         let data = data.into().to_le_bytes();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] = data[0];
         self.as_mut()[pos + 1] = data[1];
         self.as_mut()[pos + 2] = data[2];
-        self.inc_bytes(3)
+        self.inc_bytes(3).map_err(WriteError::from)
     }
 
     #[inline]
-    fn write_lib(&mut self, lib: LibId) -> Result<(), CursorError> {
-        self.write_u16(self.libs.index(lib).ok_or(CursorError::LibAbsent(lib))?)
+    fn write_lib(&mut self, lib: LibId) -> Result<(), WriteError> {
+        self.write_u16(self.libs.index(lib).ok_or(WriteError::LibAbsent(lib))?)
     }
 
-    fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), CursorError> {
+    fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), WriteError> {
         // We control that `self.byte_pos + bytes.len() < u16` at buffer
         // allocation time, so if we panic here this means we have a bug in
         // out allocation code and has to kill the process and report this issue
         let bytes = bytes.as_ref();
         let len = bytes.len();
         if len >= u16::MAX as usize {
-            return Err(CursorError::OutOfBoundaries(len));
+            return Err(WriteError::DataExceedsLimit(len));
         }
         let offset = self.write_unique(bytes)?;
         self.write_u24(offset)?;
@@ -464,7 +434,7 @@ where
         &mut self,
         reg: impl RegisterFamily,
         mut value: Number,
-    ) -> Result<(), CursorError> {
+    ) -> Result<(), WriteError> {
         let len = reg.bytes();
         assert!(
             len <= value.len(),

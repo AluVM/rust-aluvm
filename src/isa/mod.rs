@@ -19,7 +19,7 @@ mod flags;
 mod instr;
 pub mod opcodes;
 
-pub use bytecode::{Bytecode, DecodeError, EncodeError};
+pub use bytecode::{Bytecode, BytecodeError};
 pub use exec::{ExecStep, InstructionSet};
 pub use flags::{
     DeleteFlag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, ParseFlagError, RoundingFlag,

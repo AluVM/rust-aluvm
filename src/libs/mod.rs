@@ -15,6 +15,9 @@ mod cursor;
 mod library;
 mod rw;
 
-pub(crate) use cursor::{Cursor, CursorError};
-pub use library::{Lib, LibId, LibIdTag, LibSeg, LibSegOverflow, LibSite};
+pub(crate) use cursor::Cursor;
+pub use library::{
+    AssemblerError, Lib, LibId, LibIdTag, LibSeg, LibSegOverflow, LibSite, SegmentError,
+};
+pub use rw::{CodeEofError, WriteError};
 pub(crate) use rw::{Read, Write};
