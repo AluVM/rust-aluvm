@@ -59,7 +59,7 @@
 //!
 //! ### Instruction opcodes
 //!
-//! You will find all opcode implementation details documented in [`Instr`] API documentation.
+//! You will find all opcode implementation details documented in [`crate::isa::Instr`] API docs.
 //!
 //! - RISC: only 256 instructions
 //! - 3 families of core instructions:
@@ -118,7 +118,6 @@
 // TODO(#7) Complete assembly compiler for string operations
 // TODO(#8) Implement operations on Edwards curves
 
-// TODO: Avoid library presence checking, get rid of error
 // TODO: Check ISAE segment ordering on library load
 // TODO: Overhaul serialization-related library types
 

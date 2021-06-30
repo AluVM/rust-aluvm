@@ -95,8 +95,7 @@ fn main() {
     eprint!("\nExecuting the program #{} ... ", lib.id());
     let mut runtime = Vm::with(lib);
     match runtime.main() {
-        Ok(true) => eprintln!("success"),
-        Ok(false) => eprintln!("execution reported validation failure"),
-        Err(err) => eprintln!("{}", err),
+        true => eprintln!("success"),
+        false => eprintln!("failure"),
     }
 }

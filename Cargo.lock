@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "aluvm"
-version = "0.2.1"
+version = "0.3.0-beta"
 dependencies = [
  "amplify_derive",
  "amplify_num",

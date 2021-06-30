@@ -458,14 +458,14 @@ impl From<MergeFlag> for u2 {
 /// Flags for bytestring split operation.
 ///
 /// If offset exceeds the length of the string in the register, than the behaviour of
-/// [`crate::instr::BytesOp::Splt`] op code is defined by this flag. Please check its description
+/// [`crate::isa::BytesOp::Splt`] op code is defined by this flag. Please check its description
 /// for more details.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum SplitFlag {
     /// If the offset is equal to zero, exceeds or equal to the length of the source string sets
     /// first and second destination register to `None`; `st0` to `false`.
     ///
-    /// Matches case (1) in [`crate::instr::BytesOp::Splt`] description
+    /// Matches case (1) in [`crate::isa::BytesOp::Splt`] description
     #[display("n")]
     NoneNone = 0,
 
@@ -473,7 +473,7 @@ pub enum SplitFlag {
     /// `None` only if the string in the source register is empty; `st0` in both cases is set
     /// to `false`.
     ///
-    /// Matches case (2) in [`crate::instr::BytesOp::Splt`] description
+    /// Matches case (2) in [`crate::isa::BytesOp::Splt`] description
     #[display("nn")]
     NoneNoneOnEmpty = 1,
 
@@ -481,7 +481,7 @@ pub enum SplitFlag {
     /// an empty string if the string in the source register is empty; `st0` in both cases is
     /// set to `false`.
     ///
-    /// Matches case (3) in [`crate::instr::BytesOp::Splt`] description
+    /// Matches case (3) in [`crate::isa::BytesOp::Splt`] description
     #[display("nz")]
     NoneZeroOnEmpty = 2,
 
@@ -489,7 +489,7 @@ pub enum SplitFlag {
     /// set to an empty string if the string in the source register is empty; `st0` value
     /// remain unchanged.
     ///
-    /// Matches case (4) in [`crate::instr::BytesOp::Splt`] description
+    /// Matches case (4) in [`crate::isa::BytesOp::Splt`] description
     #[display("ee")]
     ZeroZeroOnEmpty = 3,
 
@@ -497,7 +497,7 @@ pub enum SplitFlag {
     /// to the source string (<=offset in len) and second to `None`; `st0` value is set to
     /// `false`.
     ///
-    /// Matches case (5) in [`crate::instr::BytesOp::Splt`] description
+    /// Matches case (5) in [`crate::isa::BytesOp::Splt`] description
     #[display("cn")]
     CutNone = 4,
 
@@ -505,21 +505,21 @@ pub enum SplitFlag {
     /// to the source string (<=offset in len) and second to zero-length string; `st0` value is
     /// set to `false`.
     ///
-    /// Matches case (6) in [`crate::instr::BytesOp::Splt`] description
+    /// Matches case (6) in [`crate::isa::BytesOp::Splt`] description
     #[display("cz")]
     CutZero = 5,
 
     /// If the offset exceeds the length of the source string sets the first destination register
     /// to zero-length string and second to `None`; `st0` value is set to `false`.
     ///
-    /// Matches case (7) in [`crate::instr::BytesOp::Splt`] description
+    /// Matches case (7) in [`crate::isa::BytesOp::Splt`] description
     #[display("zn")]
     ZeroNone = 6,
 
     /// If the offset exceeds the length of the source string sets both the first and second
     /// destination registers to zero-length string; `st0` value is set to `false`.
     ///
-    /// Matches case (8) in [`crate::instr::BytesOp::Splt`] description
+    /// Matches case (8) in [`crate::isa::BytesOp::Splt`] description
     #[display("zz")]
     ZeroZero = 7,
 }
@@ -579,57 +579,57 @@ impl From<SplitFlag> for u3 {
 }
 
 /// Flags for bytestring insert operation. For the detailed description please read
-/// [`crate::instr::BytesOp::Ins`].
+/// [`crate::isa::BytesOp::Ins`].
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum InsertFlag {
     /// Set destination to `None` if `offset < dst_len && src_len + dst_len > 2^16`.
     ///
-    /// Matches case (6) in [`crate::instr::BytesOp::Ins`] description
+    /// Matches case (6) in [`crate::isa::BytesOp::Ins`] description
     #[display("l")]
     FailOnLen = 0,
 
     /// Set destination to `None` if `offset > dst_len && src_len + dst_len + offset <= 2^16`.
     ///
-    /// Matches case (1) in [`crate::instr::BytesOp::Ins`] description
+    /// Matches case (1) in [`crate::isa::BytesOp::Ins`] description
     #[display("o")]
     FailOnOffset = 1,
 
     /// Set destination to `None` if `offset > dst_len && src_len + dst_len + offset > 2^16`.
     ///
-    /// Matches case (4) in [`crate::instr::BytesOp::Ins`] description
+    /// Matches case (4) in [`crate::isa::BytesOp::Ins`] description
     #[display("f")]
     FailOnOffsetLen = 2,
 
     /// Fill destination from `dst_let` to `offset` with zeros if
     /// `offset > dst_len && src_len + dst_len + offset <= 2^16`.
     ///
-    /// Matches case (2) in [`crate::instr::BytesOp::Ins`] description
+    /// Matches case (2) in [`crate::isa::BytesOp::Ins`] description
     #[display("e")]
     Extend = 3,
 
     /// Use `src_len` instead of `offset` if
     /// `offset > dst_len && src_len + dst_len + offset <= 2^16`.
     ///
-    /// Matches case (3) in [`crate::instr::BytesOp::Ins`] description
+    /// Matches case (3) in [`crate::isa::BytesOp::Ins`] description
     #[display("a")]
     Append = 4,
 
     /// Fill destination from `dst_let` to `offset` with zeros and cut source string part exceeding
     /// `2^16` if `offset > dst_len && src_len + dst_len + offset > 2^16`
     ///
-    /// Matches case (5) in [`crate::instr::BytesOp::Ins`] description
+    /// Matches case (5) in [`crate::isa::BytesOp::Ins`] description
     #[display("x")]
     ExtendCut = 5,
 
     /// Cut destination string part exceeding `2^16`
     ///
-    /// Matches case (7) in [`crate::instr::BytesOp::Ins`] description
+    /// Matches case (7) in [`crate::isa::BytesOp::Ins`] description
     #[display("c")]
     Cut = 6,
 
     /// Reduce `src_len` such that it will fit the destination
     ///
-    /// Matches case (8) in [`crate::instr::BytesOp::Ins`] description
+    /// Matches case (8) in [`crate::isa::BytesOp::Ins`] description
     #[display("s")]
     Shorten = 7,
 }
@@ -696,25 +696,25 @@ impl From<InsertFlag> for u3 {
 }
 
 /// Flags for bytestring delete operation. For the detailed description please read
-/// [`crate::instr::BytesOp::Del`].
+/// [`crate::isa::BytesOp::Del`].
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum DeleteFlag {
     /// Set destination to `None` on any failure.
     ///
-    /// Matches case (1) in [`crate::instr::BytesOp::Del`] description
+    /// Matches case (1) in [`crate::isa::BytesOp::Del`] description
     #[display("n")]
     None = 0,
 
     /// Set destination to zero-length string if `offset_start > src_len`.
     ///
-    /// Matches case (2) in [`crate::instr::BytesOp::Del`] description
+    /// Matches case (2) in [`crate::isa::BytesOp::Del`] description
     #[display("z")]
     Zero = 1,
 
     /// Set destination to the fragment of the string `offset_start..src_len` if
     /// `offset_end > src_len && offser_start <= src_len`.
     ///
-    /// Matches case (3) in [`crate::instr::BytesOp::Del`] description
+    /// Matches case (3) in [`crate::isa::BytesOp::Del`] description
     #[display("c")]
     Cut = 2,
 
@@ -722,7 +722,7 @@ pub enum DeleteFlag {
     /// up to `offset_end - offset_start` with trailing zeros if
     /// `offset_end > src_len && offser_start <= src_len`.
     ///
-    /// Matches case (4) in [`crate::instr::BytesOp::Del`] description
+    /// Matches case (4) in [`crate::isa::BytesOp::Del`] description
     #[display("e")]
     Extend = 3,
 }

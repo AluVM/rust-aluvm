@@ -406,8 +406,9 @@ impl From<u3> for RegR {
     }
 }
 
-/// Superset of all registers which value can be represented by a [`Number`]/[`MaybeNumber`]. The
-/// superset includes `A`, `F`, and `R`families of registers.
+/// Superset of all registers which value can be represented by a
+/// [`crate::data::Number`]/[`crate::data::MaybeNumber`]. The superset includes `A`, `F`, and
+/// `R` families of registers.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
 #[display(inner)]
 pub enum RegAFR {

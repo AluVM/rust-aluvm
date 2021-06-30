@@ -72,7 +72,7 @@ pub struct CoreRegs {
     /// Defines "top" of the call stack
     cp0: u16,
 
-    /// Secp256k1 context object (used by [`crate::instr::Secp256k1Op`] instructions)
+    /// Secp256k1 context object (used by [`crate::isa::Secp256k1Op`] instructions)
     #[cfg(feature = "secp256k1")]
     pub(crate) secp: secp256k1::Secp256k1<secp256k1::All>,
 }
@@ -128,7 +128,7 @@ impl CoreRegs {
     /// Initializes register state. Sets `st0` to `true`, counters to zero, call stack to empty and
     /// the rest of registers to `None` value.
     ///
-    /// Performs exactly the same as [`Registers::default()`].
+    /// Performs exactly the same as [`CoreRegs::default()`].
     #[inline]
     pub fn new() -> CoreRegs { CoreRegs::default() }
 

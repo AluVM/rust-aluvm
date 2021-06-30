@@ -17,13 +17,6 @@ use crate::isa::{InstructionSet, NOp};
 use crate::libs::{Lib, LibId, LibSite};
 use crate::reg::CoreRegs;
 
-/// Error returned by [`Vm::call`] method when the code calls to a library
-/// not known to the runtime
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
-#[display("call to unknown library {0:#}")]
-#[cfg_attr(feature = "std", derive(Error))]
-pub struct NoLibraryError(LibId);
-
 /// Alu virtual machine providing single-core execution environment
 #[derive(Getters, Debug, Default)]
 pub struct Vm<E = NOp>
@@ -81,30 +74,24 @@ where
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    ///
-    /// If the code does not has a library matching entry point value does not executes any code and
-    /// instantly returns [`NoLibraryError`]. The state of the registers remains unmodified in this
-    /// case.
-    pub fn main(&mut self) -> Result<bool, NoLibraryError> { self.call(self.entrypoint) }
+    pub fn main(&mut self) -> bool { self.call(self.entrypoint) }
 
     /// Executes the program starting from the provided entry point.
     ///
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    ///
-    /// If the code does not has a library matching entry point value does not executes any code and
-    /// instantly returns [`NoLibraryError`]. The state of the registers remains unmodified in this
-    /// case.
-    pub fn call(&mut self, mut method: LibSite) -> Result<bool, NoLibraryError> {
-        while let Some(m) = self
-            .libs
-            .get(&method.lib)
-            .ok_or(NoLibraryError(method.lib))?
-            .run(method.pos, &mut self.registers)
-        {
-            method = m
+    pub fn call(&mut self, method: LibSite) -> bool {
+        let mut call = Some(method);
+        while let Some(ref mut site) = call {
+            if let Some(lib) = self.libs.get(&site.lib) {
+                call = lib.run(site.pos, &mut self.registers);
+            } else if let Some(pos) = site.pos.checked_add(1) {
+                site.pos = pos;
+            } else {
+                call = None;
+            };
         }
-        Ok(self.registers.st0)
+        self.registers.st0
     }
 }
