@@ -24,7 +24,7 @@ use super::{
 };
 use crate::data::{ByteStr, MaybeNumber, Number, NumberLayout};
 use crate::isa::{FloatEqFlag, IntFlags, MergeFlag, SignFlag};
-use crate::libs::LibSite;
+use crate::libs::{constants, LibSite};
 use crate::reg::{CoreRegs, Reg32, RegA, RegR, RegisterFamily};
 
 /// Turing machine movement after instruction execution
@@ -63,6 +63,9 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
     #[inline]
     fn isa_id() -> Box<[u8]> { Self::isa_string().as_bytes().into() }
 
+    /// Checks whether provided ISA extension ID is supported by the current instruction set
+    fn is_supported(id: &str) -> bool { id == constants::ISA_ID_ALU }
+
     /// Executes given instruction taking all registers as input and output.
     ///
     /// # Arguments
@@ -83,11 +86,19 @@ where
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> {
         let mut set = BTreeSet::new();
-        set.insert("ALU");
+        set.insert(constants::ISA_ID_ALU);
         set.extend(DigestOp::isa_ids());
         set.extend(Secp256k1Op::isa_ids());
         set.extend(Curve25519Op::isa_ids());
         set
+    }
+
+    fn is_supported(id: &str) -> bool {
+        id == constants::ISA_ID_ALU
+            || DigestOp::is_supported(id)
+            || Secp256k1Op::is_supported(id)
+            || Curve25519Op::is_supported(id)
+            || Extension::is_supported(id)
     }
 
     #[inline]
@@ -681,9 +692,12 @@ impl InstructionSet for DigestOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> {
         let mut set = BTreeSet::new();
-        set.insert("BPDIGEST");
+        set.insert(constants::ISA_ID_BPDIGEST);
         set
     }
+
+    #[inline]
+    fn is_supported(id: &str) -> bool { id == constants::ISA_ID_BPDIGEST }
 
     fn exec(self, regs: &mut CoreRegs, _site: LibSite) -> ExecStep {
         let none;
@@ -723,9 +737,17 @@ impl InstructionSet for Secp256k1Op {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> {
         let mut set = BTreeSet::new();
-        set.insert("SECP256K1");
+        set.insert(constants::ISA_ID_SECP256K);
         set
     }
+
+    #[cfg(feature = "secp256k1")]
+    #[inline]
+    fn is_supported(id: &str) -> bool { id == constants::ISA_ID_SECP256K }
+
+    #[cfg(not(feature = "secp256k1"))]
+    #[inline]
+    fn is_supported(_: &str) -> bool { false }
 
     #[cfg(not(feature = "secp256k1"))]
     fn exec(self, _: &mut CoreRegs, _: LibSite) -> ExecStep {
@@ -799,17 +821,25 @@ impl InstructionSet for Secp256k1Op {
 }
 
 impl InstructionSet for Curve25519Op {
-    #[cfg(not(feature = "secp256k1"))]
+    #[cfg(not(feature = "curve25519"))]
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    #[cfg(feature = "secp256k1")]
+    #[cfg(feature = "curve25519")]
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> {
         let mut set = BTreeSet::new();
-        set.insert("ED25519");
+        set.insert(constants::ISA_ID_ED25519);
         set
     }
+
+    #[cfg(feature = "curve25519")]
+    #[inline]
+    fn is_supported(id: &str) -> bool { id == constants::ISA_ID_ED25519 }
+
+    #[cfg(not(feature = "curve25519"))]
+    #[inline]
+    fn is_supported(_: &str) -> bool { false }
 
     #[cfg(not(feature = "curve25519"))]
     fn exec(self, _: &mut CoreRegs, _: LibSite) -> ExecStep {

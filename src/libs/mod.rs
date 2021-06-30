@@ -11,6 +11,7 @@
 
 //! Business logic and data structures for working with AluVM code libraries
 
+pub mod constants;
 mod cursor;
 mod library;
 mod rw;

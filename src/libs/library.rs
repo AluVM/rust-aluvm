@@ -9,8 +9,10 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use alloc::borrow::ToOwned;
 use alloc::boxed::Box;
 use alloc::collections::{BTreeMap, BTreeSet};
+use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt::{self, Display, Formatter};
 use core::marker::PhantomData;
@@ -18,6 +20,7 @@ use core::marker::PhantomData;
 use amplify_num::u24;
 use bitcoin_hashes::{Hash, HashEngine};
 
+use super::constants::*;
 use super::{Cursor, Read};
 use crate::data::ByteStr;
 use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet, ReservedOp};
@@ -70,15 +73,32 @@ where
 }
 
 /// Errors while processing binary-encoded segment data
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[cfg_attr(feature = "std", derive(Error))]
 #[display(doc_comments)]
 pub enum SegmentError {
-    /// the size of the code segment exceeds 2^16
+    /// the size of the CODE segment is {0}, which exceeds [`CODE_SEGMENT_MAX_LEN`]
     CodeSegmentTooLarge(usize),
 
-    /// the size of the data segment exceeds 2^24
+    /// the size of the DATA segment is {0}, which exceeds [`DATA_SEGMENT_MAX_LEN`]
     DataSegmentTooLarge(usize),
+
+    /// the size of ISAE (instruction set extensions) segment is {0}, which exceeds
+    /// [`ISAE_SEGMENT_MAX_LEN`]
+    IsaSegmentTooLarge(usize),
+
+    /// number of ISA ids in ISAE segment is {0}, which exceeds [`ISAE_SEGMENT_MAX_COUNT`]
+    IsaSegmentTooManyExt(usize),
+
+    /// ISA id {0} has a wrong length outside of [`ISA_ID_MIN_LEN`]`..=`[`ISA_ID_MAX_LEN`] bounds
+    IsaIdWrongLength(String),
+
+    /// ISA id {0} includes wrong symbols (must contain only uppercase alphanumeric and start with
+    /// letter)
+    IsaIdWrongSymbols(String),
+
+    /// ISA id {0} has a wrong length
+    IsaNotSupported(String),
 }
 
 /// Errors while assembling library from the instruction set
@@ -108,12 +128,42 @@ impl<E> Lib<E>
 where
     E: InstructionSet,
 {
-    /// Constructs library from segments
-    pub fn with(bytecode: Vec<u8>, data: Vec<u8>, libs: LibSeg) -> Result<Lib<E>, SegmentError> {
-        if bytecode.len() > u16::MAX as usize {
+    /// Constructs library from raw data split into segments
+    pub fn with(
+        isa: &str,
+        bytecode: Vec<u8>,
+        data: Vec<u8>,
+        libs: LibSeg,
+    ) -> Result<Lib<E>, SegmentError> {
+        if isa.len() > ISAE_SEGMENT_MAX_LEN {
+            return Err(SegmentError::IsaSegmentTooLarge(isa.len()));
+        }
+        let isa_codes: Vec<_> = isa.split(' ').collect();
+        if isa_codes.len() > ISAE_SEGMENT_MAX_COUNT {
+            return Err(SegmentError::IsaSegmentTooManyExt(isa_codes.len()));
+        }
+        for isae in isa_codes {
+            if !(ISA_ID_MIN_LEN..=ISA_ID_MAX_LEN).contains(&isae.len()) {
+                return Err(SegmentError::IsaIdWrongLength(isae.to_owned()));
+            }
+            if isae.chars().any(|ch| !ISA_ID_ALLOWED_CHARS.contains(&ch))
+                || isae
+                    .chars()
+                    .next()
+                    .map(|ch| !ISA_ID_ALLOWED_FIRST_CHAR.contains(&ch))
+                    .unwrap_or_default()
+            {
+                return Err(SegmentError::IsaIdWrongSymbols(isae.to_owned()));
+            }
+            if !E::is_supported(isae) {
+                return Err(SegmentError::IsaNotSupported(isae.to_owned()));
+            }
+        }
+
+        if bytecode.len() > CODE_SEGMENT_MAX_LEN {
             return Err(SegmentError::CodeSegmentTooLarge(bytecode.len()));
         }
-        if data.len() > u24::MAX.as_u32() as usize {
+        if data.len() > DATA_SEGMENT_MAX_LEN {
             return Err(SegmentError::DataSegmentTooLarge(data.len()));
         }
         Ok(Self {
