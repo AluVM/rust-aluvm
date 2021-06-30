@@ -343,7 +343,7 @@ impl CoreRegs {
         self.set(reg3.into(), dst, reg_val);
     }
 
-    /// Accumulates complexity of the instruction into [`CoreRegs::ca0`].
+    /// Accumulates complexity of the instruction into `ca0`.
     ///
     /// Sets `st0` to `false` if the complexity limit is reached or exceeded. Otherwise, does not
     /// modify `st0` value.

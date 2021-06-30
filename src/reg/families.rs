@@ -486,17 +486,17 @@ impl RegAFR {
 
 impl From<&RegA> for RegAFR {
     #[inline]
-    fn from(reg: &RegA) -> Self { Self::A((*reg).into()) }
+    fn from(reg: &RegA) -> Self { Self::A(*reg) }
 }
 
 impl From<&RegF> for RegAFR {
     #[inline]
-    fn from(reg: &RegF) -> Self { Self::F((*reg).into()) }
+    fn from(reg: &RegF) -> Self { Self::F(*reg) }
 }
 
 impl From<&RegR> for RegAFR {
     #[inline]
-    fn from(reg: &RegR) -> Self { Self::R((*reg).into()) }
+    fn from(reg: &RegR) -> Self { Self::R(*reg) }
 }
 
 impl From<RegA2> for RegAFR {

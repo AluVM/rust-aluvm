@@ -802,7 +802,7 @@ impl InstructionSet for Secp256k1Op {
                 let res = regs
                     .get(RegA::A256, src)
                     .and_then(|src| SecretKey::from_slice(src.as_ref()).ok())
-                    .map(|sk| PublicKey::from_secret_key(&SECP256K1, &sk))
+                    .map(|sk| PublicKey::from_secret_key(SECP256K1, &sk))
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
                     .map(|pk| Number::from_slice(&pk[1..]));
@@ -819,7 +819,7 @@ impl InstructionSet for Secp256k1Op {
                             .map(|pk| (scal, pk))
                     })
                     .and_then(|(scal, mut pk)| {
-                        pk.mul_assign(&SECP256K1, scal.as_ref()).map(|_| pk).ok()
+                        pk.mul_assign(SECP256K1, scal.as_ref()).map(|_| pk).ok()
                     })
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
@@ -833,7 +833,7 @@ impl InstructionSet for Secp256k1Op {
                     .and_then(|pk1| PublicKey::from_slice(pk1.as_ref()).ok())
                     .and_then(|pk1| regs.get(RegR::R512, srcdst).map(|pk2| (pk1, pk2)))
                     .and_then(|(mut pk1, pk2)| {
-                        pk1.add_exp_assign(&SECP256K1, pk2.as_ref()).map(|_| pk1).ok()
+                        pk1.add_exp_assign(SECP256K1, pk2.as_ref()).map(|_| pk1).ok()
                     })
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
@@ -846,7 +846,7 @@ impl InstructionSet for Secp256k1Op {
                     .get(RegR::R512, src)
                     .and_then(|pk| PublicKey::from_slice(pk.as_ref()).ok())
                     .map(|mut pk| {
-                        pk.negate_assign(&SECP256K1);
+                        pk.negate_assign(SECP256K1);
                         pk
                     })
                     .as_ref()

@@ -78,7 +78,7 @@ fn main() {
         secpmul a256[1],r512[1],r512[22]        ;
         secpadd r512[22],r512[1]                ;
         secpneg r512[1],r512[2]                 ;
-        call    "479f83551b7ac16a4e4aa58aab98e7144a731abe9e3e2d475be6a9ef0ed9ae40", 56 ;
+        call    "alu1wnhusevxmdphv3dh8ada44k0xw66ahq9nzhkv39z07hmudhp380sq0dtml", 56 ;
         ret                                     ;
         jmp     0                               ;
     };
@@ -92,7 +92,7 @@ fn main() {
         println!("\t\t{}", instr);
     }
 
-    eprint!("\nExecuting the program #{} ... ", lib.id());
+    eprint!("\nExecuting the program {} ... ", lib.id());
     let mut runtime = Vm::with(lib);
     match runtime.main() {
         true => eprintln!("success"),

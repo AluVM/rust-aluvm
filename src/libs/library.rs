@@ -20,8 +20,8 @@ use core::marker::PhantomData;
 use core::str::FromStr;
 
 use amplify::num::u24;
-// use bech32::{FromBase32, ToBase32};
-use bitcoin_hashes::{sha256, sha256t, Error, Hash, HashEngine};
+use bech32::{FromBase32, ToBase32};
+use bitcoin_hashes::{sha256, sha256t, Hash, HashEngine};
 
 use super::constants::*;
 use super::{Cursor, Read};
@@ -34,6 +34,9 @@ const LIB_ID_MIDSTATE: [u8; 32] = [
     156, 224, 228, 230, 124, 17, 108, 57, 56, 179, 202, 242, 195, 15, 80, 137, 211, 243, 147, 108,
     71, 99, 110, 96, 125, 179, 62, 234, 221, 198, 240, 201,
 ];
+
+/// Bech32m prefix for library id encoding
+pub const LIBID_BECH32_HRP: &str = "alu";
 
 /// Tag used for [`LibId`] hash type
 pub struct LibIdTag;
@@ -73,7 +76,9 @@ impl Hash for LibId {
     fn from_engine(e: Self::Engine) -> Self { Self(sha256t::Hash::from_engine(e)) }
 
     #[inline]
-    fn from_slice(sl: &[u8]) -> Result<Self, Error> { Ok(Self(sha256t::Hash::from_slice(sl)?)) }
+    fn from_slice(sl: &[u8]) -> Result<Self, bitcoin_hashes::Error> {
+        Ok(Self(sha256t::Hash::from_slice(sl)?))
+    }
 
     #[inline]
     fn into_inner(self) -> Self::Inner { self.0.into_inner() }
@@ -85,14 +90,60 @@ impl Hash for LibId {
     fn from_inner(inner: Self::Inner) -> Self { Self(sha256t::Hash::from_inner(inner)) }
 }
 
+/// Error parsing [`LibId`] bech32m representation
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[display(doc_comments)]
+pub enum LibIdError {
+    /// Error reported by bech32 library
+    #[display(inner)]
+    #[from]
+    Bech32(bech32::Error),
+
+    /// LibId must start with `alu1` and not `{0}`
+    InvalidHrp(String),
+
+    /// LibId must be encoded with Bech32m variant and not Bech32
+    InvalidVariant,
+
+    /// LibId data must have length of 32 bytes
+    #[from]
+    InvalidLength(bitcoin_hashes::Error),
+}
+
+#[cfg(feature = "std")]
+impl ::std::error::Error for LibIdError {
+    fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
+        match self {
+            LibIdError::Bech32(err) => Some(err),
+            LibIdError::InvalidLength(err) => Some(err),
+            LibIdError::InvalidHrp(_) | LibIdError::InvalidVariant => None,
+        }
+    }
+}
+
 impl Display for LibId {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> fmt::Result { Ok(()) }
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let bytes: &[u8] = self.borrow();
+        let s = bech32::encode(LIBID_BECH32_HRP, bytes.to_base32(), bech32::Variant::Bech32m)
+            .map_err(|_| fmt::Error)?;
+        f.write_str(&s)
+    }
 }
 
 impl FromStr for LibId {
-    type Err = bech32::Error;
+    type Err = LibIdError;
 
-    fn from_str(_s: &str) -> Result<Self, Self::Err> { Ok(Self::default()) }
+    fn from_str(s: &str) -> Result<Self, LibIdError> {
+        let (hrp, b32, variant) = bech32::decode(s)?;
+        if hrp != LIBID_BECH32_HRP {
+            return Err(LibIdError::InvalidHrp(hrp));
+        }
+        if variant != bech32::Variant::Bech32m {
+            return Err(LibIdError::InvalidVariant);
+        }
+        let data = Vec::<u8>::from_base32(&b32)?;
+        LibId::from_slice(&data).map_err(LibIdError::from)
+    }
 }
 
 /// AluVM executable code library
@@ -416,6 +467,9 @@ impl LibSeg {
 
 impl Display for LibSeg {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.set.iter().try_for_each(|lib| write!(f, "#{}", lib))
+        self.set.iter().try_for_each(|lib| {
+            Display::fmt(lib, f)?;
+            f.write_str("\n      ")
+        })
     }
 }
