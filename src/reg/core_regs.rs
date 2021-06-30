@@ -13,7 +13,7 @@ use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use core::fmt::{self, Debug, Formatter};
 
-use amplify::num::{u256, u512};
+use amplify::num::{u1024, u256, u512};
 use half::bf16;
 use rustc_apfloat::ieee;
 
@@ -38,7 +38,7 @@ pub struct CoreRegs {
     pub(crate) a128: [Option<u128>; 32],
     pub(crate) a256: [Option<u256>; 32],
     pub(crate) a512: [Option<u512>; 32],
-    pub(crate) a1024: [Option<Number>; 32],
+    pub(crate) a1024: [Option<u1024>; 32],
 
     // Arithmetic float registers
     pub(crate) f16b: [Option<bf16>; 32],
@@ -465,6 +465,7 @@ impl Debug for CoreRegs {
         }
         for i in 0..32 {
             if let Some(v) = self.a1024[i] {
+                let v = Number::from(v);
                 let j = i + 1;
                 write!(f, "{}a512{}[{}{:02}{}]={}{:X}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
             }
