@@ -27,5 +27,5 @@ pub use flags::{
 };
 pub use instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp,
-    NOp, PutOp, Secp256k1Op,
+    PutOp, ReservedOp, Secp256k1Op,
 };

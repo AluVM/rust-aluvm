@@ -19,7 +19,7 @@
 /// # use paste::paste;
 /// # use aluvm::{Vm};
 /// # use aluvm::libs::Lib;
-/// # use aluvm::isa::NOp;
+/// # use aluvm::isa::ReservedOp;
 ///
 /// let code = aluasm! {
 ///         clr     r1024[5]                        ;
@@ -35,7 +35,7 @@
 ///         jmp     0                               ;
 /// };
 ///
-/// let lib = Lib::<NOp>::assemble(&code).unwrap();
+/// let lib = Lib::<ReservedOp>::assemble(&code).unwrap();
 /// let mut vm = Vm::with(lib);
 /// match vm.main() {
 ///     Ok(true) => println!("success"),
@@ -50,7 +50,7 @@ macro_rules! aluasm {
 
         use aluvm::isa::{
             ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
-            MergeFlag, MoveOp, NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
+            MergeFlag, MoveOp, ReservedOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
         };
         use aluvm::reg::{
             Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterFamily,
@@ -58,7 +58,7 @@ macro_rules! aluasm {
         use aluvm::libs::LibSite;
         use aluvm::data::{Number, MaybeNumber, Step};
 
-        let mut code: Vec<Instr<NOp>> = vec![];
+        let mut code: Vec<Instr<ReservedOp>> = vec![];
         #[allow(unreachable_code)] {
             aluasm_inner! { code => $( $tt )+ };
         }

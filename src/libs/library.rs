@@ -20,7 +20,7 @@ use bitcoin_hashes::{Hash, HashEngine};
 
 use super::{Cursor, Read};
 use crate::data::ByteStr;
-use crate::isa::{Bytecode, DecodeError, EncodeError, ExecStep, Instr, InstructionSet, NOp};
+use crate::isa::{Bytecode, DecodeError, EncodeError, ExecStep, Instr, InstructionSet, ReservedOp};
 use crate::reg::CoreRegs;
 
 const LIB_ID_MIDSTATE: [u8; 32] = [
@@ -41,7 +41,7 @@ sha256t_hash_newtype!(
 
 /// AluVM executable code library
 #[derive(Debug, Default)]
-pub struct Lib<E = NOp>
+pub struct Lib<E = ReservedOp>
 where
     E: InstructionSet,
 {

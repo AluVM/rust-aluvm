@@ -119,7 +119,7 @@
 // TODO(#8) Implement operations on Edwards curves
 
 // TODO: Check ISAE segment ordering on library load
-// TODO: Overhaul serialization-related library types
+// TODO: Overhaul serialization-related library error types
 
 extern crate alloc;
 

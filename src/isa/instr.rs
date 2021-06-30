@@ -21,19 +21,16 @@ use crate::data::{ByteStr, MaybeNumber, Step};
 use crate::libs::LibSite;
 use crate::reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR};
 
-/// Default instruction extension which treats any operation as NOP
+/// Reserved instruction, which equal to [`ControlFlowOp::Fail`].
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
-#[display("nop")]
-pub enum NOp {
-    /// Non-operation op code.
-    NOp,
-}
+#[display("rsrv:{0:02X}")]
+pub struct ReservedOp(/** Reserved instruction op code value */ pub(super) u8);
 
 /// Full set of instructions
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
 #[display(inner)]
 #[non_exhaustive]
-pub enum Instr<Extension = NOp>
+pub enum Instr<Extension = ReservedOp>
 where
     Extension: InstructionSet,
 {
@@ -83,6 +80,11 @@ where
     /// parameter
     // 0b10_***_***
     ExtensionCodes(Extension),
+
+    /// Reserved instruction for fututre use in core `ALU` ISA.
+    ///
+    /// Currently equal to [`ControlFlowOp::Fail`].
+    ReservedInstruction(ReservedOp),
 
     // Reserved operations for the future use.
     //

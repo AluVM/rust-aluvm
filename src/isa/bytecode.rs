@@ -19,7 +19,7 @@ use amplify_num::{u1, u2, u3, u5};
 use super::opcodes::*;
 use super::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr,
-    InstructionSet, MoveOp, NOp, PutOp, Secp256k1Op,
+    InstructionSet, MoveOp, PutOp, ReservedOp, Secp256k1Op,
 };
 use crate::data::{ByteStr, MaybeNumber};
 use crate::libs::{CursorError, LibSegOverflow, LibSite, Read, Write};
@@ -33,9 +33,6 @@ pub enum DecodeError {
     #[display(inner)]
     #[from]
     Cursor(CursorError),
-
-    /// Instruction `{0}` is reserved for the future use and currently is not supported
-    ReservedInstruction(u8),
 }
 
 #[cfg(feature = "std")]
@@ -43,7 +40,6 @@ impl ::std::error::Error for DecodeError {
     fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
         match self {
             DecodeError::Cursor(err) => Some(err),
-            DecodeError::ReservedInstruction(_) => None,
         }
     }
 }
@@ -147,6 +143,7 @@ where
             #[cfg(feature = "curve25519")]
             Instr::Curve25519(instr) => instr.byte_count(),
             Instr::ExtensionCodes(instr) => instr.byte_count(),
+            Instr::ReservedInstruction(instr) => instr.byte_count(),
             Instr::Nop => 1,
         }
     }
@@ -168,6 +165,7 @@ where
             #[cfg(feature = "curve25519")]
             Instr::Curve25519(instr) => instr.instr_byte(),
             Instr::ExtensionCodes(instr) => instr.instr_byte(),
+            Instr::ReservedInstruction(instr) => instr.instr_byte(),
             Instr::Nop => 1,
         }
     }
@@ -187,6 +185,7 @@ where
             #[cfg(feature = "curve25519")]
             Instr::Curve25519(instr) => instr.call_site(),
             Instr::ExtensionCodes(instr) => instr.call_site(),
+            Instr::ReservedInstruction(instr) => instr.call_site(),
             Instr::Nop => None,
         }
     }
@@ -210,6 +209,7 @@ where
             #[cfg(feature = "curve25519")]
             Instr::Curve25519(instr) => instr.write_args(writer),
             Instr::ExtensionCodes(instr) => instr.write_args(writer),
+            Instr::ReservedInstruction(instr) => instr.write_args(writer),
             Instr::Nop => Ok(()),
         }
     }
@@ -247,12 +247,11 @@ where
             instr if Curve25519Op::instr_range().contains(&instr) => {
                 Instr::Curve25519(Curve25519Op::read(reader)?)
             }
-            INSTR_EXT_FROM..=INSTR_EXT_TO => Instr::ExtensionCodes(Extension::read(reader)?),
             INSTR_RESV_FROM..=INSTR_RESV_TO => {
-                let _ = reader.read_u8()?;
-                return Err(DecodeError::ReservedInstruction(instr));
+                Instr::ReservedInstruction(ReservedOp::read(reader)?)
             }
             INSTR_NOP => Instr::Nop,
+            INSTR_ISAE_FROM..=INSTR_ISAE_TO => Instr::ExtensionCodes(Extension::read(reader)?),
             x => unreachable!("unable to classify instruction {:#010b}", x),
         })
     }
@@ -1291,7 +1290,7 @@ impl Bytecode for BytesOp {
 impl Bytecode for DigestOp {
     fn byte_count(&self) -> u16 { 3 }
 
-    fn instr_range() -> RangeInclusive<u8> { INSTR_RIPEMD..=INSTR_HASH5 }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_RIPEMD..=INSTR_SHA512 }
 
     fn instr_byte(&self) -> u8 {
         match self {
@@ -1330,7 +1329,6 @@ impl Bytecode for DigestOp {
             INSTR_RIPEMD => Self::Ripemd(src, dst),
             INSTR_SHA256 => Self::Sha256(src, dst),
             INSTR_SHA512 => Self::Sha512(src, dst),
-            INSTR_HASH1..=INSTR_HASH5 => return Err(DecodeError::ReservedInstruction(instr)),
             x => unreachable!("instruction {:#010b} classified as digest operation", x),
         })
     }
@@ -1481,12 +1479,12 @@ impl Bytecode for Curve25519Op {
     }
 }
 
-impl Bytecode for NOp {
+impl Bytecode for ReservedOp {
     fn byte_count(&self) -> u16 { 1 }
 
-    fn instr_range() -> RangeInclusive<u8> { INSTR_NOP..=INSTR_NOP }
+    fn instr_range() -> RangeInclusive<u8> { INSTR_RESV_FROM..=INSTR_ISAE_TO }
 
-    fn instr_byte(&self) -> u8 { INSTR_NOP }
+    fn instr_byte(&self) -> u8 { self.0 }
 
     fn write_args<W>(&self, _writer: &mut W) -> Result<(), EncodeError>
     where
@@ -1505,6 +1503,6 @@ impl Bytecode for NOp {
         if instr != INSTR_NOP {
             unreachable!("instruction {:#010b} classified as NOP operation", instr)
         }
-        Ok(NOp::NOp)
+        Ok(ReservedOp(instr))
     }
 }

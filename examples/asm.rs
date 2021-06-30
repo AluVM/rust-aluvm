@@ -17,7 +17,7 @@ extern crate aluvm;
 #[macro_use]
 extern crate paste;
 
-use aluvm::isa::NOp;
+use aluvm::isa::ReservedOp;
 use aluvm::libs::Lib;
 use aluvm::Vm;
 
@@ -84,7 +84,7 @@ fn main() {
     };
 
     println!("Instructions:\n{:#?}\n", code);
-    let lib = Lib::<NOp>::assemble(&code).unwrap();
+    let lib = Lib::<ReservedOp>::assemble(&code).unwrap();
     println!("\n{}\n", lib);
     let code = lib.disassemble().unwrap();
     println!("Assembly:");

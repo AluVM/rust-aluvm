@@ -20,7 +20,7 @@ use bitcoin_hashes::{ripemd160, sha256, sha512, Hash};
 
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
-    Instr, MoveOp, NOp, PutOp, Secp256k1Op,
+    Instr, MoveOp, PutOp, ReservedOp, Secp256k1Op,
 };
 use crate::data::{ByteStr, MaybeNumber, Number, NumberLayout};
 use crate::isa::{FloatEqFlag, IntFlags, MergeFlag, SignFlag};
@@ -106,6 +106,7 @@ where
             #[cfg(feature = "curve25519")]
             Instr::Curve25519(instr) => instr.exec(regs, site),
             Instr::ExtensionCodes(instr) => instr.exec(regs, site),
+            Instr::ReservedInstruction(_) => ControlFlowOp::Fail.exec(regs, site),
             Instr::Nop => ExecStep::Next,
         }
     }
@@ -821,9 +822,11 @@ impl InstructionSet for Curve25519Op {
     }
 }
 
-impl InstructionSet for NOp {
+impl InstructionSet for ReservedOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    fn exec(self, _: &mut CoreRegs, _: LibSite) -> ExecStep { ExecStep::Next }
+    fn exec(self, regs: &mut CoreRegs, site: LibSite) -> ExecStep {
+        ControlFlowOp::Fail.exec(regs, site)
+    }
 }

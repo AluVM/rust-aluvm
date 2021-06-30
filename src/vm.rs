@@ -13,13 +13,13 @@
 
 use alloc::collections::BTreeMap;
 
-use crate::isa::{InstructionSet, NOp};
+use crate::isa::{InstructionSet, ReservedOp};
 use crate::libs::{Lib, LibId, LibSite};
 use crate::reg::CoreRegs;
 
 /// Alu virtual machine providing single-core execution environment
 #[derive(Getters, Debug, Default)]
-pub struct Vm<E = NOp>
+pub struct Vm<E = ReservedOp>
 where
     E: InstructionSet,
 {

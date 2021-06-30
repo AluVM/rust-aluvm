@@ -91,33 +91,35 @@ pub const INSTR_INS: u8 = 0b00_111_101;
 pub const INSTR_DEL: u8 = 0b00_111_110;
 pub const INSTR_REV: u8 = 0b00_111_111;
 
-// Cryptographic hashing functions
-pub const INSTR_RIPEMD: u8 = 0b01_000_000;
-pub const INSTR_SHA256: u8 = 0b01_000_001;
-pub const INSTR_SHA512: u8 = 0b01_000_010;
-pub const INSTR_HASH1: u8 = 0b01_000_011; // Reserved for future use
-pub const INSTR_HASH2: u8 = 0b01_000_100; // Reserved for future use
-pub const INSTR_HASH3: u8 = 0b01_000_101; // Reserved for future use
-pub const INSTR_HASH4: u8 = 0b01_000_110; // Reserved for future use
-pub const INSTR_HASH5: u8 = 0b01_000_111; // Reserved for future use
-
-// Operations on Secp256k1 elliptic curve
-pub const INSTR_SECP_GEN: u8 = 0b01_001_000;
-pub const INSTR_SECP_MUL: u8 = 0b01_001_001;
-pub const INSTR_SECP_ADD: u8 = 0b01_001_010;
-pub const INSTR_SECP_NEG: u8 = 0b01_001_011;
-// Operations on Curve25519 elliptic curve
-pub const INSTR_ED_GEN: u8 = 0b01_001_100;
-pub const INSTR_ED_MUL: u8 = 0b01_001_101;
-pub const INSTR_ED_ADD: u8 = 0b01_001_110;
-pub const INSTR_ED_NEG: u8 = 0b01_001_111;
-
-// Reserved operations which can be provided by a host environment
-pub const INSTR_EXT_FROM: u8 = 0b10_000_000;
-pub const INSTR_EXT_TO: u8 = 0b10_111_111;
-// Reserved for future use
-pub const INSTR_RESV_FROM: u8 = 0b11_000_000;
-pub const INSTR_RESV_TO: u8 = 0b11_111_110;
-
 // No-operation instruction
 pub const INSTR_NOP: u8 = 0b11_111_111;
+
+// Reserved operations which can be used by future AluVM versions
+pub const INSTR_RESV_FROM: u8 = 0b01_000_000;
+pub const INSTR_RESV_TO: u8 = 0b01_111_111;
+
+// ## ISA extensions:
+
+// ### Hashing (BPDIGEST)
+
+pub const INSTR_RIPEMD: u8 = 0b11_000_000;
+pub const INSTR_SHA256: u8 = 0b11_000_001;
+pub const INSTR_SHA512: u8 = 0b11_000_010;
+
+// ### Secp256k1 operations (SECP256K1)
+
+pub const INSTR_SECP_GEN: u8 = 0b11_001_000;
+pub const INSTR_SECP_MUL: u8 = 0b11_001_001;
+pub const INSTR_SECP_ADD: u8 = 0b11_001_010;
+pub const INSTR_SECP_NEG: u8 = 0b11_001_011;
+
+// ### Curve25519 operations (ED25519)
+
+pub const INSTR_ED_GEN: u8 = 0b11_001_100;
+pub const INSTR_ED_MUL: u8 = 0b11_001_101;
+pub const INSTR_ED_ADD: u8 = 0b11_001_110;
+pub const INSTR_ED_NEG: u8 = 0b11_001_111;
+
+// Opcodes with may be used by ISA extensions
+pub const INSTR_ISAE_FROM: u8 = 0b11_000_000;
+pub const INSTR_ISAE_TO: u8 = 0b11_111_110;
