@@ -14,11 +14,14 @@ use alloc::boxed::Box;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::borrow::Borrow;
 use core::fmt::{self, Display, Formatter};
 use core::marker::PhantomData;
+use core::str::FromStr;
 
-use amplify_num::u24;
-use bitcoin_hashes::{Hash, HashEngine};
+use amplify::num::u24;
+// use bech32::{FromBase32, ToBase32};
+use bitcoin_hashes::{sha256, sha256t, Error, Hash, HashEngine};
 
 use super::constants::*;
 use super::{Cursor, Read};
@@ -32,16 +35,65 @@ const LIB_ID_MIDSTATE: [u8; 32] = [
     71, 99, 110, 96, 125, 179, 62, 234, 221, 198, 240, 201,
 ];
 
-sha256t_hash_newtype!(
-    LibId,
-    LibIdTag,
-    LIB_ID_MIDSTATE,
-    64,
-    doc = "A library identifier.\n\nRepresents commitment to the library data; any two distinct \
-           programs are guaranteed (with SHA256 collision resistance level) to have a distinct \
-           library ids.",
-    false
-);
+/// Tag used for [`LibId`] hash type
+pub struct LibIdTag;
+
+impl sha256t::Tag for LibIdTag {
+    #[inline]
+    fn engine() -> sha256::HashEngine {
+        let midstate = sha256::Midstate::from_inner(LIB_ID_MIDSTATE);
+        sha256::HashEngine::from_midstate(midstate, 64)
+    }
+}
+
+/// A library identifier
+///
+/// Represents commitment to the library data; any two distinct programs are guaranteed (with SHA256
+/// collision resistance level) to have a distinct library ids.
+#[derive(Wrapper, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, From)]
+#[wrapper(Debug, LowerHex, Index, IndexRange, IndexFrom, IndexTo, IndexFull)]
+pub struct LibId(sha256t::Hash<LibIdTag>);
+
+impl Borrow<[u8]> for LibId {
+    #[inline]
+    fn borrow(&self) -> &[u8] { self.as_inner() }
+}
+
+impl Hash for LibId {
+    type Engine = <sha256t::Hash<LibIdTag> as Hash>::Engine;
+    type Inner = <sha256t::Hash<LibIdTag> as Hash>::Inner;
+
+    const LEN: usize = 32;
+    const DISPLAY_BACKWARD: bool = false;
+
+    #[inline]
+    fn engine() -> Self::Engine { sha256t::Hash::<LibIdTag>::engine() }
+
+    #[inline]
+    fn from_engine(e: Self::Engine) -> Self { Self(sha256t::Hash::from_engine(e)) }
+
+    #[inline]
+    fn from_slice(sl: &[u8]) -> Result<Self, Error> { Ok(Self(sha256t::Hash::from_slice(sl)?)) }
+
+    #[inline]
+    fn into_inner(self) -> Self::Inner { self.0.into_inner() }
+
+    #[inline]
+    fn as_inner(&self) -> &Self::Inner { self.0.as_inner() }
+
+    #[inline]
+    fn from_inner(inner: Self::Inner) -> Self { Self(sha256t::Hash::from_inner(inner)) }
+}
+
+impl Display for LibId {
+    fn fmt(&self, _f: &mut Formatter<'_>) -> fmt::Result { Ok(()) }
+}
+
+impl FromStr for LibId {
+    type Err = bech32::Error;
+
+    fn from_str(_s: &str) -> Result<Self, Self::Err> { Ok(Self::default()) }
+}
 
 /// AluVM executable code library
 #[derive(Debug, Default)]

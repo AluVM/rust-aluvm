@@ -6,14 +6,24 @@ version = 3
 name = "aluvm"
 version = "0.3.0-beta"
 dependencies = [
- "amplify_derive",
- "amplify_num",
+ "amplify",
+ "bech32",
  "bitcoin_hashes",
  "curve25519-dalek",
  "half",
  "paste",
  "rustc_apfloat",
  "secp256k1",
+]
+
+[[package]]
+name = "amplify"
+version = "3.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa9b1af9b1bce6079e2c058fe1d0f0488e4e7370eca5c983b86aa43c11def6b0"
+dependencies = [
+ "amplify_derive",
+ "amplify_num",
 ]
 
 [[package]]
@@ -50,6 +60,12 @@ name = "autocfg"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d49d90015b3c36167a20fe2810c5cd875ad504b39cff3d4eae7977e6b7c1cb2"
+
+[[package]]
+name = "bech32"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
 
 [[package]]
 name = "bitcoin_hashes"

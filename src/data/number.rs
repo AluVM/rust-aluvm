@@ -23,7 +23,7 @@ use core::ops::{
 };
 use core::str::FromStr;
 
-use amplify_num::{u1024, u256, u512};
+use amplify::num::{u1024, u256, u512};
 use half::bf16;
 use rustc_apfloat::{ieee, Float};
 
@@ -575,12 +575,12 @@ impl Number {
 
     /// Constructs value from hex string
     #[cfg(feature = "std")]
-    pub fn from_hex(s: &str) -> Result<Number, amplify_num::hex::Error> {
-        use amplify_num::hex::FromHex;
+    pub fn from_hex(s: &str) -> Result<Number, amplify::hex::Error> {
+        use amplify::hex::FromHex;
         let s = s.trim_start_matches("0x");
         let len = s.len() / 2;
         if len > 1024 {
-            return Err(amplify_num::hex::Error::InvalidLength(1024, len));
+            return Err(amplify::hex::Error::InvalidLength(1024, len));
         }
         let mut bytes = [0u8; 1024];
         let hex = Vec::<u8>::from_hex(s)?;
@@ -797,7 +797,7 @@ impl Debug for Number {
             .field("bytes", {
                 #[cfg(feature = "std")]
                 {
-                    use amplify_num::hex::ToHex;
+                    use amplify::hex::ToHex;
                     &self.bytes[..len].to_hex()
                 }
                 #[cfg(not(feature = "std"))]
@@ -847,7 +847,7 @@ impl Display for Number {
 impl LowerHex for Number {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         #[cfg(feature = "std")]
-        use amplify_num::hex::ToHex;
+        use amplify::hex::ToHex;
 
         match self.layout {
             Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 16 => {
@@ -856,7 +856,7 @@ impl LowerHex for Number {
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 16 => {
                 LowerHex::fmt(&u128::from(self), f)
             }
-            // TODO(#16) Use LowerHex implementation once it will be done in amplify_num
+            // TODO(#16) Use LowerHex implementation once it will be done in amplify::num
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 32 => {
                 #[cfg(feature = "std")]
                 {
@@ -922,7 +922,7 @@ impl Octal for Number {
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 16 => {
                 Octal::fmt(&u128::from(self), f)
             }
-            // TODO(#16) Use LowerHex implementation once it will be done in amplify_num
+            // TODO(#16) Use LowerHex implementation once it will be done in amplify::num
             // TODO(#16) Use LowerHex implementation once it will be done in `half` crate
             /* TODO(#16) Use LowerHex implementation once it will be done in `rustc_apfloat`
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 256 => {
@@ -952,7 +952,7 @@ impl LowerExp for Number {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.layout {
             Layout::Integer(_) => Display::fmt(self, f),
-            // TODO(#16) Use LowerHex implementation once it will be done in amplify_num
+            // TODO(#16) Use LowerHex implementation once it will be done in amplify::num
             // TODO(#16) Use LowerHex implementation once it will be done in `half` crate
             /* TODO(#16) Use LowerHex implementation once it will be done in `rustc_apfloat`
             Layout::Float(FloatLayout::BFloat16) => LowerExp::fmt(&half::bf16::from(self), f),

@@ -14,7 +14,7 @@
 use alloc::boxed::Box;
 use core::ops::RangeInclusive;
 
-use amplify_num::{u1, u2, u3, u5};
+use amplify::num::{u1, u2, u3, u5};
 
 use super::opcodes::*;
 use super::{

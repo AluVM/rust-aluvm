@@ -14,7 +14,7 @@ use core::convert::TryInto;
 #[cfg(feature = "std")]
 use core::fmt::{self, Debug, Display, Formatter};
 
-use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
+use amplify::num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::{CodeEofError, LibId, LibSeg, Read, Write, WriteError};
 use crate::data::Number;
@@ -43,7 +43,7 @@ where
     Self: 'a,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify_num::hex::ToHex;
+        use amplify::hex::ToHex;
         f.debug_struct("Cursor")
             .field("bytecode", &self.as_ref().to_hex())
             .field("byte_pos", &self.byte_pos)
@@ -63,7 +63,7 @@ where
     Self: 'a,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify_num::hex::ToHex;
+        use amplify::hex::ToHex;
         write!(f, "{}:{} @ ", self.byte_pos, self.bit_pos)?;
         let hex = self.as_ref().to_hex();
         if f.alternate() {

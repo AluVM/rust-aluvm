@@ -16,7 +16,7 @@ use alloc::string::String;
 use core::fmt::{self, Display, Formatter, Write};
 use core::str::FromStr;
 
-use amplify_num::{u1, u2, u3};
+use amplify::num::{u1, u2, u3};
 use rustc_apfloat::Round;
 
 /// Errors for parsing string representation for a flag values

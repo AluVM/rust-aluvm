@@ -12,7 +12,7 @@
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 
-use amplify_num::{u256, u512};
+use amplify::num::{u256, u512};
 use half::bf16;
 use rustc_apfloat::ieee;
 

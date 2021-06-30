@@ -121,10 +121,7 @@
 extern crate alloc;
 
 #[macro_use]
-extern crate amplify_derive;
-
-#[macro_use]
-extern crate bitcoin_hashes;
+extern crate amplify;
 
 pub mod data;
 #[macro_use]

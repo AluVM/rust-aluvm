@@ -93,7 +93,7 @@ impl ByteStr {
 #[cfg(feature = "std")]
 impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify_num::hex::ToHex;
+        use amplify::hex::ToHex;
         let vec = Vec::from(&self.bytes[..self.len()]);
         if let Ok(s) = String::from_utf8(vec) {
             f.write_str("\"")?;

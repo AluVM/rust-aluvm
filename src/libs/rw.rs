@@ -9,7 +9,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
+use amplify::num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::LibId;
 use crate::data::Number;

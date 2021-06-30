@@ -11,7 +11,7 @@
 
 use alloc::boxed::Box;
 
-use amplify_num::u6;
+use amplify::num::u6;
 
 use super::{
     DeleteFlag, FloatEqFlag, InsertFlag, InstructionSet, IntFlags, MergeFlag, RoundingFlag,
