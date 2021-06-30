@@ -136,7 +136,7 @@ impl InstructionSet for ControlFlowOp {
     fn complexity(&self) -> u32 { 2 }
 
     fn exec(&self, regs: &mut CoreRegs, site: LibSite) -> ExecStep {
-        let res = match self {
+        match self {
             ControlFlowOp::Fail => {
                 regs.st0 = false;
                 ExecStep::Stop
@@ -165,8 +165,7 @@ impl InstructionSet for ControlFlowOp {
                 regs.jmp().map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Stop)
             }
             ControlFlowOp::Ret => regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop),
-        };
-        res
+        }
     }
 }
 
@@ -808,7 +807,7 @@ impl InstructionSet for Secp256k1Op {
         match self {
             Secp256k1Op::Gen(src, dst) => {
                 let res = regs
-                    .get(RegA::A256, src)
+                    .get(RegR::R256, src)
                     .and_then(|src| SecretKey::from_slice(src.as_ref()).ok())
                     .map(|sk| PublicKey::from_secret_key(SECP256K1, &sk))
                     .as_ref()
@@ -823,7 +822,11 @@ impl InstructionSet for Secp256k1Op {
                     .get(reg, scal)
                     .and_then(|scal| {
                         regs.get(RegR::R512, src)
-                            .and_then(|val| PublicKey::from_slice(val.as_ref()).ok())
+                            .and_then(|val| {
+                                let mut pk = [4u8; 65];
+                                pk[1..].copy_from_slice(val.as_ref());
+                                PublicKey::from_slice(&pk).ok()
+                            })
                             .map(|pk| (scal, pk))
                     })
                     .and_then(|(scal, mut pk)| {
@@ -838,11 +841,19 @@ impl InstructionSet for Secp256k1Op {
             Secp256k1Op::Add(src, srcdst) => {
                 let res = regs
                     .get(RegR::R512, src)
-                    .and_then(|pk1| PublicKey::from_slice(pk1.as_ref()).ok())
-                    .and_then(|pk1| regs.get(RegR::R512, srcdst).map(|pk2| (pk1, pk2)))
-                    .and_then(|(mut pk1, pk2)| {
-                        pk1.add_exp_assign(SECP256K1, pk2.as_ref()).map(|_| pk1).ok()
+                    .and_then(|val| {
+                        let mut pk1 = [4u8; 65];
+                        pk1[1..].copy_from_slice(val.as_ref());
+                        PublicKey::from_slice(&pk1).ok()
                     })
+                    .and_then(|pk1| {
+                        regs.get(RegR::R512, srcdst).and_then(|val| {
+                            let mut pk2 = [4u8; 65];
+                            pk2[1..].copy_from_slice(val.as_ref());
+                            PublicKey::from_slice(&pk2).ok().map(|pk2| (pk1, pk2))
+                        })
+                    })
+                    .and_then(|(pk1, pk2)| pk1.combine(&pk2).map(|_| pk1).ok())
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
                     .map(|pk| Number::from_slice(&pk[1..]));
@@ -852,7 +863,11 @@ impl InstructionSet for Secp256k1Op {
             Secp256k1Op::Neg(src, dst) => {
                 let res = regs
                     .get(RegR::R512, src)
-                    .and_then(|pk| PublicKey::from_slice(pk.as_ref()).ok())
+                    .and_then(|val| {
+                        let mut pk = [4u8; 65];
+                        pk[1..].copy_from_slice(&val[..]);
+                        PublicKey::from_slice(&pk).ok()
+                    })
                     .map(|mut pk| {
                         pk.negate_assign(SECP256K1);
                         pk

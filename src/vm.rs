@@ -30,7 +30,7 @@ where
     entrypoint: LibSite,
 
     /// A set of registers
-    registers: CoreRegs,
+    registers: Box<CoreRegs>,
 }
 
 impl<E> Vm<E>

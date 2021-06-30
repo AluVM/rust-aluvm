@@ -25,7 +25,7 @@ fn main() {
     let code = aluasm! {
         clr     r1024[5]                        ;
         put     378,a16[8]                      ;
-        putif   0xaf67937b5498dc,r1024[24]      ;
+        putif   0xaf67937b5498dc,r256[1]        ;
         putif   13,a8[1]                        ;
         swp     a8[1],a8[2]                     ;
         swp     f256[8],f256[7]                 ;
@@ -78,13 +78,15 @@ fn main() {
         scl     r256[24],a16[22]                ;
         rev     a512[28]                        ;
         ripemd  s16[9],r160[7]                  ;
-        sha2    s16[19],r256[1]                 ;
+        sha2    s16[19],r256[2]                 ;
         secpgen r256[1],r512[1]                 ;
-        secpmul a256[1],r512[1],r512[22]        ;
+        dup     r512[1],r512[22]                ;
+        spy     a512[1],r512[22]                ;
+        secpmul r256[1],r512[1],r512[2]         ;
         secpadd r512[22],r512[1]                ;
-        secpneg r512[1],r512[2]                 ;
+        secpneg r512[1],r512[3]                 ;
         ifz     a16[8]                          ;
-        jif     192                             ;
+        jif     198                             ;
         jmp     7                               ;
         call    56 @ alu1wnhusevxmdphv3dh8ada44k0xw66ahq9nzhkv39z07hmudhp380sq0dtml ;
         ret                                     ;

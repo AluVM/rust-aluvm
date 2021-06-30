@@ -708,7 +708,8 @@ impl Number {
         self
     }
 
-    /// Transforms internal value layout returning whether this has required discarding some of bits
+    /// Transforms internal value layout returning whether this was possible without discarding any
+    /// bit information
     pub fn reshape(&mut self, to: Layout) -> bool {
         match (self.layout, to) {
             (from, to) if from == to => false,
@@ -720,7 +721,7 @@ impl Number {
                 let bit_len = self.min_bit_len();
                 self.layout = to;
                 self.clean();
-                bit_len > len2 * 8
+                bit_len <= len2 * 8
             }
             (from, to) => unimplemented!("Number layout reshape from {} to {}", from, to),
         }
@@ -861,7 +862,7 @@ impl LowerHex for Number {
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 32 => {
                 #[cfg(feature = "std")]
                 {
-                    f.write_str(&u256::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
+                    f.write_str(u256::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
                 }
                 #[cfg(not(feature = "std"))]
                 {
@@ -871,7 +872,7 @@ impl LowerHex for Number {
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 32 => {
                 #[cfg(feature = "std")]
                 {
-                    f.write_str(&u512::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
+                    f.write_str(u512::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
                 }
                 #[cfg(not(feature = "std"))]
                 {
@@ -881,7 +882,7 @@ impl LowerHex for Number {
             Layout::Integer(IntLayout { .. }) => {
                 #[cfg(feature = "std")]
                 {
-                    f.write_str(&u1024::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
+                    f.write_str(u1024::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
                 }
                 #[cfg(not(feature = "std"))]
                 {
