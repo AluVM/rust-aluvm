@@ -118,6 +118,10 @@
 // TODO(#7) Complete assembly compiler for string operations
 // TODO(#8) Implement operations on Edwards curves
 
+// TODO: Avoid library presence checking, get rid of error
+// TODO: Check ISAE segment ordering on library load
+// TODO: Overhaul serialization-related library types
+
 extern crate alloc;
 
 #[macro_use]
@@ -135,7 +139,7 @@ pub mod vm;
 pub(crate) use bytecoder::Cursor;
 pub use bytecoder::CursorError;
 pub use instr::{Instr, InstructionSet};
-pub use library::{Lib, LibId, LibSeg, LibSegOverflow, LibSegment, LibSite};
+pub use library::{Lib, LibId, LibSeg, LibSegOverflow, LibSite};
 pub use reg::{
     number, ByteStr, MaybeNumber, Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR,
     RegBlockAFR, RegBlockAR, RegF, RegR, RegisterSet, Registers,

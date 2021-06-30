@@ -77,13 +77,13 @@ fn main() {
         secpmul a256[1],r512[1],r512[22]        ;
         secpadd r512[22],r512[1]                ;
         secpneg r512[1],r512[2]                 ;
+        call    "479f83551b7ac16a4e4aa58aab98e7144a731abe9e3e2d475be6a9ef0ed9ae40", 56 ;
         ret                                     ;
         jmp     0                               ;
-        call    "479f83551b7ac16a4e4aa58aab98e7144a731abe9e3e2d475be6a9ef0ed9ae40", 56 ;
     };
 
     println!("Instructions:\n{:#?}\n", code);
-    let lib = Lib::<NOp>::assemble(code).unwrap();
+    let lib = Lib::<NOp>::assemble(&code).unwrap();
     println!("\n{}\n", lib);
     let code = lib.disassemble().unwrap();
     println!("Assembly:");

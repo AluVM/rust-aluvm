@@ -14,7 +14,6 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 use core::fmt::{self, Display, Formatter};
 use core::marker::PhantomData;
-use core::ops::Index;
 
 use amplify_num::u24;
 use bitcoin_hashes::{Hash, HashEngine};
@@ -37,18 +36,6 @@ sha256t_hash_newtype!(
     doc = "Library reference: a hash of the library code",
     false
 );
-
-/// Errors happening during library creation from bytecode & data
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
-#[display(doc_comments)]
-#[cfg_attr(feature = "std", derive(Error))]
-pub enum Error {
-    /// The size of the code segment exceeds 2^16
-    CodeSegmentTooLarge(usize),
-
-    /// The size of the data segment exceeds 2^24
-    DataSegmentTooLarge(usize),
-}
 
 /// AluVM executable code library
 #[derive(Debug, Default)]
@@ -84,12 +71,12 @@ where
     E: InstructionSet,
 {
     /// Constructs library from segments
-    pub fn with(bytecode: Vec<u8>, data: Vec<u8>, libs: LibSeg) -> Result<Lib<E>, Error> {
+    pub fn with(bytecode: Vec<u8>, data: Vec<u8>, libs: LibSeg) -> Result<Lib<E>, EncodeError> {
         if bytecode.len() > u16::MAX as usize {
-            return Err(Error::CodeSegmentTooLarge(bytecode.len()));
+            return Err(EncodeError::CodeSegmentTooLarge(bytecode.len()));
         }
         if data.len() > u24::MAX.as_u32() as usize {
-            return Err(Error::DataSegmentTooLarge(data.len()));
+            return Err(EncodeError::DataSegmentTooLarge(data.len()));
         }
         Ok(Self {
             libs_segment: libs,
@@ -100,18 +87,20 @@ where
     }
 
     /// Assembles library from the provided instructions by encoding them into bytecode
-    pub fn assemble<I>(code: I) -> Result<Lib<E>, EncodeError>
+    pub fn assemble<Isae>(code: &[Isae]) -> Result<Lib<E>, EncodeError>
     where
-        I: IntoIterator,
-        <I as IntoIterator>::Item: InstructionSet,
+        Isae: InstructionSet,
     {
+        let call_sites = code.iter().filter_map(|instr| instr.call_site());
+        let libs_segment = LibSeg::from(call_sites)?;
+
         let mut code_segment = ByteStr::default();
-        let mut writer = Cursor::new(&mut code_segment.bytes[..]);
-        for instr in code.into_iter() {
+        let mut writer = Cursor::new(&mut code_segment.bytes[..], &libs_segment);
+        for instr in code.iter() {
             instr.write(&mut writer)?;
         }
         let pos = writer.pos();
-        let (data, libs_segment) = writer.into_segments();
+        let data = writer.into_data_segment();
         code_segment.adjust_len(pos, false);
 
         Ok(Lib {
@@ -195,11 +184,6 @@ where
     }
 }
 
-/// Unable to add a library to the library segment: maximum number of libraries (2^16) exceeded
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display, Error)]
-#[display(doc_comments)]
-pub struct LibSegOverflow;
-
 /// Location within a library
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
 #[display("\"{lib}\",{pos:#06X}")]
@@ -217,69 +201,72 @@ impl LibSite {
     pub fn with(pos: u16, lib: LibId) -> LibSite { LibSite { lib, pos } }
 }
 
+/// Unable to add a library to the library segment: maximum number of libraries (2^16) exceeded
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
+#[cfg_attr(feature = "std", derive(Error))]
+#[display(doc_comments)]
+pub struct LibSegOverflow;
+
 mod private {
     pub trait Sealed {}
     impl Sealed for super::LibSeg {}
     impl Sealed for &super::LibSeg {}
 }
 
-#[doc(hidden)]
-pub trait LibSegment: private::Sealed {
-    /// Returns library id with a given index
-    fn lib_at(&self, index: u16) -> Option<LibId>;
-
-    /// Returns index of a library
-    fn lib_index(&self, lib: LibId) -> Option<u16>;
-
-    /// Adds library to the collection
-    fn insert(&mut self, lib: LibId) -> Result<u16, LibSegOverflow>;
-}
-
-/// Library segment data
+/// Library segment data keeping collection of libraries which MAY be used in some program.
+/// Libraries are referenced in the bytecode using 16-bit position number in this index.
+///
+/// Library segment keeps ordered collection of [`LibId`] such that the code calling library methods
+/// does not need to reference the whole 32-byte id each time and can just provide the library index
+/// in the libs segment (2 bytes). Thus, the total number of libraries which can be used by a
+/// program is limited to 2^16, and the maximum size of libs segment to 32*2^16 (2 MB).
+///
+/// NB: The program can reference position outside the scope of the library segment size; in this
+///     case VM performs no-operation and sets `st0` to false.
+///
+/// Libraries MUST be referenced in the libs segment in lexicographic order.
+///
+/// The implementation MUST ensure that the size of the index never exceeds `u16::MAX`.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 pub struct LibSeg {
+    /// Set maintains unique library ids which may be iterated in lexicographic ordering
     set: BTreeSet<LibId>,
+
+    /// Table matches lexicographic-based library index to the library id (i.e. this is reverse
+    /// index).
     table: BTreeMap<u16, LibId>,
 }
 
-impl LibSegment for &LibSeg {
-    #[inline]
-    fn lib_at(&self, index: u16) -> Option<LibId> { self.table.get(&index).copied() }
-
-    #[inline]
-    fn lib_index(&self, lib: LibId) -> Option<u16> {
-        self.set.iter().position(|l| *l == lib).map(|i| i as u16)
-    }
-
-    fn insert(&mut self, _: LibId) -> Result<u16, LibSegOverflow> {
-        panic!("attempt to modify read-only LibSegment")
-    }
-}
-
-impl LibSegment for LibSeg {
-    #[inline]
-    fn lib_at(&self, index: u16) -> Option<LibId> { (&self).lib_at(index) }
-
-    #[inline]
-    fn lib_index(&self, lib: LibId) -> Option<u16> { (&self).lib_index(lib) }
-
-    fn insert(&mut self, lib: LibId) -> Result<u16, LibSegOverflow> {
-        if self.set.len() >= u16::MAX as usize {
+impl LibSeg {
+    /// Constructs libs segment from an iterator over call locations
+    ///
+    /// # Error
+    ///
+    /// Errors with [`LibSegOverflow`] if the number of unique library ids exceeds `u16::MAX`.
+    pub fn from(source: impl IntoIterator<Item = LibSite>) -> Result<Self, LibSegOverflow> {
+        let set = source.into_iter().map(|site| site.lib).collect::<BTreeSet<LibId>>();
+        if set.len() >= u16::MAX as usize {
             return Err(LibSegOverflow);
         }
-        self.set.insert(lib);
-        let index = self.lib_index(lib).expect("BTreeSet is broken");
-        self.table.insert(index, lib);
-        Ok(index)
+        let table = set.iter().enumerate().map(|(index, id)| (index as u16, *id)).collect();
+        Ok(LibSeg { set, table })
     }
-}
 
-impl Index<u16> for LibSeg {
-    type Output = LibId;
-
+    /// Returns library id with a given index
     #[inline]
-    fn index(&self, index: u16) -> &Self::Output {
-        self.table.get(&index).expect("Unknown library")
+    pub fn at(&self, index: u16) -> Option<LibId> { self.table.get(&index).copied() }
+
+    /// Returns index of a library.
+    ///
+    /// The program can reference position outside the scope of the library segment size; in this
+    /// case VM performs no-operation and sets `st0` to false.
+    ///
+    /// # Returns
+    ///
+    /// If the library is not present in libs segment, returns `None`.
+    #[inline]
+    pub fn index(&self, lib: LibId) -> Option<u16> {
+        self.set.iter().position(|l| *l == lib).map(|i| i as u16)
     }
 }
 

@@ -16,15 +16,14 @@ use crate::LibId;
 
 mod private {
     use super::super::Cursor;
-    use crate::LibSegment;
 
     pub trait Sealed {}
 
-    impl<T, D, L> Sealed for Cursor<T, D, L>
+    impl<'a, T, D> Sealed for Cursor<'a, T, D>
     where
         T: AsRef<[u8]>,
         D: AsRef<[u8]>,
-        L: LibSegment,
+        Self: 'a,
     {
     }
 }

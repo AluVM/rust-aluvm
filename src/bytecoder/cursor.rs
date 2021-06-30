@@ -18,7 +18,7 @@ use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::{Read, Write};
 use crate::reg::{Number, RegisterSet};
-use crate::{LibId, LibSegOverflow, LibSegment};
+use crate::{LibId, LibSeg, LibSegOverflow};
 
 // I had an idea of putting Read/Write functionality into `amplify` crate,
 // but it is quire specific to the fact that it uses `u16`-sized underlying
@@ -36,8 +36,8 @@ pub enum CursorError {
     /// Attempt to read or write at a position outside of data boundaries ({0})
     OutOfBoundaries(usize),
 
-    /// Library with index {0} is not a part of libs segment
-    LibAbsent(u16),
+    /// Library with id {0} is not a part of libs segment
+    LibAbsent(LibId),
 
     #[from(LibSegOverflow)]
     /// Unable to add a library to the library segment: maximum number of libraries (2^16) exceeded
@@ -45,26 +45,26 @@ pub enum CursorError {
 }
 
 /// Cursor for accessing byte string data bounded by `u16::MAX` length
-pub struct Cursor<T, D, L>
+pub struct Cursor<'a, T, D>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
-    L: LibSegment,
+    Self: 'a,
 {
     bytecode: T,
     byte_pos: u16,
     bit_pos: u3,
     eof: bool,
     data: D,
-    libs: L,
+    libs: &'a LibSeg,
 }
 
 #[cfg(feature = "std")]
-impl<T, D, L> Debug for Cursor<T, D, L>
+impl<'a, T, D> Debug for Cursor<'a, T, D>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
-    L: LibSegment + Debug,
+    Self: 'a,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify_num::hex::ToHex;
@@ -80,11 +80,11 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<T, D, L> Display for Cursor<T, D, L>
+impl<'a, T, D> Display for Cursor<'a, T, D>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
-    L: LibSegment,
+    Self: 'a,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify_num::hex::ToHex;
@@ -98,39 +98,33 @@ where
     }
 }
 
-impl<T, D, L> Cursor<T, D, L>
+impl<'a, T, D> Cursor<'a, T, D>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]> + Default,
-    L: LibSegment + Default,
+    Self: 'a,
 {
-    /// Creates new cursor able to write the data
+    /// Creates new cursor able to write the bytecode and data, using provided immutable libs
+    /// segment
     #[inline]
-    pub fn new(bytecode: T) -> Cursor<T, D, L> {
-        Cursor {
-            bytecode,
-            byte_pos: 0,
-            bit_pos: u3::MIN,
-            eof: false,
-            data: D::default(),
-            libs: L::default(),
-        }
+    pub fn new(bytecode: T, libs: &'a LibSeg) -> Cursor<'a, T, D> {
+        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, eof: false, data: D::default(), libs }
     }
 }
 
-impl<T, D, L> Cursor<T, D, L>
+impl<'a, T, D> Cursor<'a, T, D>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
-    L: LibSegment,
+    Self: 'a,
 {
-    /// Creates cursor from the provided byte string
+    /// Creates cursor from the provided byte string utilizing existing libs segment
     ///
     /// # Panics
     ///
     /// If the length of the bytecode exceeds `u16::MAX` or length of the data `u24::MAX`
     #[inline]
-    pub fn with(bytecode: T, data: D, libs: L) -> Cursor<T, D, L> {
+    pub fn with(bytecode: T, data: D, libs: &'a LibSeg) -> Cursor<'a, T, D> {
         assert!(bytecode.as_ref().len() <= u16::MAX as usize + 1);
         assert!(data.as_ref().len() <= u24::MAX.as_u32() as usize + 1);
         Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, eof: false, data, libs }
@@ -149,9 +143,9 @@ where
     #[inline]
     pub fn seek(&mut self, byte_pos: u16) { self.byte_pos = byte_pos; }
 
-    /// Converts writer into segments used by AluVM libraries
+    /// Converts writer into data segment
     #[inline]
-    pub fn into_segments(self) -> (D, L) { (self.data, self.libs) }
+    pub fn into_data_segment(self) -> D { self.data }
 
     #[inline]
     fn as_ref(&self) -> &[u8] { self.bytecode.as_ref() }
@@ -206,19 +200,19 @@ where
     }
 }
 
-impl<T, D, L> Cursor<T, D, L>
+impl<'a, T, D> Cursor<'a, T, D>
 where
     T: AsRef<[u8]> + AsMut<[u8]>,
     D: AsRef<[u8]>,
-    L: LibSegment,
+    Self: 'a,
 {
     fn as_mut(&mut self) -> &mut [u8] { self.bytecode.as_mut() }
 }
 
-impl<T, L> Cursor<T, Vec<u8>, L>
+impl<'a, T> Cursor<'a, T, Vec<u8>>
 where
     T: AsRef<[u8]> + AsMut<[u8]>,
-    L: LibSegment,
+    Self: 'a,
 {
     fn write_unique(&mut self, bytes: &[u8]) -> Result<u24, CursorError> {
         // We write the value only if the value is not yet present in the data segment
@@ -235,11 +229,11 @@ where
     }
 }
 
-impl<T, D, L> Read for Cursor<T, D, L>
+impl<'a, T, D> Read for Cursor<'a, T, D>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
-    L: LibSegment,
+    Self: 'a,
 {
     type Error = CursorError;
 
@@ -329,9 +323,9 @@ where
         self.inc_bytes(3).map(|_| word)
     }
 
+    #[inline]
     fn read_lib(&mut self) -> Result<LibId, CursorError> {
-        let index = self.read_u16()?;
-        self.libs.lib_at(index).ok_or(CursorError::LibAbsent(index))
+        Ok(self.libs.at(self.read_u16()?).unwrap_or_default())
     }
 
     fn read_data(&mut self) -> Result<(&[u8], bool), CursorError> {
@@ -353,10 +347,10 @@ where
     }
 }
 
-impl<T, L> Write for Cursor<T, Vec<u8>, L>
+impl<'a, T> Write for Cursor<'a, T, Vec<u8>>
 where
     T: AsRef<[u8]> + AsMut<[u8]>,
-    L: LibSegment,
+    Self: 'a,
 {
     type Error = CursorError;
 
@@ -447,9 +441,9 @@ where
         self.inc_bytes(3)
     }
 
+    #[inline]
     fn write_lib(&mut self, lib: LibId) -> Result<(), CursorError> {
-        let index = self.libs.insert(lib)?;
-        self.write_u16(index)
+        self.write_u16(self.libs.index(lib).ok_or(CursorError::LibAbsent(lib))?)
     }
 
     fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), CursorError> {

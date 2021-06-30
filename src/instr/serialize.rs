@@ -24,7 +24,7 @@ use crate::instr::{
 };
 use crate::number::MaybeNumber;
 use crate::reg::{RegAR, RegBlockAR};
-use crate::{ByteStr, Instr, InstructionSet, LibSite};
+use crate::{ByteStr, Instr, InstructionSet, LibSegOverflow, LibSite};
 
 /// Errors decoding bytecode
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -53,8 +53,15 @@ impl ::std::error::Error for DecodeError {
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(doc_comments)]
 pub enum EncodeError {
-    /// number of instructions ({0}) exceeds limit of 2^16
-    TooManyInstructions(usize),
+    /// the size of the code segment exceeds 2^16
+    CodeSegmentTooLarge(usize),
+
+    /// the size of the data segment exceeds 2^24
+    DataSegmentTooLarge(usize),
+
+    /// the number of libraries exceeds 2^16
+    #[from(LibSegOverflow)]
+    LibSegmentOverflow,
 
     /// Cursor error
     #[display(inner)]
@@ -71,7 +78,10 @@ impl ::std::error::Error for EncodeError {
     fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
         match self {
             EncodeError::Cursor(err) => Some(err),
-            EncodeError::TooManyInstructions(_) | EncodeError::PutNoNumber => None,
+            EncodeError::CodeSegmentTooLarge(_)
+            | EncodeError::DataSegmentTooLarge(_)
+            | EncodeError::LibSegmentOverflow
+            | EncodeError::PutNoNumber => None,
         }
     }
 }
@@ -89,6 +99,11 @@ pub trait Bytecode {
 
     /// Returns byte representing instruction code (without its arguments)
     fn instr_byte(&self) -> u8;
+
+    /// If the instruction call or references any external library, returns the call site in that
+    /// library.
+    #[inline]
+    fn call_site(&self) -> Option<LibSite> { None }
 
     /// Writes the instruction as bytecode
     fn write<W>(&self, writer: &mut W) -> Result<(), EncodeError>
@@ -155,6 +170,25 @@ where
             Instr::Curve25519(instr) => instr.instr_byte(),
             Instr::ExtensionCodes(instr) => instr.instr_byte(),
             Instr::Nop => 1,
+        }
+    }
+
+    fn call_site(&self) -> Option<LibSite> {
+        match self {
+            Instr::ControlFlow(instr) => instr.call_site(),
+            Instr::Put(instr) => instr.call_site(),
+            Instr::Move(instr) => instr.call_site(),
+            Instr::Cmp(instr) => instr.call_site(),
+            Instr::Arithmetic(instr) => instr.call_site(),
+            Instr::Bitwise(instr) => instr.call_site(),
+            Instr::Bytes(instr) => instr.call_site(),
+            Instr::Digest(instr) => instr.call_site(),
+            #[cfg(feature = "secp256k1")]
+            Instr::Secp256k1(instr) => instr.call_site(),
+            #[cfg(feature = "curve25519")]
+            Instr::Curve25519(instr) => instr.call_site(),
+            Instr::ExtensionCodes(instr) => instr.call_site(),
+            Instr::Nop => None,
         }
     }
 
@@ -226,6 +260,14 @@ where
 }
 
 impl Bytecode for ControlFlowOp {
+    #[inline]
+    fn call_site(&self) -> Option<LibSite> {
+        match self {
+            ControlFlowOp::Call(site) | ControlFlowOp::Exec(site) => Some(*site),
+            _ => None,
+        }
+    }
+
     fn byte_count(&self) -> u16 {
         match self {
             ControlFlowOp::Fail | ControlFlowOp::Succ => 1,
