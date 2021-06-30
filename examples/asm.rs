@@ -79,9 +79,9 @@ fn main() {
         secpmul a256[1],r512[1],r512[22]        ;
         secpadd r512[22],r512[1]                ;
         secpneg r512[1],r512[2]                 ;
+        jmp     0                               ;
         call    56 @ alu1wnhusevxmdphv3dh8ada44k0xw66ahq9nzhkv39z07hmudhp380sq0dtml ;
         ret                                     ;
-        jmp     0                               ;
     };
 
     println!("Instructions:\n{:#?}\n", code);

@@ -156,6 +156,7 @@ impl CoreRegs {
     pub(crate) fn jmp(&mut self) -> Result<(), ()> {
         self.cy0
             .checked_add(1)
+            .map(|cy| self.cy0 = cy)
             .ok_or_else(|| {
                 self.st0 = false;
             })
@@ -165,6 +166,7 @@ impl CoreRegs {
     pub(crate) fn call(&mut self, site: LibSite) -> Result<(), ()> {
         self.cy0
             .checked_add(1)
+            .map(|cy| self.cy0 = cy)
             .ok_or_else(|| {
                 self.st0 = false;
             })

@@ -136,7 +136,7 @@ impl InstructionSet for ControlFlowOp {
     fn complexity(&self) -> u32 { 2 }
 
     fn exec(&self, regs: &mut CoreRegs, site: LibSite) -> ExecStep {
-        match self {
+        let res = match self {
             ControlFlowOp::Fail => {
                 regs.st0 = false;
                 ExecStep::Stop
@@ -165,7 +165,8 @@ impl InstructionSet for ControlFlowOp {
                 regs.jmp().map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Stop)
             }
             ControlFlowOp::Ret => regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop),
-        }
+        };
+        res
     }
 }
 
