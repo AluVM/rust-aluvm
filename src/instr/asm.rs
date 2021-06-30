@@ -51,7 +51,7 @@ macro_rules! aluasm {
             MergeFlag, MoveOp, NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
         };
         use aluvm::{
-            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterSet
+            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterSet, LibSite
         };
         use aluvm::number::{self, Number, MaybeNumber};
 
@@ -127,11 +127,17 @@ macro_rules! instr {
     (routine $offset:literal) => {
         Instr::ControlFlow(ControlFlowOp::Reutine($offset))
     };
-    (call $offset:literal @ $lib:literal) => {
-        Instr::ControlFlow(ControlFlowOp::Call(LibSite::with($offset, $lib)))
+    (call $lib:literal, $offset:literal) => {
+        Instr::ControlFlow(ControlFlowOp::Call(LibSite::with(
+            $offset,
+            $lib.parse().expect("wrong library reference"),
+        )))
     };
-    (exec $offset:literal @ $lib:literal) => {
-        Instr::ControlFlow(ControlFlowOp::Exec(LibSite::with($offset, $lib)))
+    (exec $lib:literal, $offset:literal) => {
+        Instr::ControlFlow(ControlFlowOp::Exec(LibSite::with(
+            $offset,
+            $lib.parse().expect("wrong library reference"),
+        )))
     };
     (ret) => {
         Instr::ControlFlow(ControlFlowOp::Ret)

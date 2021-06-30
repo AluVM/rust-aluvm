@@ -73,7 +73,9 @@ where
         Display::fmt(&self.code_segment, f)?;
         f.write_str("\nDATA: ")?;
         let data = ByteStr::with(&self.data_segment);
-        Display::fmt(&data, f)
+        Display::fmt(&data, f)?;
+        f.write_str("\nLIBS: ")?;
+        Display::fmt(&self.libs_segment, f)
     }
 }
 
@@ -82,7 +84,7 @@ where
     E: InstructionSet,
 {
     /// Constructs library from segments
-    pub fn with(bytecode: Vec<u8>, data: Vec<u8>) -> Result<Lib<E>, Error> {
+    pub fn with(bytecode: Vec<u8>, data: Vec<u8>, libs: LibSeg) -> Result<Lib<E>, Error> {
         if bytecode.len() > u16::MAX as usize {
             return Err(Error::CodeSegmentTooLarge(bytecode.len()));
         }
@@ -90,7 +92,7 @@ where
             return Err(Error::DataSegmentTooLarge(data.len()));
         }
         Ok(Self {
-            libs_segment: LibSeg::default(),
+            libs_segment: libs,
             code_segment: ByteStr::with(bytecode),
             data_segment: Box::from(data),
             instruction_set: Default::default(),
@@ -104,16 +106,16 @@ where
         <I as IntoIterator>::Item: InstructionSet,
     {
         let mut code_segment = ByteStr::default();
-        let mut writer = Cursor::with(&mut code_segment.bytes[..], Vec::new());
+        let mut writer = Cursor::new(&mut code_segment.bytes[..]);
         for instr in code.into_iter() {
             instr.write(&mut writer)?;
         }
         let pos = writer.pos();
-        let data = writer.into_data();
+        let (data, libs_segment) = writer.into_segments();
         code_segment.adjust_len(pos, false);
 
         Ok(Lib {
-            libs_segment: Default::default(),
+            libs_segment,
             code_segment,
             data_segment: Box::from(data),
             instruction_set: PhantomData::<E>::default(),
@@ -123,7 +125,7 @@ where
     /// Disassembles library into a set of instructions
     pub fn disassemble(&self) -> Result<Vec<Instr<E>>, DecodeError> {
         let mut code = Vec::new();
-        let mut reader = Cursor::with(&self.code_segment, &*self.data_segment);
+        let mut reader = Cursor::with(&self.code_segment, &*self.data_segment, &self.libs_segment);
         while !reader.is_end() {
             code.push(Instr::read(&mut reader)?);
         }
@@ -140,12 +142,15 @@ where
         let isae = &*self.isae_segment();
         let code = &self.code_segment();
         let data = &self.data_segment();
+        let libs = &self.libs_segment();
         engine.input(&(isae.len() as u8).to_le_bytes()[..]);
         engine.input(isae);
         engine.input(&(code.len() as u16).to_le_bytes()[..]);
         engine.input(code);
         engine.input(&u24::with(data.len() as u32).to_le_bytes()[..]);
         engine.input(data);
+        engine.input(&(libs.set.len() as u16).to_le_bytes()[..]);
+        libs.set.iter().for_each(|lib| engine.input(&lib[..]));
         LibId::from_engine(engine)
     }
 
@@ -161,13 +166,18 @@ where
     #[inline]
     pub fn data_segment(&self) -> &[u8] { self.data_segment.as_ref() }
 
+    /// Returns reference to libraries segment
+    #[inline]
+    pub fn libs_segment(&self) -> &LibSeg { &self.libs_segment }
+
     /// Executes library code starting at entrypoint
     ///
     /// # Returns
     ///
     /// Location for the external code jump, if any
     pub fn run(&self, entrypoint: u16, registers: &mut Registers) -> Option<LibSite> {
-        let mut cursor = Cursor::with(&self.code_segment.bytes[..], &*self.data_segment);
+        let mut cursor =
+            Cursor::with(&self.code_segment.bytes[..], &*self.data_segment, &self.libs_segment);
         let lib_hash = self.id();
         cursor.seek(entrypoint);
 
@@ -185,9 +195,14 @@ where
     }
 }
 
+/// Unable to add a library to the library segment: maximum number of libraries (2^16) exceeded
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display, Error)]
+#[display(doc_comments)]
+pub struct LibSegOverflow;
+
 /// Location within a library
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
-#[display("{pos:#06X}@{lib}")]
+#[display("\"{lib}\",{pos:#06X}")]
 pub struct LibSite {
     /// Library hash
     pub lib: LibId,
@@ -202,6 +217,24 @@ impl LibSite {
     pub fn with(pos: u16, lib: LibId) -> LibSite { LibSite { lib, pos } }
 }
 
+mod private {
+    pub trait Sealed {}
+    impl Sealed for super::LibSeg {}
+    impl Sealed for &super::LibSeg {}
+}
+
+#[doc(hidden)]
+pub trait LibSegment: private::Sealed {
+    /// Returns library id with a given index
+    fn lib_at(&self, index: u16) -> Option<LibId>;
+
+    /// Returns index of a library
+    fn lib_index(&self, lib: LibId) -> Option<u16>;
+
+    /// Adds library to the collection
+    fn insert(&mut self, lib: LibId) -> Result<u16, LibSegOverflow>;
+}
+
 /// Library segment data
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 pub struct LibSeg {
@@ -209,21 +242,30 @@ pub struct LibSeg {
     table: BTreeMap<u16, LibId>,
 }
 
-impl LibSeg {
-    /// Returns library id with a given index
+impl LibSegment for &LibSeg {
     #[inline]
-    pub fn lib_at(&self, index: u16) -> Option<LibId> { self.table.get(&index).copied() }
+    fn lib_at(&self, index: u16) -> Option<LibId> { self.table.get(&index).copied() }
 
-    /// Returns index of a library
     #[inline]
-    pub fn lib_index(&self, lib: LibId) -> Option<u16> {
+    fn lib_index(&self, lib: LibId) -> Option<u16> {
         self.set.iter().position(|l| *l == lib).map(|i| i as u16)
     }
 
-    /// Adds library to the collection
-    pub fn insert(&mut self, lib: LibId) -> Result<u16, ()> {
+    fn insert(&mut self, _: LibId) -> Result<u16, LibSegOverflow> {
+        panic!("attempt to modify read-only LibSegment")
+    }
+}
+
+impl LibSegment for LibSeg {
+    #[inline]
+    fn lib_at(&self, index: u16) -> Option<LibId> { (&self).lib_at(index) }
+
+    #[inline]
+    fn lib_index(&self, lib: LibId) -> Option<u16> { (&self).lib_index(lib) }
+
+    fn insert(&mut self, lib: LibId) -> Result<u16, LibSegOverflow> {
         if self.set.len() >= u16::MAX as usize {
-            return Err(());
+            return Err(LibSegOverflow);
         }
         self.set.insert(lib);
         let index = self.lib_index(lib).expect("BTreeSet is broken");

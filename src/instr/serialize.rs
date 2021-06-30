@@ -15,7 +15,6 @@ use alloc::boxed::Box;
 use core::ops::RangeInclusive;
 
 use amplify_num::{u1, u2, u3, u5};
-use bitcoin_hashes::Hash;
 
 use super::opcodes::*;
 use crate::bytecoder::{CursorError, Read, Write};
@@ -25,7 +24,7 @@ use crate::instr::{
 };
 use crate::number::MaybeNumber;
 use crate::reg::{RegAR, RegBlockAR};
-use crate::{ByteStr, Instr, InstructionSet, LibId, LibSite};
+use crate::{ByteStr, Instr, InstructionSet, LibSite};
 
 /// Errors decoding bytecode
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -232,8 +231,8 @@ impl Bytecode for ControlFlowOp {
             ControlFlowOp::Fail | ControlFlowOp::Succ => 1,
             ControlFlowOp::Jmp(_) | ControlFlowOp::Jif(_) => 3,
             ControlFlowOp::Routine(_) => 3,
-            ControlFlowOp::Call(_) => 3 + 32,
-            ControlFlowOp::Exec(_) => 3 + 32,
+            ControlFlowOp::Call(_) => 5,
+            ControlFlowOp::Exec(_) => 5,
             ControlFlowOp::Ret => 1,
         }
     }
@@ -266,7 +265,7 @@ impl Bytecode for ControlFlowOp {
             }
             ControlFlowOp::Call(lib_site) | ControlFlowOp::Exec(lib_site) => {
                 writer.write_u16(lib_site.pos)?;
-                writer.write_bytes32(lib_site.lib.into_inner())?;
+                writer.write_lib(lib_site.lib)?;
             }
             ControlFlowOp::Ret => {}
         }
@@ -284,14 +283,8 @@ impl Bytecode for ControlFlowOp {
             INSTR_JMP => Self::Jmp(reader.read_u16()?),
             INSTR_JIF => Self::Jif(reader.read_u16()?),
             INSTR_ROUTINE => Self::Routine(reader.read_u16()?),
-            INSTR_CALL => Self::Call(LibSite::with(
-                reader.read_u16()?,
-                LibId::from_inner(reader.read_bytes32()?),
-            )),
-            INSTR_EXEC => Self::Exec(LibSite::with(
-                reader.read_u16()?,
-                LibId::from_inner(reader.read_bytes32()?),
-            )),
+            INSTR_CALL => Self::Call(LibSite::with(reader.read_u16()?, reader.read_lib()?)),
+            INSTR_EXEC => Self::Exec(LibSite::with(reader.read_u16()?, reader.read_lib()?)),
             INSTR_RET => Self::Ret,
             x => unreachable!("instruction {:#010b} classified as control flow operation", x),
         })

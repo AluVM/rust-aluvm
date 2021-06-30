@@ -1226,13 +1226,16 @@ impl Registers {
             .ok_or_else(|| {
                 self.st0 = false;
             })
-            .and_then(|_| {
-                self.cp0.checked_add(1).ok_or_else(|| {
-                    self.st0 = false;
-                })
-            })
             .map(|_| {
-                self.cs0[self.cp0 as usize - 1] = site;
+                self.cs0[self.cp0 as usize] = site;
+            })
+            .and_then(|_| {
+                self.cp0
+                    .checked_add(1)
+                    .ok_or_else(|| {
+                        self.st0 = false;
+                    })
+                    .map(|_| ())
             })
     }
 

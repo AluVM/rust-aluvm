@@ -18,6 +18,7 @@ use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::{Read, Write};
 use crate::reg::{Number, RegisterSet};
+use crate::{LibId, LibSegOverflow, LibSegment};
 
 // I had an idea of putting Read/Write functionality into `amplify` crate,
 // but it is quire specific to the fact that it uses `u16`-sized underlying
@@ -25,7 +26,7 @@ use crate::reg::{Number, RegisterSet};
 // generic enough to become part of the `amplify` library
 
 /// Errors with cursor-based operations
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(doc_comments)]
 #[cfg_attr(feature = "std", derive(Error))]
 pub enum CursorError {
@@ -34,26 +35,36 @@ pub enum CursorError {
 
     /// Attempt to read or write at a position outside of data boundaries ({0})
     OutOfBoundaries(usize),
+
+    /// Library with index {0} is not a part of libs segment
+    LibAbsent(u16),
+
+    #[from(LibSegOverflow)]
+    /// Unable to add a library to the library segment: maximum number of libraries (2^16) exceeded
+    LibSegOverflow,
 }
 
 /// Cursor for accessing byte string data bounded by `u16::MAX` length
-pub struct Cursor<T, D>
+pub struct Cursor<T, D, L>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
+    L: LibSegment,
 {
     bytecode: T,
     byte_pos: u16,
     bit_pos: u3,
     eof: bool,
     data: D,
+    libs: L,
 }
 
 #[cfg(feature = "std")]
-impl<T, D> Debug for Cursor<T, D>
+impl<T, D, L> Debug for Cursor<T, D, L>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
+    L: LibSegment + Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify_num::hex::ToHex;
@@ -63,27 +74,22 @@ where
             .field("bit_pos", &self.bit_pos)
             .field("eof", &self.eof)
             .field("data", &self.data.as_ref().to_hex())
-//            .field("libs", &self.libs)
+            .field("libs", &self.libs)
             .finish()
     }
 }
 
 #[cfg(feature = "std")]
-impl<T, D> Display for Cursor<T, D>
+impl<T, D, L> Display for Cursor<T, D, L>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
+    L: LibSegment,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify_num::hex::ToHex;
         write!(f, "{}:{} @ ", self.byte_pos, self.bit_pos)?;
         let hex = self.as_ref().to_hex();
-        if f.alternate() {
-            write!(f, "{}..{}", &hex[..4], &hex[hex.len() - 4..])?;
-        } else {
-            f.write_str(&hex)?;
-        }
-        let hex = self.data.as_ref().to_hex();
         if f.alternate() {
             write!(f, "{}..{}", &hex[..4], &hex[hex.len() - 4..])
         } else {
@@ -92,10 +98,31 @@ where
     }
 }
 
-impl<T, D> Cursor<T, D>
+impl<T, D, L> Cursor<T, D, L>
+where
+    T: AsRef<[u8]>,
+    D: AsRef<[u8]> + Default,
+    L: LibSegment + Default,
+{
+    /// Creates new cursor able to write the data
+    #[inline]
+    pub fn new(bytecode: T) -> Cursor<T, D, L> {
+        Cursor {
+            bytecode,
+            byte_pos: 0,
+            bit_pos: u3::MIN,
+            eof: false,
+            data: D::default(),
+            libs: L::default(),
+        }
+    }
+}
+
+impl<T, D, L> Cursor<T, D, L>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
+    L: LibSegment,
 {
     /// Creates cursor from the provided byte string
     ///
@@ -103,10 +130,10 @@ where
     ///
     /// If the length of the bytecode exceeds `u16::MAX` or length of the data `u24::MAX`
     #[inline]
-    pub fn with(bytecode: T, data: D) -> Cursor<T, D> {
+    pub fn with(bytecode: T, data: D, libs: L) -> Cursor<T, D, L> {
         assert!(bytecode.as_ref().len() <= u16::MAX as usize + 1);
         assert!(data.as_ref().len() <= u24::MAX.as_u32() as usize + 1);
-        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, eof: false, data }
+        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, eof: false, data, libs }
     }
 
     /// Returns whether cursor is at the upper length boundary for any byte
@@ -122,9 +149,9 @@ where
     #[inline]
     pub fn seek(&mut self, byte_pos: u16) { self.byte_pos = byte_pos; }
 
-    /// Converts writer into data accumulated from the instructions (i.e. data segment)
+    /// Converts writer into segments used by AluVM libraries
     #[inline]
-    pub fn into_data(self) -> D { self.data }
+    pub fn into_segments(self) -> (D, L) { (self.data, self.libs) }
 
     #[inline]
     fn as_ref(&self) -> &[u8] { self.bytecode.as_ref() }
@@ -179,17 +206,19 @@ where
     }
 }
 
-impl<T, D> Cursor<T, D>
+impl<T, D, L> Cursor<T, D, L>
 where
     T: AsRef<[u8]> + AsMut<[u8]>,
     D: AsRef<[u8]>,
+    L: LibSegment,
 {
     fn as_mut(&mut self) -> &mut [u8] { self.bytecode.as_mut() }
 }
 
-impl<T> Cursor<T, Vec<u8>>
+impl<T, L> Cursor<T, Vec<u8>, L>
 where
     T: AsRef<[u8]> + AsMut<[u8]>,
+    L: LibSegment,
 {
     fn write_unique(&mut self, bytes: &[u8]) -> Result<u24, CursorError> {
         // We write the value only if the value is not yet present in the data segment
@@ -206,10 +235,11 @@ where
     }
 }
 
-impl<T, D> Read for Cursor<T, D>
+impl<T, D, L> Read for Cursor<T, D, L>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
+    L: LibSegment,
 {
     type Error = CursorError;
 
@@ -299,14 +329,9 @@ where
         self.inc_bytes(3).map(|_| word)
     }
 
-    fn read_bytes32(&mut self) -> Result<[u8; 32], CursorError> {
-        if self.eof {
-            return Err(CursorError::Eof);
-        }
-        let pos = self.byte_pos as usize;
-        let mut buf = [0u8; 32];
-        buf.copy_from_slice(&self.as_ref()[pos..pos + 32]);
-        self.inc_bytes(32).map(|_| buf)
+    fn read_lib(&mut self) -> Result<LibId, CursorError> {
+        let index = self.read_u16()?;
+        self.libs.lib_at(index).ok_or(CursorError::LibAbsent(index))
     }
 
     fn read_data(&mut self) -> Result<(&[u8], bool), CursorError> {
@@ -328,9 +353,10 @@ where
     }
 }
 
-impl<T> Write for Cursor<T, Vec<u8>>
+impl<T, L> Write for Cursor<T, Vec<u8>, L>
 where
     T: AsRef<[u8]> + AsMut<[u8]>,
+    L: LibSegment,
 {
     type Error = CursorError;
 
@@ -421,11 +447,9 @@ where
         self.inc_bytes(3)
     }
 
-    fn write_bytes32(&mut self, data: [u8; 32]) -> Result<(), CursorError> {
-        let from = self.byte_pos as usize;
-        let to = from + 32;
-        self.as_mut()[from..to].copy_from_slice(&data);
-        self.inc_bytes(32)
+    fn write_lib(&mut self, lib: LibId) -> Result<(), CursorError> {
+        let index = self.libs.insert(lib)?;
+        self.write_u16(index)
     }
 
     fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), CursorError> {

@@ -135,7 +135,7 @@ pub mod vm;
 pub(crate) use bytecoder::Cursor;
 pub use bytecoder::CursorError;
 pub use instr::{Instr, InstructionSet};
-pub use library::{Lib, LibId, LibSeg, LibSite};
+pub use library::{Lib, LibId, LibSeg, LibSegOverflow, LibSegment, LibSite};
 pub use reg::{
     number, ByteStr, MaybeNumber, Number, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR,
     RegBlockAFR, RegBlockAR, RegF, RegR, RegisterSet, Registers,

@@ -79,6 +79,7 @@ fn main() {
         secpneg r512[1],r512[2]                 ;
         ret                                     ;
         jmp     0                               ;
+        call    "479f83551b7ac16a4e4aa58aab98e7144a731abe9e3e2d475be6a9ef0ed9ae40", 56 ;
     };
 
     println!("Instructions:\n{:#?}\n", code);
@@ -90,11 +91,11 @@ fn main() {
         println!("\t\t{}", instr);
     }
 
-    print!("\nExecuting the program #{}... ", lib.id());
+    eprint!("\nExecuting the program #{} ... ", lib.id());
     let mut runtime = Vm::with(lib);
     match runtime.main() {
-        Ok(true) => println!("success"),
-        Ok(false) => println!("execution reported validation failure"),
+        Ok(true) => eprintln!("success"),
+        Ok(false) => eprintln!("execution reported validation failure"),
         Err(err) => eprintln!("{}", err),
     }
 }
