@@ -71,10 +71,6 @@ pub struct CoreRegs {
 
     /// Defines "top" of the call stack
     cp0: u16,
-
-    /// Secp256k1 context object (used by [`crate::isa::Secp256k1Op`] instructions)
-    #[cfg(feature = "secp256k1")]
-    pub(crate) secp: secp256k1::Secp256k1<secp256k1::All>,
 }
 
 impl Default for CoreRegs {
@@ -116,10 +112,6 @@ impl Default for CoreRegs {
             // TODO(#13) Convert into short library references
             cs0: Box::new([LibSite::default(); u16::MAX as usize]),
             cp0: 0,
-
-            // TODO(#14) Make it a part of the vm
-            #[cfg(feature = "secp256k1")]
-            secp: secp256k1::Secp256k1::new(),
         }
     }
 }

@@ -118,8 +118,6 @@
 // TODO(#7) Complete assembly compiler for string operations
 // TODO(#8) Implement operations on Edwards curves
 
-// TODO: Check ISAE segment ordering on library load
-
 extern crate alloc;
 
 #[macro_use]
