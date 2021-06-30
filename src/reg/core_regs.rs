@@ -18,7 +18,13 @@ use rustc_apfloat::ieee;
 
 use super::{Reg32, RegA, RegAFR, RegF, RegR};
 use crate::data::{ByteStr, MaybeNumber, Number};
+use crate::isa::InstructionSet;
 use crate::libs::LibSite;
+
+/// Maximal size of call stack.
+///
+/// Equals to 2^16 (limited by `cy0` and `cp0` bit size)
+pub const CALL_STACK_SIZE: usize = 1 << 16;
 
 /// Structure keeping state of all registers in a single microprosessor/VM core
 #[derive(Clone, Debug)]
@@ -66,8 +72,30 @@ pub struct CoreRegs {
     /// script.
     cy0: u16,
 
-    /// Call stack. Maximal size is `u16::MAX` (limited by `cy0` mechanics and `cp0`)
-    cs0: Box<[LibSite; u16::MAX as usize]>,
+    /// Complexity accumulator / counter.
+    ///
+    /// Each instruction has associated computational complexity level. This register sums
+    /// complexity of executed instructions.
+    ///
+    /// # See also
+    ///
+    /// - [`CoreRegs::cy0`] register
+    /// - [`CoreRegs::cl0`] register
+    ca0: u32,
+
+    /// Complexity limit
+    ///
+    /// If this register has a value set, once [`CoreRegs::ca0`] will reach this value the VM will
+    /// stop program execution setting `st0` to `false`.
+    cl0: Option<u32>,
+
+    /// Call stack
+    ///
+    /// # See also
+    ///
+    /// - [`CALL_STACK_SIZE`] constant
+    /// - [`CoreRegs::cp0`] register
+    cs0: Box<[LibSite; CALL_STACK_SIZE]>,
 
     /// Defines "top" of the call stack
     cp0: u16,
@@ -107,10 +135,10 @@ impl Default for CoreRegs {
             s16: Default::default(),
 
             st0: true,
-            // TODO(#2) Introduce `ca0` register
             cy0: 0,
-            // TODO(#13) Convert into short library references
-            cs0: Box::new([LibSite::default(); u16::MAX as usize]),
+            ca0: 0,
+            cl0: None,
+            cs0: Box::new([LibSite::default(); CALL_STACK_SIZE]),
             cp0: 0,
         }
     }
@@ -313,6 +341,30 @@ impl CoreRegs {
             (Some(val1), Some(val2)) => op(val1, val2).into(),
         };
         self.set(reg3.into(), dst, reg_val);
+    }
+
+    /// Accumulates complexity of the instruction into [`CoreRegs::ca0`].
+    ///
+    /// Sets `st0` to `false` if the complexity limit is reached or exceeded. Otherwise, does not
+    /// modify `st0` value.
+    ///
+    /// # Returns
+    ///
+    /// `false` if `cl0` register has value and the accumulated complexity has reached or exceeded
+    /// this limit
+    #[inline]
+    pub fn acc_complexity(&mut self, instr: impl InstructionSet) -> bool {
+        self.ca0 = self.ca0.saturating_add(instr.complexity());
+        if let Some(limit) = self.cl0 {
+            if self.ca0 >= limit {
+                self.st0 = false;
+                false
+            } else {
+                true
+            }
+        } else {
+            true
+        }
     }
 
     /// Returns vale of `st0` register

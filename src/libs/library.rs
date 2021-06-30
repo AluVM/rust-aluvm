@@ -260,7 +260,11 @@ where
 
         while !cursor.is_eof() {
             let instr = Instr::<E>::read(&mut cursor).ok()?;
-            match instr.exec(registers, LibSite::with(cursor.pos(), lib_hash)) {
+            let next = instr.exec(registers, LibSite::with(cursor.pos(), lib_hash));
+            if !registers.acc_complexity(instr) {
+                return None;
+            }
+            match next {
                 ExecStep::Stop => return None,
                 ExecStep::Next => continue,
                 ExecStep::Jump(pos) => cursor.seek(pos),

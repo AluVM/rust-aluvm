@@ -146,27 +146,38 @@ pub enum Reg32 {
 
 impl Reg32 {
     /// Returns `usize` representation of the register index
+    #[inline]
     pub fn to_usize(self) -> usize { self as u8 as usize }
 }
 
 impl Default for Reg32 {
+    #[inline]
     fn default() -> Self { Reg32::Reg1 }
 }
 
 impl From<&Reg32> for u5 {
+    #[inline]
     fn from(reg32: &Reg32) -> Self { u5::with(*reg32 as u8) }
 }
 
 impl From<Reg32> for u5 {
+    #[inline]
     fn from(reg32: Reg32) -> Self { u5::with(reg32 as u8) }
 }
 
 impl From<&Reg32> for u8 {
+    #[inline]
     fn from(reg32: &Reg32) -> Self { *reg32 as u8 }
 }
 
 impl From<Reg32> for u8 {
+    #[inline]
     fn from(reg32: Reg32) -> Self { reg32 as u8 }
+}
+
+impl From<&Reg32> for Reg32 {
+    #[inline]
+    fn from(reg32: &Reg32) -> Self { *reg32 }
 }
 
 impl From<u5> for Reg32 {
@@ -280,14 +291,17 @@ pub enum Reg16 {
 }
 
 impl Default for Reg16 {
+    #[inline]
     fn default() -> Self { Reg16::Reg1 }
 }
 
 impl From<&Reg16> for u4 {
+    #[inline]
     fn from(reg16: &Reg16) -> Self { u4::with(*reg16 as u8) }
 }
 
 impl From<Reg16> for u4 {
+    #[inline]
     fn from(reg16: Reg16) -> Self { u4::with(reg16 as u8) }
 }
 
@@ -316,7 +330,13 @@ impl From<u4> for Reg16 {
 }
 
 impl From<Reg16> for Reg32 {
+    #[inline]
     fn from(reg16: Reg16) -> Self { u5::with(reg16 as u8).into() }
+}
+
+impl From<&Reg16> for Reg32 {
+    #[inline]
+    fn from(reg16: &Reg16) -> Self { u5::with(*reg16 as u8).into() }
 }
 
 /// Short version of register indexes for `a` and `r` register sets covering
@@ -358,14 +378,17 @@ pub enum Reg8 {
 }
 
 impl Default for Reg8 {
+    #[inline]
     fn default() -> Self { Reg8::Reg1 }
 }
 
 impl From<&Reg8> for u3 {
+    #[inline]
     fn from(reg8: &Reg8) -> Self { u3::with(*reg8 as u8) }
 }
 
 impl From<Reg8> for u3 {
+    #[inline]
     fn from(reg8: Reg8) -> Self { u3::with(reg8 as u8) }
 }
 
@@ -386,5 +409,11 @@ impl From<u3> for Reg8 {
 }
 
 impl From<Reg8> for Reg32 {
+    #[inline]
     fn from(reg8: Reg8) -> Self { u5::with(reg8 as u8).into() }
+}
+
+impl From<&Reg8> for Reg32 {
+    #[inline]
+    fn from(reg8: &Reg8) -> Self { u5::with(*reg8 as u8).into() }
 }

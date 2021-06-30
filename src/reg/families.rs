@@ -137,6 +137,16 @@ impl From<RegA2> for RegA {
     }
 }
 
+impl From<&RegA2> for RegA {
+    #[inline]
+    fn from(reg: &RegA2) -> Self {
+        match reg {
+            RegA2::A8 => RegA::A8,
+            RegA2::A16 => RegA::A16,
+        }
+    }
+}
+
 /// Enumeration of integer arithmetic registers suited for string addresses (`a8` and `a16`
 /// registers)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -474,9 +484,29 @@ impl RegAFR {
     }
 }
 
+impl From<&RegA> for RegAFR {
+    #[inline]
+    fn from(reg: &RegA) -> Self { Self::A((*reg).into()) }
+}
+
+impl From<&RegF> for RegAFR {
+    #[inline]
+    fn from(reg: &RegF) -> Self { Self::F((*reg).into()) }
+}
+
+impl From<&RegR> for RegAFR {
+    #[inline]
+    fn from(reg: &RegR) -> Self { Self::R((*reg).into()) }
+}
+
 impl From<RegA2> for RegAFR {
     #[inline]
     fn from(reg: RegA2) -> Self { Self::A(reg.into()) }
+}
+
+impl From<&RegA2> for RegAFR {
+    #[inline]
+    fn from(reg: &RegA2) -> Self { Self::A(reg.into()) }
 }
 
 impl From<RegAF> for RegAFR {
@@ -489,12 +519,32 @@ impl From<RegAF> for RegAFR {
     }
 }
 
+impl From<&RegAF> for RegAFR {
+    #[inline]
+    fn from(reg: &RegAF) -> Self {
+        match reg {
+            RegAF::A(a) => Self::A(*a),
+            RegAF::F(f) => Self::F(*f),
+        }
+    }
+}
+
 impl From<RegAR> for RegAFR {
     #[inline]
     fn from(reg: RegAR) -> Self {
         match reg {
             RegAR::A(a) => Self::A(a),
             RegAR::R(r) => Self::R(r),
+        }
+    }
+}
+
+impl From<&RegAR> for RegAFR {
+    #[inline]
+    fn from(reg: &RegAR) -> Self {
+        match reg {
+            RegAR::A(a) => Self::A(*a),
+            RegAR::R(r) => Self::R(*r),
         }
     }
 }
@@ -575,6 +625,11 @@ impl From<u4> for RegAF {
 impl From<RegA2> for RegAF {
     #[inline]
     fn from(reg: RegA2) -> Self { Self::A(reg.into()) }
+}
+
+impl From<&RegA2> for RegAF {
+    #[inline]
+    fn from(reg: &RegA2) -> Self { Self::A(reg.into()) }
 }
 
 /// Superset of `A` and `R` registers
@@ -663,6 +718,11 @@ impl From<u4> for RegAR {
 impl From<RegA2> for RegAR {
     #[inline]
     fn from(reg: RegA2) -> Self { Self::A(reg.into()) }
+}
+
+impl From<&RegA2> for RegAR {
+    #[inline]
+    fn from(reg: &RegA2) -> Self { Self::A(reg.into()) }
 }
 
 /// Block of registers, either integer arithmetic or non-arithmetic (general) registers
