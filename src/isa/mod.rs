@@ -9,16 +9,17 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-//! Alu instruction set
+//! AluVM instruction set architecture
 
+#[macro_use]
 mod asm;
+mod bytecode;
 mod exec;
 mod flags;
-#[allow(clippy::module_inception)]
 mod instr;
-mod opcodes;
-pub mod serialize;
+pub mod opcodes;
 
+pub use bytecode::{Bytecode, DecodeError, EncodeError};
 pub use exec::{ExecStep, InstructionSet};
 pub use flags::{
     DeleteFlag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, ParseFlagError, RoundingFlag,
@@ -28,5 +29,3 @@ pub use instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp,
     NOp, PutOp, Secp256k1Op,
 };
-pub use opcodes::*;
-pub use serialize::Bytecode;

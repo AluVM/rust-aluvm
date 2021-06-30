@@ -17,14 +17,13 @@ use core::ops::RangeInclusive;
 use amplify_num::{u1, u2, u3, u5};
 
 use super::opcodes::*;
-use crate::bytecoder::{CursorError, Read, Write};
-use crate::instr::{
-    ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, MoveOp, NOp,
-    PutOp, Secp256k1Op,
+use super::{
+    ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr,
+    InstructionSet, MoveOp, NOp, PutOp, Secp256k1Op,
 };
-use crate::number::MaybeNumber;
+use crate::data::{ByteStr, MaybeNumber};
+use crate::libs::{CursorError, LibSegOverflow, LibSite, Read, Write};
 use crate::reg::{RegAR, RegBlockAR};
-use crate::{ByteStr, Instr, InstructionSet, LibSegOverflow, LibSite};
 
 /// Errors decoding bytecode
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]

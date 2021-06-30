@@ -11,8 +11,9 @@
 
 use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
-use crate::reg::{Number, RegisterSet};
-use crate::LibId;
+use super::LibId;
+use crate::data::Number;
+use crate::reg::RegisterFamily;
 
 mod private {
     use super::super::Cursor;
@@ -47,7 +48,7 @@ pub trait Read: private::Sealed {
     fn read_u24(&mut self) -> Result<u24, Self::Error>;
     fn read_lib(&mut self) -> Result<LibId, Self::Error>;
     fn read_data(&mut self) -> Result<(&[u8], bool), Self::Error>;
-    fn read_number(&mut self, reg: impl RegisterSet) -> Result<Number, Self::Error>;
+    fn read_number(&mut self, reg: impl RegisterFamily) -> Result<Number, Self::Error>;
 }
 
 pub trait Write: private::Sealed {
@@ -67,5 +68,5 @@ pub trait Write: private::Sealed {
     fn write_u24(&mut self, data: impl Into<u24>) -> Result<(), Self::Error>;
     fn write_lib(&mut self, data: LibId) -> Result<(), Self::Error>;
     fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), Self::Error>;
-    fn write_number(&mut self, reg: impl RegisterSet, value: Number) -> Result<(), Self::Error>;
+    fn write_number(&mut self, reg: impl RegisterFamily, value: Number) -> Result<(), Self::Error>;
 }

@@ -18,10 +18,10 @@ use core::marker::PhantomData;
 use amplify_num::u24;
 use bitcoin_hashes::{Hash, HashEngine};
 
-use crate::bytecoder::Read;
-use crate::instr::serialize::{Bytecode, DecodeError, EncodeError};
-use crate::instr::{ExecStep, NOp};
-use crate::{ByteStr, Cursor, Instr, InstructionSet, Registers};
+use super::{Cursor, Read};
+use crate::data::ByteStr;
+use crate::isa::{Bytecode, DecodeError, EncodeError, ExecStep, Instr, InstructionSet, NOp};
+use crate::reg::CoreRegs;
 
 const LIB_ID_MIDSTATE: [u8; 32] = [
     156, 224, 228, 230, 124, 17, 108, 57, 56, 179, 202, 242, 195, 15, 80, 137, 211, 243, 147, 108,
@@ -33,7 +33,9 @@ sha256t_hash_newtype!(
     LibIdTag,
     LIB_ID_MIDSTATE,
     64,
-    doc = "Library reference: a hash of the library code",
+    doc = "A library identifier.\n\nRepresents commitment to the library data; any two distinct \
+           programs are guaranteed (with SHA256 collision resistance level) to have a distinct \
+           library ids.",
     false
 );
 
@@ -164,7 +166,7 @@ where
     /// # Returns
     ///
     /// Location for the external code jump, if any
-    pub fn run(&self, entrypoint: u16, registers: &mut Registers) -> Option<LibSite> {
+    pub fn run(&self, entrypoint: u16, registers: &mut CoreRegs) -> Option<LibSite> {
         let mut cursor =
             Cursor::with(&self.code_segment.bytes[..], &*self.data_segment, &self.libs_segment);
         let lib_hash = self.id();

@@ -15,9 +15,11 @@
 ///
 /// ```
 /// # extern crate alloc;
+/// # #[macro_use] extern crate aluvm;
 /// # use paste::paste;
-/// # use aluvm::*;
-/// # use aluvm::instr::NOp;
+/// # use aluvm::{Vm};
+/// # use aluvm::libs::Lib;
+/// # use aluvm::isa::NOp;
 ///
 /// let code = aluasm! {
 ///         clr     r1024[5]                        ;
@@ -33,7 +35,7 @@
 ///         jmp     0                               ;
 /// };
 ///
-/// let lib = Lib::<NOp>::assemble(code).unwrap();
+/// let lib = Lib::<NOp>::assemble(&code).unwrap();
 /// let mut vm = Vm::with(lib);
 /// match vm.main() {
 ///     Ok(true) => println!("success"),
@@ -46,14 +48,15 @@ macro_rules! aluasm {
     ($( $tt:tt )+) => { {
         use alloc::boxed::Box;
 
-        use aluvm::instr::{
+        use aluvm::isa::{
             ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
             MergeFlag, MoveOp, NOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
         };
-        use aluvm::{
-            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterSet, LibSite
+        use aluvm::reg::{
+            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterFamily,
         };
-        use aluvm::number::{self, Number, MaybeNumber};
+        use aluvm::libs::LibSite;
+        use aluvm::data::{Number, MaybeNumber, Step};
 
         let mut code: Vec<Instr<NOp>> = vec![];
         #[allow(unreachable_code)] {
@@ -526,31 +529,23 @@ macro_rules! instr {
         }
     };
     (inc $reg:ident[$idx:literal]) => {
-        Instr::Arithmetic(ArithmeticOp::Stp(
-            _reg_tya!(Reg, $reg),
-            _reg_idx!($idx),
-            number::Step::with(1),
-        ))
+        Instr::Arithmetic(ArithmeticOp::Stp(_reg_tya!(Reg, $reg), _reg_idx!($idx), Step::with(1)))
     };
     (add $step:literal, $reg:ident[$idx:literal]) => {
         Instr::Arithmetic(ArithmeticOp::Stp(
             _reg_tya!(Reg, $reg),
             _reg_idx!($idx),
-            number::Step::with($step),
+            Step::with($step),
         ))
     };
     (dec $reg:ident[$idx:literal]) => {
-        Instr::Arithmetic(ArithmeticOp::Stp(
-            _reg_tya!(Reg, $reg),
-            _reg_idx!($idx),
-            number::Step::with(-1),
-        ))
+        Instr::Arithmetic(ArithmeticOp::Stp(_reg_tya!(Reg, $reg), _reg_idx!($idx), Step::with(-1)))
     };
     (sub $step:literal, $reg:ident[$idx:literal]) => {
         Instr::Arithmetic(ArithmeticOp::Stp(
             _reg_tya!(Reg, $reg),
             _reg_idx!($idx),
-            number::Step::with($step * -1),
+            Step::with($step * -1),
         ))
     };
     (neg $reg:ident[$idx:literal]) => {

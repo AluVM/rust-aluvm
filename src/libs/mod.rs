@@ -9,8 +9,12 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+//! Business logic and data structures for working with AluVM code libraries
+
 mod cursor;
+mod library;
 mod rw;
 
-pub use cursor::{Cursor, CursorError};
-pub use rw::{Read, Write};
+pub(crate) use cursor::{Cursor, CursorError};
+pub use library::{Lib, LibId, LibIdTag, LibSeg, LibSegOverflow, LibSite};
+pub(crate) use rw::{Read, Write};

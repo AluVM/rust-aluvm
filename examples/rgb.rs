@@ -9,7 +9,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use aluvm::{Reg32, RegA};
+use aluvm::reg::{Reg32, RegA};
 
 /// Example extension set of operations which are required for RGB
 // TODO(#3) Move to RGB Core Library

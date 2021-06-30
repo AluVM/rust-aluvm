@@ -16,9 +16,8 @@ use core::ops::{Div, Neg, Rem};
 use half::bf16;
 use rustc_apfloat::{ieee, Float, Status};
 
-use super::Number;
-use crate::instr::{IntFlags, RoundingFlag};
-use crate::reg::number::{FloatLayout, IntLayout, Layout, NumberLayout};
+use super::{FloatLayout, IntLayout, Layout, Number, NumberLayout};
+use crate::isa::{IntFlags, RoundingFlag};
 
 impl PartialEq for Number {
     #[inline]

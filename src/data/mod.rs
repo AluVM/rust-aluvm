@@ -9,14 +9,14 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-//! AluVM registers system
+//! Internal data representations and operations on data used by AluVM
 
-mod core_regs;
-mod families;
-mod indexes;
+mod arithm;
+mod bitwise;
+mod byte_str;
+mod number;
 
-pub use core_regs::CoreRegs;
-pub use families::{
-    RegA, RegA2, RegAF, RegAFR, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterFamily,
+pub use byte_str::ByteStr;
+pub use number::{
+    FloatLayout, IntLayout, Layout, LiteralParseError, MaybeNumber, Number, NumberLayout, Step,
 };
-pub use indexes::{Reg16, Reg32, Reg8};

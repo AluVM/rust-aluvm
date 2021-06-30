@@ -13,13 +13,13 @@ use alloc::boxed::Box;
 
 use amplify_num::u6;
 
-use crate::instr::{
-    DeleteFlag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, RoundingFlag, SignFlag, SplitFlag,
+use super::{
+    DeleteFlag, FloatEqFlag, InsertFlag, InstructionSet, IntFlags, MergeFlag, RoundingFlag,
+    SignFlag, SplitFlag,
 };
-use crate::reg::{
-    number, MaybeNumber, Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR,
-};
-use crate::{ByteStr, InstructionSet, LibSite};
+use crate::data::{ByteStr, MaybeNumber, Step};
+use crate::libs::LibSite;
+use crate::reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR};
 
 /// Default instruction extension which treats any operation as NOP
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -448,7 +448,7 @@ pub enum ArithmeticOp {
     ///
     /// Sets the destination to `None` and `st0` to `false` in case of overflow.
     #[display("{2:#}\t\t{2}{0}{1}")]
-    Stp(RegA, Reg32, number::Step),
+    Stp(RegA, Reg32, Step),
 
     /// Negates most significant bit
     #[display("neg\t\t{0}{1}")]

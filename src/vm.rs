@@ -13,8 +13,9 @@
 
 use alloc::collections::BTreeMap;
 
-use crate::instr::NOp;
-use crate::{InstructionSet, Lib, LibId, LibSite, Registers};
+use crate::isa::{InstructionSet, NOp};
+use crate::libs::{Lib, LibId, LibSite};
+use crate::reg::CoreRegs;
 
 /// Error returned by [`Vm::call`] method when the code calls to a library
 /// not known to the runtime
@@ -36,7 +37,7 @@ where
     entrypoint: LibSite,
 
     /// A set of registers
-    registers: Registers,
+    registers: CoreRegs,
 }
 
 impl<E> Vm<E>

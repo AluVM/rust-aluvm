@@ -16,9 +16,9 @@ use core::fmt::{self, Debug, Display, Formatter};
 
 use amplify_num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
-use super::{Read, Write};
-use crate::reg::{Number, RegisterSet};
-use crate::{LibId, LibSeg, LibSegOverflow};
+use super::{LibId, LibSeg, LibSegOverflow, Read, Write};
+use crate::data::Number;
+use crate::reg::RegisterFamily;
 
 // I had an idea of putting Read/Write functionality into `amplify` crate,
 // but it is quire specific to the fact that it uses `u16`-sized underlying
@@ -45,7 +45,7 @@ pub enum CursorError {
 }
 
 /// Cursor for accessing byte string data bounded by `u16::MAX` length
-pub struct Cursor<'a, T, D>
+pub(crate) struct Cursor<'a, T, D>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
@@ -337,7 +337,7 @@ where
         Ok((data, st0))
     }
 
-    fn read_number(&mut self, reg: impl RegisterSet) -> Result<Number, CursorError> {
+    fn read_number(&mut self, reg: impl RegisterFamily) -> Result<Number, CursorError> {
         let offset = self.read_u24()?.as_u32() as usize;
         let end = offset + reg.bytes() as usize;
         if end > self.data.as_ref().len() {
@@ -462,7 +462,7 @@ where
 
     fn write_number(
         &mut self,
-        reg: impl RegisterSet,
+        reg: impl RegisterFamily,
         mut value: Number,
     ) -> Result<(), CursorError> {
         let len = reg.bytes();

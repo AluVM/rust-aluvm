@@ -27,7 +27,7 @@ use amplify_num::{u1024, u256, u512};
 use half::bf16;
 use rustc_apfloat::{ieee, Float};
 
-use crate::reg::reg::RegisterSet;
+use crate::reg::RegisterFamily;
 
 /// Trait of different number layouts
 pub trait NumberLayout: Copy {
@@ -542,7 +542,7 @@ impl Number {
     /// internally; for construction numbers from the values coming not from the registers use
     /// [`Number::with_layout`] method.
     #[inline]
-    pub(crate) fn with_reg(slice: impl AsRef<[u8]>, reg: impl RegisterSet) -> Number {
+    pub(crate) fn with_reg(slice: impl AsRef<[u8]>, reg: impl RegisterFamily) -> Number {
         let mut me = Number::from_slice(slice);
         me.layout = reg.layout();
         me

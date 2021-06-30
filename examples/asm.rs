@@ -17,8 +17,9 @@ extern crate aluvm;
 #[macro_use]
 extern crate paste;
 
-use aluvm::instr::NOp;
-use aluvm::{Lib, Vm};
+use aluvm::isa::NOp;
+use aluvm::libs::Lib;
+use aluvm::Vm;
 
 fn main() {
     let code = aluasm! {

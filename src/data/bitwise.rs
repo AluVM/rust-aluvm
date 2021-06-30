@@ -12,8 +12,7 @@
 use core::convert::TryFrom;
 use core::ops::{BitAnd, BitOr, BitXor, Not, Shl, Shr};
 
-use super::{MaybeNumber, Number};
-use crate::reg::number::NumberLayout;
+use super::{MaybeNumber, Number, NumberLayout};
 
 impl Not for MaybeNumber {
     type Output = MaybeNumber;
