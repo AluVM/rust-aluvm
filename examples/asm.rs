@@ -25,7 +25,8 @@ fn main() {
     let code = aluasm! {
         clr     r1024[5]                        ;
         put     378,a16[8]                      ;
-        putif   0xaf67937b5498dc,r128[5]        ;
+        putif   0xaf67937b5498dc,r1024[24]      ;
+        putif   13,a8[1]                        ;
         swp     a8[1],a8[2]                     ;
         swp     f256[8],f256[7]                 ;
         dup     a256[1],a256[7]                 ;
@@ -78,7 +79,7 @@ fn main() {
         secpmul a256[1],r512[1],r512[22]        ;
         secpadd r512[22],r512[1]                ;
         secpneg r512[1],r512[2]                 ;
-        call    "alu1wnhusevxmdphv3dh8ada44k0xw66ahq9nzhkv39z07hmudhp380sq0dtml", 56 ;
+        call    56 @ alu1wnhusevxmdphv3dh8ada44k0xw66ahq9nzhkv39z07hmudhp380sq0dtml ;
         ret                                     ;
         jmp     0                               ;
     };
@@ -98,4 +99,6 @@ fn main() {
         true => eprintln!("success"),
         false => eprintln!("failure"),
     }
+
+    println!("\nVM microprocessor core state:\n{:#?}", runtime.registers_ref());
 }

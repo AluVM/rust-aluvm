@@ -1,13 +1,13 @@
 [package]
 name = "aluvm"
 description = "AluVM rust implementation"
-version = "0.3.0-beta"
+version = "0.3.0"
 authors = ["Dr Maxim Orlovsky <orlovsky@pandoracore.com>"]
 edition = "2018"
 license = "MIT"
 repository = "https://github.com/internet2-org/rust-aluvm"
 homepage = "https://lnp-bp.org"
-keywords = ["virtual-machine", "emulator", "declarative", "risc"]
+keywords = ["virtual-machine", "emulator", "functional", "risc", "edge-computing"]
 categories = ["no-std", "embedded", "compilers", "cryptography", "emulators"]
 readme = "README.md"
 exclude = [".github", "test"]

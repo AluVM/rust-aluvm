@@ -860,7 +860,7 @@ impl LowerHex for Number {
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 32 => {
                 #[cfg(feature = "std")]
                 {
-                    f.write_str(&u256::from(self).to_be_bytes().to_hex())
+                    f.write_str(&u256::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
                 }
                 #[cfg(not(feature = "std"))]
                 {
@@ -870,7 +870,7 @@ impl LowerHex for Number {
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 32 => {
                 #[cfg(feature = "std")]
                 {
-                    f.write_str(&u512::from(self).to_be_bytes().to_hex())
+                    f.write_str(&u512::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
                 }
                 #[cfg(not(feature = "std"))]
                 {
@@ -880,7 +880,7 @@ impl LowerHex for Number {
             Layout::Integer(IntLayout { .. }) => {
                 #[cfg(feature = "std")]
                 {
-                    f.write_str(&u1024::from(self).to_be_bytes().to_hex())
+                    f.write_str(&u1024::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
                 }
                 #[cfg(not(feature = "std"))]
                 {

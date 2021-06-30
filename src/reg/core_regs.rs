@@ -11,6 +11,7 @@
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
+use core::fmt::{self, Debug, Formatter};
 
 use amplify::num::{u256, u512};
 use half::bf16;
@@ -27,7 +28,7 @@ use crate::libs::LibSite;
 pub const CALL_STACK_SIZE: usize = 1 << 16;
 
 /// Structure keeping state of all registers in a single microprosessor/VM core
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct CoreRegs {
     // Arithmetic integer registers:
     pub(crate) a8: [Option<u8>; 32],
@@ -268,7 +269,6 @@ impl CoreRegs {
         let value: Option<Number> = value.into().into();
         match reg.into() {
             RegAFR::A(a) => match a {
-                RegA::A1024 => self.a1024[index] = value.map(Number::into),
                 RegA::A8 => self.a8[index] = value.map(Number::into),
                 RegA::A16 => self.a16[index] = value.map(Number::into),
                 RegA::A32 => self.a32[index] = value.map(Number::into),
@@ -276,6 +276,7 @@ impl CoreRegs {
                 RegA::A128 => self.a128[index] = value.map(Number::into),
                 RegA::A256 => self.a256[index] = value.map(Number::into),
                 RegA::A512 => self.a512[index] = value.map(Number::into),
+                RegA::A1024 => self.a1024[index] = value.map(Number::into),
             },
             RegAFR::R(r) => match r {
                 RegR::R128 => self.r128[index] = value.map(Number::into),
@@ -370,4 +371,273 @@ impl CoreRegs {
     /// Returns vale of `st0` register
     #[inline]
     pub fn status(&self) -> bool { self.st0 }
+}
+
+impl Debug for CoreRegs {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let (sect, reg, eq, val, reset) = if f.alternate() {
+            ("\x1B[0;4;1m", "\x1B[0;1m", "\x1B[0;37;2m", "\x1B[0;32m", "\x1B[0m")
+        } else {
+            ("", "", "", "", "")
+        };
+
+        write!(f, "{}CTRL:{}\t", sect, reset)?;
+        write!(f, "{}st0{}={}{} ", reg, eq, val, self.st0)?;
+        write!(f, "{}cy0{}={}{} ", reg, eq, val, self.cy0)?;
+        write!(f, "{}ca0{}={}{} ", reg, eq, val, self.ca0)?;
+        let cl = self.cl0.map(|v| v.to_string()).unwrap_or(s!("~"));
+        write!(f, "{}cl0{}={}{} ", reg, eq, val, cl)?;
+        write!(f, "{}cp0{}={}{} ", reg, eq, val, self.cp0)?;
+        write!(f, "\n\t\t{}cs0{}={}", reg, eq, val)?;
+        for p in 0..=self.cp0 {
+            write!(f, "{}\n\t\t   ", self.cs0[p as usize])?;
+        }
+
+        write!(f, "\n{}A-REG:{}\t", sect, reset)?;
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.a8[i] {
+                let j = i + 1;
+                write!(f, "{}a8{}[{}{:02}{}]={}{:02X}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.a16[i] {
+                let j = i + 1;
+                write!(
+                    f,
+                    "{}a16{}[{}{:02}{}]={}{:04X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.a32[i] {
+                let j = i + 1;
+                write!(
+                    f,
+                    "{}a32{}[{}{:02}{}]={}{:08X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.a64[i] {
+                let j = i + 1;
+                write!(
+                    f,
+                    " {}a64{}[{}{:02}{}]={}{:016X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        for i in 0..32 {
+            if let Some(v) = self.a128[i] {
+                let j = i + 1;
+                write!(f, "{}a128{}[{}{:02}{}]={}{:X}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+            }
+        }
+        for i in 0..32 {
+            if let Some(v) = self.a512[i] {
+                let v = Number::from(v);
+                let j = i + 1;
+                write!(f, "{}a256{}[{}{:02}{}]={}{:X}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+            }
+        }
+        for i in 0..32 {
+            if let Some(v) = self.a1024[i] {
+                let j = i + 1;
+                write!(f, "{}a512{}[{}{:02}{}]={}{:X}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+            }
+        }
+
+        write!(f, "\n{}F-REG:{}\t", sect, reset)?;
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.f16b[i] {
+                let j = i + 1;
+                write!(
+                    f,
+                    "{}f16b{}[{}{:02}{}]={}{:02X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.f16[i] {
+                let j = i + 1;
+                write!(f, "{}f16{}[{}{:02}{}]={}{}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.f32[i] {
+                let j = i + 1;
+                write!(f, "{}f32{}[{}{:02}{}]={}{}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.f64[i] {
+                let j = i + 1;
+                write!(f, " {}f64{}[{}{:02}{}]={}{}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        for i in 0..32 {
+            if let Some(v) = self.f80[i] {
+                let j = i + 1;
+                write!(f, "{}f80{}[{}{:02}{}]={}{}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+            }
+        }
+        for i in 0..32 {
+            if let Some(v) = self.f128[i] {
+                let j = i + 1;
+                write!(f, "{}f128{}[{}{:02}{}]={}{}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+            }
+        }
+        for i in 0..32 {
+            if let Some(v) = self.f512[i] {
+                let j = i + 1;
+                let v = Number::from(v);
+                write!(f, "{}f512{}[{}{:02}{}]={}{}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+            }
+        }
+
+        write!(f, "\n{}R-REG:{}\t", sect, reset)?;
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.r128[i] {
+                let j = i + 1;
+                let v = Number::from(v);
+                write!(
+                    f,
+                    "{}r128{}[{}{:02}{}]={}{:02X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.r160[i] {
+                let j = i + 1;
+                let v = Number::from(v);
+                write!(
+                    f,
+                    "{}r160{}[{}{:02}{}]={}{:04X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.r256[i] {
+                let j = i + 1;
+                let v = Number::from(v);
+                write!(
+                    f,
+                    "{}r256{}[{}{:02}{}]={}{:08X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        let mut c = 0;
+        for i in 0..32 {
+            if let Some(v) = self.r512[i] {
+                let j = i + 1;
+                let v = Number::from(v);
+                write!(
+                    f,
+                    " {}r512{}[{}{:02}{}]={}{:016X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+                c += 1;
+            }
+        }
+        if c > 0 {
+            f.write_str("\n\t\t")?;
+        }
+        for i in 0..32 {
+            if let Some(v) = self.r1024[i] {
+                let j = i + 1;
+                let v = Number::from(v);
+                write!(
+                    f,
+                    "{}r1024{}[{}{:02}{}]={}{:X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+            }
+        }
+        for i in 0..32 {
+            if let Some(v) = self.r2048[i] {
+                let j = i + 1;
+                let v = Number::from(v);
+                write!(
+                    f,
+                    "{}r2048{}[{}{:02}{}]={}{:X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+            }
+        }
+        for i in 0..32 {
+            if let Some(v) = self.r4096[i] {
+                let j = i + 1;
+                let v = Number::from(v);
+                write!(
+                    f,
+                    "{}r4096{}[{}{:02}{}]={}{:X}{}h\t",
+                    reg, eq, reset, j, eq, val, v, reset
+                )?;
+            }
+        }
+
+        Ok(())
+    }
 }

@@ -381,7 +381,7 @@ where
 
 /// Location within a library
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
-#[display("\"{lib}\",{pos:#06X}")]
+#[display("{pos} @ {lib}")]
 pub struct LibSite {
     /// Library hash
     pub lib: LibId,

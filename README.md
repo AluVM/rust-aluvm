@@ -1,5 +1,15 @@
 # AluVM rust implementation
 
+![Build](https://github.com/internet2-org/rust-aluvm/workflows/Build/badge.svg)
+![Tests](https://github.com/internet2-org/rust-aluvm/workflows/Tests/badge.svg)
+![Lints](https://github.com/internet2-org/rust-aluvm/workflows/Lints/badge.svg)
+[![codecov](https://codecov.io/gh/internet2-org/rust-aluvm/branch/master/graph/badge.svg)](https://codecov.io/gh/internet2-org/rust-aluvm)
+
+[![crates.io](https://img.shields.io/crates/v/aluvm)](https://crates.io/crates/aluvm)
+[![Docs](https://docs.rs/aluvm/badge.svg)](https://docs.rs/aluvm)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 Rust implementation of AluVM (arithmetic logic unit virtual machine) and 
 assembler from Alu Assembly language into bytecode. 
 

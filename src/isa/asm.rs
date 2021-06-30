@@ -73,6 +73,10 @@ macro_rules! aluasm_inner {
         $code.push(instr!{ $op });
         aluasm_inner! { $code => $( $tt )* }
     };
+    { $code:ident => $op:ident $arg:literal @ $lib:ident ; $($tt:tt)* } => {
+        $code.push(instr!{ $op $arg @ $lib });
+        aluasm_inner! { $code => $( $tt )* }
+    };
     { $code:ident => $op:ident $( $arg:literal ),+ ; $($tt:tt)* } => {
         $code.push(instr!{ $op $( $arg ),+ });
         aluasm_inner! { $code => $( $tt )* }
@@ -129,16 +133,16 @@ macro_rules! instr {
     (routine $offset:literal) => {
         Instr::ControlFlow(ControlFlowOp::Reutine($offset))
     };
-    (call $lib:literal, $offset:literal) => {
+    (call $offset:literal @ $lib:ident) => {
         Instr::ControlFlow(ControlFlowOp::Call(LibSite::with(
             $offset,
-            $lib.parse().expect("wrong library reference"),
+            stringify!($lib).parse().expect("wrong library reference"),
         )))
     };
-    (exec $lib:literal, $offset:literal) => {
+    (exec $offset:literal @ $lib:ident) => {
         Instr::ControlFlow(ControlFlowOp::Exec(LibSite::with(
             $offset,
-            $lib.parse().expect("wrong library reference"),
+            stringify!($lib).parse().expect("wrong library reference"),
         )))
     };
     (ret) => {
