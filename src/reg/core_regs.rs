@@ -221,14 +221,14 @@ impl CoreRegs {
             },
 
             RegAFR::F(f) => match f {
-                RegF::F16B => self.r128[index].map(|slice| Number::with_reg(slice, f)),
-                RegF::F16 => self.r128[index].map(|slice| Number::with_reg(slice, f)),
-                RegF::F32 => self.r128[index].map(|slice| Number::with_reg(slice, f)),
-                RegF::F64 => self.r128[index].map(|slice| Number::with_reg(slice, f)),
-                RegF::F80 => self.r128[index].map(|slice| Number::with_reg(slice, f)),
-                RegF::F128 => self.r128[index].map(|slice| Number::with_reg(slice, f)),
-                RegF::F256 => self.r128[index].map(|slice| Number::with_reg(slice, f)),
-                RegF::F512 => self.r128[index].map(|slice| Number::with_reg(slice, f)),
+                RegF::F16B => self.f16b[index].map(Number::from),
+                RegF::F16 => self.f16[index].map(Number::from),
+                RegF::F32 => self.f32[index].map(Number::from),
+                RegF::F64 => self.f64[index].map(Number::from),
+                RegF::F80 => self.f80[index].map(Number::from),
+                RegF::F128 => self.f128[index].map(Number::from),
+                RegF::F256 => self.f256[index].map(Number::from),
+                RegF::F512 => self.f512[index].map(Number::from),
             },
         }
         .into()

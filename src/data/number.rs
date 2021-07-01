@@ -27,8 +27,6 @@ use amplify::num::{u1024, u256, u512};
 use half::bf16;
 use rustc_apfloat::{ieee, Float};
 
-use crate::reg::RegisterFamily;
-
 /// Trait of different number layouts
 pub trait NumberLayout: Copy {
     /// Returns how many bits are used by the layout
@@ -533,19 +531,6 @@ impl Number {
         let mut zero = Number { layout, bytes: [0u8; 1024] };
         zero.bytes[(bit_no / 8) as usize] = 1 << (bit_no % 8);
         zero
-    }
-
-    #[doc(hidden)]
-    /// Constructs number representation from a slice taken directly from the register
-    ///
-    /// Panics if the slice length does not match the registry format. Should be used only
-    /// internally; for construction numbers from the values coming not from the registers use
-    /// [`Number::with_layout`] method.
-    #[inline]
-    pub(crate) fn with_reg(slice: impl AsRef<[u8]>, reg: impl RegisterFamily) -> Number {
-        let mut me = Number::from_slice(slice);
-        me.layout = reg.layout();
-        me
     }
 
     /// Constructs number representation from a slice and a given layout.

@@ -11,6 +11,7 @@
 
 //! Alu virtual machine
 
+use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 
 use crate::isa::{InstructionSet, ReservedOp};
