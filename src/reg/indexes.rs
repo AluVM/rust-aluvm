@@ -417,3 +417,37 @@ impl From<&Reg8> for Reg32 {
     #[inline]
     fn from(reg8: &Reg8) -> Self { u5::with(*reg8 as u8).into() }
 }
+
+/// Possible index values for string registers (`S`-registers).
+///
+/// For `S`-registers it is possible to denote index as `u8` value, with the real index equal to
+/// this value modulo 32. This is required because of the bit size parameters for the string
+/// opcode arguments.
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[display("s16[{0}]")]
+pub struct RegS(u5);
+
+impl From<RegS> for u8 {
+    #[inline]
+    fn from(reg: RegS) -> Self { reg.0.as_u8() }
+}
+
+impl From<&RegS> for u8 {
+    #[inline]
+    fn from(reg: &RegS) -> Self { reg.0.as_u8() }
+}
+
+impl From<u8> for RegS {
+    #[inline]
+    fn from(val: u8) -> Self { RegS(u5::with(val % 32)) }
+}
+
+impl From<RegS> for Reg32 {
+    #[inline]
+    fn from(reg: RegS) -> Self { Reg32::from(reg.0) }
+}
+
+impl From<Reg32> for RegS {
+    #[inline]
+    fn from(reg: Reg32) -> Self { RegS(reg.into()) }
+}
