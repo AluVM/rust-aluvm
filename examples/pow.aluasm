@@ -1,0 +1,32 @@
+.ISAE ; ISA Extensions segment
+                    .ALU
+                    .DYNDATA
+                    .BPDIGEST
+
+.LIBS ; Library reference segment
+
+
+.CODE ; Code segment
+					read s[1], $input			; AluRE ISA extension opcode to read
+                                                ; user/dynamic data with a given $id
+                    read r256[1], $difficulty
+                    read a16[2], $cycle_limit
+                    mov  a16[1], 0				; putting a value into register
+loop:											; label for cycle
+					sha2 s[1], r256[2]			; taking hash of the data
+                    extr r256[2], s[1]			; saving hash result
+                    inc  a16[1]					; counting steps
+                    ge   a16[1], a16[2]			; making sure we do not exceed $cycle_limit
+                    jif  exceeded
+                    le   r256[2], r256[1]		; checking against difficulty
+                    jif  done					; target difficulty reached!
+                    jmp  loop
+done:				succ
+exceeded:			fail						; failing since we exceeded $cycle_limit
+
+.DATA ; Data segment
+
+.DYN
+                    $input "Source data for hash generation"
+                    $difficulty "Target PoW difficulty level"
+                    $cycle_limit "Maximum number of cycles"

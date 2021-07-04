@@ -24,7 +24,7 @@ use aluvm::Vm;
 fn main() {
     let code = aluasm! {
         clr     r1024[5]                        ;
-        put     378,a16[8]                      ;
+        put     5,a16[8]                        ;
         putif   0xaf67937b5498dc,r256[1]        ;
         putif   13,a8[1]                        ;
         swp     a8[1],a8[2]                     ;
@@ -86,7 +86,7 @@ fn main() {
         secpadd r512[22],r512[1]                ;
         secpneg r512[1],r512[3]                 ;
         ifz     a16[8]                          ;
-        jif     198                             ;
+        jif     196                             ;
         jmp     7                               ;
         call    56 @ alu1wnhusevxmdphv3dh8ada44k0xw66ahq9nzhkv39z07hmudhp380sq0dtml ;
         ret                                     ;
@@ -94,12 +94,12 @@ fn main() {
 
     println!("Instructions:\n{:#?}\n", code);
     let lib = Lib::<ReservedOp>::assemble(&code).unwrap();
-    println!("\n{}\n", lib);
     let code = lib.disassemble().unwrap();
     println!("Assembly:");
     for instr in code {
         println!("\t\t{}", instr);
     }
+    let lib_repr = lib.to_string();
 
     eprint!("\nExecuting the program {} ... ", lib.id());
     let mut runtime = Vm::with(lib);
@@ -109,4 +109,5 @@ fn main() {
     }
 
     println!("\nVM microprocessor core state:\n{:#?}", runtime.registers_ref());
+    println!("\n{}\n", lib_repr);
 }
