@@ -29,7 +29,7 @@ edge computing, multiparty computing (including deterministic machine learning),
 client-side-validation, sandboxed Internet2 computing and genetic algorithms.
 
 For more details on AluVM, please check [the specification][AluVM], watch
-detailed presentation on [YouTube] or [check slides] from the presentation.
+detailed presentation on [YouTube](https://www.youtube.com/watch?v=brfWta7XXFQ) or [check slides](https://github.com/LNP-BP/presentations/blob/master/Presentation%20slides/RGB%20VM%20%26%20scripting.pdf) from the presentation.
 
 
 ## Design
@@ -123,7 +123,7 @@ Check [the specification][AluVM] for the details.
 
 ## History
 
-- The need for AluVM recognized as a part of RGB project on the
+- The need for AluVM recognized as a part of RGB project in
   Mar, the 24 & 31st, 2021 (see developers call <https://youtu.be/JmKNyOMv68I>)
 - Concept was presented on 19th of May 2021 
   ([check the recoding](https://youtu.be/Mma0oyiVbSE))
@@ -131,7 +131,7 @@ Check [the specification][AluVM] for the details.
   ([ISA & API docs](https://docs.rs/aluvm/0.1.0/alure/))
 - v0.2 release with multiple enhancements on the 9 Jun 2021
   ([ISA & API docs](https://docs.rs/aluvm/0.2.1/aluvm/)) – see presentation
-  on [Youtube] or read [slides]
+  on [Youtube] or read [slides](https://github.com/LNP-BP/presentations/blob/master/Presentation%20slides/RGB%20VM%20%26%20scripting.pdf)
 
 [AluVM]: https://github.com/internet2-org/aluvm-spec
 [YouTube]: https://www.youtube.com/watch?v=brfWta7XXFQ
