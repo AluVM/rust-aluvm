@@ -52,7 +52,8 @@ macro_rules! aluasm {
             MergeFlag, MoveOp, ReservedOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
         };
         use aluvm::reg::{
-            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterFamily,
+            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
+            RegisterFamily,
         };
         use aluvm::libs::LibSite;
         use aluvm::data::{Number, MaybeNumber, Step};
@@ -677,13 +678,13 @@ macro_rules! instr {
     };
 
     (ripemd s16[$idx1:literal],r160[$idx2:literal]) => {
-        Instr::Digest(DigestOp::Ripemd(_reg_idx!($idx1), _reg_idx8!($idx2)))
+        Instr::Digest(DigestOp::Ripemd(RegS::from($idx1), _reg_idx16!($idx2)))
     };
     (sha2 s16[$idx1:literal],r256[$idx2:literal]) => {
-        Instr::Digest(DigestOp::Sha256(_reg_idx!($idx1), _reg_idx8!($idx2)))
+        Instr::Digest(DigestOp::Sha256(RegS::from($idx1), _reg_idx16!($idx2)))
     };
     (sha2 s16[$idx1:literal],r512[$idx2:literal]) => {
-        Instr::Digest(DigestOp::Sha512(_reg_idx!($idx1), _reg_idx8!($idx2)))
+        Instr::Digest(DigestOp::Sha512(RegS::from($idx1), _reg_idx16!($idx2)))
     };
 
     (secpgen $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {

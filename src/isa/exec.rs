@@ -553,18 +553,21 @@ impl InstructionSet for BytesOp {
     fn exec(&self, regs: &mut CoreRegs, _site: LibSite) -> ExecStep {
         match self {
             BytesOp::Put(reg, bytes, st0) => {
-                regs.s16.insert(*reg, *bytes.clone());
+                regs.s16[reg.as_usize()] = Some(*bytes.clone());
                 if *st0 {
                     regs.st0 = false
                 }
             }
             BytesOp::Mov(reg1, reg2) => {
-                regs.s16.remove(&reg1).and_then(|bs| regs.s16.insert(*reg2, bs));
+                let bs = regs.s16[reg1.as_usize()].clone();
+                regs.s16[reg1.as_usize()] = None;
+                regs.s16[reg2.as_usize()] = bs;
             }
             BytesOp::Swp(reg1, reg2) => {
-                let bs1 = regs.s16.remove(&reg1);
-                regs.s16.remove(&reg1).and_then(|bs2| regs.s16.insert(*reg1, bs2));
-                bs1.and_then(|bs1| regs.s16.insert(*reg2, bs1));
+                let bs1 = regs.s16[reg1.as_usize()].clone();
+                let bs2 = regs.s16[reg2.as_usize()].clone();
+                regs.s16[reg1.as_usize()] = bs2;
+                regs.s16[reg2.as_usize()] = bs1;
             }
             BytesOp::Fill(reg, offset1, offset2, value, flag) => {
                 let mut f = || -> Option<()> {
@@ -572,7 +575,13 @@ impl InstructionSet for BytesOp {
                     let o2 = regs.a16[offset2.to_usize()]?;
                     let range = o1..=o2;
                     let val = regs.a8[value.to_usize()]?;
-                    let bs = regs.s16.entry(*reg).or_insert(ByteStr::default());
+                    let ref mut bs = regs.s16[reg.as_usize()];
+                    let bs = if let Some(s) = bs {
+                        s
+                    } else {
+                        *bs = Some(ByteStr::default());
+                        bs.as_mut().expect("rust optionals are broken")
+                    };
                     if bs.len() <= *range.end() as usize && !flag {
                         return None;
                     }
@@ -599,7 +608,7 @@ impl InstructionSet for BytesOp {
             BytesOp::Cnt(src, byte, dst) => {
                 let mut f = || -> Option<()> {
                     let val = regs.a8[*byte as u8 as usize]?;
-                    let bs = regs.s16.get(&src)?;
+                    let bs = regs.s16[src.as_usize()].as_ref()?;
                     let count = bs.as_ref().into_iter().filter(|b| **b == val).count();
                     if !RegA::A16.int_layout().fits_usize(count) {
                         return None;
@@ -650,7 +659,7 @@ impl InstructionSet for BytesOp {
                     let mut s = regs.get_s(*reg1)?.clone();
                     let bs = s.as_mut();
                     bs.reverse();
-                    regs.s16.insert(*reg2, s);
+                    regs.s16[reg2.as_usize()] = Some(s);
                     Some(())
                 };
                 f().unwrap_or_else(|| {
@@ -663,7 +672,7 @@ impl InstructionSet for BytesOp {
             }
             BytesOp::Extr(src, dst, index, offset) => {
                 let mut f = || -> Option<()> {
-                    let s = regs.get_s(src)?.clone();
+                    let s = regs.get_s(*src)?.clone();
                     let offset = regs.a16[*offset as u8 as usize]?;
                     let end = offset.saturating_add(dst.layout().bytes());
                     let num = Number::from_slice(&s.as_ref()[offset as usize..=end as usize]);
@@ -677,13 +686,13 @@ impl InstructionSet for BytesOp {
             }
             BytesOp::Inj(src, dst, index, offset) => {
                 let mut f = || -> Option<()> {
-                    let mut s = regs.get_s(src)?.clone();
+                    let mut s = regs.get_s(*src)?.clone();
                     let val = regs.get(dst, index).map(|v| v)?;
                     let offset = regs.a16[*offset as u8 as usize]?;
                     let end = offset.saturating_add(dst.layout().bytes() - 1);
                     s.adjust_len(end, true);
                     s.as_mut()[offset as usize..=end as usize].copy_from_slice(val.as_ref());
-                    regs.s16.insert(*src as u8, s);
+                    regs.s16[src.as_usize()] = Some(s);
                     Some(())
                 };
                 f().unwrap_or_else(|| {
@@ -706,12 +715,12 @@ impl InstructionSet for BytesOp {
                     }
                     let mut d = ByteStr::with(s1);
                     d.as_mut()[s1.len()..].copy_from_slice(s2.as_ref());
-                    regs.s16.insert(*dst, d);
+                    regs.s16[dst.as_usize()] = Some(d);
                     Some(())
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.s16.remove(&dst);
+                    regs.s16[dst.as_usize()] = None;
                 })
             }
             BytesOp::Splt(flag, offset, src, dst1, dst2) => {
@@ -746,19 +755,19 @@ impl InstructionSet for DigestOp {
         let none;
         match self {
             DigestOp::Ripemd(src, dst) => {
-                let s = regs.get_s(src);
+                let s = regs.get_s(*src);
                 none = s.is_none();
                 let hash = s.map(|s| ripemd160::Hash::hash(&s.bytes[..]).into_inner());
                 regs.set(RegR::R160, dst, hash);
             }
             DigestOp::Sha256(src, dst) => {
-                let s = regs.get_s(src);
+                let s = regs.get_s(*src);
                 none = s.is_none();
                 let hash = s.map(|s| sha256::Hash::hash(&s.bytes[..]).into_inner());
                 regs.set(RegR::R256, dst, hash);
             }
             DigestOp::Sha512(src, dst) => {
-                let s = regs.get_s(src);
+                let s = regs.get_s(*src);
                 none = s.is_none();
                 let hash = s.map(|s| sha512::Hash::hash(&s.bytes[..]).into_inner());
                 regs.set(RegR::R512, dst, hash);

@@ -1046,17 +1046,18 @@ impl Bytecode for BytesOp {
     fn byte_count(&self) -> u16 {
         match self {
             BytesOp::Put(_, _, _) => 6,
-            BytesOp::Mov(_, _) | BytesOp::Swp(_, _) => 3,
+            BytesOp::Mov(_, _) | BytesOp::Swp(_, _) => 2,
             BytesOp::Fill(_, _, _, _, _) => 3,
-            BytesOp::Len(_, _, _) | BytesOp::Cnt(_, _, _) | BytesOp::Eq(_, _) => 3,
-            BytesOp::Con(_, _, _, _, _) => 5,
+            BytesOp::Len(_, _, _) | BytesOp::Cnt(_, _, _) => 3,
+            BytesOp::Eq(_, _) => 2,
+            BytesOp::Con(_, _, _, _, _) => 4,
             BytesOp::Find(_, _) => 2,
             BytesOp::Extr(_, _, _, _) | BytesOp::Inj(_, _, _, _) => 3,
-            BytesOp::Join(_, _, _) => 4,
-            BytesOp::Splt(_, _, _, _, _) => 5,
-            BytesOp::Ins(_, _, _, _) => 4,
-            BytesOp::Del(_, _, _, _, _, _, _, _, _) => 5,
-            BytesOp::Rev(_, _) => 3,
+            BytesOp::Join(_, _, _) => 3,
+            BytesOp::Splt(_, _, _, _, _) => 4,
+            BytesOp::Ins(_, _, _, _) => 3,
+            BytesOp::Del(_, _, _, _, _, _, _, _, _) => 4,
+            BytesOp::Rev(_, _) => 2,
         }
     }
 
@@ -1090,40 +1091,40 @@ impl Bytecode for BytesOp {
     {
         match self {
             BytesOp::Put(reg, bytes, _) => {
-                writer.write_u8(*reg)?;
+                writer.write_u8(reg)?;
                 writer.write_data(bytes.as_ref())?;
             }
             BytesOp::Mov(reg1, reg2)
             | BytesOp::Swp(reg1, reg2)
             | BytesOp::Find(reg1, reg2)
             | BytesOp::Rev(reg1, reg2) => {
-                writer.write_u8(*reg1)?;
-                writer.write_u8(*reg2)?;
+                writer.write_u4(reg1)?;
+                writer.write_u4(reg2)?;
             }
             BytesOp::Fill(reg, offset1, offset2, value, flag) => {
-                writer.write_u8(*reg)?;
+                writer.write_u8(reg)?;
                 writer.write_u5(offset1)?;
                 writer.write_u5(offset2)?;
                 writer.write_u5(value)?;
                 writer.write_bool(*flag)?;
             }
             BytesOp::Len(src, reg, dst) => {
-                writer.write_u8(*src)?;
+                writer.write_u8(src)?;
                 writer.write_u3(reg)?;
                 writer.write_u5(dst)?;
             }
             BytesOp::Cnt(src, byte, cnt) => {
-                writer.write_u8(*src)?;
+                writer.write_u8(src)?;
                 writer.write_u4(byte)?;
                 writer.write_u4(cnt)?;
             }
             BytesOp::Eq(reg1, reg2) => {
-                writer.write_u8(*reg1)?;
-                writer.write_u8(*reg2)?;
+                writer.write_u4(reg1)?;
+                writer.write_u4(reg2)?;
             }
             BytesOp::Con(reg1, reg2, no, offset, len) => {
-                writer.write_u8(*reg1)?;
-                writer.write_u8(*reg2)?;
+                writer.write_u4(reg1)?;
+                writer.write_u4(reg2)?;
                 writer.write_u6(*no)?;
                 writer.write_u5(offset)?;
                 writer.write_u5(len)?;
@@ -1135,22 +1136,22 @@ impl Bytecode for BytesOp {
                 writer.write_u4(offset)?;
             }
             BytesOp::Join(src1, src2, dst) => {
-                writer.write_u8(*src1)?;
-                writer.write_u8(*src2)?;
-                writer.write_u8(*dst)?;
+                writer.write_u4(src1)?;
+                writer.write_u4(src2)?;
+                writer.write_u8(dst)?;
             }
             BytesOp::Splt(flag, offset, src, dst1, dst2) => {
                 writer.write_u3(flag)?;
                 writer.write_u5(offset)?;
-                writer.write_u8(*src)?;
-                writer.write_u8(*dst1)?;
-                writer.write_u8(*dst2)?;
+                writer.write_u8(src)?;
+                writer.write_u4(dst1)?;
+                writer.write_u4(dst2)?;
             }
             BytesOp::Ins(flag, offset, src, dst) => {
                 writer.write_u3(flag)?;
                 writer.write_u5(offset)?;
-                writer.write_u8(*src)?;
-                writer.write_u8(*dst)?;
+                writer.write_u4(src)?;
+                writer.write_u4(dst)?;
             }
             BytesOp::Del(flag, reg1, offset1, reg2, offset2, flag1, flag2, src, dst) => {
                 writer.write_u2(flag)?;
@@ -1160,8 +1161,8 @@ impl Bytecode for BytesOp {
                 writer.write_u5(offset2)?;
                 writer.write_bool(*flag1)?;
                 writer.write_bool(*flag2)?;
-                writer.write_u8(*src)?;
-                writer.write_u8(*dst)?;
+                writer.write_u4(src)?;
+                writer.write_u4(dst)?;
             }
         }
         Ok(())
@@ -1175,30 +1176,34 @@ impl Bytecode for BytesOp {
             INSTR_PUT => {
                 let index = reader.read_u8()?;
                 let (data, st0) = reader.read_data()?;
-                Self::Put(index, Box::new(ByteStr::with(data)), st0)
+                Self::Put(index.into(), Box::new(ByteStr::with(data)), st0)
             }
-            INSTR_MVS => Self::Mov(reader.read_u8()?, reader.read_u8()?),
-            INSTR_SWP => Self::Swp(reader.read_u8()?, reader.read_u8()?),
-            INSTR_FIND => Self::Find(reader.read_u8()?, reader.read_u8()?),
-            INSTR_REV => Self::Rev(reader.read_u8()?, reader.read_u8()?),
+            INSTR_MVS => Self::Mov(reader.read_u4()?.into(), reader.read_u4()?.into()),
+            INSTR_SWP => Self::Swp(reader.read_u4()?.into(), reader.read_u4()?.into()),
+            INSTR_FIND => Self::Find(reader.read_u4()?.into(), reader.read_u4()?.into()),
+            INSTR_REV => Self::Rev(reader.read_u4()?.into(), reader.read_u4()?.into()),
 
             INSTR_FILL => Self::Fill(
-                reader.read_u8()?,
+                reader.read_u8()?.into(),
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
                 reader.read_bool()?,
             ),
-            INSTR_LEN => {
-                Self::Len(reader.read_u8()?, reader.read_u3()?.into(), reader.read_u5()?.into())
-            }
-            INSTR_CNT => {
-                Self::Cnt(reader.read_u8()?, reader.read_u4()?.into(), reader.read_u4()?.into())
-            }
-            INSTR_EQ => Self::Eq(reader.read_u8()?, reader.read_u8()?),
+            INSTR_LEN => Self::Len(
+                reader.read_u8()?.into(),
+                reader.read_u3()?.into(),
+                reader.read_u5()?.into(),
+            ),
+            INSTR_CNT => Self::Cnt(
+                reader.read_u8()?.into(),
+                reader.read_u4()?.into(),
+                reader.read_u4()?.into(),
+            ),
+            INSTR_EQ => Self::Eq(reader.read_u4()?.into(), reader.read_u4()?.into()),
             INSTR_CON => Self::Con(
-                reader.read_u8()?,
-                reader.read_u8()?,
+                reader.read_u4()?.into(),
+                reader.read_u4()?.into(),
                 reader.read_u6()?,
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
@@ -1215,19 +1220,23 @@ impl Bytecode for BytesOp {
                 reader.read_u4()?.into(),
                 reader.read_u4()?.into(),
             ),
-            INSTR_JOIN => Self::Join(reader.read_u8()?, reader.read_u8()?, reader.read_u8()?),
+            INSTR_JOIN => Self::Join(
+                reader.read_u4()?.into(),
+                reader.read_u4()?.into(),
+                reader.read_u8()?.into(),
+            ),
             INSTR_SPLT => Self::Splt(
                 reader.read_u3()?.into(),
                 reader.read_u5()?.into(),
-                reader.read_u8()?,
-                reader.read_u8()?,
-                reader.read_u8()?,
+                reader.read_u8()?.into(),
+                reader.read_u4()?.into(),
+                reader.read_u4()?.into(),
             ),
             INSTR_INS => Self::Ins(
                 reader.read_u3()?.into(),
                 reader.read_u5()?.into(),
-                reader.read_u8()?,
-                reader.read_u8()?,
+                reader.read_u4()?.into(),
+                reader.read_u4()?.into(),
             ),
             INSTR_DEL => Self::Del(
                 reader.read_u2()?.into(),
@@ -1237,8 +1246,8 @@ impl Bytecode for BytesOp {
                 reader.read_u5()?.into(),
                 reader.read_bool()?,
                 reader.read_bool()?,
-                reader.read_u8()?,
-                reader.read_u8()?,
+                reader.read_u4()?.into(),
+                reader.read_u4()?.into(),
             ),
             x => unreachable!("instruction {:#010b} classified as byte string operation", x),
         })
@@ -1268,8 +1277,8 @@ impl Bytecode for DigestOp {
             DigestOp::Ripemd(src, dst)
             | DigestOp::Sha256(src, dst)
             | DigestOp::Sha512(src, dst) => {
-                writer.write_u5(src)?;
-                writer.write_u3(dst)?;
+                writer.write_u4(src)?;
+                writer.write_u4(dst)?;
             }
         }
         Ok(())
@@ -1280,8 +1289,8 @@ impl Bytecode for DigestOp {
         R: Read,
     {
         let instr = reader.read_u8()?;
-        let src = reader.read_u5()?.into();
-        let dst = reader.read_u3()?.into();
+        let src = reader.read_u4()?.into();
+        let dst = reader.read_u4()?.into();
 
         Ok(match instr {
             INSTR_RIPEMD => Self::Ripemd(src, dst),

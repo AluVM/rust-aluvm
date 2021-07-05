@@ -19,7 +19,7 @@ use super::{
 };
 use crate::data::{ByteStr, MaybeNumber, Step};
 use crate::libs::LibSite;
-use crate::reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR};
+use crate::reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, RegS};
 
 /// Reserved instruction, which equal to [`ControlFlowOp::Fail`].
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Default)]
@@ -577,7 +577,7 @@ pub enum BytesOp {
     /// sets `st0` to `false`. Otherwise, `st0` is unaffected.
     #[display("put     s16[{0}],{1}")]
     Put(
-        /** Destination `s` register index */ u8,
+        /** Destination `s` register index */ RegS,
         Box<ByteStr>,
         /** Indicates that the operation must set `st0` to false; i.e. string data are not
          * complete */
@@ -586,11 +586,11 @@ pub enum BytesOp {
 
     /// Move bytestring value between registers
     #[display("mov     s16[{0}],s16[{1}]")]
-    Mov(/** Source `s` register index */ u8, /** Destination `s` register index */ u8),
+    Mov(/** Source `s` register index */ RegS, /** Destination `s` register index */ RegS),
 
     /// Swap bytestring value between registers
     #[display("swp     s16[{0}],s16[{1}]")]
-    Swp(/** First `s` register index */ u8, /** Second `s` register index */ u8),
+    Swp(/** First `s` register index */ RegS, /** Second `s` register index */ RegS),
 
     /// Fill segment of bytestring with specific byte value, setting the length of the string in
     /// the destination register to specific value.
@@ -612,7 +612,7 @@ pub enum BytesOp {
     /// change destination value.
     #[display("fill    s16[{0}],{1}..{2},{3}")]
     Fill(
-        /** `s` register index */ u8,
+        /** `s` register index */ RegS,
         /** `a16` register holding first offset */ Reg32,
         /** `a16` register holding second offset (inclusive) */ Reg32,
         /** `a8` register index holding the value */ Reg32,
@@ -624,7 +624,7 @@ pub enum BytesOp {
     /// If the string register is empty, or destination register can't fit the length, sets `st0`
     /// to `false` and destination register to `None`.
     #[display("len     s16[{0}],a16[0]")]
-    Len(/** `s` register index */ u8, RegA, Reg32),
+    Len(/** `s` register index */ RegS, RegA, Reg32),
 
     /// Count number of byte occurrences from the `a8` register within the string and stores that
     /// value into destination `a16` register.
@@ -636,7 +636,7 @@ pub enum BytesOp {
     /// `st0` to `false`.
     #[display("cnt     s16[{0}],{1},a16[0]")]
     Cnt(
-        /** `s` register index */ u8,
+        /** `s` register index */ RegS,
         /** `a8` register with the byte value */ Reg16,
         /** `a16` destination register index */ Reg16,
     ),
@@ -645,15 +645,15 @@ pub enum BytesOp {
     ///
     /// If both of strings are uninitialized, `st0` assigned `true` value.
     #[display("cmp     s16[{0}],s16[{0}]")]
-    Eq(u8, u8),
+    Eq(RegS, RegS),
 
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
     /// fragment"), putting it to the destination `u16` registers. If strings have no conjoint
     /// fragment sets destination to `None`.
     #[display("con     s16[{0}],s16[{1}],u16{2},u16{3}")]
     Con(
-        /** First source string register */ u8,
-        /** Second source string register */ u8,
+        /** First source string register */ RegS,
+        /** Second source string register */ RegS,
         /** Number of the conjoint fragment to match */ u6,
         /** `u16` register index to save the offset of the conjoint fragment */ Reg32,
         /** `u16` register index to save the length of the conjoint fragment */ Reg32,
@@ -666,7 +666,7 @@ pub enum BytesOp {
     /// If the number of occurrences is `u16::MAX + 1`, sets `a16[1]` to `u16::MAX` and `st0` to
     /// `false`.
     #[display("find    s16[{0}],s16[{1}],a16[1]")]
-    Find(/** `s` register with string */ u8, /** `s` register with matching fragment */ u8),
+    Find(/** `s` register with string */ RegS, /** `s` register with matching fragment */ RegS),
 
     /// Extract byte string slice into general `r` register. The length of the extracted string is
     /// equal to the bit dimension of the destination register. If the bit size of the destination
@@ -676,7 +676,7 @@ pub enum BytesOp {
     /// If the source string register - or offset register is uninitialized, sets destination to
     /// uninitialized state and `st0` to `false`.
     #[display("extr    s16{0},a16{1},{2}{3}")]
-    Extr(/** `s` register index */ Reg32, RegR, Reg16, /** `a16` register with offset */ Reg16),
+    Extr(/** `s` register index */ RegS, RegR, Reg16, /** `a16` register with offset */ Reg16),
 
     /// Inject general `R` register value at a given position to string register, replacing value
     /// of the corresponding bytes. If the insert offset is larger than the current length of the
@@ -686,7 +686,7 @@ pub enum BytesOp {
     /// `None` state and `st0` is set to `false`. Otherwise, `st0` value is not modified.
     #[display("inj     s16{0},a16{1},{2}{3}")]
     Inj(
-        /** `s` register index acting as the source and destination */ Reg32,
+        /** `s` register index acting as the source and destination */ RegS,
         RegR,
         Reg16,
         /** `a16` register with offset */ Reg16,
@@ -697,7 +697,7 @@ pub enum BytesOp {
     /// destination register is set to `None` state and `st0` is set to `false`. Otherwise,
     /// `st0` value is not modified.
     #[display("join    s16[{0}],s16[{1}],s16[{2}]")]
-    Join(/** Source 1 */ u8, /** Source 2 */ u8, /** Destination */ u8),
+    Join(/** Source 1 */ RegS, /** Source 2 */ RegS, /** Destination */ RegS),
 
     /// Split bytestring at a given offset taken from `a16` register into two destination strings,
     /// overwriting their value. If offset exceeds the length of the string in the register,
@@ -736,9 +736,9 @@ pub enum BytesOp {
     Splt(
         SplitFlag,
         /** `a16` register index with offset value */ Reg32,
-        /** Source */ u8,
-        /** Destination 1 */ u8,
-        /** Destination 2 */ u8,
+        /** Source */ RegS,
+        /** Destination 1 */ RegS,
+        /** Destination 2 */ RegS,
     ),
 
     /// Insert value from one of bytestring register at a given index of other bytestring register,
@@ -774,8 +774,8 @@ pub enum BytesOp {
     Ins(
         InsertFlag,
         /** `a16` register index with offset value for insert location */ Reg32,
-        /** Source register */ u8,
-        /** Destination register */ u8,
+        /** Source register */ RegS,
+        /** Destination register */ RegS,
     ),
 
     /// Delete bytes in a given range, shifting the remaining bytes leftward. The start offset is
@@ -817,8 +817,8 @@ pub enum BytesOp {
         /** `flag2` indicating `st0` value set to false if
          * `offset_end > src_len && offser_start <= src_len` */
         bool,
-        /** Source `s` register */ u8,
-        /** Destination `s` register */ u8,
+        /** Source `s` register */ RegS,
+        /** Destination `s` register */ RegS,
     ),
 
     /// Revert byte order of the string.
@@ -826,7 +826,7 @@ pub enum BytesOp {
     /// If the source string register is uninitialized, resets destination to the uninitialized
     /// state and sets `st0` to `false`.
     #[display("rev     s16[{0}],s16[{1}]")]
-    Rev(/** Source */ u8, /** Destination */ u8),
+    Rev(/** Source */ RegS, /** Destination */ RegS),
 }
 
 /// Cryptographic hashing functions
@@ -839,8 +839,8 @@ pub enum DigestOp {
     /// contain a value
     #[display("ripemd  s16{0},r160{1}")]
     Ripemd(
-        /** Index of string register */ Reg32,
-        /** Index of `r160` register to save result to */ Reg8,
+        /** Index of string register */ RegS,
+        /** Index of `r160` register to save result to */ Reg16,
     ),
 
     /// Computes SHA256 hash value
@@ -849,8 +849,8 @@ pub enum DigestOp {
     /// contain a value
     #[display("sha2    s16{0},r256{1}")]
     Sha256(
-        /** Index of string register */ Reg32,
-        /** Index of `r256` register to save result to */ Reg8,
+        /** Index of string register */ RegS,
+        /** Index of `r256` register to save result to */ Reg16,
     ),
 
     /// Computes SHA256 hash value
@@ -859,8 +859,8 @@ pub enum DigestOp {
     /// contain a value
     #[display("sha2    s16{0},r512{1}")]
     Sha512(
-        /** Index of string register */ Reg32,
-        /** Index of `r512` register to save result to */ Reg8,
+        /** Index of string register */ RegS,
+        /** Index of `r512` register to save result to */ Reg16,
     ),
 }
 

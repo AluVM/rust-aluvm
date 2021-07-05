@@ -10,7 +10,6 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use alloc::boxed::Box;
-use alloc::collections::BTreeMap;
 use alloc::string::ToString;
 use core::fmt::{self, Debug, Formatter};
 
@@ -22,6 +21,7 @@ use super::{Reg32, RegA, RegAFR, RegF, RegR};
 use crate::data::{ByteStr, MaybeNumber, Number};
 use crate::isa::InstructionSet;
 use crate::libs::LibSite;
+use crate::reg::RegS;
 
 /// Maximal size of call stack.
 ///
@@ -64,7 +64,7 @@ pub struct CoreRegs {
     pub(crate) r8192: [Option<[u8; 1024]>; 32],
 
     /// String and bytestring registers
-    pub(crate) s16: BTreeMap<u8, ByteStr>,
+    pub(crate) s16: Box<[Option<ByteStr>; 16]>,
 
     /// Control flow register which stores result of equality, comparison, boolean check and
     /// overflowing operations. Initialized with `true`.
@@ -236,7 +236,9 @@ impl CoreRegs {
 
     /// Returns value from one of `S`-registers
     #[inline]
-    pub fn get_s(&self, index: impl Into<u8>) -> Option<&ByteStr> { self.s16.get(&index.into()) }
+    pub fn get_s(&self, index: impl Into<RegS>) -> Option<&ByteStr> {
+        self.s16[index.into().as_usize()].as_ref()
+    }
 
     /// Returns value from two registers only if both of them contain a value; otherwise returns
     /// `None`.
@@ -254,7 +256,11 @@ impl CoreRegs {
     /// Returns value from two string (`S`) registers only if both of them contain a value;
     /// otherwise returns `None`.
     #[inline]
-    pub fn get_both_s(&self, idx1: u8, idx2: u8) -> Option<(&ByteStr, &ByteStr)> {
+    pub fn get_both_s(
+        &self,
+        idx1: impl Into<RegS>,
+        idx2: impl Into<RegS>,
+    ) -> Option<(&ByteStr, &ByteStr)> {
         self.get_s(idx1).and_then(|val1| self.get_s(idx2).map(|val2| (val1, val2)))
     }
 

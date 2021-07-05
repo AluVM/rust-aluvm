@@ -423,9 +423,19 @@ impl From<&Reg8> for Reg32 {
 /// For `S`-registers it is possible to denote index as `u8` value, with the real index equal to
 /// this value modulo 32. This is required because of the bit size parameters for the string
 /// opcode arguments.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
 #[display("s16[{0}]")]
-pub struct RegS(u5);
+pub struct RegS(#[from] u4);
+
+impl RegS {
+    /// Returns `u8` value corresponding to the register number
+    #[inline]
+    pub fn as_u8(self) -> u8 { self.0.as_u8() }
+
+    /// Returns `usize` value corresponding to the register number
+    #[inline]
+    pub fn as_usize(self) -> usize { self.0.as_u8() as usize }
+}
 
 impl From<RegS> for u8 {
     #[inline]
@@ -437,17 +447,47 @@ impl From<&RegS> for u8 {
     fn from(reg: &RegS) -> Self { reg.0.as_u8() }
 }
 
+impl From<RegS> for usize {
+    #[inline]
+    fn from(reg: RegS) -> Self { reg.0.as_u8() as usize }
+}
+
 impl From<u8> for RegS {
     #[inline]
-    fn from(val: u8) -> Self { RegS(u5::with(val % 32)) }
+    fn from(val: u8) -> Self { RegS(u4::with(val % 16)) }
 }
 
-impl From<RegS> for Reg32 {
+impl From<&u4> for RegS {
     #[inline]
-    fn from(reg: RegS) -> Self { Reg32::from(reg.0) }
+    fn from(val: &u4) -> Self { RegS(*val) }
 }
 
-impl From<Reg32> for RegS {
+impl From<RegS> for u4 {
     #[inline]
-    fn from(reg: Reg32) -> Self { RegS(reg.into()) }
+    fn from(reg: RegS) -> Self { reg.0 }
+}
+
+impl From<&RegS> for u4 {
+    #[inline]
+    fn from(reg: &RegS) -> Self { reg.0 }
+}
+
+impl From<u5> for RegS {
+    #[inline]
+    fn from(val: u5) -> Self { RegS(u4::with(val.as_u8() % 16)) }
+}
+
+impl From<&u5> for RegS {
+    #[inline]
+    fn from(val: &u5) -> Self { RegS(u4::with(val.as_u8() % 16)) }
+}
+
+impl From<RegS> for u5 {
+    #[inline]
+    fn from(reg: RegS) -> Self { u5::with(reg.0.as_u8()) }
+}
+
+impl From<&RegS> for u5 {
+    #[inline]
+    fn from(reg: &RegS) -> Self { u5::with(reg.0.as_u8()) }
 }
