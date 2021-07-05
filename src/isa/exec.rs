@@ -68,7 +68,7 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
 
     /// Returns computational complexity of the instruction
     #[inline]
-    fn complexity(&self) -> u32 { 1 }
+    fn complexity(&self) -> u64 { 1 }
 
     /// Executes given instruction taking all registers as input and output.
     ///
@@ -133,7 +133,7 @@ impl InstructionSet for ControlFlowOp {
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     #[inline]
-    fn complexity(&self) -> u32 { 2 }
+    fn complexity(&self) -> u64 { 2 }
 
     fn exec(&self, regs: &mut CoreRegs, site: LibSite) -> ExecStep {
         match self {
@@ -174,7 +174,7 @@ impl InstructionSet for PutOp {
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     #[inline]
-    fn complexity(&self) -> u32 { 2 }
+    fn complexity(&self) -> u64 { 2 }
 
     fn exec(&self, regs: &mut CoreRegs, _: LibSite) -> ExecStep {
         match self {
@@ -396,7 +396,7 @@ impl InstructionSet for ArithmeticOp {
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     #[inline]
-    fn complexity(&self) -> u32 {
+    fn complexity(&self) -> u64 {
         match self {
             ArithmeticOp::AddF(_, _, _, _)
             | ArithmeticOp::SubF(_, _, _, _)
@@ -547,7 +547,7 @@ impl InstructionSet for BytesOp {
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
     #[inline]
-    fn complexity(&self) -> u32 { 5 }
+    fn complexity(&self) -> u64 { 5 }
 
     #[allow(warnings)]
     fn exec(&self, regs: &mut CoreRegs, _site: LibSite) -> ExecStep {
@@ -737,7 +737,7 @@ impl InstructionSet for DigestOp {
     }
 
     #[inline]
-    fn complexity(&self) -> u32 { 100 }
+    fn complexity(&self) -> u64 { 100 }
 
     #[inline]
     fn is_supported(id: &str) -> bool { id == constants::ISA_ID_BPDIGEST }
@@ -789,7 +789,7 @@ impl InstructionSet for Secp256k1Op {
     fn is_supported(id: &str) -> bool { id == constants::ISA_ID_SECP256K }
 
     #[inline]
-    fn complexity(&self) -> u32 { 1000 }
+    fn complexity(&self) -> u64 { 1000 }
 
     #[cfg(not(feature = "secp256k1"))]
     #[inline]
@@ -904,7 +904,7 @@ impl InstructionSet for Curve25519Op {
     fn is_supported(_: &str) -> bool { false }
 
     #[inline]
-    fn complexity(&self) -> u32 { 1000 }
+    fn complexity(&self) -> u64 { 1000 }
 
     #[cfg(not(feature = "curve25519"))]
     fn exec(&self, _: &mut CoreRegs, _: LibSite) -> ExecStep {

@@ -83,13 +83,13 @@ pub struct CoreRegs {
     ///
     /// - [`CoreRegs::cy0`] register
     /// - [`CoreRegs::cl0`] register
-    ca0: u32,
+    ca0: u64,
 
     /// Complexity limit
     ///
     /// If this register has a value set, once [`CoreRegs::ca0`] will reach this value the VM will
     /// stop program execution setting `st0` to `false`.
-    cl0: Option<u32>,
+    cl0: Option<u64>,
 
     /// Call stack
     ///
