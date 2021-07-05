@@ -19,4 +19,4 @@ pub use core_regs::{CoreRegs, CALL_STACK_SIZE};
 pub use families::{
     RegA, RegA2, RegAF, RegAFR, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterFamily,
 };
-pub use indexes::{Reg16, Reg32, Reg8};
+pub use indexes::{Reg16, Reg32, Reg8, RegS};
