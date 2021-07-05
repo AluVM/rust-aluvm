@@ -39,7 +39,7 @@ pub struct CoreRegs {
     pub(crate) a128: [Option<u128>; 32],
     pub(crate) a256: [Option<u256>; 32],
     pub(crate) a512: [Option<u512>; 32],
-    pub(crate) a1024: [Option<u1024>; 32],
+    pub(crate) a1024: Box<[Option<u1024>; 32]>,
 
     // Arithmetic float registers
     pub(crate) f16b: [Option<bf16>; 32],
@@ -58,10 +58,10 @@ pub struct CoreRegs {
     pub(crate) r160: [Option<[u8; 20]>; 32],
     pub(crate) r256: [Option<[u8; 32]>; 32],
     pub(crate) r512: [Option<[u8; 64]>; 32],
-    pub(crate) r1024: [Option<[u8; 128]>; 32],
-    pub(crate) r2048: [Option<[u8; 256]>; 32],
-    pub(crate) r4096: [Option<[u8; 512]>; 32],
-    pub(crate) r8192: [Option<[u8; 1024]>; 32],
+    pub(crate) r1024: Box<[Option<[u8; 128]>; 32]>,
+    pub(crate) r2048: Box<[Option<[u8; 256]>; 32]>,
+    pub(crate) r4096: Box<[Option<[u8; 512]>; 32]>,
+    pub(crate) r8192: Box<[Option<[u8; 1024]>; 32]>,
 
     /// String and bytestring registers
     pub(crate) s16: BTreeMap<u8, ByteStr>,
