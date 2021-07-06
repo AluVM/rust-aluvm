@@ -15,7 +15,9 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::borrow::Borrow;
+use core::cmp::Ordering;
 use core::fmt::{self, Display, Formatter};
+use core::hash::{Hash as RustHash, Hasher};
 use core::marker::PhantomData;
 use core::str::FromStr;
 
@@ -173,6 +175,40 @@ where
         f.write_str("\nLIBS: ")?;
         Display::fmt(&self.libs_segment, f)
     }
+}
+
+impl<E> PartialEq for Lib<E>
+where
+    E: InstructionSet,
+{
+    #[inline]
+    fn eq(&self, other: &Self) -> bool { self.id().eq(&other.id()) }
+}
+
+impl<E> Eq for Lib<E> where E: InstructionSet {}
+
+impl<E> PartialOrd for Lib<E>
+where
+    E: InstructionSet,
+{
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
+
+impl<E> Ord for Lib<E>
+where
+    E: InstructionSet,
+{
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering { self.id().cmp(&other.id()) }
+}
+
+impl<E> RustHash for Lib<E>
+where
+    E: InstructionSet,
+{
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) { state.write(&self.id()[..]) }
 }
 
 /// Errors while processing binary-encoded segment data
