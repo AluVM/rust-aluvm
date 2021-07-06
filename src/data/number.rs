@@ -320,7 +320,7 @@ impl FloatLayout {
 }
 
 /// Representation of the value from a register, which may be `None` if the register is unset.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, From)]
 pub struct MaybeNumber(Option<Number>);
 
 impl MaybeNumber {
