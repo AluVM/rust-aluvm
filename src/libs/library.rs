@@ -149,7 +149,7 @@ impl FromStr for LibId {
 }
 
 /// AluVM executable code library
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Lib<E = ReservedOp>
 where
     E: InstructionSet,
