@@ -53,7 +53,7 @@ macro_rules! aluasm {
         };
         use aluvm::reg::{
             Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
-            RegisterFamily,
+            NumericRegisters,
         };
         use aluvm::libs::LibSite;
         use aluvm::data::{Number, MaybeNumber, Step};

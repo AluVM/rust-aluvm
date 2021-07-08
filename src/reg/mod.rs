@@ -17,6 +17,7 @@ mod indexes;
 
 pub use core_regs::{CoreRegs, CALL_STACK_SIZE};
 pub use families::{
-    RegA, RegA2, RegAF, RegAFR, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, RegisterFamily,
+    NumericRegisters, RegA, RegA2, RegAF, RegAFR, RegAR, RegAll, RegBlockAFR, RegBlockAR, RegF,
+    RegR,
 };
 pub use indexes::{Reg16, Reg32, Reg8, RegS};

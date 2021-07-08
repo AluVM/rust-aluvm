@@ -14,7 +14,7 @@ use amplify::num::{u1, u3, u4};
 use crate::data as number;
 
 /// Common set of methods handled by different sets and families of VM registers
-pub trait RegisterFamily {
+pub trait NumericRegisters {
     /// Register bit dimension
     #[inline]
     fn bits(&self) -> u16 { self.bytes() * 8 }
@@ -63,7 +63,7 @@ pub enum RegA {
     A1024 = 7,
 }
 
-impl RegisterFamily for RegA {
+impl NumericRegisters for RegA {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -161,7 +161,7 @@ pub enum RegA2 {
     A16 = 1,
 }
 
-impl RegisterFamily for RegA2 {
+impl NumericRegisters for RegA2 {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -240,7 +240,7 @@ pub enum RegF {
     F512 = 7,
 }
 
-impl RegisterFamily for RegF {
+impl NumericRegisters for RegF {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -355,7 +355,7 @@ pub enum RegR {
     R8192 = 7,
 }
 
-impl RegisterFamily for RegR {
+impl NumericRegisters for RegR {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -416,6 +416,121 @@ impl From<u3> for RegR {
     }
 }
 
+/// Superset of all registers accessible via intstructions. The superset includes `A`, `F`, `R` and
+/// `S` families of registers.
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
+#[display(inner)]
+pub enum RegAll {
+    /// Arithmetic integer registers (`A` registers)
+    #[from]
+    A(RegA),
+
+    /// Arithmetic float registers (`F` registers)
+    #[from]
+    F(RegF),
+
+    /// Non-arithmetic (general) registers (`R` registers)
+    #[from]
+    R(RegR),
+
+    /// String registers (`S` registers)
+    S,
+}
+
+impl RegAll {
+    /// Returns inner A-register type, if any
+    #[inline]
+    pub fn reg_a(self) -> Option<RegA> {
+        match self {
+            RegAll::A(a) => Some(a),
+            _ => None,
+        }
+    }
+
+    /// Returns inner F-register type, if any
+    #[inline]
+    pub fn reg_f(self) -> Option<RegF> {
+        match self {
+            RegAll::F(f) => Some(f),
+            _ => None,
+        }
+    }
+
+    /// Returns inner R-register type, if any
+    #[inline]
+    pub fn reg_r(self) -> Option<RegR> {
+        match self {
+            RegAll::R(r) => Some(r),
+            _ => None,
+        }
+    }
+}
+
+impl From<&RegA> for RegAll {
+    #[inline]
+    fn from(reg: &RegA) -> Self { Self::A(*reg) }
+}
+
+impl From<&RegF> for RegAll {
+    #[inline]
+    fn from(reg: &RegF) -> Self { Self::F(*reg) }
+}
+
+impl From<&RegR> for RegAll {
+    #[inline]
+    fn from(reg: &RegR) -> Self { Self::R(*reg) }
+}
+
+impl From<RegA2> for RegAll {
+    #[inline]
+    fn from(reg: RegA2) -> Self { Self::A(reg.into()) }
+}
+
+impl From<&RegA2> for RegAll {
+    #[inline]
+    fn from(reg: &RegA2) -> Self { Self::A(reg.into()) }
+}
+
+impl From<RegAF> for RegAll {
+    #[inline]
+    fn from(reg: RegAF) -> Self {
+        match reg {
+            RegAF::A(a) => Self::A(a),
+            RegAF::F(f) => Self::F(f),
+        }
+    }
+}
+
+impl From<&RegAF> for RegAll {
+    #[inline]
+    fn from(reg: &RegAF) -> Self {
+        match reg {
+            RegAF::A(a) => Self::A(*a),
+            RegAF::F(f) => Self::F(*f),
+        }
+    }
+}
+
+impl From<RegAR> for RegAll {
+    #[inline]
+    fn from(reg: RegAR) -> Self {
+        match reg {
+            RegAR::A(a) => Self::A(a),
+            RegAR::R(r) => Self::R(r),
+        }
+    }
+}
+
+impl From<&RegAR> for RegAll {
+    #[inline]
+    fn from(reg: &RegAR) -> Self {
+        match reg {
+            RegAR::A(a) => Self::A(*a),
+            RegAR::R(r) => Self::R(*r),
+        }
+    }
+}
+
 /// Superset of all registers which value can be represented by a
 /// [`crate::data::Number`]/[`crate::data::MaybeNumber`]. The superset includes `A`, `F`, and
 /// `R` families of registers.
@@ -435,7 +550,7 @@ pub enum RegAFR {
     R(RegR),
 }
 
-impl RegisterFamily for RegAFR {
+impl NumericRegisters for RegAFR {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -562,7 +677,7 @@ pub enum RegAF {
     F(RegF),
 }
 
-impl RegisterFamily for RegAF {
+impl NumericRegisters for RegAF {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -645,7 +760,7 @@ pub enum RegAR {
     R(RegR),
 }
 
-impl RegisterFamily for RegAR {
+impl NumericRegisters for RegAR {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {

@@ -25,7 +25,7 @@ use super::{
 use crate::data::{ByteStr, MaybeNumber, Number, NumberLayout};
 use crate::isa::{FloatEqFlag, IntFlags, MergeFlag, SignFlag};
 use crate::libs::{constants, LibSite};
-use crate::reg::{CoreRegs, Reg32, RegA, RegR, RegisterFamily};
+use crate::reg::{CoreRegs, NumericRegisters, Reg32, RegA, RegR};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]

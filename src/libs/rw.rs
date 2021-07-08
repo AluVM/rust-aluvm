@@ -13,7 +13,7 @@ use amplify::num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::LibId;
 use crate::data::Number;
-use crate::reg::RegisterFamily;
+use crate::reg::NumericRegisters;
 
 // I had an idea of putting Read/Write functionality into `amplify` crate,
 // but it is quire specific to the fact that it uses `u16`-sized underlying
@@ -76,7 +76,7 @@ pub trait Read: private::Sealed {
     fn read_u24(&mut self) -> Result<u24, CodeEofError>;
     fn read_lib(&mut self) -> Result<LibId, CodeEofError>;
     fn read_data(&mut self) -> Result<(&[u8], bool), CodeEofError>;
-    fn read_number(&mut self, reg: impl RegisterFamily) -> Result<Number, CodeEofError>;
+    fn read_number(&mut self, reg: impl NumericRegisters) -> Result<Number, CodeEofError>;
 }
 
 pub trait Write: private::Sealed {
@@ -94,5 +94,6 @@ pub trait Write: private::Sealed {
     fn write_u24(&mut self, data: impl Into<u24>) -> Result<(), WriteError>;
     fn write_lib(&mut self, data: LibId) -> Result<(), WriteError>;
     fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), WriteError>;
-    fn write_number(&mut self, reg: impl RegisterFamily, value: Number) -> Result<(), WriteError>;
+    fn write_number(&mut self, reg: impl NumericRegisters, value: Number)
+        -> Result<(), WriteError>;
 }
