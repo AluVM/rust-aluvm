@@ -130,4 +130,5 @@ pub mod libs;
 pub mod reg;
 mod vm;
 
+pub use isa::Isa;
 pub use vm::Vm;

@@ -29,3 +29,57 @@ pub use instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp,
     PutOp, ReservedOp, Secp256k1Op,
 };
+
+/// List of standardised ISA extensions.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[non_exhaustive]
+pub enum Isa {
+    /// Core ISA instruction set
+    #[display("ALU")]
+    Alu,
+
+    /// Floating-point operations
+    #[display("FLOAT")]
+    Float,
+
+    /// Bitcoin-specific cryptographic hash functions
+    #[display("BPDIGEST")]
+    BpDigest,
+
+    /// Operations on Secp256k1 curve
+    #[display("SECP256")]
+    Secp256k1,
+
+    /// Operations on Curve25519
+    #[display("ED25519")]
+    Curve25519,
+
+    /// ALU runtime extensions
+    #[display("ALURE")]
+    AluRe,
+
+    /// Bitcoin protocol-specific instructions
+    #[display("BP")]
+    Bp,
+
+    /// RGB-specific instructions
+    #[display("RGB")]
+    Rgb,
+
+    /// Lightning network protocol-specific instructions
+    #[display("LNP")]
+    Lnp,
+
+    /// Instructions for SIMD
+    #[display("SIMD")]
+    Simd,
+
+    /// Instructions for biologically-inspired cognitive architectures
+    #[display("REBICA")]
+    Rebica,
+}
+
+impl Default for Isa {
+    #[inline]
+    fn default() -> Self { Isa::Alu }
+}
