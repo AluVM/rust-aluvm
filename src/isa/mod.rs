@@ -83,3 +83,22 @@ impl Default for Isa {
     #[inline]
     fn default() -> Self { Isa::Alu }
 }
+
+impl Isa {
+    /// Enumerates all ISA extension variants
+    pub const fn all() -> [Isa; 11] {
+        [
+            Isa::Alu,
+            Isa::Float,
+            Isa::BpDigest,
+            Isa::Secp256k1,
+            Isa::Curve25519,
+            Isa::AluRe,
+            Isa::Bp,
+            Isa::Rgb,
+            Isa::Lnp,
+            Isa::Simd,
+            Isa::Rebica,
+        ]
+    }
+}
