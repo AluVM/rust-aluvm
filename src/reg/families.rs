@@ -890,3 +890,23 @@ impl RegBlockAFR {
         }
     }
 }
+
+/// Blocks of registers including all non-control register types
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum RegBlock {
+    /// Arithmetic integer registers (`A` registers)
+    #[display("a")]
+    A,
+
+    /// Arithmetic float registers (`F` registers)
+    #[display("f")]
+    F,
+
+    /// Non-arithmetic (generic) registers (`R` registers)
+    #[display("r")]
+    R,
+
+    /// Byte-string registers (`S` registers)
+    #[display("s")]
+    S,
+}
