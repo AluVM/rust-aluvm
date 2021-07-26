@@ -18,7 +18,7 @@ use amplify::num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::{CodeEofError, LibId, LibSeg, Read, Write, WriteError};
 use crate::data::Number;
-use crate::reg::NumericRegisters;
+use crate::reg::NumericRegister;
 
 /// Cursor for accessing byte string data bounded by `u16::MAX` length
 pub struct Cursor<'a, T, D>
@@ -309,7 +309,7 @@ where
         Ok((data, st0))
     }
 
-    fn read_number(&mut self, reg: impl NumericRegisters) -> Result<Number, CodeEofError> {
+    fn read_number(&mut self, reg: impl NumericRegister) -> Result<Number, CodeEofError> {
         let offset = self.read_u24()?.as_u32() as usize;
         let end = offset + reg.bytes() as usize;
         if end > self.data.as_ref().len() {
@@ -433,7 +433,7 @@ where
 
     fn write_number(
         &mut self,
-        reg: impl NumericRegisters,
+        reg: impl NumericRegister,
         mut value: Number,
     ) -> Result<(), WriteError> {
         let len = reg.bytes();

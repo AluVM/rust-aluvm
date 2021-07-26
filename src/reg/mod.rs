@@ -17,7 +17,13 @@ mod indexes;
 
 pub use core_regs::{CoreRegs, CALL_STACK_SIZE};
 pub use families::{
-    NumericRegisters, RegA, RegA2, RegAF, RegAFR, RegAR, RegAll, RegBlock, RegBlockAFR, RegBlockAR,
+    NumericRegister, RegA, RegA2, RegAF, RegAFR, RegAR, RegAll, RegBlock, RegBlockAFR, RegBlockAR,
     RegF, RegR,
 };
 pub use indexes::{Reg16, Reg32, Reg8, RegS};
+
+/// Trait marking all types representing register family, specific register or register index
+pub trait Register: Default {
+    /// Text description of the register family
+    fn description() -> &'static str;
+}

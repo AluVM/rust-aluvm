@@ -9,7 +9,12 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use core::convert::TryFrom;
+
+use amplify::num::error::OverflowError;
 use amplify::num::{u3, u4, u5};
+
+use crate::reg::Register;
 
 /// All possible register indexes for `a` and `r` register sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -148,6 +153,11 @@ impl Reg32 {
     /// Returns `usize` representation of the register index
     #[inline]
     pub fn to_usize(self) -> usize { self as u8 as usize }
+}
+
+impl Register for Reg32 {
+    #[inline]
+    fn description() -> &'static str { "5-bit register index" }
 }
 
 impl Default for Reg32 {
@@ -295,6 +305,11 @@ impl Default for Reg16 {
     fn default() -> Self { Reg16::Reg1 }
 }
 
+impl Register for Reg16 {
+    #[inline]
+    fn description() -> &'static str { "4-bit register index" }
+}
+
 impl From<&Reg16> for u4 {
     #[inline]
     fn from(reg16: &Reg16) -> Self { u4::with(*reg16 as u8) }
@@ -337,6 +352,14 @@ impl From<Reg16> for Reg32 {
 impl From<&Reg16> for Reg32 {
     #[inline]
     fn from(reg16: &Reg16) -> Self { u5::with(*reg16 as u8).into() }
+}
+
+impl TryFrom<Reg32> for Reg16 {
+    type Error = OverflowError;
+
+    fn try_from(value: Reg32) -> Result<Self, Self::Error> {
+        u4::try_from(value as u8).map(Reg16::from)
+    }
 }
 
 /// Short version of register indexes for `a` and `r` register sets covering
@@ -382,6 +405,11 @@ impl Default for Reg8 {
     fn default() -> Self { Reg8::Reg1 }
 }
 
+impl Register for Reg8 {
+    #[inline]
+    fn description() -> &'static str { "3-bit register index" }
+}
+
 impl From<&Reg8> for u3 {
     #[inline]
     fn from(reg8: &Reg8) -> Self { u3::with(*reg8 as u8) }
@@ -418,6 +446,14 @@ impl From<&Reg8> for Reg32 {
     fn from(reg8: &Reg8) -> Self { u5::with(*reg8 as u8).into() }
 }
 
+impl TryFrom<Reg32> for Reg8 {
+    type Error = OverflowError;
+
+    fn try_from(value: Reg32) -> Result<Self, Self::Error> {
+        u3::try_from(value as u8).map(Reg8::from)
+    }
+}
+
 /// Possible index values for string registers (`S`-registers).
 ///
 /// For `S`-registers it is possible to denote index as `u8` value, with the real index equal to
@@ -435,6 +471,16 @@ impl RegS {
     /// Returns `usize` value corresponding to the register number
     #[inline]
     pub fn as_usize(self) -> usize { self.0.as_u8() as usize }
+}
+
+impl Register for RegS {
+    #[inline]
+    fn description() -> &'static str { "4-bit S register index" }
+}
+
+impl Default for RegS {
+    #[inline]
+    fn default() -> Self { RegS(u4::MIN) }
 }
 
 impl From<RegS> for u8 {
@@ -490,4 +536,12 @@ impl From<RegS> for u5 {
 impl From<&RegS> for u5 {
     #[inline]
     fn from(reg: &RegS) -> Self { u5::with(reg.0.as_u8()) }
+}
+
+impl TryFrom<Reg32> for RegS {
+    type Error = OverflowError;
+
+    fn try_from(value: Reg32) -> Result<Self, Self::Error> {
+        u5::try_from(value as u8).map(RegS::from)
+    }
 }

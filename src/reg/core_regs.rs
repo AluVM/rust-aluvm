@@ -17,11 +17,10 @@ use amplify::num::{u1024, u256, u512};
 use half::bf16;
 use rustc_apfloat::ieee;
 
-use super::{Reg32, RegA, RegAFR, RegF, RegR};
+use super::{Reg32, RegA, RegAFR, RegF, RegR, RegS};
 use crate::data::{ByteStr, MaybeNumber, Number};
 use crate::isa::InstructionSet;
 use crate::libs::LibSite;
-use crate::reg::RegS;
 
 /// Maximal size of call stack.
 ///

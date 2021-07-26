@@ -13,7 +13,7 @@ use amplify::num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::LibId;
 use crate::data::Number;
-use crate::reg::NumericRegisters;
+use crate::reg::NumericRegister;
 
 // I had an idea of putting Read/Write functionality into `amplify` crate,
 // but it is quire specific to the fact that it uses `u16`-sized underlying
@@ -94,7 +94,7 @@ pub trait Read: private::Sealed {
     /// Reads bytestring from data segment
     fn read_data(&mut self) -> Result<(&[u8], bool), CodeEofError>;
     /// Reads number representation from a data segment
-    fn read_number(&mut self, reg: impl NumericRegisters) -> Result<Number, CodeEofError>;
+    fn read_number(&mut self, reg: impl NumericRegister) -> Result<Number, CodeEofError>;
 }
 
 /// Trait for writing instruction data into bytecode
@@ -128,6 +128,5 @@ pub trait Write: private::Sealed {
     /// Writes bytestring into data segment
     fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), WriteError>;
     /// Writes number representation into data segment
-    fn write_number(&mut self, reg: impl NumericRegisters, value: Number)
-        -> Result<(), WriteError>;
+    fn write_number(&mut self, reg: impl NumericRegister, value: Number) -> Result<(), WriteError>;
 }

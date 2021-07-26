@@ -9,12 +9,15 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use core::convert::TryFrom;
+
 use amplify::num::{u1, u3, u4};
 
 use crate::data as number;
+use crate::reg::Register;
 
 /// Common set of methods handled by different sets and families of VM registers
-pub trait NumericRegisters {
+pub trait NumericRegister: Register {
     /// Register bit dimension
     #[inline]
     fn bits(&self) -> u16 { self.bytes() * 8 }
@@ -63,7 +66,16 @@ pub enum RegA {
     A1024 = 7,
 }
 
-impl NumericRegisters for RegA {
+impl Default for RegA {
+    fn default() -> Self { RegA::A64 }
+}
+
+impl Register for RegA {
+    #[inline]
+    fn description() -> &'static str { "A register" }
+}
+
+impl NumericRegister for RegA {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -147,6 +159,13 @@ impl From<&RegA2> for RegA {
     }
 }
 
+impl TryFrom<RegAll> for RegA {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> { value.reg_a().ok_or(()) }
+}
+
 /// Enumeration of integer arithmetic registers suited for string addresses (`a8` and `a16`
 /// registers)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -161,7 +180,16 @@ pub enum RegA2 {
     A16 = 1,
 }
 
-impl NumericRegisters for RegA2 {
+impl Default for RegA2 {
+    fn default() -> Self { RegA2::A8 }
+}
+
+impl Register for RegA2 {
+    #[inline]
+    fn description() -> &'static str { "A8 or A16 register" }
+}
+
+impl NumericRegister for RegA2 {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -203,6 +231,19 @@ impl From<u1> for RegA2 {
     }
 }
 
+impl TryFrom<RegAll> for RegA2 {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> {
+        match value.reg_a() {
+            Some(RegA::A8) => Ok(RegA2::A8),
+            Some(RegA::A16) => Ok(RegA2::A16),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Enumeration of float arithmetic registers (`F`-registers)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
@@ -240,7 +281,16 @@ pub enum RegF {
     F512 = 7,
 }
 
-impl NumericRegisters for RegF {
+impl Default for RegF {
+    fn default() -> Self { RegF::F64 }
+}
+
+impl Register for RegF {
+    #[inline]
+    fn description() -> &'static str { "F register" }
+}
+
+impl NumericRegister for RegF {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -317,6 +367,13 @@ impl From<u3> for RegF {
     }
 }
 
+impl TryFrom<RegAll> for RegF {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> { value.reg_f().ok_or(()) }
+}
+
 /// Enumeration of the set of general registers (`R`-registers: non-arithmetic registers, mostly
 /// used for cryptography)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -355,7 +412,16 @@ pub enum RegR {
     R8192 = 7,
 }
 
-impl NumericRegisters for RegR {
+impl Default for RegR {
+    fn default() -> Self { RegR::R256 }
+}
+
+impl Register for RegR {
+    #[inline]
+    fn description() -> &'static str { "R register" }
+}
+
+impl NumericRegister for RegR {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -416,6 +482,13 @@ impl From<u3> for RegR {
     }
 }
 
+impl TryFrom<RegAll> for RegR {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> { value.reg_r().ok_or(()) }
+}
+
 /// Superset of all registers accessible via intstructions. The superset includes `A`, `F`, `R` and
 /// `S` families of registers.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
@@ -435,6 +508,15 @@ pub enum RegAll {
 
     /// String registers (`S` registers)
     S,
+}
+
+impl Default for RegAll {
+    fn default() -> Self { RegAll::A(Default::default()) }
+}
+
+impl Register for RegAll {
+    #[inline]
+    fn description() -> &'static str { "A, F, R or S register" }
 }
 
 impl RegAll {
@@ -550,7 +632,16 @@ pub enum RegAFR {
     R(RegR),
 }
 
-impl NumericRegisters for RegAFR {
+impl Default for RegAFR {
+    fn default() -> Self { RegAFR::A(Default::default()) }
+}
+
+impl Register for RegAFR {
+    #[inline]
+    fn description() -> &'static str { "A, F or R register" }
+}
+
+impl NumericRegister for RegAFR {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -664,6 +755,20 @@ impl From<&RegAR> for RegAFR {
     }
 }
 
+impl TryFrom<RegAll> for RegAFR {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> {
+        match value {
+            RegAll::A(a) => Ok(RegAFR::A(a)),
+            RegAll::F(f) => Ok(RegAFR::F(f)),
+            RegAll::R(r) => Ok(RegAFR::R(r)),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Superset of `A` and `F` arithmetic registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
 #[display(inner)]
@@ -677,7 +782,16 @@ pub enum RegAF {
     F(RegF),
 }
 
-impl NumericRegisters for RegAF {
+impl Default for RegAF {
+    fn default() -> Self { RegAF::A(Default::default()) }
+}
+
+impl Register for RegAF {
+    #[inline]
+    fn description() -> &'static str { "A or F register" }
+}
+
+impl NumericRegister for RegAF {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -747,6 +861,19 @@ impl From<&RegA2> for RegAF {
     fn from(reg: &RegA2) -> Self { Self::A(reg.into()) }
 }
 
+impl TryFrom<RegAll> for RegAF {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> {
+        match value {
+            RegAll::A(a) => Ok(RegAF::A(a)),
+            RegAll::F(f) => Ok(RegAF::F(f)),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Superset of `A` and `R` registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
 #[display(inner)]
@@ -760,7 +887,16 @@ pub enum RegAR {
     R(RegR),
 }
 
-impl NumericRegisters for RegAR {
+impl Default for RegAR {
+    fn default() -> Self { RegAR::A(Default::default()) }
+}
+
+impl Register for RegAR {
+    #[inline]
+    fn description() -> &'static str { "A or R register" }
+}
+
+impl NumericRegister for RegAR {
     #[inline]
     fn bytes(&self) -> u16 {
         match self {
@@ -840,6 +976,19 @@ impl From<&RegA2> for RegAR {
     fn from(reg: &RegA2) -> Self { Self::A(reg.into()) }
 }
 
+impl TryFrom<RegAll> for RegAR {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> {
+        match value {
+            RegAll::A(a) => Ok(RegAR::A(a)),
+            RegAll::R(r) => Ok(RegAR::R(r)),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Block of registers, either integer arithmetic or non-arithmetic (general) registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum RegBlockAR {
@@ -850,6 +999,15 @@ pub enum RegBlockAR {
     /// Non-arithmetic (generic) registers (`R` registers)
     #[display("r")]
     R,
+}
+
+impl Default for RegBlockAR {
+    fn default() -> Self { RegBlockAR::A }
+}
+
+impl Register for RegBlockAR {
+    #[inline]
+    fn description() -> &'static str { "A or R register block" }
 }
 
 impl RegBlockAR {
@@ -877,6 +1035,15 @@ pub enum RegBlockAFR {
     /// Non-arithmetic (generic) registers (`R` registers)
     #[display("r")]
     R,
+}
+
+impl Default for RegBlockAFR {
+    fn default() -> Self { RegBlockAFR::A }
+}
+
+impl Register for RegBlockAFR {
+    #[inline]
+    fn description() -> &'static str { "A, F or R register block" }
 }
 
 impl RegBlockAFR {
@@ -909,4 +1076,13 @@ pub enum RegBlock {
     /// Byte-string registers (`S` registers)
     #[display("s")]
     S,
+}
+
+impl Default for RegBlock {
+    fn default() -> Self { RegBlock::A }
+}
+
+impl Register for RegBlock {
+    #[inline]
+    fn description() -> &'static str { "A, F, R or S register block" }
 }
