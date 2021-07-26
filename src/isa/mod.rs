@@ -22,7 +22,7 @@ pub mod opcodes;
 pub use bytecode::{Bytecode, BytecodeError};
 pub use exec::{ExecStep, InstructionSet};
 pub use flags::{
-    DeleteFlag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, ParseFlagError, RoundingFlag,
+    DeleteFlag, Flag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, ParseFlagError, RoundingFlag,
     SignFlag, SplitFlag,
 };
 pub use instr::{

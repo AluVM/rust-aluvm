@@ -19,6 +19,9 @@ use core::str::FromStr;
 use amplify::num::{u1, u2, u3};
 use rustc_apfloat::Round;
 
+/// Marker trait for flag types
+pub trait Flag: FromStr<Err = ParseFlagError> + Default {}
+
 /// Errors for parsing string representation for a flag values
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[cfg_attr(feature = "std", derive(Error))]
@@ -54,6 +57,13 @@ pub enum SignFlag {
     /// Signed integer
     #[display("s")]
     Signed = 1,
+}
+
+impl Flag for SignFlag {}
+
+impl Default for SignFlag {
+    #[inline]
+    fn default() -> Self { Self::Unsigned }
 }
 
 impl FromStr for SignFlag {
@@ -125,6 +135,13 @@ pub enum FloatEqFlag {
     Rounding = 1,
 }
 
+impl Flag for FloatEqFlag {}
+
+impl Default for FloatEqFlag {
+    #[inline]
+    fn default() -> Self { Self::Exact }
+}
+
 impl FromStr for FloatEqFlag {
     type Err = ParseFlagError;
 
@@ -191,6 +208,13 @@ pub enum RoundingFlag {
     /// Round up (ceiling), ie toward +∞; negative results thus round toward zero.
     #[display("c")]
     Ceil = 3,
+}
+
+impl Flag for RoundingFlag {}
+
+impl Default for RoundingFlag {
+    #[inline]
+    fn default() -> Self { Self::TowardsNearest }
 }
 
 impl FromStr for RoundingFlag {
@@ -277,6 +301,13 @@ pub struct IntFlags {
     /// Whether overflow must result in modulo-based wrapping (`true`) or set the destination into
     /// `None` state (`false`).
     pub wrap: bool,
+}
+
+impl Flag for IntFlags {}
+
+impl Default for IntFlags {
+    #[inline]
+    fn default() -> Self { Self { signed: false, wrap: false } }
 }
 
 impl Display for IntFlags {
@@ -391,6 +422,13 @@ pub enum MergeFlag {
     /// Bit-or the bit and the lowest bit value from the register.
     #[display("o")]
     Or = 3,
+}
+
+impl Flag for MergeFlag {}
+
+impl Default for MergeFlag {
+    #[inline]
+    fn default() -> Self { Self::Set }
 }
 
 impl FromStr for MergeFlag {
@@ -524,6 +562,13 @@ pub enum SplitFlag {
     ZeroZero = 7,
 }
 
+impl Flag for SplitFlag {}
+
+impl Default for SplitFlag {
+    #[inline]
+    fn default() -> Self { Self::NoneNone }
+}
+
 impl FromStr for SplitFlag {
     type Err = ParseFlagError;
 
@@ -634,6 +679,13 @@ pub enum InsertFlag {
     Shorten = 7,
 }
 
+impl Flag for InsertFlag {}
+
+impl Default for InsertFlag {
+    #[inline]
+    fn default() -> Self { Self::FailOnLen }
+}
+
 impl FromStr for InsertFlag {
     type Err = ParseFlagError;
 
@@ -725,6 +777,13 @@ pub enum DeleteFlag {
     /// Matches case (4) in [`crate::isa::BytesOp::Del`] description
     #[display("e")]
     Extend = 3,
+}
+
+impl Flag for DeleteFlag {}
+
+impl Default for DeleteFlag {
+    #[inline]
+    fn default() -> Self { Self::None }
 }
 
 impl FromStr for DeleteFlag {

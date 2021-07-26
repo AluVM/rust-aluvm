@@ -546,6 +546,17 @@ impl RegAll {
             _ => None,
         }
     }
+
+    /// Returns string describing the family of the register
+    #[inline]
+    pub fn family_name(self) -> &'static str {
+        match self {
+            RegAll::A(_) => RegA::description(),
+            RegAll::F(_) => RegF::description(),
+            RegAll::R(_) => RegR::description(),
+            RegAll::S => "S register",
+        }
+    }
 }
 
 impl From<&RegA> for RegAll {
