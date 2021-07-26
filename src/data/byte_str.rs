@@ -10,6 +10,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use alloc::boxed::Box;
+use alloc::vec::Vec;
 use core::fmt::{self, Display, Formatter};
 use core::ops::RangeInclusive;
 
@@ -28,6 +29,7 @@ pub struct ByteStr {
     len: Option<u16>,
 
     /// Slice bytes
+    #[doc(hidden)]
     pub bytes: Box<[u8; u16::MAX as usize]>,
 }
 
@@ -88,6 +90,10 @@ impl ByteStr {
         self.adjust_len(end, true);
         self.bytes[start as usize..=end as usize].fill(val);
     }
+
+    /// Returns vector representation of the contained bytecode
+    #[inline]
+    pub fn to_vec(&self) -> Vec<u8> { self.as_ref().to_vec() }
 }
 
 #[cfg(feature = "std")]
