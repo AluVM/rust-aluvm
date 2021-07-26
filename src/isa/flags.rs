@@ -27,20 +27,20 @@ pub trait Flag: FromStr<Err = ParseFlagError> + Default {}
 #[cfg_attr(feature = "std", derive(Error))]
 #[display(doc_comments)]
 pub enum ParseFlagError {
-    /// Unknown `{0}` flag `{1}`
+    /// unknown `{0}` flag `{1}`
     UnknownFlag(/** Flag description */ &'static str, /** Unrecognized flag */ char),
 
-    /// Unknown `{0}` flags `{1}`
+    /// unknown `{0}` flags `{1}`
     UnknownFlags(/** Flag description */ &'static str, /** Unrecognized flags */ String),
 
-    /// Only one of mutually exclusive flags must be specified for {0} (only `{1}` or `{2}`)
+    /// only one of mutually exclusive flags must be specified for {0} (only `{1}` or `{2}`)
     MutuallyExclusiveFlags(
         /** Flag description */ &'static str,
         /** Flag 1 */ char,
         /** Flag 2 */ char,
     ),
 
-    /// Required flag for {0} is absent
+    /// required flag for {0} is absent
     RequiredFlagAbsent(/** Flag description */ &'static str),
 
     /// duplicated flags `{1}` are specified for {0}
@@ -70,7 +70,7 @@ impl FromStr for SignFlag {
     type Err = ParseFlagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.is_empty() {
+        if s.is_empty() {
             return Err(ParseFlagError::RequiredFlagAbsent("integer sign"));
         }
         let filtered = s.replace(&['u', 's'][..], "");
@@ -146,7 +146,7 @@ impl FromStr for FloatEqFlag {
     type Err = ParseFlagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.is_empty() {
+        if s.is_empty() {
             return Err(ParseFlagError::RequiredFlagAbsent("float equality"));
         }
         let filtered = s.replace(&['e', 'r'][..], "");
@@ -221,7 +221,7 @@ impl FromStr for RoundingFlag {
     type Err = ParseFlagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.is_empty() {
+        if s.is_empty() {
             return Err(ParseFlagError::RequiredFlagAbsent("float rounding"));
         }
 
@@ -435,7 +435,7 @@ impl FromStr for MergeFlag {
     type Err = ParseFlagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.is_empty() {
+        if s.is_empty() {
             return Err(ParseFlagError::RequiredFlagAbsent("merge operation"));
         }
 
@@ -573,7 +573,7 @@ impl FromStr for SplitFlag {
     type Err = ParseFlagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.is_empty() {
+        if s.is_empty() {
             return Err(ParseFlagError::RequiredFlagAbsent("split operation"));
         }
 
@@ -690,7 +690,7 @@ impl FromStr for InsertFlag {
     type Err = ParseFlagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.is_empty() {
+        if s.is_empty() {
             return Err(ParseFlagError::RequiredFlagAbsent("insert operation"));
         }
         let filtered = s.replace(&['l', 'o', 'f', 'e', 'a', 'x', 'c', 's'][..], "");
@@ -790,7 +790,7 @@ impl FromStr for DeleteFlag {
     type Err = ParseFlagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.is_empty() {
+        if s.is_empty() {
             return Err(ParseFlagError::RequiredFlagAbsent("delete operation"));
         }
         let filtered = s.replace(&['n', 'z', 'c', 'e'][..], "");
