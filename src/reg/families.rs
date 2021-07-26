@@ -1032,6 +1032,19 @@ impl RegBlockAR {
     }
 }
 
+impl TryFrom<RegAll> for RegBlockAR {
+    type Error = ();
+
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> {
+        match value {
+            RegAll::A(_) => Ok(RegBlockAR::A),
+            RegAll::F(_) => Err(()),
+            RegAll::R(_) => Ok(RegBlockAR::R),
+            RegAll::S => Err(()),
+        }
+    }
+}
+
 /// Block of registers, either integer, float arithmetic or non-arithmetic (general) registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum RegBlockAFR {
@@ -1069,6 +1082,19 @@ impl RegBlockAFR {
     }
 }
 
+impl TryFrom<RegAll> for RegBlockAFR {
+    type Error = ();
+
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> {
+        match value {
+            RegAll::A(_) => Ok(RegBlockAFR::A),
+            RegAll::F(_) => Ok(RegBlockAFR::F),
+            RegAll::R(_) => Ok(RegBlockAFR::R),
+            RegAll::S => Err(()),
+        }
+    }
+}
+
 /// Blocks of registers including all non-control register types
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum RegBlock {
@@ -1096,4 +1122,15 @@ impl Default for RegBlock {
 impl Register for RegBlock {
     #[inline]
     fn description() -> &'static str { "A, F, R or S register block" }
+}
+
+impl From<RegAll> for RegBlock {
+    fn from(reg: RegAll) -> Self {
+        match reg {
+            RegAll::A(_) => RegBlock::A,
+            RegAll::F(_) => RegBlock::F,
+            RegAll::R(_) => RegBlock::R,
+            RegAll::S => RegBlock::S,
+        }
+    }
 }
