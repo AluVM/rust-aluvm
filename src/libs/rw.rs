@@ -59,41 +59,75 @@ mod private {
     }
 }
 
+/// Trait for reading instruction data from bytecode
 pub trait Read: private::Sealed {
+    /// Returns whether end of the bytecode is reached
     fn is_end(&self) -> bool;
+    /// Peeks a single byte without moving cursor
     fn peek_u8(&self) -> Result<u8, CodeEofError>;
+    /// Reads single bit as a bool values
     fn read_bool(&mut self) -> Result<bool, CodeEofError>;
+    /// Reads single bit
     fn read_u1(&mut self) -> Result<u1, CodeEofError>;
+    /// Reads two bits
     fn read_u2(&mut self) -> Result<u2, CodeEofError>;
+    /// Reads three bits
     fn read_u3(&mut self) -> Result<u3, CodeEofError>;
+    /// Reads four bits
     fn read_u4(&mut self) -> Result<u4, CodeEofError>;
+    /// Reads five bits
     fn read_u5(&mut self) -> Result<u5, CodeEofError>;
+    /// Reads six bits
     fn read_u6(&mut self) -> Result<u6, CodeEofError>;
+    /// Reads seven bits
     fn read_u7(&mut self) -> Result<u7, CodeEofError>;
+    /// Reads full byte
     fn read_u8(&mut self) -> Result<u8, CodeEofError>;
+    /// Reads two bytes
     fn read_u16(&mut self) -> Result<u16, CodeEofError>;
+    /// Reads two bytes and convers them into a signed integer
     fn read_i16(&mut self) -> Result<i16, CodeEofError>;
+    /// Reads three bytes
     fn read_u24(&mut self) -> Result<u24, CodeEofError>;
+    /// Reads library id
     fn read_lib(&mut self) -> Result<LibId, CodeEofError>;
+    /// Reads bytestring from data segment
     fn read_data(&mut self) -> Result<(&[u8], bool), CodeEofError>;
+    /// Reads number representation from a data segment
     fn read_number(&mut self, reg: impl NumericRegisters) -> Result<Number, CodeEofError>;
 }
 
+/// Trait for writing instruction data into bytecode
 pub trait Write: private::Sealed {
+    /// Writes a single bit from a bool value
     fn write_bool(&mut self, data: bool) -> Result<(), WriteError>;
+    /// Writes a single bit
     fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), WriteError>;
+    /// Writes two bits
     fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), WriteError>;
+    /// Writes three bits
     fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), WriteError>;
+    /// Writes four bits
     fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), WriteError>;
+    /// Writes five bits
     fn write_u5(&mut self, data: impl Into<u5>) -> Result<(), WriteError>;
+    /// Writes six bits
     fn write_u6(&mut self, data: impl Into<u6>) -> Result<(), WriteError>;
+    /// Writes seven bits
     fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), WriteError>;
+    /// Writes full byte
     fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), WriteError>;
+    /// Writes two bytes
     fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), WriteError>;
+    /// Writes two bytes corresponding to signed integer representation
     fn write_i16(&mut self, data: impl Into<i16>) -> Result<(), WriteError>;
+    /// Writes three bytes
     fn write_u24(&mut self, data: impl Into<u24>) -> Result<(), WriteError>;
+    /// Writes library id into data segment
     fn write_lib(&mut self, data: LibId) -> Result<(), WriteError>;
+    /// Writes bytestring into data segment
     fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), WriteError>;
+    /// Writes number representation into data segment
     fn write_number(&mut self, reg: impl NumericRegisters, value: Number)
         -> Result<(), WriteError>;
 }

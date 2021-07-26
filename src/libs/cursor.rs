@@ -21,7 +21,7 @@ use crate::data::Number;
 use crate::reg::NumericRegisters;
 
 /// Cursor for accessing byte string data bounded by `u16::MAX` length
-pub(crate) struct Cursor<'a, T, D>
+pub struct Cursor<'a, T, D>
 where
     T: AsRef<[u8]>,
     D: AsRef<[u8]>,
