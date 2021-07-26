@@ -708,7 +708,46 @@ impl Number {
                 self.clean();
                 bit_len <= len2 * 8
             }
-            (from, to) => unimplemented!("Number layout reshape from {} to {}", from, to),
+            (Layout::Float(l1), Layout::Float(l2)) => {
+                let value = match l1 {
+                    FloatLayout::BFloat16 => bf16::from(*self).to_string(),
+                    FloatLayout::IeeeHalf => ieee::Half::from(*self).to_string(),
+                    FloatLayout::IeeeSingle => ieee::Single::from(*self).to_string(),
+                    FloatLayout::IeeeDouble => ieee::Double::from(*self).to_string(),
+                    FloatLayout::X87DoubleExt => ieee::X87DoubleExtended::from(*self).to_string(),
+                    FloatLayout::IeeeQuad => ieee::Quad::from(*self).to_string(),
+                    FloatLayout::IeeeOct => {
+                        unimplemented!("IEEE octal precision layout conversion")
+                    }
+                    FloatLayout::FloatTapered => unimplemented!("tapered float layout conversion"),
+                };
+                *self = match l2 {
+                    FloatLayout::BFloat16 => {
+                        bf16::from_str(&value).map(Number::from).expect("float layout conversion")
+                    }
+                    FloatLayout::IeeeHalf => ieee::Half::from_str(&value)
+                        .map(Number::from)
+                        .expect("float layout conversion"),
+                    FloatLayout::IeeeSingle => ieee::Single::from_str(&value)
+                        .map(Number::from)
+                        .expect("float layout conversion"),
+                    FloatLayout::IeeeDouble => ieee::Double::from_str(&value)
+                        .map(Number::from)
+                        .expect("float layout conversion"),
+                    FloatLayout::X87DoubleExt => ieee::X87DoubleExtended::from_str(&value)
+                        .map(Number::from)
+                        .expect("float layout conversion"),
+                    FloatLayout::IeeeQuad => ieee::Quad::from_str(&value)
+                        .map(Number::from)
+                        .expect("float layout conversion"),
+                    FloatLayout::IeeeOct => {
+                        unimplemented!("IEEE octal precision layout conversion")
+                    }
+                    FloatLayout::FloatTapered => unimplemented!("tapered float layout conversion"),
+                };
+                true
+            }
+            (from, to) => todo!("Number layout reshape from {} to {}", from, to),
         }
     }
 

@@ -158,7 +158,7 @@ macro_rules! instr {
         let s = stringify!($val);
         let mut number = s
             .parse::<Number>()
-            .or_else(|_| s.parse::<::rustc_apfloat::ieee::Single>().map(Number::from))
+            .or_else(|_| s.parse::<::rustc_apfloat::ieee::Quad>().map(Number::from))
             .expect(&format!("invalid number literal `{}`", s));
         let reg = _reg_ty!(Reg, $reg);
         number.reshape(reg.layout());
@@ -172,7 +172,7 @@ macro_rules! instr {
         let s = stringify!($val);
         let mut number = s
             .parse::<Number>()
-            .or_else(|_| s.parse::<::rustc_apfloat::ieee::Single>().map(Number::from))
+            .or_else(|_| s.parse::<::rustc_apfloat::ieee::Quad>().map(Number::from))
             .expect(&format!("invalid number literal `{}`", s));
         let reg = _reg_ty!(Reg, $reg);
         number.reshape(reg.layout());
