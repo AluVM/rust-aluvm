@@ -675,7 +675,7 @@ impl Bytecode for CmpOp {
             }
             CmpOp::EqA(flag, reg, idx1, idx2) => {
                 writer.write_u2(u2::with(0b01))?;
-                writer.write_bool(*flag)?;
+                writer.write_u1(flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
@@ -689,7 +689,7 @@ impl Bytecode for CmpOp {
             }
             CmpOp::EqR(flag, reg, idx1, idx2) => {
                 writer.write_u2(u2::with(0b11))?;
-                writer.write_bool(*flag)?;
+                writer.write_u1(flag)?;
                 writer.write_u5(idx1)?;
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
@@ -732,9 +732,9 @@ impl Bytecode for CmpOp {
                 (INSTR_LGT, 0b11, _) => CmpOp::LtF(flag.into(), reg.into(), idx1, idx2),
                 (INSTR_CMP, 0b00, 0b0) => CmpOp::GtR(reg.into(), idx1, idx2),
                 (INSTR_CMP, 0b00, 0b1) => CmpOp::LtR(reg.into(), idx1, idx2),
-                (INSTR_CMP, 0b01, _) => CmpOp::EqA(flag.as_u8() == 1, reg.into(), idx1, idx2),
+                (INSTR_CMP, 0b01, _) => CmpOp::EqA(flag.into(), reg.into(), idx1, idx2),
                 (INSTR_CMP, 0b10, _) => CmpOp::EqF(flag.into(), reg.into(), idx1, idx2),
-                (INSTR_CMP, 0b11, _) => CmpOp::EqR(flag.as_u8() == 1, reg.into(), idx1, idx2),
+                (INSTR_CMP, 0b11, _) => CmpOp::EqR(flag.into(), reg.into(), idx1, idx2),
                 _ => unreachable!(),
             }
         } else if instr == INSTR_STINV {

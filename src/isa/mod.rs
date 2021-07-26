@@ -22,8 +22,8 @@ pub mod opcodes;
 pub use bytecode::{Bytecode, BytecodeError};
 pub use exec::{ExecStep, InstructionSet};
 pub use flags::{
-    DeleteFlag, Flag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, ParseFlagError, RoundingFlag,
-    SignFlag, SplitFlag,
+    DeleteFlag, Flag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, NoneEqFlag, ParseFlagError,
+    RoundingFlag, SignFlag, SplitFlag,
 };
 pub use instr::{
     ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp,

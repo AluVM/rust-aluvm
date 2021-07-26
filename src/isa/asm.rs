@@ -49,7 +49,7 @@ macro_rules! aluasm {
 
         use aluvm::isa::{
             ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
-            MergeFlag, MoveOp, ReservedOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag,
+            MergeFlag, MoveOp, ReservedOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag, NoneEqFlag,
         };
         use aluvm::reg::{
             Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
@@ -86,32 +86,24 @@ macro_rules! aluasm_inner {
         $code.push(instr!{ $op $( $arg ),+ });
         aluasm_inner! { $code => $( $tt )* }
     };
-    { $code:ident => $op:ident : $flag:ident $( $arg:ident ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op : $flag $( $arg ),+ });
+    { $code:ident => $op:ident . $flag:ident $( $arg:ident ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op . $flag $( $arg ),+ });
         aluasm_inner! { $code => $( $tt )* }
     };
     { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
         $code.push(instr!{ $op $( $arg [ $idx ]  ),+ });
         aluasm_inner! { $code => $( $tt )* }
     };
-    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ .none=true ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ , true });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident $( $arg:ident [ $idx:literal ] ),+ .none=false ; $($tt:tt)* } => {
-        $code.push(instr!{ $op $( $arg [ $idx ]  ),+ , false });
-        aluasm_inner! { $code => $( $tt )* }
-    };
-    { $code:ident => $op:ident : $flag:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
-        $code.push(instr!{ $op : $flag $( $arg [ $idx ]  ),+ });
+    { $code:ident => $op:ident . $flag:ident $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
+        $code.push(instr!{ $op . $flag $( $arg [ $idx ]  ),+ });
         aluasm_inner! { $code => $( $tt )* }
     };
     { $code:ident => $op:ident $arglit:literal , $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
         $code.push(instr!{ $op $arglit , $arg [ $idx ] });
         aluasm_inner! { $code => $( $tt )* }
     };
-    { $code:ident => $op:ident : $flag:ident $arg:ident [ $idx:literal ], $arglit:expr ; $($tt:tt)* } => {
-        $code.push(instr!{ $op : $flag $arg [ $idx ], $arglit });
+    { $code:ident => $op:ident . $flag:ident $arg:ident [ $idx:literal ], $arglit:expr ; $($tt:tt)* } => {
+        $code.push(instr!{ $op . $flag $arg [ $idx ], $arglit });
         aluasm_inner! { $code => $( $tt )* }
     };
 }
@@ -282,7 +274,7 @@ macro_rules! instr {
         }
         Instr::Cmp(CmpOp::GtR(_reg_tyr!(Reg, $reg1), _reg_idx!($idx1), _reg_idx!($idx2)))
     }};
-    (gt: u $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (gt.u $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`gt` operation may be applied only to the registers of the same family");
         }
@@ -293,7 +285,7 @@ macro_rules! instr {
             _reg_idx!($idx2),
         ))
     }};
-    (gt: s $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (gt.s $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`gt` operation may be applied only to the registers of the same family");
         }
@@ -304,7 +296,7 @@ macro_rules! instr {
             _reg_idx!($idx2),
         ))
     }};
-    (gt: e $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (gt.e $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`gt` operation may be applied only to the registers of the same family");
         }
@@ -315,7 +307,7 @@ macro_rules! instr {
             _reg_idx!($idx2),
         ))
     }};
-    (gt: r $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (gt.r $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`gt` operation may be applied only to the registers of the same family");
         }
@@ -335,7 +327,7 @@ macro_rules! instr {
         }
         Instr::Cmp(CmpOp::LtR(_reg_tyr!(Reg, $reg1), _reg_idx!($idx1), _reg_idx!($idx2)))
     }};
-    (lt: u $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (lt.u $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`lt` operation may be applied only to the registers of the same family");
         }
@@ -346,7 +338,7 @@ macro_rules! instr {
             _reg_idx!($idx2),
         ))
     }};
-    (lt: s $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (lt.s $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`lt` operation may be applied only to the registers of the same family");
         }
@@ -357,7 +349,7 @@ macro_rules! instr {
             _reg_idx!($idx2),
         ))
     }};
-    (lt: e $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (lt.e $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`lt` operation may be applied only to the registers of the same family");
         }
@@ -368,7 +360,7 @@ macro_rules! instr {
             _reg_idx!($idx2),
         ))
     }};
-    (lt: r $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (lt.r $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!("`lt` operation may be applied only to the registers of the same family");
         }
@@ -379,21 +371,48 @@ macro_rules! instr {
             _reg_idx!($idx2),
         ))
     }};
-    (eq $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal], $bool:literal) => {{
-        if _reg_ty!(Reg, $reg1) != _reg_ty!(Reg, $reg2) {
+    (eq.e $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
             panic!(
                 "Equivalence check must be performed between registers of the same type and size"
             );
         }
         match _reg_block!($reg1) {
             RegBlockAFR::A => Instr::Cmp(CmpOp::EqA(
-                $bool,
+                NoneEqFlag::Equal,
                 _reg_tya!(Reg, $reg1),
                 _reg_idx!($idx1),
                 _reg_idx!($idx2),
             )),
             RegBlockAFR::R => Instr::Cmp(CmpOp::EqR(
-                $bool,
+                NoneEqFlag::Equal,
+                _reg_tyr!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            )),
+            RegBlockAFR::F => Instr::Cmp(CmpOp::EqF(
+                FloatEqFlag::Exact,
+                _reg_tyf!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            )),
+        }
+    }};
+    (eq.n $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+        if _reg_block!($reg1) != _reg_block!($reg2) {
+            panic!(
+                "Equivalence check must be performed between registers of the same type and size"
+            );
+        }
+        match _reg_block!($reg1) {
+            RegBlockAFR::A => Instr::Cmp(CmpOp::EqA(
+                NoneEqFlag::Equal,
+                _reg_tya!(Reg, $reg1),
+                _reg_idx!($idx1),
+                _reg_idx!($idx2),
+            )),
+            RegBlockAFR::R => Instr::Cmp(CmpOp::EqR(
+                NoneEqFlag::Equal,
                 _reg_tyr!(Reg, $reg1),
                 _reg_idx!($idx1),
                 _reg_idx!($idx2),
@@ -401,20 +420,11 @@ macro_rules! instr {
             _ => panic!("Wrong registers for `eq` operation"),
         }
     }};
-    (eq: e $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
+    (eq.r $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
         if _reg_block!($reg1) != _reg_block!($reg2) {
-            panic!("`eq` operation may be applied only to the registers of the same family");
-        }
-        Instr::Cmp(CmpOp::EqF(
-            FloatEqFlag::Exact,
-            _reg_tyf!(Reg, $reg1),
-            _reg_idx!($idx1),
-            _reg_idx!($idx2),
-        ))
-    }};
-    (eq: r $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
-        if _reg_block!($reg1) != _reg_block!($reg2) {
-            panic!("`eq` operation may be applied only to the registers of the same family");
+            panic!(
+                "Equivalence check must be performed between registers of the same type and size"
+            );
         }
         Instr::Cmp(CmpOp::EqF(
             FloatEqFlag::Rounding,
@@ -437,14 +447,14 @@ macro_rules! instr {
             _ => panic!("Wrong registers for `ifz` operation"),
         }
     };
-    (st: $flag:ident $reg:ident[$idx:literal]) => {
+    (st. $flag:ident $reg:ident[$idx:literal]) => {
         Instr::Cmp(CmpOp::St(_merge_flag!($flag), _reg_tya!(Reg, $reg), _reg_idx8!($idx)))
     };
     (inv st0) => {
         Instr::Cmp(CmpOp::StInv)
     };
 
-    (add: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+    (add. $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         match (_reg_block!($reg1), _reg_block!($reg2)) {
             (RegBlockAFR::A, RegBlockAFR::A) => Instr::Arithmetic(ArithmeticOp::AddA(
                 _int_flags!($flag),
@@ -465,7 +475,7 @@ macro_rules! instr {
             (_, _) => panic!("addition must be performed between registers of the same type"),
         }
     };
-    (sub: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+    (sub. $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         match (_reg_block!($reg1), _reg_block!($reg2)) {
             (RegBlockAFR::A, RegBlockAFR::A) => Instr::Arithmetic(ArithmeticOp::SubA(
                 _int_flags!($flag),
@@ -486,7 +496,7 @@ macro_rules! instr {
             (_, _) => panic!("subtraction must be performed between registers of the same type"),
         }
     };
-    (mul: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+    (mul. $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         match (_reg_block!($reg1), _reg_block!($reg2)) {
             (RegBlockAFR::A, RegBlockAFR::A) => Instr::Arithmetic(ArithmeticOp::MulA(
                 _int_flags!($flag),
@@ -507,7 +517,7 @@ macro_rules! instr {
             (_, _) => panic!("multiplication must be performed between registers of the same type"),
         }
     };
-    (div: $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+    (div. $flag:ident $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         match (_reg_block!($reg1), _reg_block!($reg2)) {
             (RegBlockAFR::A, RegBlockAFR::A) => Instr::Arithmetic(ArithmeticOp::DivA(
                 _int_flags!($flag),
@@ -623,7 +633,7 @@ macro_rules! instr {
             _reg_idx!($idx1),
         ))
     };
-    (shr: u $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+    (shr.u $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         Instr::Bitwise(BitwiseOp::ShrA(
             SignFlag::Unsigned,
             _reg_tya2!(Reg, $reg2),
@@ -632,7 +642,7 @@ macro_rules! instr {
             _reg_idx!($idx1),
         ))
     };
-    (shr: s $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
+    (shr.s $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {
         Instr::Bitwise(BitwiseOp::ShrA(
             SignFlag::Signed,
             _reg_tya2!(Reg, $reg2),

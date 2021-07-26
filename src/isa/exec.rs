@@ -23,7 +23,7 @@ use super::{
     Instr, MoveOp, PutOp, ReservedOp, Secp256k1Op,
 };
 use crate::data::{ByteStr, MaybeNumber, Number, NumberLayout};
-use crate::isa::{FloatEqFlag, IntFlags, MergeFlag, SignFlag};
+use crate::isa::{FloatEqFlag, IntFlags, MergeFlag, NoneEqFlag, SignFlag};
 use crate::libs::{constants, LibSite};
 use crate::reg::{CoreRegs, NumericRegister, Reg32, RegA, RegR};
 
@@ -343,7 +343,7 @@ impl InstructionSet for CmpOp {
                 regs.st0 = regs
                     .get_both(reg, idx1, reg, idx2)
                     .map(|(val1, val2)| val1 == val2)
-                    .unwrap_or(*st);
+                    .unwrap_or(*st == NoneEqFlag::Equal);
             }
             CmpOp::EqF(eq_flag, reg, idx1, idx2) => {
                 regs.st0 = regs
@@ -361,7 +361,7 @@ impl InstructionSet for CmpOp {
                 regs.st0 = regs
                     .get_both(reg, idx1, reg, idx2)
                     .map(|(val1, val2)| val1 == val2)
-                    .unwrap_or(*st);
+                    .unwrap_or(*st == NoneEqFlag::Equal);
             }
             CmpOp::IfZA(reg, idx) => {
                 regs.st0 = regs.get(reg, idx).map(Number::is_zero).unwrap_or(false)

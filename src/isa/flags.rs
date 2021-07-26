@@ -120,6 +120,79 @@ impl From<&SignFlag> for bool {
     fn from(flag: &SignFlag) -> Self { *flag == SignFlag::Signed }
 }
 
+/// Non-equality flag
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum NoneEqFlag {
+    /// Two `None` register values are considered equal
+    #[display("e")]
+    Equal = 1,
+
+    /// Two `None` register values are considered non-equal
+    #[display("n")]
+    NonEqual = 0,
+}
+
+impl Flag for NoneEqFlag {}
+
+impl Default for NoneEqFlag {
+    #[inline]
+    fn default() -> Self { Self::Equal }
+}
+
+impl FromStr for NoneEqFlag {
+    type Err = ParseFlagError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty() {
+            return Err(ParseFlagError::RequiredFlagAbsent("none-equality"));
+        }
+        let filtered = s.replace(&['e', 'n'][..], "");
+        if !filtered.is_empty() {
+            return Err(ParseFlagError::UnknownFlags("none-equality", filtered));
+        }
+        match (s.contains('e'), s.contains('n')) {
+            (true, false) => Ok(NoneEqFlag::Equal),
+            (false, true) => Ok(NoneEqFlag::NonEqual),
+            (true, true) => Err(ParseFlagError::MutuallyExclusiveFlags("none-equality", 'e', 'n')),
+            (false, false) => Err(ParseFlagError::RequiredFlagAbsent("none-equality")),
+        }
+    }
+}
+
+impl NoneEqFlag {
+    /// Constructs none-equality flag from `u1` value (used in bytecode serialization)
+    pub fn from_u1(val: u1) -> NoneEqFlag {
+        match val.as_u8() {
+            v if v == NoneEqFlag::Equal as u8 => NoneEqFlag::Equal,
+            v if v == NoneEqFlag::NonEqual as u8 => NoneEqFlag::NonEqual,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Returns `u1` representation of none-equality flag (used in bytecode serialization).
+    pub fn as_u1(self) -> u1 { u1::with(self as u8) }
+}
+
+impl From<u1> for NoneEqFlag {
+    fn from(val: u1) -> NoneEqFlag { NoneEqFlag::from_u1(val) }
+}
+
+impl From<&NoneEqFlag> for u1 {
+    fn from(flag: &NoneEqFlag) -> u1 { flag.as_u1() }
+}
+
+impl From<NoneEqFlag> for u1 {
+    fn from(flag: NoneEqFlag) -> u1 { flag.as_u1() }
+}
+
+impl From<NoneEqFlag> for bool {
+    fn from(flag: NoneEqFlag) -> Self { flag == NoneEqFlag::Equal }
+}
+
+impl From<&NoneEqFlag> for bool {
+    fn from(flag: &NoneEqFlag) -> Self { *flag == NoneEqFlag::Equal }
+}
+
 /// Float equality flag
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum FloatEqFlag {

@@ -18,6 +18,7 @@ use super::{
     SignFlag, SplitFlag,
 };
 use crate::data::{ByteStr, MaybeNumber, Step};
+use crate::isa::NoneEqFlag;
 use crate::libs::LibSite;
 use crate::reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, RegS};
 
@@ -310,25 +311,25 @@ pub enum CmpOp {
     /// Compares value of two integer arithmetic registers setting `st0` to `true` if the first
     /// parameter is greater (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("gt:{0}    {1}{2},{1}{3}")]
+    #[display("gt.{0}    {1}{2},{1}{3}")]
     GtA(SignFlag, RegA, Reg32, Reg32),
 
     /// Compares value of two integer arithmetic registers setting `st0` to `true` if the first
     /// parameter is lesser (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("lt:{0}    {1}{2},{1}{3}")]
+    #[display("lt.{0}    {1}{2},{1}{3}")]
     LtA(SignFlag, RegA, Reg32, Reg32),
 
     /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
     /// parameter is greater (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("gt:{0}    {1}{2},{1}{3}")]
+    #[display("gt.{0}    {1}{2},{1}{3}")]
     GtF(FloatEqFlag, RegF, Reg32, Reg32),
 
     /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
     /// parameter is lesser (and not equal) than the second one. If at least one of the registers
     /// is set to `None`, sets `st0` to `false`.
-    #[display("lt:{0}    {1}{2},{1}{3}")]
+    #[display("lt.{0}    {1}{2},{1}{3}")]
     LtF(FloatEqFlag, RegF, Reg32, Reg32),
 
     // ----
@@ -345,21 +346,31 @@ pub enum CmpOp {
     LtR(RegR, Reg32, Reg32),
 
     /// Checks equality of value in two integer arithmetic (`A`) registers putting result into
-    /// `st0`.None-equality flag specifies value for `st0` for the cases when both of the registers
-    /// are in `None` state.
-    #[display("eq      {1}{2},{1}{3} .none={0}")]
-    EqA(/** `st0` value if both of the registers are uninitialized */ bool, RegA, Reg32, Reg32),
+    /// `st0`. None-equality flag specifies value for `st0` for the cases when both of the
+    /// registers are in `None` state.
+    #[display("eq.{0}    {1}{2},{1}{3}")]
+    EqA(
+        /** `st0` value if both of the registers are uninitialized */ NoneEqFlag,
+        RegA,
+        Reg32,
+        Reg32,
+    ),
 
     /// Checks equality of value in two float arithmetic (`F`) registers putting result into `st0`.
     /// If both registers are `None`, the `st0` is set to `false`.
-    #[display("eq:{0}    {1}{2},{1}{3}")]
+    #[display("eq.{0}    {1}{2},{1}{3}")]
     EqF(FloatEqFlag, RegF, Reg32, Reg32),
 
     /// Checks equality of value in two non-arithmetic (`R`) registers putting result into `st0`.
     /// None-equality flag specifies value for `st0` for the cases when both of the registers
     /// are in `None` state.
-    #[display("eq      {1}{2},{1}{3} .none={0}")]
-    EqR(/** `st0` value if both of the registers are uninitialized */ bool, RegR, Reg32, Reg32),
+    #[display("eq.{0}    {1}{2},{1}{3}")]
+    EqR(
+        /** `st0` value if both of the registers are uninitialized */ NoneEqFlag,
+        RegR,
+        Reg32,
+        Reg32,
+    ),
 
     // ---
     /// Checks if the value in `A` register is equal to zero, setting `st0` to `true` in this case.
@@ -384,11 +395,11 @@ pub enum CmpOp {
 
     /// Takes value from `st0` and merges into the value of the destination `A` register. The merge
     /// operation is defined by the [`MergeFlag`] argument.
-    #[display("st:{0}    {1}{2}")]
+    #[display("st.{0}    {1}{2}")]
     St(MergeFlag, RegA, Reg8),
 
     /// Inverses value in `st0` register
-    #[display("inv     st0")]
+    #[display("stinv")]
     StInv,
 }
 
@@ -400,27 +411,27 @@ pub enum CmpOp {
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum ArithmeticOp {
     /// Adds values from two integer arithmetic registers and puts result into destination.
-    #[display("add:{0}  {1}{2},{1}{3}")]
+    #[display("add.{0}  {1}{2},{1}{3}")]
     AddA(IntFlags, RegA, Reg32, Reg32),
 
     /// Adds values from two float arithmetic registers and puts result into destination.
-    #[display("add:{0}   {1}{2},{1}{3}")]
+    #[display("add.{0}   {1}{2},{1}{3}")]
     AddF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Subtracts values from two integer arithmetic registers and puts result into destination.
-    #[display("sub:{0}  {1}{2},{1}{3}")]
+    #[display("sub.{0}  {1}{2},{1}{3}")]
     SubA(IntFlags, RegA, Reg32, Reg32),
 
     /// Subtracts values from two float arithmetic registers and puts result into destination.
-    #[display("sub:{0}   {1}{2},{1}{3}")]
+    #[display("sub.{0}   {1}{2},{1}{3}")]
     SubF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Multiplies values from two integer arithmetic registers and puts result into destination.
-    #[display("mul:{0}  {1}{2},{1}{3}")]
+    #[display("mul.{0}  {1}{2},{1}{3}")]
     MulA(IntFlags, RegA, Reg32, Reg32),
 
     /// Multiplies values from two float arithmetic registers and puts result into destination.
-    #[display("mul:{0}   {1}{2},{1}{3}")]
+    #[display("mul.{0}   {1}{2},{1}{3}")]
     MulF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Divides values from two integer arithmetic registers and puts result into destination.
@@ -432,11 +443,11 @@ pub enum ArithmeticOp {
     /// destination must be set to `0` (true) or to None (false).
     ///
     /// NB: Impossible arithmetic operation 0/0 always sets destination to `None`.
-    #[display("div:{0}  {1}{2},{1}{3}")]
+    #[display("div.{0}  {1}{2},{1}{3}")]
     DivA(IntFlags, RegA, Reg32, Reg32),
 
     /// Divides values from two float arithmetic registers and puts result into destination.
-    #[display("div:{0}   {1}{2},{1}{3}")]
+    #[display("div.{0}   {1}{2},{1}{3}")]
     DivF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Modulo division.
@@ -499,7 +510,7 @@ pub enum BitwiseOp {
     ///
     /// This, [`BitwiseOp::Shl`] and [`BitwiseOp::ShrR`] operations are encoded with the same
     /// instruction bitcode and differ only in their first two argument bits.
-    #[display("shr:{0}   {1}{2},{3}{4}")]
+    #[display("shr.{0}   {1}{2},{3}{4}")]
     ShrA(
         /** Sign flag */ SignFlag,
         /** Which of `A` registers will have a shift value */ RegA2,
@@ -732,7 +743,7 @@ pub enum BytesOp {
     /// Rule on `st0` changes: if at least one of the destination registers is set to `None`, or
     /// `offset` value exceeds source string length, `st0` is set to `false`; otherwise its value
     /// is not modified
-    #[display("splt:{2}  s16[{0}],a16{1},s16[{3}],s16[{4}]")]
+    #[display("splt.{2}  s16[{0}],a16{1},s16[{3}],s16[{4}]")]
     Splt(
         SplitFlag,
         /** `a16` register index with offset value */ Reg32,
@@ -770,7 +781,7 @@ pub enum BytesOp {
     /// </pre>
     ///
     /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
-    #[display("ins:{3}   s16[{0}],s16[{1}],a16{2}")]
+    #[display("ins.{3}   s16[{0}],s16[{1}],a16{2}")]
     Ins(
         InsertFlag,
         /** `a16` register index with offset value for insert location */ Reg32,
@@ -806,7 +817,7 @@ pub enum BytesOp {
     /// `flag1` and `flag2` arguments indicate whether `st0` should be set to `false` if
     /// `offset_start > src_len` and `offset_end > src_len && offser_start <= src_len`.
     /// In all other cases, `st0` value is not modified.
-    #[display("del:{6}   s16[{0}],s16[{1}],{2}{3},{4}{5}")]
+    #[display("del.{6}   s16[{0}],s16[{1}],{2}{3},{4}{5}")]
     Del(
         DeleteFlag,
         RegA2,
