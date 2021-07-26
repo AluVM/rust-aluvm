@@ -25,7 +25,7 @@ use core::str::FromStr;
 
 use amplify::num::{u1024, u256, u512};
 use half::bf16;
-use rustc_apfloat::{ieee, Float};
+use rustc_apfloat::{ieee, Float, Status};
 
 /// Trait of different number layouts
 pub trait NumberLayout: Copy {
@@ -745,7 +745,24 @@ impl Number {
                     }
                     FloatLayout::FloatTapered => unimplemented!("tapered float layout conversion"),
                 };
-                true
+                false
+            }
+            (Layout::Float(fl), Layout::Integer(_)) => {
+                let val = match fl {
+                    FloatLayout::BFloat16 => todo!("BFloat16 to integer conversion"),
+                    FloatLayout::IeeeHalf => ieee::Half::from(*self).to_i128(128),
+                    FloatLayout::IeeeSingle => ieee::Single::from(*self).to_i128(128),
+                    FloatLayout::IeeeDouble => ieee::Double::from(*self).to_i128(128),
+                    FloatLayout::X87DoubleExt => ieee::X87DoubleExtended::from(*self).to_i128(128),
+                    FloatLayout::IeeeQuad => ieee::Quad::from(*self).to_i128(128),
+                    FloatLayout::IeeeOct => {
+                        unimplemented!("IEEE octal precision layout conversion")
+                    }
+                    FloatLayout::FloatTapered => unimplemented!("tapered float layout conversion"),
+                };
+                *self = Number::from(val.value);
+                self.reshape(to);
+                val.status == Status::OK
             }
             (from, to) => todo!("Number layout reshape from {} to {}", from, to),
         }
