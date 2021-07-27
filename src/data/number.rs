@@ -13,7 +13,7 @@
 //! number representation.
 
 use alloc::format;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use core::fmt::{
     self, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, Write,
 };

@@ -757,19 +757,19 @@ impl InstructionSet for DigestOp {
             DigestOp::Ripemd(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
-                let hash = s.map(|s| ripemd160::Hash::hash(&s.as_ref()[..]).into_inner());
+                let hash = s.map(|s| ripemd160::Hash::hash(s.as_ref()).into_inner());
                 regs.set(RegR::R160, dst, hash);
             }
             DigestOp::Sha256(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
-                let hash = s.map(|s| sha256::Hash::hash(&s.as_ref()[..]).into_inner());
+                let hash = s.map(|s| sha256::Hash::hash(s.as_ref()).into_inner());
                 regs.set(RegR::R256, dst, hash);
             }
             DigestOp::Sha512(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
-                let hash = s.map(|s| sha512::Hash::hash(&s.as_ref()[..]).into_inner());
+                let hash = s.map(|s| sha512::Hash::hash(s.as_ref()).into_inner());
                 regs.set(RegR::R512, dst, hash);
             }
         }
