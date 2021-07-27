@@ -14,7 +14,10 @@
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 
+use amplify::num::error::OverflowError;
+
 use crate::isa::{InstructionSet, ReservedOp};
+use crate::libs::constants::LIBS_MAX_TOTAL;
 use crate::libs::{Lib, LibId, LibSite};
 use crate::reg::CoreRegs;
 
@@ -53,17 +56,28 @@ where
     pub fn with(lib: Lib<E>) -> Vm<E> {
         let mut runtime = Vm::new();
         runtime.entrypoint = LibSite::with(0, lib.id());
-        runtime.add_lib(lib);
+        runtime.add_lib(lib).expect("adding single library to lib segment overflows");
         runtime
     }
 
     /// Adds Alu bytecode library to the virtual machine.
     ///
+    /// # Errors
+    ///
+    /// Checks requirement that the total number of libraries must not exceed [`LIBS_MAX_TOTAL`] and
+    /// returns error otherwise
+    ///
     /// # Returns
     ///
     /// `true` if the library was already known and `false` otherwise.
     #[inline]
-    pub fn add_lib(&mut self, lib: Lib<E>) -> bool { self.libs.insert(lib.id(), lib).is_none() }
+    pub fn add_lib(&mut self, lib: Lib<E>) -> Result<bool, OverflowError> {
+        if self.libs.len() >= LIBS_MAX_TOTAL {
+            Err(OverflowError { max: LIBS_MAX_TOTAL, value: self.libs.len() + 1 })
+        } else {
+            Ok(self.libs.insert(lib.id(), lib).is_none())
+        }
+    }
 
     /// Sets new entry point value (used when calling [`Vm::main`])
     pub fn set_entrypoint(&mut self, entrypoint: LibSite) { self.entrypoint = entrypoint; }
