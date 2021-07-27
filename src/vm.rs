@@ -65,7 +65,7 @@ where
     /// # Errors
     ///
     /// Checks requirement that the total number of libraries must not exceed [`LIBS_MAX_TOTAL`] and
-    /// returns error otherwise
+    /// returns [`OverflowError`] otherwise
     ///
     /// # Returns
     ///

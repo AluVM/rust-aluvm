@@ -522,8 +522,32 @@ impl LibSeg {
     ///
     /// If the library is not present in libs segment, returns `None`.
     #[inline]
-    pub fn index(&self, lib: LibId) -> Option<u16> {
-        self.set.iter().position(|l| *l == lib).map(|i| i as u16)
+    pub fn index(&self, lib: LibId) -> Option<u8> {
+        self.set.iter().position(|l| *l == lib).map(|i| i as u8)
+    }
+
+    /// Adds library id to the library segment.
+    ///
+    /// # Errors
+    ///
+    /// Checks requirement that the total number of libraries must not exceed [`LIBS_MAX_TOTAL`] and
+    /// returns [`LibSegOverflow`] otherwise
+    ///
+    /// # Returns
+    ///
+    /// `true` if the library was already known and `false` otherwise.
+    #[inline]
+    pub fn add_lib(&mut self, id: LibId) -> Result<bool, LibSegOverflow> {
+        if self.set.len() >= LIBS_MAX_TOTAL {
+            Err(LibSegOverflow)
+        } else if self.index(id).is_some() {
+            Ok(true)
+        } else {
+            self.set.insert(id);
+            let pos = self.index(id).expect("library inserted into a set is absent in the set");
+            self.table.insert(pos, id);
+            Ok(false)
+        }
     }
 }
 
