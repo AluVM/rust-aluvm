@@ -683,7 +683,7 @@ impl InstructionSet for BytesOp {
                     let val = regs.get(dst, index).map(|v| v)?;
                     let offset = regs.a16[*offset as u8 as usize]?;
                     let end = offset.saturating_add(dst.layout().bytes() - 1);
-                    s.adjust_len(end, true);
+                    s.adjust_len(end.checked_add(1));
                     s.as_mut()[offset as usize..=end as usize].copy_from_slice(val.as_ref());
                     regs.s16[src.as_usize()] = Some(s);
                     Some(())
@@ -702,9 +702,9 @@ impl InstructionSet for BytesOp {
                     }
                     let mut d = s1.clone();
                     if len == u16::MAX as usize + 1 {
-                        d.adjust_len((len - 1) as u16, true);
+                        d.adjust_len(None);
                     } else {
-                        d.adjust_len(len as u16, false);
+                        d.adjust_len(Some(len as u16));
                     }
                     let mut d = ByteStr::with(s1);
                     d.as_mut()[s1.len()..].copy_from_slice(s2.as_ref());

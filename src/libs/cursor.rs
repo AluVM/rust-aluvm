@@ -116,10 +116,6 @@ where
         Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, buf_full: false, data, libs }
     }
 
-    /// Returns whether cursor is at the upper length boundary for any byte
-    /// string (equal to `u16::MAX`)
-    #[inline]
-    pub fn is_buf_full(&self) -> bool { self.buf_full }
     /// Converts writer into data segment
     #[inline]
     pub fn into_data_segment(self) -> D { self.data }
@@ -218,6 +214,9 @@ where
     fn is_eof(&self) -> bool { self.buf_full || self.byte_pos as usize >= self.as_ref().len() }
 
     #[inline]
+    fn is_buf_full(&self) -> bool { self.buf_full }
+
+    #[inline]
     fn pos(&self) -> Option<u16> {
         if self.buf_full {
             None
@@ -227,9 +226,9 @@ where
     }
 
     #[inline]
-    fn seek(&mut self, byte_pos: u16) {
-        self.buf_full = false;
-        self.byte_pos = byte_pos;
+    fn seek(&mut self, byte_pos: Option<u16>) {
+        self.buf_full = byte_pos.is_none();
+        self.byte_pos = byte_pos.unwrap_or(u16::MAX);
     }
 
     fn peek_u8(&self) -> Result<u8, CodeEofError> {

@@ -848,7 +848,7 @@ pub enum DigestOp {
     ///
     /// Sets `st0` to `false` and destination register to `None` if the source register does not
     /// contain a value
-    #[display("ripemd  s16{0},r160{1}")]
+    #[display("ripemd  {0},r160{1}")]
     Ripemd(
         /** Index of string register */ RegS,
         /** Index of `r160` register to save result to */ Reg16,
@@ -858,7 +858,7 @@ pub enum DigestOp {
     ///
     /// Sets `st0` to `false` and destination register to `None` if the source register does not
     /// contain a value
-    #[display("sha2    s16{0},r256{1}")]
+    #[display("sha2    {0},r256{1}")]
     Sha256(
         /** Index of string register */ RegS,
         /** Index of `r256` register to save result to */ Reg16,
@@ -868,7 +868,7 @@ pub enum DigestOp {
     ///
     /// Sets `st0` to `false` and destination register to `None` if the source register does not
     /// contain a value
-    #[display("sha2    s16{0},r512{1}")]
+    #[display("sha2    {0},r512{1}")]
     Sha512(
         /** Index of string register */ RegS,
         /** Index of `r512` register to save result to */ Reg16,

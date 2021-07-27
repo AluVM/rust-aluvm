@@ -73,21 +73,14 @@ impl ByteStr {
 
     /// Adjusts the length of the string if necessary
     #[inline]
-    pub fn adjust_len(&mut self, new_len: u16, inclusive: bool) {
-        match (self.len, new_len, inclusive) {
-            (Some(_), u16::MAX, true) => self.len = None,
-            (Some(len), new, true) if len <= new => self.len = Some(new + 1),
-            (Some(len), new, false) if len < new => self.len = Some(new),
-            _ => {}
-        }
-    }
+    pub fn adjust_len(&mut self, new_len: Option<u16>) { self.len = new_len }
 
     /// Fills range within a string with the provided byte value, increasing string length if
     /// necessary
     pub fn fill(&mut self, range: RangeInclusive<u16>, val: u8) {
         let start = *range.start();
         let end = *range.end();
-        self.adjust_len(end, true);
+        self.adjust_len(end.checked_add(1));
         self.bytes[start as usize..=end as usize].fill(val);
     }
 

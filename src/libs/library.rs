@@ -328,10 +328,7 @@ where
         }
         let pos = writer.pos();
         let data = writer.into_data_segment();
-        match pos {
-            Some(pos) => code_segment.adjust_len(pos, false),
-            None => code_segment.adjust_len(u16::MAX, true),
-        }
+        code_segment.adjust_len(pos);
 
         Ok(Lib {
             libs_segment,
@@ -398,7 +395,7 @@ where
         let mut cursor =
             Cursor::with(&self.code_segment.bytes[..], &*self.data_segment, &self.libs_segment);
         let lib_hash = self.id();
-        cursor.seek(entrypoint);
+        cursor.seek(Some(entrypoint));
 
         while !cursor.is_buf_full() {
             #[cfg(all(debug_assertions, feature = "std"))]
@@ -425,7 +422,7 @@ where
                 ExecStep::Jump(pos) => {
                     #[cfg(all(debug_assertions, feature = "std"))]
                     eprint!(" -> {}", pos);
-                    cursor.seek(pos)
+                    cursor.seek(Some(pos))
                 }
                 ExecStep::Call(site) => {
                     #[cfg(all(debug_assertions, feature = "std"))]
