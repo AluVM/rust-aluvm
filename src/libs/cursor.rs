@@ -108,7 +108,8 @@ where
     ///
     /// # Panics
     ///
-    /// If the length of the bytecode exceeds `u16::MAX` or length of the data `u24::MAX`
+    /// If the length of the bytecode exceeds [`CODE_SEGMENT_MAX_LEN`] or length of the data
+    /// [`DATA_SEGMENT_MAX_LEN`]
     #[inline]
     pub fn with(bytecode: T, data: D, libs: &'a LibSeg) -> Cursor<'a, T, D> {
         assert!(bytecode.as_ref().len() <= CODE_SEGMENT_MAX_LEN);
@@ -189,17 +190,17 @@ where
     T: AsRef<[u8]> + AsMut<[u8]>,
     Self: 'a,
 {
-    fn write_unique(&mut self, bytes: &[u8]) -> Result<u24, WriteError> {
+    fn write_unique(&mut self, bytes: &[u8]) -> Result<u16, WriteError> {
         // We write the value only if the value is not yet present in the data segment
         let len = bytes.len();
         let offset = self.data.len();
         if let Some(offset) = self.data.windows(len).position(|window| window == bytes) {
-            Ok(u24::with(offset as u32))
-        } else if offset + len > u24::MAX.as_u32() as usize + 1 {
+            Ok(offset as u16)
+        } else if offset + len > DATA_SEGMENT_MAX_LEN {
             Err(WriteError::DataNotFittingSegment)
         } else {
             self.data.extend(bytes);
-            Ok(u24::with(offset as u32))
+            Ok(offset as u16)
         }
     }
 }
@@ -321,16 +322,16 @@ where
     }
 
     fn read_data(&mut self) -> Result<(&[u8], bool), CodeEofError> {
-        let offset = self.read_u24()?.as_u32() as usize;
+        let offset = self.read_u16()? as usize;
         let end = offset + self.read_u16()? as usize;
-        let max = u24::MAX.as_u32() as usize;
+        let max = DATA_SEGMENT_MAX_LEN;
         let st0 = end > self.data.as_ref().len();
         let data = &self.data.as_ref()[offset.min(max)..end.min(max)];
         Ok((data, st0))
     }
 
     fn read_number(&mut self, reg: impl NumericRegister) -> Result<Number, CodeEofError> {
-        let offset = self.read_u24()?.as_u32() as usize;
+        let offset = self.read_u16()? as usize;
         let end = offset + reg.bytes() as usize;
         if end > self.data.as_ref().len() {
             return Err(CodeEofError);
@@ -434,7 +435,7 @@ where
 
     #[inline]
     fn write_lib(&mut self, lib: LibId) -> Result<(), WriteError> {
-        self.write_u16(self.libs.index(lib).ok_or(WriteError::LibAbsent(lib))?)
+        self.write_u8(self.libs.index(lib).ok_or(WriteError::LibAbsent(lib))?)
     }
 
     fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), WriteError> {
@@ -447,7 +448,7 @@ where
             return Err(WriteError::DataExceedsLimit(len));
         }
         let offset = self.write_unique(bytes)?;
-        self.write_u24(offset)?;
+        self.write_u16(offset)?;
         self.write_u16(len as u16)
     }
 
@@ -463,6 +464,6 @@ where
         );
         value.reshape(reg.layout().using_sign(value.layout()));
         let offset = self.write_unique(&value[..])?;
-        self.write_u24(offset)
+        self.write_u16(offset)
     }
 }

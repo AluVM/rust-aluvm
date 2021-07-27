@@ -86,8 +86,8 @@ fn main() {
         secpadd r512[22],r512[1]                ;
         secpneg r512[1],r512[3]                 ;
         ifz     a16[8]                          ;
-        jif     196                             ;
-        jmp     7                               ;
+        jif     190                             ;
+        jmp     6                               ;
         call    56 @ alu1wnhusevxmdphv3dh8ada44k0xw66ahq9nzhkv39z07hmudhp380sq0dtml ;
         ret                                     ;
     };

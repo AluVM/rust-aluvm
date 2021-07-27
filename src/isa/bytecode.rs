@@ -302,7 +302,7 @@ impl Bytecode for PutOp {
             | PutOp::PutIfA(_, _, _)
             | PutOp::PutF(_, _, _)
             | PutOp::PutR(_, _, _)
-            | PutOp::PutIfR(_, _, _) => 4,
+            | PutOp::PutIfR(_, _, _) => 3,
         }
     }
 

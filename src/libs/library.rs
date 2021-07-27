@@ -398,7 +398,6 @@ where
         cursor.seek(Some(entrypoint));
 
         while !cursor.is_buf_full() {
-            #[cfg(all(debug_assertions, feature = "std"))]
             let pos = cursor.pos().expect("cursor position is EOF while reported to be not EOF");
 
             let instr = Instr::<E>::read(&mut cursor).ok()?;
