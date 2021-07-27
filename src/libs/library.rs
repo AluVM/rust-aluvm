@@ -294,7 +294,7 @@ where
             {
                 return Err(SegmentError::IsaIdWrongSymbols(isae.to_owned()));
             }
-            if !E::is_supported(isae) {
+            if !Instr::<E>::is_supported(isae) {
                 return Err(SegmentError::IsaNotSupported(isae.to_owned()));
             }
         }

@@ -64,7 +64,8 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
     fn isa_id() -> Box<[u8]> { Self::isa_string().as_bytes().into() }
 
     /// Checks whether provided ISA extension ID is supported by the current instruction set
-    fn is_supported(id: &str) -> bool { id == constants::ISA_ID_ALU }
+    #[inline]
+    fn is_supported(id: &str) -> bool { Self::isa_ids().contains(id) }
 
     /// Returns computational complexity of the instruction
     #[inline]
@@ -96,14 +97,6 @@ where
         set.extend(Secp256k1Op::isa_ids());
         set.extend(Curve25519Op::isa_ids());
         set
-    }
-
-    fn is_supported(id: &str) -> bool {
-        id == constants::ISA_ID_ALU
-            || DigestOp::is_supported(id)
-            || Secp256k1Op::is_supported(id)
-            || Curve25519Op::is_supported(id)
-            || Extension::is_supported(id)
     }
 
     #[inline]
@@ -748,9 +741,6 @@ impl InstructionSet for DigestOp {
     #[inline]
     fn complexity(&self) -> u64 { 100 }
 
-    #[inline]
-    fn is_supported(id: &str) -> bool { id == constants::ISA_ID_BPDIGEST }
-
     fn exec(&self, regs: &mut CoreRegs, _site: LibSite) -> ExecStep {
         let none;
         match self {
@@ -793,16 +783,8 @@ impl InstructionSet for Secp256k1Op {
         set
     }
 
-    #[cfg(feature = "secp256k1")]
-    #[inline]
-    fn is_supported(id: &str) -> bool { id == constants::ISA_ID_SECP256K }
-
     #[inline]
     fn complexity(&self) -> u64 { 1000 }
-
-    #[cfg(not(feature = "secp256k1"))]
-    #[inline]
-    fn is_supported(_: &str) -> bool { false }
 
     #[cfg(not(feature = "secp256k1"))]
     fn exec(&self, _: &mut CoreRegs, _: LibSite) -> ExecStep {
@@ -903,14 +885,6 @@ impl InstructionSet for Curve25519Op {
         set.insert(constants::ISA_ID_ED25519);
         set
     }
-
-    #[cfg(feature = "curve25519")]
-    #[inline]
-    fn is_supported(id: &str) -> bool { id == constants::ISA_ID_ED25519 }
-
-    #[cfg(not(feature = "curve25519"))]
-    #[inline]
-    fn is_supported(_: &str) -> bool { false }
 
     #[inline]
     fn complexity(&self) -> u64 { 1000 }
