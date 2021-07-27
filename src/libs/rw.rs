@@ -62,7 +62,7 @@ mod private {
 /// Trait for reading instruction data from bytecode
 pub trait Read: private::Sealed {
     /// Returns whether end of the bytecode is reached
-    fn is_end(&self) -> bool;
+    fn is_eof(&self) -> bool;
     /// Peeks a single byte without moving cursor
     fn peek_u8(&self) -> Result<u8, CodeEofError>;
     /// Reads single bit as a bool values

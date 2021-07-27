@@ -342,7 +342,7 @@ where
     pub fn disassemble(&self) -> Result<Vec<Instr<E>>, CodeEofError> {
         let mut code = Vec::new();
         let mut reader = Cursor::with(&self.code_segment, &*self.data_segment, &self.libs_segment);
-        while !reader.is_end() {
+        while !reader.is_eof() {
             code.push(Instr::read(&mut reader)?);
         }
         Ok(code)
@@ -397,7 +397,7 @@ where
         let lib_hash = self.id();
         cursor.seek(entrypoint);
 
-        while !cursor.is_eof() {
+        while !cursor.is_buf_full() {
             #[cfg(all(debug_assertions, feature = "std"))]
             let pos = cursor.pos();
 
