@@ -235,8 +235,8 @@ impl Bytecode for ControlFlowOp {
             ControlFlowOp::Fail | ControlFlowOp::Succ => 1,
             ControlFlowOp::Jmp(_) | ControlFlowOp::Jif(_) => 3,
             ControlFlowOp::Routine(_) => 3,
-            ControlFlowOp::Call(_) => 5,
-            ControlFlowOp::Exec(_) => 5,
+            ControlFlowOp::Call(_) => 4,
+            ControlFlowOp::Exec(_) => 4,
             ControlFlowOp::Ret => 1,
         }
     }

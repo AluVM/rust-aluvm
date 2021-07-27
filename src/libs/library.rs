@@ -486,27 +486,32 @@ pub struct LibSeg {
 
     /// Table matches lexicographic-based library index to the library id (i.e. this is reverse
     /// index).
-    table: BTreeMap<u16, LibId>,
+    table: BTreeMap<u8, LibId>,
 }
 
 impl LibSeg {
-    /// Constructs libs segment from an iterator over call locations
+    /// Constructs libs segment from an iterator over call locations.
+    ///
+    /// Lib segment deterministically orders library ids according to their [`LibId`] `Ord`
+    /// implementation. This is not a requirement, but just a good practice for producing the same
+    /// code on different platforms.
     ///
     /// # Error
     ///
-    /// Errors with [`LibSegOverflow`] if the number of unique library ids exceeds `u16::MAX`.
+    /// Errors with [`LibSegOverflow`] if the number of unique library ids exceeds
+    /// [`LIBS_SEGMENT_MAX_COUNT`].
     pub fn from(source: impl IntoIterator<Item = LibSite>) -> Result<Self, LibSegOverflow> {
         let set = source.into_iter().map(|site| site.lib).collect::<BTreeSet<LibId>>();
-        if set.len() >= u16::MAX as usize {
+        if set.len() > LIBS_SEGMENT_MAX_COUNT {
             return Err(LibSegOverflow);
         }
-        let table = set.iter().enumerate().map(|(index, id)| (index as u16, *id)).collect();
+        let table = set.iter().enumerate().map(|(index, id)| (index as u8, *id)).collect();
         Ok(LibSeg { set, table })
     }
 
     /// Returns library id with a given index
     #[inline]
-    pub fn at(&self, index: u16) -> Option<LibId> { self.table.get(&index).copied() }
+    pub fn at(&self, index: u8) -> Option<LibId> { self.table.get(&index).copied() }
 
     /// Returns index of a library.
     ///

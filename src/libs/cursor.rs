@@ -18,9 +18,11 @@ use amplify::num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::{CodeEofError, LibId, LibSeg, Read, Write, WriteError};
 use crate::data::Number;
+use crate::libs::constants::{CODE_SEGMENT_MAX_LEN, DATA_SEGMENT_MAX_LEN};
 use crate::reg::NumericRegister;
 
-/// Cursor for accessing byte string data bounded by `u16::MAX` length
+/// Cursor for accessing bytecode bounded by [`CODE_SEGMENT_MAX_LEN`] length and data segment
+/// bounded by [`DATA_SEGMENT_MAX_LEN`]
 pub struct Cursor<'a, T, D>
 where
     T: AsRef<[u8]>,
@@ -101,8 +103,8 @@ where
     /// If the length of the bytecode exceeds `u16::MAX` or length of the data `u24::MAX`
     #[inline]
     pub fn with(bytecode: T, data: D, libs: &'a LibSeg) -> Cursor<'a, T, D> {
-        assert!(bytecode.as_ref().len() <= u16::MAX as usize + 1);
-        assert!(data.as_ref().len() <= u24::MAX.as_u32() as usize + 1);
+        assert!(bytecode.as_ref().len() <= CODE_SEGMENT_MAX_LEN);
+        assert!(data.as_ref().len() <= DATA_SEGMENT_MAX_LEN);
         Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, eof: false, data, libs }
     }
 
@@ -165,7 +167,7 @@ where
     }
 
     fn _inc_bytes_inner(&mut self, byte_count: u16) -> Result<(), CodeEofError> {
-        if byte_count == 1 && self.byte_pos == u16::MAX {
+        if byte_count == 1 && self.byte_pos == (CODE_SEGMENT_MAX_LEN - 1) as u16 {
             self.eof = true
         } else {
             self.byte_pos = self.byte_pos.checked_add(byte_count).ok_or(CodeEofError)?;
@@ -297,7 +299,7 @@ where
 
     #[inline]
     fn read_lib(&mut self) -> Result<LibId, CodeEofError> {
-        Ok(self.libs.at(self.read_u16()?).unwrap_or_default())
+        Ok(self.libs.at(self.read_u8()?).unwrap_or_default())
     }
 
     fn read_data(&mut self) -> Result<(&[u8], bool), CodeEofError> {

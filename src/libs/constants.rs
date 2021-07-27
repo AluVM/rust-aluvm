@@ -15,9 +15,15 @@
 
 pub const CODE_SEGMENT_MAX_LEN: usize = 1 << 16;
 
-pub const DATA_SEGMENT_MAX_LEN: usize = 1 << 24;
+pub const DATA_SEGMENT_MAX_LEN: usize = 1 << 16;
 
-pub const LIBS_SEGMENT_MAX_COUNT: usize = 1 << 16;
+/// Maximum number of libraries that may be referenced (used by) any other librari; i.e. limit for
+/// the number of records inside libs segment.
+pub const LIBS_SEGMENT_MAX_COUNT: usize = 1 << 8;
+
+/// Maximum total number of libraries which may be used by a single program; i.e. maximal number of
+/// nodes in a library dependency tree.
+pub const LIBS_MAX_TOTAL: usize = 1024;
 
 pub const ISAE_SEGMENT_MAX_LEN: usize = 1 << 8;
 
