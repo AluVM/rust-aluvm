@@ -120,15 +120,6 @@ where
     /// string (equal to `u16::MAX`)
     #[inline]
     pub fn is_buf_full(&self) -> bool { self.buf_full }
-
-    /// Returns current byte offset of the cursor. Does not accounts bits.
-    #[inline]
-    pub fn pos(&self) -> u16 { self.byte_pos }
-
-    /// Sets current cursor byte offset to the provided value
-    #[inline]
-    pub fn seek(&mut self, byte_pos: u16) { self.byte_pos = byte_pos; }
-
     /// Converts writer into data segment
     #[inline]
     pub fn into_data_segment(self) -> D { self.data }
@@ -175,7 +166,11 @@ where
     }
 
     fn _inc_bytes_inner(&mut self, byte_count: u16) -> Result<(), CodeEofError> {
-        if byte_count == 1 && self.byte_pos == (CODE_SEGMENT_MAX_LEN - 1) as u16 {
+        if self.buf_full || self.byte_pos as usize + byte_count as usize > self.as_ref().len() {
+            return Err(CodeEofError);
+        }
+        if self.byte_pos == (CODE_SEGMENT_MAX_LEN - byte_count as usize) as u16 {
+            self.byte_pos = u16::MAX;
             self.buf_full = true
         } else {
             self.byte_pos = self.byte_pos.checked_add(byte_count).ok_or(CodeEofError)?;
@@ -219,7 +214,23 @@ where
     D: AsRef<[u8]>,
     Self: 'a,
 {
+    #[inline]
     fn is_eof(&self) -> bool { self.buf_full || self.byte_pos as usize >= self.as_ref().len() }
+
+    #[inline]
+    fn pos(&self) -> Option<u16> {
+        if self.buf_full {
+            None
+        } else {
+            Some(self.byte_pos)
+        }
+    }
+
+    #[inline]
+    fn seek(&mut self, byte_pos: u16) {
+        self.buf_full = false;
+        self.byte_pos = byte_pos;
+    }
 
     fn peek_u8(&self) -> Result<u8, CodeEofError> {
         if self.buf_full {

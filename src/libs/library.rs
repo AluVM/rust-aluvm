@@ -328,7 +328,10 @@ where
         }
         let pos = writer.pos();
         let data = writer.into_data_segment();
-        code_segment.adjust_len(pos, false);
+        match pos {
+            Some(pos) => code_segment.adjust_len(pos, false),
+            None => code_segment.adjust_len(u16::MAX, true),
+        }
 
         Ok(Lib {
             libs_segment,
@@ -399,10 +402,10 @@ where
 
         while !cursor.is_buf_full() {
             #[cfg(all(debug_assertions, feature = "std"))]
-            let pos = cursor.pos();
+            let pos = cursor.pos().expect("cursor position is EOF while reported to be not EOF");
 
             let instr = Instr::<E>::read(&mut cursor).ok()?;
-            let next = instr.exec(registers, LibSite::with(cursor.pos(), lib_hash));
+            let next = instr.exec(registers, LibSite::with(pos, lib_hash));
 
             #[cfg(all(debug_assertions, feature = "std"))]
             eprint!("\n@{:06}> {:48}; st0={}", pos, instr.to_string(), registers.st0);

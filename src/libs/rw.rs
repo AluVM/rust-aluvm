@@ -61,6 +61,11 @@ mod private {
 
 /// Trait for reading instruction data from bytecode
 pub trait Read: private::Sealed {
+    /// Returns current byte offset of the cursor. Does not accounts bits.
+    /// If the position is exactly at EOF, returns `None`.
+    fn pos(&self) -> Option<u16>;
+    /// Sets current cursor byte offset to the provided value
+    fn seek(&mut self, byte_pos: u16);
     /// Returns whether end of the bytecode is reached
     fn is_eof(&self) -> bool;
     /// Peeks a single byte without moving cursor
