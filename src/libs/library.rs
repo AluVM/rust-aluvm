@@ -488,6 +488,14 @@ pub struct LibSeg {
     table: BTreeMap<u8, LibId>,
 }
 
+impl<'a> IntoIterator for &'a LibSeg {
+    type Item = &'a LibId;
+    type IntoIter = ::alloc::collections::btree_set::Iter<'a, LibId>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter { self.set.iter() }
+}
+
 impl LibSeg {
     /// Constructs libs segment from an iterator over call locations.
     ///
