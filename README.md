@@ -29,7 +29,7 @@ edge computing, multiparty computing (including deterministic machine learning),
 client-side-validation, sandboxed Internet2 computing and genetic algorithms.
 
 For more details on AluVM, please check [the specification][AluVM], watch
-detailed presentation on [YouTube](https://www.youtube.com/watch?v=brfWta7XXFQ) or check [slides](https://github.com/LNP-BP/presentations/blob/master/Presentation%20slides/RGB%20VM%20%26%20scripting.pdf) from the presentation.
+detailed presentation on [YouTube] or check [slides] from the presentation.
 
 
 ## Design
