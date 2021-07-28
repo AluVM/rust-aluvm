@@ -508,7 +508,21 @@ impl LibSeg {
     /// Errors with [`LibSegOverflow`] if the number of unique library ids exceeds
     /// [`LIBS_SEGMENT_MAX_COUNT`].
     pub fn from(source: impl IntoIterator<Item = LibSite>) -> Result<Self, LibSegOverflow> {
-        let set = source.into_iter().map(|site| site.lib).collect::<BTreeSet<LibId>>();
+        LibSeg::with(source.into_iter().map(|site| site.lib))
+    }
+
+    /// Constructs libs segment from an iterator over lib ids.
+    ///
+    /// Lib segment deterministically orders library ids according to their [`LibId`] `Ord`
+    /// implementation. This is not a requirement, but just a good practice for producing the same
+    /// code on different platforms.
+    ///
+    /// # Error
+    ///
+    /// Errors with [`LibSegOverflow`] if the number of unique library ids exceeds
+    /// [`LIBS_SEGMENT_MAX_COUNT`].
+    pub fn with(source: impl IntoIterator<Item = LibId>) -> Result<Self, LibSegOverflow> {
+        let set = source.into_iter().collect::<BTreeSet<LibId>>();
         if set.len() > LIBS_SEGMENT_MAX_COUNT {
             return Err(LibSegOverflow);
         }
