@@ -59,6 +59,13 @@ impl sha256t::Tag for LibIdTag {
 #[wrapper(Debug, LowerHex, Index, IndexRange, IndexFrom, IndexTo, IndexFull)]
 pub struct LibId(sha256t::Hash<LibIdTag>);
 
+impl LibId {
+    /// Constructs library id from a binary representation of the hash data
+    pub fn from_bytes(array: [u8; LibId::LEN]) -> LibId {
+        LibId(sha256t::Hash::<LibIdTag>::from_inner(array))
+    }
+}
+
 impl Borrow<[u8]> for LibId {
     #[inline]
     fn borrow(&self) -> &[u8] { self.as_inner() }
