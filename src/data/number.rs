@@ -216,6 +216,16 @@ impl NumberLayout for IntLayout {
     fn sign_byte(self) -> u16 { self.bytes() - 1 }
 }
 
+impl From<IntLayout> for Layout {
+    #[inline]
+    fn from(layout: IntLayout) -> Self { Layout::Integer(layout) }
+}
+
+impl From<&IntLayout> for Layout {
+    #[inline]
+    fn from(layout: &IntLayout) -> Self { Layout::Integer(*layout) }
+}
+
 /// Layout of the float value encoding.
 ///
 /// Defines bit dimensionality and encoding format for float types.
@@ -317,6 +327,16 @@ impl FloatLayout {
             FloatLayout::FloatTapered => None,
         }
     }
+}
+
+impl From<FloatLayout> for Layout {
+    #[inline]
+    fn from(layout: FloatLayout) -> Self { Layout::Float(layout) }
+}
+
+impl From<&FloatLayout> for Layout {
+    #[inline]
+    fn from(layout: &FloatLayout) -> Self { Layout::Float(*layout) }
 }
 
 /// Representation of the value from a register, which may be `None` if the register is unset.
