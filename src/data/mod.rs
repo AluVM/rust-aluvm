@@ -14,6 +14,8 @@
 mod arithm;
 mod bitwise;
 mod byte_str;
+#[cfg(feature = "std")]
+pub mod encoding;
 mod number;
 
 pub use byte_str::ByteStr;
