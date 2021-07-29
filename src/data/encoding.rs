@@ -426,6 +426,36 @@ impl Decode for ByteStr {
     }
 }
 
+impl Encode for Option<ByteStr> {
+    type Error = io::Error;
+
+    #[inline]
+    fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
+        if let Some(s) = self {
+            s.encode(writer)
+        } else {
+            Ok(0u8.encode(writer)?)
+        }
+    }
+}
+
+impl Decode for Option<ByteStr> {
+    type Error = DecodeError;
+
+    fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+    {
+        let len = u8::decode(&mut reader)?;
+        if len == 0 {
+            return Ok(None);
+        }
+        let mut s = vec![0u8; len as usize];
+        reader.read_exact(&mut s)?;
+        Ok(Some(ByteStr::with(s)))
+    }
+}
+
 impl Encode for Number {
     type Error = io::Error;
 
