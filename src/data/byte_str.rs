@@ -13,6 +13,9 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::fmt::{self, Display, Formatter};
 use core::ops::RangeInclusive;
+use std::convert::TryFrom;
+
+use amplify::num::error::OverflowError;
 
 /// Large binary bytestring object.
 ///
@@ -48,19 +51,31 @@ impl AsMut<[u8]> for ByteStr {
     }
 }
 
+impl TryFrom<&[u8]> for ByteStr {
+    type Error = OverflowError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        let len = slice.as_ref().len();
+        if len > u16::MAX as usize + 1 {
+            return Err(OverflowError { max: u16::MAX as usize + 1, value: len });
+        }
+        let mut bytes = [0u8; u16::MAX as usize];
+        bytes[0..len].copy_from_slice(slice.as_ref());
+        Ok(ByteStr {
+            len: if len > u16::MAX as usize { None } else { Some(len as u16) },
+            bytes: Box::new(bytes),
+        })
+    }
+}
+
 impl ByteStr {
     /// Constructs blob from slice of bytes.
     ///
     /// Panics if the length of the slice is greater than `u16::MAX` bytes.
+    #[inline]
     pub fn with(slice: impl AsRef<[u8]>) -> ByteStr {
-        let len = slice.as_ref().len();
-        assert!(len <= u16::MAX as usize + 1);
-        let mut bytes = [0u8; u16::MAX as usize];
-        bytes[0..len].copy_from_slice(slice.as_ref());
-        ByteStr {
-            len: if len > u16::MAX as usize { None } else { Some(len as u16) },
-            bytes: Box::new(bytes),
-        }
+        ByteStr::try_from(slice.as_ref())
+            .expect("internal error: ByteStr::with requires slice <= u16::MAX + 1")
     }
 
     /// Returns correct length of the string, in range `0 ..= u16::MAX + 1`
