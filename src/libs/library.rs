@@ -10,7 +10,6 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use alloc::borrow::ToOwned;
-use alloc::boxed::Box;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -62,9 +61,14 @@ pub struct LibId(sha256t::Hash<LibIdTag>);
 
 impl LibId {
     /// Constructs library id from a binary representation of the hash data
+    #[inline]
     pub fn from_bytes(array: [u8; LibId::LEN]) -> LibId {
         LibId(sha256t::Hash::<LibIdTag>::from_inner(array))
     }
+
+    /// Returns fixed-size array of inner representation of the library id
+    #[inline]
+    pub fn as_bytes(&self) -> &[u8; 32] { self.0.as_inner() }
 }
 
 impl Borrow<[u8]> for LibId {
@@ -162,10 +166,10 @@ pub struct Lib<E = ReservedOp>
 where
     E: InstructionSet,
 {
-    isae_segment: Vec<String>,
-    libs_segment: LibSeg,
-    code_segment: ByteStr,
-    data_segment: ByteStr,
+    pub(crate) isae_segment: Vec<String>,
+    pub(crate) libs_segment: LibSeg,
+    pub(crate) code_segment: ByteStr,
+    pub(crate) data_segment: ByteStr,
     instruction_set: PhantomData<E>,
 }
 
@@ -374,7 +378,7 @@ where
         let data = &self.data_segment();
         let libs = &self.libs_segment();
         engine.input(&(isae.len() as u8).to_le_bytes()[..]);
-        engine.input(isae);
+        engine.input(isae.as_bytes());
         engine.input(&(code.len() as u16).to_le_bytes()[..]);
         engine.input(code);
         engine.input(&u24::with(data.len() as u32).to_le_bytes()[..]);
@@ -386,7 +390,7 @@ where
 
     /// Returns ISA data
     #[inline]
-    pub fn isae_segment(&self) -> Box<[u8]> { Instr::<E>::isa_id() }
+    pub fn isae_segment(&self) -> String { self.isae_segment.join(" ") }
 
     /// Returns reference to code segment
     #[inline]
@@ -500,6 +504,14 @@ pub struct LibSeg {
     /// Table matches lexicographic-based library index to the library id (i.e. this is reverse
     /// index).
     table: BTreeMap<u8, LibId>,
+}
+
+impl LibSeg {
+    /// Returns iterator over unique libraries iterated in the deterministic (lexicographic) order
+    #[inline]
+    pub fn iter<'a>(&'a self) -> ::alloc::collections::btree_set::Iter<'a, LibId> {
+        (&self).into_iter()
+    }
 }
 
 impl<'a> IntoIterator for &'a LibSeg {
