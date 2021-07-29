@@ -17,6 +17,7 @@ use amplify::num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
 use super::{CodeEofError, LibId, LibSeg, Read, Write, WriteError};
 use crate::data::Number;
+use crate::isa::{Bytecode, Instr, InstructionSet};
 use crate::libs::constants::{CODE_SEGMENT_MAX_LEN, DATA_SEGMENT_MAX_LEN};
 use crate::reg::NumericRegister;
 
@@ -438,5 +439,20 @@ where
         value.reshape(reg.layout().using_sign(value.layout()));
         let offset = self.write_unique(&value[..])?;
         self.write_u16(offset)
+    }
+
+    fn edit<F, E, S>(&mut self, pos: u16, editor: F) -> Result<(), E>
+    where
+        F: FnOnce(&mut Instr<S>) -> Result<(), E>,
+        E: std::error::Error + From<CodeEofError>,
+        S: InstructionSet,
+    {
+        let prev_pos = self.seek(pos)?;
+        let mut instr = Instr::read(self)?;
+        editor(&mut instr)?;
+        self.seek(pos)?;
+        instr.write(self).expect("cursor editor fail");
+        self.seek(prev_pos)?;
+        Ok(())
     }
 }
