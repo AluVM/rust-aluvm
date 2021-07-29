@@ -162,6 +162,7 @@ pub struct Lib<E = ReservedOp>
 where
     E: InstructionSet,
 {
+    isae_segment: Vec<String>,
     libs_segment: LibSeg,
     code_segment: ByteStr,
     data_segment: ByteStr,
@@ -174,12 +175,11 @@ where
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str("ISAE: ")?;
-        f.write_str(&Instr::<E>::isa_string())?;
-        f.write_str("\nCODE: ")?;
-        Display::fmt(&self.code_segment, f)?;
-        f.write_str("\nDATA: ")?;
-        let data = ByteStr::with(&self.data_segment);
-        Display::fmt(&data, f)?;
+        f.write_str(&self.isae_segment.join(" "))?;
+        f.write_str("\nCODE: \n")?;
+        write!(f, "{:#}", self.code_segment)?;
+        f.write_str("\nDATA: \n")?;
+        write!(f, "{:#}", self.data_segment)?;
         f.write_str("\nLIBS: ")?;
         Display::fmt(&self.libs_segment, f)
     }
@@ -289,6 +289,7 @@ where
         if isa_codes.len() > ISAE_SEGMENT_MAX_COUNT {
             return Err(SegmentError::IsaSegmentTooManyExt(isa_codes.len()));
         }
+        let mut isae_segment = vec![];
         for isae in isa_codes {
             if !(ISA_ID_MIN_LEN..=ISA_ID_MAX_LEN).contains(&isae.len()) {
                 return Err(SegmentError::IsaIdWrongLength(isae.to_owned()));
@@ -305,6 +306,7 @@ where
             if !Instr::<E>::is_supported(isae) {
                 return Err(SegmentError::IsaNotSupported(isae.to_owned()));
             }
+            isae_segment.push(isae.to_owned());
         }
 
         if bytecode.len() > CODE_SEGMENT_MAX_LEN {
@@ -314,6 +316,7 @@ where
             return Err(SegmentError::DataSegmentTooLarge(data.len()));
         }
         Ok(Self {
+            isae_segment,
             libs_segment: libs,
             code_segment: ByteStr::try_from(bytecode.borrow())
                 .map_err(|_| SegmentError::CodeSegmentTooLarge(bytecode.len()))?,
@@ -341,6 +344,7 @@ where
         code_segment.adjust_len(pos);
 
         Ok(Lib {
+            isae_segment: Instr::<E>::isa_ids().iter().map(<&str>::to_string).collect(),
             libs_segment,
             code_segment,
             data_segment,

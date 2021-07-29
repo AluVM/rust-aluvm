@@ -13,7 +13,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
 use core::convert::TryFrom;
-use core::fmt::{self, Display, Formatter};
+use core::fmt::{self, Display, Formatter, Write};
 use core::ops::RangeInclusive;
 
 use amplify::num::error::OverflowError;
@@ -142,9 +142,40 @@ impl Display for ByteStr {
             f.write_str(&s)?;
             f.write_str("\"")
         } else if f.alternate() && self.len() > 4 {
-            write!(f, "{}..{}", self.bytes[..4].to_hex(), self.bytes[(self.len() - 4)..].to_hex())
+            for (line, slice) in self.as_ref().chunks(16).enumerate() {
+                write!(f, "  \x1B[1;34m{:>5x}0  |  \x1B[0m", line)?;
+                for (pos, byte) in slice.iter().enumerate() {
+                    write!(f, "{:02x} ", byte)?;
+                    if pos == 7 {
+                        f.write_char(' ')?;
+                    }
+                }
+                if slice.len() < 8 {
+                    f.write_char(' ')?;
+                }
+                write!(
+                    f,
+                    "{:1$}\x1B[1;34m|\x1B[0m  ",
+                    ' ',
+                    16usize.saturating_sub(slice.len()) * 3 + 1
+                )?;
+                for byte in slice {
+                    f.write_str(&if byte.is_ascii_control()
+                        || byte.is_ascii_whitespace()
+                        || !byte.is_ascii()
+                    {
+                        s!("\x1B[5;38;240m·\x1B[0m")
+                    } else {
+                        String::from(char::from(*byte))
+                    })?;
+                }
+                f.write_char('\n')?;
+            }
+            Ok(())
+            // write!(f, "{}..{}", self.bytes[..4].to_hex(), self.bytes[(self.len() -
+            // 4)..].to_hex())
         } else {
-            f.write_str(&self.bytes[0usize..(self.len())].to_hex())
+            f.write_str(&self.as_ref().to_hex())
         }
     }
 }
