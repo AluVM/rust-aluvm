@@ -20,6 +20,7 @@ use core::fmt::{self, Display, Formatter};
 use core::hash::{Hash as RustHash, Hasher};
 use core::marker::PhantomData;
 use core::str::FromStr;
+use std::convert::TryFrom;
 
 use amplify::num::u24;
 use bech32::{FromBase32, ToBase32};
@@ -163,7 +164,7 @@ where
 {
     libs_segment: LibSeg,
     code_segment: ByteStr,
-    data_segment: Box<[u8]>,
+    data_segment: ByteStr,
     instruction_set: PhantomData<E>,
 }
 
@@ -314,8 +315,10 @@ where
         }
         Ok(Self {
             libs_segment: libs,
-            code_segment: ByteStr::with(bytecode),
-            data_segment: Box::from(data),
+            code_segment: ByteStr::try_from(bytecode.borrow())
+                .map_err(|_| SegmentError::CodeSegmentTooLarge(bytecode.len()))?,
+            data_segment: ByteStr::try_from(data.borrow())
+                .map_err(|_| SegmentError::DataSegmentTooLarge(bytecode.len()))?,
             instruction_set: Default::default(),
         })
     }
@@ -329,18 +332,18 @@ where
         let libs_segment = LibSeg::from(call_sites)?;
 
         let mut code_segment = ByteStr::default();
-        let mut writer = Cursor::new(&mut code_segment.bytes[..], &libs_segment);
+        let mut writer = Cursor::<_, ByteStr>::new(&mut code_segment.bytes[..], &libs_segment);
         for instr in code.iter() {
             instr.write(&mut writer)?;
         }
         let pos = writer.pos();
-        let data = writer.into_data_segment();
+        let data_segment = writer.into_data_segment();
         code_segment.adjust_len(pos);
 
         Ok(Lib {
             libs_segment,
             code_segment,
-            data_segment: Box::from(data),
+            data_segment,
             instruction_set: PhantomData::<E>::default(),
         })
     }
@@ -348,7 +351,7 @@ where
     /// Disassembles library into a set of instructions
     pub fn disassemble(&self) -> Result<Vec<Instr<E>>, CodeEofError> {
         let mut code = Vec::new();
-        let mut reader = Cursor::with(&self.code_segment, &*self.data_segment, &self.libs_segment);
+        let mut reader = Cursor::with(&self.code_segment, &self.data_segment, &self.libs_segment);
         while !reader.is_eof() {
             code.push(Instr::read(&mut reader)?);
         }
@@ -400,7 +403,7 @@ where
     /// Location for the external code jump, if any
     pub fn run(&self, entrypoint: u16, registers: &mut CoreRegs) -> Option<LibSite> {
         let mut cursor =
-            Cursor::with(&self.code_segment.bytes[..], &*self.data_segment, &self.libs_segment);
+            Cursor::with(&self.code_segment.bytes[..], &self.data_segment, &self.libs_segment);
         let lib_hash = self.id();
         cursor.seek(Some(entrypoint));
 

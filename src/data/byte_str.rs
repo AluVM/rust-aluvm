@@ -11,9 +11,10 @@
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use core::borrow::{Borrow, BorrowMut};
+use core::convert::TryFrom;
 use core::fmt::{self, Display, Formatter};
 use core::ops::RangeInclusive;
-use std::convert::TryFrom;
 
 use amplify::num::error::OverflowError;
 
@@ -41,6 +42,7 @@ impl Default for ByteStr {
 }
 
 impl AsRef<[u8]> for ByteStr {
+    #[inline]
     fn as_ref(&self) -> &[u8] { &self.bytes[..self.len()] }
 }
 
@@ -48,6 +50,32 @@ impl AsMut<[u8]> for ByteStr {
     fn as_mut(&mut self) -> &mut [u8] {
         let len = self.len();
         &mut self.bytes[..len]
+    }
+}
+
+impl Borrow<[u8]> for ByteStr {
+    #[inline]
+    fn borrow(&self) -> &[u8] { &self.bytes[..self.len()] }
+}
+
+impl BorrowMut<[u8]> for ByteStr {
+    #[inline]
+    fn borrow_mut(&mut self) -> &mut [u8] {
+        let len = self.len();
+        &mut self.bytes[..len]
+    }
+}
+
+impl Extend<u8> for ByteStr {
+    fn extend<T: IntoIterator<Item = u8>>(&mut self, iter: T) {
+        let mut pos = self.len();
+        let mut iter = iter.into_iter();
+        while let Some(byte) = iter.next() {
+            assert!(pos <= u16::MAX as usize);
+            self.bytes[pos] = byte;
+            pos += 1;
+        }
+        self.len = if pos > u16::MAX as usize { None } else { Some(pos as u16) };
     }
 }
 

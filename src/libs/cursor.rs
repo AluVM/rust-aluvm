@@ -9,7 +9,6 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use alloc::vec::Vec;
 use core::convert::TryInto;
 #[cfg(feature = "std")]
 use core::fmt::{self, Debug, Display, Formatter};
@@ -185,21 +184,22 @@ where
     fn as_mut(&mut self) -> &mut [u8] { self.bytecode.as_mut() }
 }
 
-impl<'a, T> Cursor<'a, T, Vec<u8>>
+impl<'a, T, D> Cursor<'a, T, D>
 where
     T: AsRef<[u8]> + AsMut<[u8]>,
+    D: AsRef<[u8]> + AsMut<[u8]> + Extend<u8>,
     Self: 'a,
 {
     fn write_unique(&mut self, bytes: &[u8]) -> Result<u16, WriteError> {
         // We write the value only if the value is not yet present in the data segment
         let len = bytes.len();
-        let offset = self.data.len();
-        if let Some(offset) = self.data.windows(len).position(|window| window == bytes) {
+        let offset = self.data.as_ref().len();
+        if let Some(offset) = self.data.as_ref().windows(len).position(|window| window == bytes) {
             Ok(offset as u16)
         } else if offset + len > DATA_SEGMENT_MAX_LEN {
             Err(WriteError::DataNotFittingSegment)
         } else {
-            self.data.extend(bytes);
+            self.data.extend(bytes.iter().copied());
             Ok(offset as u16)
         }
     }
@@ -341,9 +341,10 @@ where
     }
 }
 
-impl<'a, T> Write for Cursor<'a, T, Vec<u8>>
+impl<'a, T, D> Write for Cursor<'a, T, D>
 where
     T: AsRef<[u8]> + AsMut<[u8]>,
+    D: AsRef<[u8]> + AsMut<[u8]> + Extend<u8>,
     Self: 'a,
 {
     fn write_bool(&mut self, data: bool) -> Result<(), WriteError> {
