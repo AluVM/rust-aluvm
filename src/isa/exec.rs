@@ -566,7 +566,7 @@ impl InstructionSet for BytesOp {
                 let mut f = || -> Option<()> {
                     let o1 = regs.a16[offset1.to_usize()]?;
                     let o2 = regs.a16[offset2.to_usize()]?;
-                    let range = o1..=o2;
+                    let range = o1..o2;
                     let val = regs.a8[value.to_usize()]?;
                     let ref mut bs = regs.s16[reg.as_usize()];
                     let bs = if let Some(s) = bs {
@@ -575,10 +575,10 @@ impl InstructionSet for BytesOp {
                         *bs = Some(ByteStr::default());
                         bs.as_mut().expect("rust optionals are broken")
                     };
-                    if bs.len() <= *range.end() as usize && !flag {
+                    if bs.len() <= range.end && !flag {
                         return None;
                     }
-                    bs.fill(o1..=o2, val);
+                    bs.fill(o1..o2, val);
                     Some(())
                 };
                 f().unwrap_or_else(|| regs.st0 = false);
@@ -587,7 +587,7 @@ impl InstructionSet for BytesOp {
                 let mut f = || -> Option<()> {
                     let s = regs.get_s(*src)?;
                     let len = s.len();
-                    if !reg.int_layout().fits_usize(len) {
+                    if !reg.int_layout().fits_usize(len as usize) {
                         return None;
                     }
                     regs.set(reg, dst, len as u32);
@@ -683,7 +683,7 @@ impl InstructionSet for BytesOp {
                     let val = regs.get(dst, index).map(|v| v)?;
                     let offset = regs.a16[*offset as u8 as usize]?;
                     let end = offset.saturating_add(dst.layout().bytes() - 1);
-                    s.adjust_len(end.checked_add(1));
+                    s.adjust_len(end);
                     s.as_mut()[offset as usize..=end as usize].copy_from_slice(val.as_ref());
                     regs.s16[src.as_usize()] = Some(s);
                     Some(())
@@ -696,18 +696,14 @@ impl InstructionSet for BytesOp {
             BytesOp::Join(src1, src2, dst) => {
                 let mut f = || -> Option<()> {
                     let (s1, s2) = regs.get_both_s(*src1, *src2)?;
-                    let len = s1.len() + s2.len();
-                    if len > u16::MAX as usize + 1 {
+                    if s1.len() as usize + s2.len() as usize > u16::MAX as usize {
                         return None;
                     }
+                    let len = s1.len() + s2.len();
                     let mut d = s1.clone();
-                    if len == u16::MAX as usize + 1 {
-                        d.adjust_len(None);
-                    } else {
-                        d.adjust_len(Some(len as u16));
-                    }
+                    d.adjust_len(len);
                     let mut d = ByteStr::with(s1);
-                    d.as_mut()[s1.len()..].copy_from_slice(s2.as_ref());
+                    d.as_mut()[s1.len() as usize..].copy_from_slice(s2.as_ref());
                     regs.s16[dst.as_usize()] = Some(d);
                     Some(())
                 };

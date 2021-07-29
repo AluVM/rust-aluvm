@@ -63,14 +63,16 @@ mod private {
 pub trait Read: private::Sealed {
     /// Returns current byte offset of the cursor. Does not accounts bits.
     /// If the position is exactly at EOF, returns `None`.
-    fn pos(&self) -> Option<u16>;
-    /// Sets current cursor byte offset to the provided value - or to the end of the buffer
-    fn seek(&mut self, byte_pos: Option<u16>);
+    fn pos(&self) -> u16;
+    /// Sets current cursor byte offset to the provided value, if it is less than the underlying
+    /// buffer length
+    ///
+    /// # Returns
+    ///
+    /// Previous position
+    fn seek(&mut self, byte_pos: u16) -> Result<u16, CodeEofError>;
     /// Returns whether end of the bytecode is reached
     fn is_eof(&self) -> bool;
-    /// Returns whether cursor is at the upper length boundary for any byte string (equal to
-    /// `u16::MAX`)
-    fn is_buf_full(&self) -> bool;
     /// Peeks a single byte without moving cursor
     fn peek_u8(&self) -> Result<u8, CodeEofError>;
     /// Reads single bit as a bool values

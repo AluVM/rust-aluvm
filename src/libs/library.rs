@@ -409,10 +409,10 @@ where
         let mut cursor =
             Cursor::with(&self.code_segment.bytes[..], &self.data_segment, &self.libs_segment);
         let lib_hash = self.id();
-        cursor.seek(Some(entrypoint));
+        cursor.seek(entrypoint).ok()?;
 
-        while !cursor.is_buf_full() {
-            let pos = cursor.pos().expect("cursor position is EOF while reported to be not EOF");
+        while !cursor.is_eof() {
+            let pos = cursor.pos();
 
             let instr = Instr::<E>::read(&mut cursor).ok()?;
             let next = instr.exec(registers, LibSite::with(pos, lib_hash));
@@ -435,7 +435,7 @@ where
                 ExecStep::Jump(pos) => {
                     #[cfg(all(debug_assertions, feature = "std"))]
                     eprint!(" -> {}", pos);
-                    cursor.seek(Some(pos))
+                    cursor.seek(pos).ok()?;
                 }
                 ExecStep::Call(site) => {
                     #[cfg(all(debug_assertions, feature = "std"))]

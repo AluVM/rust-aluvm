@@ -14,7 +14,7 @@ use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
 use core::convert::TryFrom;
 use core::fmt::{self, Display, Formatter, Write};
-use core::ops::RangeInclusive;
+use core::ops::Range;
 
 use amplify::num::error::OverflowError;
 
@@ -25,12 +25,7 @@ use amplify::num::error::OverflowError;
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct ByteStr {
     /// Adjusted slice length.
-    ///
-    /// Values from `0` to `u16:MAX` represent string length (with `0` meaning "no value is
-    /// stored").
-    ///
-    /// `None` value indicates that the data occupy full length (i.e. `u16::MAX + 1`).
-    len: Option<u16>,
+    len: u16,
 
     /// Slice bytes
     #[doc(hidden)]
@@ -38,32 +33,27 @@ pub struct ByteStr {
 }
 
 impl Default for ByteStr {
-    fn default() -> ByteStr { ByteStr { len: Some(0), bytes: Box::new([0u8; u16::MAX as usize]) } }
+    fn default() -> ByteStr { ByteStr { len: 0, bytes: Box::new([0u8; u16::MAX as usize]) } }
 }
 
 impl AsRef<[u8]> for ByteStr {
     #[inline]
-    fn as_ref(&self) -> &[u8] { &self.bytes[..self.len()] }
+    fn as_ref(&self) -> &[u8] { &self.bytes[..self.len as usize] }
 }
 
 impl AsMut<[u8]> for ByteStr {
-    fn as_mut(&mut self) -> &mut [u8] {
-        let len = self.len();
-        &mut self.bytes[..len]
-    }
+    #[inline]
+    fn as_mut(&mut self) -> &mut [u8] { &mut self.bytes[..self.len as usize] }
 }
 
 impl Borrow<[u8]> for ByteStr {
     #[inline]
-    fn borrow(&self) -> &[u8] { &self.bytes[..self.len()] }
+    fn borrow(&self) -> &[u8] { &self.bytes[..self.len as usize] }
 }
 
 impl BorrowMut<[u8]> for ByteStr {
     #[inline]
-    fn borrow_mut(&mut self) -> &mut [u8] {
-        let len = self.len();
-        &mut self.bytes[..len]
-    }
+    fn borrow_mut(&mut self) -> &mut [u8] { &mut self.bytes[..self.len as usize] }
 }
 
 impl Extend<u8> for ByteStr {
@@ -71,11 +61,11 @@ impl Extend<u8> for ByteStr {
         let mut pos = self.len();
         let mut iter = iter.into_iter();
         while let Some(byte) = iter.next() {
-            assert!(pos <= u16::MAX as usize);
-            self.bytes[pos] = byte;
+            assert!(pos < u16::MAX);
+            self.bytes[pos as usize] = byte;
             pos += 1;
         }
-        self.len = if pos > u16::MAX as usize { None } else { Some(pos as u16) };
+        self.len = pos as u16;
     }
 }
 
@@ -84,15 +74,12 @@ impl TryFrom<&[u8]> for ByteStr {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         let len = slice.as_ref().len();
-        if len > u16::MAX as usize + 1 {
+        if len > u16::MAX as usize {
             return Err(OverflowError { max: u16::MAX as usize + 1, value: len });
         }
         let mut bytes = [0u8; u16::MAX as usize];
         bytes[0..len].copy_from_slice(slice.as_ref());
-        Ok(ByteStr {
-            len: if len > u16::MAX as usize { None } else { Some(len as u16) },
-            bytes: Box::new(bytes),
-        })
+        Ok(ByteStr { len: len as u16, bytes: Box::new(bytes) })
     }
 }
 
@@ -106,25 +93,25 @@ impl ByteStr {
             .expect("internal error: ByteStr::with requires slice <= u16::MAX + 1")
     }
 
-    /// Returns correct length of the string, in range `0 ..= u16::MAX + 1`
+    /// Returns correct length of the string, in range `0 ..= u16::MAX`
     #[inline]
-    pub fn len(&self) -> usize { self.len.map(|len| len as usize).unwrap_or(u16::MAX as usize + 1) }
+    pub fn len(&self) -> u16 { self.len }
 
     /// Returns when the string has a zero length
     #[inline]
-    pub fn is_empty(&self) -> bool { self.len == Some(0) }
+    pub fn is_empty(&self) -> bool { self.len == 0 }
 
     /// Adjusts the length of the string if necessary
     #[inline]
-    pub fn adjust_len(&mut self, new_len: Option<u16>) { self.len = new_len }
+    pub fn adjust_len(&mut self, new_len: u16) { self.len = new_len }
 
     /// Fills range within a string with the provided byte value, increasing string length if
     /// necessary
-    pub fn fill(&mut self, range: RangeInclusive<u16>, val: u8) {
-        let start = *range.start();
-        let end = *range.end();
-        self.adjust_len(end.checked_add(1));
-        self.bytes[start as usize..=end as usize].fill(val);
+    pub fn fill(&mut self, range: Range<u16>, val: u8) {
+        let start = range.start;
+        let end = range.end;
+        self.adjust_len(end);
+        self.bytes[start as usize..end as usize].fill(val);
     }
 
     /// Returns vector representation of the contained bytecode
@@ -136,7 +123,7 @@ impl ByteStr {
 impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify::hex::ToHex;
-        let vec = Vec::from(&self.bytes[..self.len()]);
+        let vec = Vec::from(&self.bytes[..self.len as usize]);
         if let Ok(s) = String::from_utf8(vec) {
             f.write_str("\"")?;
             f.write_str(&s)?;
@@ -183,6 +170,6 @@ impl Display for ByteStr {
 #[cfg(not(feature = "std"))]
 impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:#04X?}", &self.bytes[0usize..(self.len())])
+        write!(f, "{:#04X?}", &self.bytes[0usize..self.len as usize])
     }
 }

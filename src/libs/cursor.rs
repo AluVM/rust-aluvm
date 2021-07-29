@@ -31,8 +31,6 @@ where
     bytecode: T,
     bit_pos: u3,
     byte_pos: u16,
-    /// Indicates that the length of the buffer has reached its maximum
-    buf_full: bool,
     data: D,
     libs: &'a LibSeg,
 }
@@ -50,7 +48,6 @@ where
             .field("bytecode", &self.as_ref().to_hex())
             .field("byte_pos", &self.byte_pos)
             .field("bit_pos", &self.bit_pos)
-            .field("eof", &self.buf_full)
             .field("data", &self.data.as_ref().to_hex())
             .field("libs", &self.libs)
             .finish()
@@ -86,14 +83,7 @@ where
     /// segment
     #[inline]
     pub fn new(bytecode: T, libs: &'a LibSeg) -> Cursor<'a, T, D> {
-        Cursor {
-            bytecode,
-            byte_pos: 0,
-            bit_pos: u3::MIN,
-            buf_full: false,
-            data: D::default(),
-            libs,
-        }
+        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, data: D::default(), libs }
     }
 }
 
@@ -113,7 +103,7 @@ where
     pub fn with(bytecode: T, data: D, libs: &'a LibSeg) -> Cursor<'a, T, D> {
         assert!(bytecode.as_ref().len() <= CODE_SEGMENT_MAX_LEN);
         assert!(data.as_ref().len() <= DATA_SEGMENT_MAX_LEN);
-        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, buf_full: false, data, libs }
+        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, data, libs }
     }
 
     /// Converts writer into data segment
@@ -124,7 +114,7 @@ where
     fn as_ref(&self) -> &[u8] { self.bytecode.as_ref() }
 
     fn extract(&mut self, bit_count: u3) -> Result<u8, CodeEofError> {
-        if self.buf_full {
+        if self.is_eof() {
             return Err(CodeEofError);
         }
         let byte = self.as_ref()[self.byte_pos as usize];
@@ -141,9 +131,6 @@ where
     }
 
     fn inc_bits(&mut self, bit_count: u3) -> Result<(), CodeEofError> {
-        if self.buf_full {
-            return Err(CodeEofError);
-        }
         let pos = self.bit_pos.as_u8() + bit_count.as_u8();
         self.bit_pos = u3::with(pos % 8);
         self._inc_bytes_inner(pos as u16 / 8)
@@ -155,22 +142,12 @@ where
             0,
             "attempt to access (multiple) bytes at a non-byte aligned position"
         );
-        if self.buf_full {
-            return Err(CodeEofError);
-        }
         self._inc_bytes_inner(byte_count)
     }
 
+    #[inline]
     fn _inc_bytes_inner(&mut self, byte_count: u16) -> Result<(), CodeEofError> {
-        if self.buf_full || self.byte_pos as usize + byte_count as usize > self.as_ref().len() {
-            return Err(CodeEofError);
-        }
-        if self.byte_pos == (CODE_SEGMENT_MAX_LEN - byte_count as usize) as u16 {
-            self.byte_pos = u16::MAX;
-            self.buf_full = true
-        } else {
-            self.byte_pos = self.byte_pos.checked_add(byte_count).ok_or(CodeEofError)?;
-        }
+        self.byte_pos = self.byte_pos.checked_add(byte_count).ok_or(CodeEofError)?;
         Ok(())
     }
 }
@@ -212,35 +189,30 @@ where
     Self: 'a,
 {
     #[inline]
-    fn is_eof(&self) -> bool { self.buf_full || self.byte_pos as usize >= self.as_ref().len() }
+    fn is_eof(&self) -> bool { self.byte_pos as usize >= self.as_ref().len() }
 
     #[inline]
-    fn is_buf_full(&self) -> bool { self.buf_full }
+    fn pos(&self) -> u16 { self.byte_pos }
 
     #[inline]
-    fn pos(&self) -> Option<u16> {
-        if self.buf_full {
-            None
-        } else {
-            Some(self.byte_pos)
+    fn seek(&mut self, byte_pos: u16) -> Result<u16, CodeEofError> {
+        if byte_pos as usize >= self.as_ref().len() {
+            return Err(CodeEofError);
         }
-    }
-
-    #[inline]
-    fn seek(&mut self, byte_pos: Option<u16>) {
-        self.buf_full = byte_pos.is_none();
-        self.byte_pos = byte_pos.unwrap_or(u16::MAX);
+        let old_pos = self.byte_pos;
+        self.byte_pos = byte_pos;
+        Ok(old_pos)
     }
 
     fn peek_u8(&self) -> Result<u8, CodeEofError> {
-        if self.buf_full {
+        if self.is_eof() {
             return Err(CodeEofError);
         }
         Ok(self.as_ref()[self.byte_pos as usize])
     }
 
     fn read_bool(&mut self) -> Result<bool, CodeEofError> {
-        if self.buf_full {
+        if self.is_eof() {
             return Err(CodeEofError);
         }
         let byte = self.extract(u3::with(1))?;
@@ -276,7 +248,7 @@ where
     }
 
     fn read_u8(&mut self) -> Result<u8, CodeEofError> {
-        if self.buf_full {
+        if self.is_eof() {
             return Err(CodeEofError);
         }
         let byte = self.as_ref()[self.byte_pos as usize];
@@ -284,7 +256,7 @@ where
     }
 
     fn read_u16(&mut self) -> Result<u16, CodeEofError> {
-        if self.buf_full {
+        if self.is_eof() {
             return Err(CodeEofError);
         }
         let pos = self.byte_pos as usize;
@@ -295,7 +267,7 @@ where
     }
 
     fn read_i16(&mut self) -> Result<i16, CodeEofError> {
-        if self.buf_full {
+        if self.is_eof() {
             return Err(CodeEofError);
         }
         let pos = self.byte_pos as usize;
@@ -306,7 +278,7 @@ where
     }
 
     fn read_u24(&mut self) -> Result<u24, CodeEofError> {
-        if self.buf_full {
+        if self.is_eof() {
             return Err(CodeEofError);
         }
         let pos = self.byte_pos as usize;
