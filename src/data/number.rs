@@ -289,6 +289,21 @@ impl NumberLayout for FloatLayout {
 }
 
 impl FloatLayout {
+    /// Constructs [`FloatLayout`] from byte representation
+    pub fn with(value: u8) -> Option<Self> {
+        Some(match value {
+            x if x == FloatLayout::BFloat16 as u8 => FloatLayout::BFloat16,
+            x if x == FloatLayout::IeeeHalf as u8 => FloatLayout::IeeeHalf,
+            x if x == FloatLayout::IeeeSingle as u8 => FloatLayout::IeeeSingle,
+            x if x == FloatLayout::IeeeDouble as u8 => FloatLayout::IeeeDouble,
+            x if x == FloatLayout::IeeeQuad as u8 => FloatLayout::IeeeQuad,
+            x if x == FloatLayout::IeeeOct as u8 => FloatLayout::IeeeOct,
+            x if x == FloatLayout::X87DoubleExt as u8 => FloatLayout::X87DoubleExt,
+            x if x == FloatLayout::FloatTapered as u8 => FloatLayout::FloatTapered,
+            _ => return None,
+        })
+    }
+
     /// Detects if layout is used for encoding floating-point numbers
     #[inline]
     pub fn is_float(self) -> bool { self as u8 > 1 }

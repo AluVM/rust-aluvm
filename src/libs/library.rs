@@ -470,7 +470,7 @@ impl LibSite {
     pub fn with(pos: u16, lib: LibId) -> LibSite { LibSite { lib, pos } }
 }
 
-/// Unable to add a library to the library segment: maximum number of libraries (2^16) exceeded
+/// unable to add a library to the library segment: maximum number of libraries (2^16) exceeded
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
 #[cfg_attr(feature = "std", derive(Error))]
 #[display(doc_comments)]
