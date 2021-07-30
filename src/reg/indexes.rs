@@ -456,7 +456,7 @@ impl TryFrom<Reg32> for Reg8 {
 
 /// Possible index values for string registers (`S`-registers).
 ///
-/// For `S`-registers it is possible to denote index as `u8` value, with the real index equal to
+/// For `S`-registers it is possible to denote index as `u4` value, with the real index equal to
 /// this value modulo 32. This is required because of the bit size parameters for the string
 /// opcode arguments.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]

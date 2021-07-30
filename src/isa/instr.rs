@@ -18,7 +18,7 @@ use super::{
     SignFlag, SplitFlag,
 };
 use crate::data::{ByteStr, MaybeNumber, Step};
-use crate::isa::NoneEqFlag;
+use crate::isa::{ExtendFlag, NoneEqFlag};
 use crate::libs::LibSite;
 use crate::reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, RegS};
 
@@ -581,7 +581,7 @@ pub enum BitwiseOp {
 pub enum BytesOp {
     /// Put bytestring into a byte string register
     ///
-    /// Data are kept in the separate data segment, thus when the instruction is pared from the
+    /// Data are kept in the separate data segment, thus when the instruction is parsed from the
     /// code segment it knows only data offset and length. If this offset or length exceeds the
     /// size of the data segment, the instruction truncates the string to the part that is present
     /// in the data segment (or zero-length string if the offset exceeds data segment length) and
@@ -591,7 +591,7 @@ pub enum BytesOp {
         /** Destination `s` register index */ RegS,
         Box<ByteStr>,
         /** Indicates that the operation must set `st0` to false; i.e. string data are not
-         * complete */
+         * completely read from the data segment */
         bool,
     ),
 
@@ -621,13 +621,13 @@ pub enum BytesOp {
     ///
     /// If any of the offsets or value registers are unset, sets `st0` to `false` and does not
     /// change destination value.
-    #[display("fill    s16[{0}],{1}..{2},{3}")]
+    #[display("fill    s16[{0}],a16{1},a16{2},a8{3}")]
     Fill(
         /** `s` register index */ RegS,
         /** `a16` register holding first offset */ Reg32,
         /** `a16` register holding second offset (inclusive) */ Reg32,
         /** `a8` register index holding the value */ Reg32,
-        /** Exception handling flag */ bool,
+        /** Exception handling flag */ ExtendFlag,
     ),
 
     /// Put length of the string into the destination register.
@@ -817,7 +817,7 @@ pub enum BytesOp {
     /// `flag1` and `flag2` arguments indicate whether `st0` should be set to `false` if
     /// `offset_start > src_len` and `offset_end > src_len && offser_start <= src_len`.
     /// In all other cases, `st0` value is not modified.
-    #[display("del.{6}   s16[{0}],s16[{1}],{2}{3},{4}{5}")]
+    #[display("del.{0}   s16[{7}],s16[{8}],{1}{2},{3}{4},{5},{6}")]
     Del(
         DeleteFlag,
         RegA2,

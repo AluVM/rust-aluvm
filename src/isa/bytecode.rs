@@ -1106,7 +1106,7 @@ impl Bytecode for BytesOp {
                 writer.write_u5(offset1)?;
                 writer.write_u5(offset2)?;
                 writer.write_u5(value)?;
-                writer.write_bool(*flag)?;
+                writer.write_u1(flag)?;
             }
             BytesOp::Len(src, reg, dst) => {
                 writer.write_u8(src)?;
@@ -1188,7 +1188,7 @@ impl Bytecode for BytesOp {
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
                 reader.read_u5()?.into(),
-                reader.read_bool()?,
+                reader.read_u1()?.into(),
             ),
             INSTR_LEN => Self::Len(
                 reader.read_u8()?.into(),

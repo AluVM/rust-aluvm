@@ -566,6 +566,80 @@ impl From<MergeFlag> for u2 {
     fn from(flag: MergeFlag) -> u2 { flag.as_u2() }
 }
 
+/// Flag for bytestring operations indicating whether the string should be extended to a new length
+/// or the operation should fail (for instance, see `fill` operation).
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum ExtendFlag {
+    /// Unsigned integer
+    #[display("e")]
+    Extend = 0,
+
+    /// Signed integer
+    #[display("f")]
+    Fail = 1,
+}
+
+impl Flag for ExtendFlag {}
+
+impl Default for ExtendFlag {
+    #[inline]
+    fn default() -> Self { Self::Extend }
+}
+
+impl FromStr for ExtendFlag {
+    type Err = ParseFlagError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty() {
+            return Err(ParseFlagError::RequiredFlagAbsent("extension flag"));
+        }
+        let filtered = s.replace(&['e', 'f'][..], "");
+        if !filtered.is_empty() {
+            return Err(ParseFlagError::UnknownFlags("extension flag", filtered));
+        }
+        match (s.contains('e'), s.contains('f')) {
+            (true, false) => Ok(ExtendFlag::Extend),
+            (false, true) => Ok(ExtendFlag::Fail),
+            (true, true) => Err(ParseFlagError::MutuallyExclusiveFlags("extension flag", 'e', 'f')),
+            (false, false) => Err(ParseFlagError::RequiredFlagAbsent("extension flag")),
+        }
+    }
+}
+
+impl ExtendFlag {
+    /// Constructs extension flag from `u1` value (used in bytecode serialization)
+    pub fn from_u1(val: u1) -> ExtendFlag {
+        match val.as_u8() {
+            v if v == ExtendFlag::Extend as u8 => ExtendFlag::Extend,
+            v if v == ExtendFlag::Fail as u8 => ExtendFlag::Fail,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Returns `u1` representation of extension flag (used in bytecode serialization).
+    pub fn as_u1(self) -> u1 { u1::with(self as u8) }
+}
+
+impl From<u1> for ExtendFlag {
+    fn from(val: u1) -> ExtendFlag { ExtendFlag::from_u1(val) }
+}
+
+impl From<&ExtendFlag> for u1 {
+    fn from(flag: &ExtendFlag) -> u1 { flag.as_u1() }
+}
+
+impl From<ExtendFlag> for u1 {
+    fn from(flag: ExtendFlag) -> u1 { flag.as_u1() }
+}
+
+impl From<ExtendFlag> for bool {
+    fn from(flag: ExtendFlag) -> Self { flag == ExtendFlag::Fail }
+}
+
+impl From<&ExtendFlag> for bool {
+    fn from(flag: &ExtendFlag) -> Self { *flag == ExtendFlag::Fail }
+}
+
 /// Flags for bytestring split operation.
 ///
 /// If offset exceeds the length of the string in the register, than the behaviour of

@@ -23,7 +23,7 @@ use super::{
     Instr, MoveOp, PutOp, ReservedOp, Secp256k1Op,
 };
 use crate::data::{ByteStr, MaybeNumber, Number, NumberLayout};
-use crate::isa::{FloatEqFlag, IntFlags, MergeFlag, NoneEqFlag, SignFlag};
+use crate::isa::{ExtendFlag, FloatEqFlag, IntFlags, MergeFlag, NoneEqFlag, SignFlag};
 use crate::libs::{constants, LibSite};
 use crate::reg::{CoreRegs, NumericRegister, Reg32, RegA, RegR};
 
@@ -575,7 +575,7 @@ impl InstructionSet for BytesOp {
                         *bs = Some(ByteStr::default());
                         bs.as_mut().expect("rust optionals are broken")
                     };
-                    if bs.len() <= range.end && !flag {
+                    if bs.len() <= range.end && *flag == ExtendFlag::Fail {
                         return None;
                     }
                     bs.fill(o1..o2, val);
