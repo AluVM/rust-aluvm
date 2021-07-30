@@ -20,7 +20,7 @@ use amplify::IoError;
 use bitcoin_hashes::Hash;
 
 use crate::data::encoding::DecodeError::InvalidBool;
-use crate::data::{ByteStr, FloatLayout, IntLayout, Layout, MaybeNumber, Number};
+use crate::data::{ByteStr, FloatLayout, IntLayout, Layout, MaybeNumber, Number, NumberLayout};
 use crate::libs::{IsaSeg, IsaSegError, Lib, LibId, LibSeg, LibSegOverflow, LibSite, SegmentError};
 
 /// Trait for encodable container data structures used by AluVM and runtime environments
@@ -465,10 +465,10 @@ impl Encode for Number {
 
     #[inline]
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
-        let len = self.len();
-        let mut count = len.encode(&mut writer)?;
+        let count = self.layout().encode(&mut writer)?;
         writer.write_all(self.as_ref())?;
-        count += self.layout().encode(&mut writer)?;
+
+        let len = self.len();
         Ok(count + len as usize)
     }
 }
@@ -480,10 +480,9 @@ impl Decode for Number {
     where
         Self: Sized,
     {
-        let len = u16::decode(&mut reader)?;
-        let mut vec = vec![0u8; len as usize];
-        reader.read_exact(&mut vec)?;
         let layout = Layout::decode(&mut reader)?;
+        let mut vec = vec![0u8; layout.bytes() as usize];
+        reader.read_exact(&mut vec)?;
         Number::with(&vec, layout).ok_or(DecodeError::NumberLayout(layout, vec))
     }
 }
@@ -491,9 +490,9 @@ impl Decode for Number {
 impl Encode for MaybeNumber {
     type Error = io::Error;
 
-    fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
+    fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
         match **self {
-            Some(number) => number.encode(writer),
+            Some(number) => Ok(1u16.encode(&mut writer)? + number.encode(&mut writer)?),
             None => 0u16.encode(writer),
         }
     }
@@ -506,17 +505,10 @@ impl Decode for MaybeNumber {
     where
         Self: Sized,
     {
-        let len = u16::decode(&mut reader)?;
-        match len {
+        match u8::decode(&mut reader)? {
             0 => Ok(MaybeNumber::none()),
-            len => {
-                let mut vec = vec![0u8; len as usize];
-                reader.read_exact(&mut vec)?;
-                let layout = Layout::decode(&mut reader)?;
-                Number::with(&vec, layout)
-                    .ok_or(DecodeError::NumberLayout(layout, vec))
-                    .map(MaybeNumber::from)
-            }
+            1 => Ok(Number::decode(reader)?.into()),
+            unknown => Err(DecodeError::InvalidBool(unknown)),
         }
     }
 }
