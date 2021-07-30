@@ -11,9 +11,11 @@
 
 //! Alu virtual machine
 
+use alloc::borrow::ToOwned;
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
-use std::marker::PhantomData;
+use alloc::string::String;
+use core::marker::PhantomData;
 
 use crate::isa::{Instr, InstructionSet, ReservedOp};
 use crate::libs::constants::LIBS_MAX_TOTAL;
@@ -21,7 +23,8 @@ use crate::libs::{Lib, LibId, LibSite};
 use crate::reg::CoreRegs;
 
 /// Errors returned by [`Vm::add_lib`] method
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[cfg_attr(feature = "std", derive(Error))]
 #[display(doc_comments)]
 pub enum Error {
     /// ISA id {0} is not supported by the selected instruction set
@@ -94,7 +97,7 @@ where
         }
         for isa in &lib.isae {
             if !Isa::is_supported(isa) {
-                return Err(Error::IsaNotSupported(isa.clone()));
+                return Err(Error::IsaNotSupported(isa.to_owned()));
             }
         }
         Ok(self.libs.insert(lib.id(), lib).is_none())

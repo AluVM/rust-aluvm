@@ -9,8 +9,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use alloc::borrow::ToOwned;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
@@ -22,11 +21,11 @@ use core::str::FromStr;
 use bech32::{FromBase32, ToBase32};
 use bitcoin_hashes::{sha256, sha256t, Hash, HashEngine};
 
-use super::constants::*;
 use super::{Cursor, Read};
 use crate::data::ByteStr;
 use crate::isa::{BytecodeError, ExecStep, InstructionSet};
-use crate::libs::{CodeEofError, LibSeg, LibSegOverflow};
+use crate::libs::segs::IsaSeg;
+use crate::libs::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
 use crate::reg::CoreRegs;
 
 const LIB_ID_MIDSTATE: [u8; 32] = [
@@ -183,7 +182,7 @@ impl FromStr for LibId {
 #[derive(Clone, Debug, Default)]
 pub struct Lib {
     /// ISA segment
-    pub isae: Vec<String>,
+    pub isae: IsaSeg,
     /// Code segment
     pub code: ByteStr,
     /// Data segment
@@ -194,7 +193,7 @@ pub struct Lib {
 
 impl Display for Lib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "ISAE:   {}", &self.isae.join(" "))?;
+        writeln!(f, "ISAE:   {}", &self.isae)?;
         write!(f, "CODE:\n{:#10}", self.code)?;
         write!(f, "DATA:\n{:#10}", self.data)?;
         write!(f, "LIBS:   {:8}", self.libs)
@@ -221,32 +220,6 @@ impl Ord for Lib {
 impl RustHash for Lib {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) { state.write(&self.id()[..]) }
-}
-
-/// Errors while processing binary-encoded segment data
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
-#[cfg_attr(feature = "std", derive(Error))]
-#[display(doc_comments)]
-pub enum SegmentError {
-    /// the size of the CODE segment is {0}, which exceeds [`CODE_SEGMENT_MAX_LEN`]
-    CodeSegmentTooLarge(usize),
-
-    /// the size of the DATA segment is {0}, which exceeds [`DATA_SEGMENT_MAX_LEN`]
-    DataSegmentTooLarge(usize),
-
-    /// the size of ISAE (instruction set extensions) segment is {0}, which exceeds
-    /// [`ISAE_SEGMENT_MAX_LEN`]
-    IsaSegmentTooLarge(usize),
-
-    /// number of ISA ids in ISAE segment is {0}, which exceeds [`ISAE_SEGMENT_MAX_COUNT`]
-    IsaSegmentTooManyExt(usize),
-
-    /// ISA id {0} has a wrong length outside of [`ISA_ID_MIN_LEN`]`..=`[`ISA_ID_MAX_LEN`] bounds
-    IsaIdWrongLength(String),
-
-    /// ISA id {0} includes wrong symbols (must contain only uppercase alphanumeric and start with
-    /// letter)
-    IsaIdWrongSymbols(String),
 }
 
 /// Errors while assembling library from the instruction set
@@ -280,38 +253,9 @@ impl Lib {
         data: Vec<u8>,
         libs: LibSeg,
     ) -> Result<Lib, SegmentError> {
-        if isa.len() > ISAE_SEGMENT_MAX_LEN {
-            return Err(SegmentError::IsaSegmentTooLarge(isa.len()));
-        }
-        let isa_codes: Vec<_> = isa.split(' ').collect();
-        if isa_codes.len() > ISAE_SEGMENT_MAX_COUNT {
-            return Err(SegmentError::IsaSegmentTooManyExt(isa_codes.len()));
-        }
-        let mut isae_segment = vec![];
-        for isae in isa_codes {
-            if !(ISA_ID_MIN_LEN..=ISA_ID_MAX_LEN).contains(&isae.len()) {
-                return Err(SegmentError::IsaIdWrongLength(isae.to_owned()));
-            }
-            if isae.chars().any(|ch| !ISA_ID_ALLOWED_CHARS.contains(&ch))
-                || isae
-                    .chars()
-                    .next()
-                    .map(|ch| !ISA_ID_ALLOWED_FIRST_CHAR.contains(&ch))
-                    .unwrap_or_default()
-            {
-                return Err(SegmentError::IsaIdWrongSymbols(isae.to_owned()));
-            }
-            isae_segment.push(isae.to_owned());
-        }
-
-        if bytecode.len() > CODE_SEGMENT_MAX_LEN {
-            return Err(SegmentError::CodeSegmentTooLarge(bytecode.len()));
-        }
-        if data.len() > DATA_SEGMENT_MAX_LEN {
-            return Err(SegmentError::DataSegmentTooLarge(data.len()));
-        }
+        let isae = IsaSeg::from_iter(isa.split(' '))?;
         Ok(Self {
-            isae: isae_segment,
+            isae,
             libs,
             code: ByteStr::try_from(bytecode.borrow())
                 .map_err(|_| SegmentError::CodeSegmentTooLarge(bytecode.len()))?,
@@ -326,7 +270,7 @@ impl Lib {
         Isa: InstructionSet,
     {
         let call_sites = code.iter().filter_map(|instr| instr.call_site());
-        let libs_segment = LibSeg::from(call_sites)?;
+        let libs_segment = LibSeg::with(call_sites)?;
 
         let mut code_segment = ByteStr::default();
         let mut writer = Cursor::<_, ByteStr>::new(&mut code_segment.bytes[..], &libs_segment);
@@ -338,7 +282,8 @@ impl Lib {
         code_segment.adjust_len(pos);
 
         Ok(Lib {
-            isae: Isa::isa_ids().iter().map(<&str>::to_string).collect(),
+            isae: IsaSeg::from_iter(Isa::isa_ids())
+                .expect("ISA instruction set contains incorrect ISAE ids"),
             libs: libs_segment,
             code: code_segment,
             data: data_segment,
@@ -369,7 +314,7 @@ impl Lib {
 
     /// Returns ISA data
     #[inline]
-    pub fn isae_segment(&self) -> String { self.isae.join(" ") }
+    pub fn isae_segment(&self) -> String { self.isae.to_string() }
 
     /// Returns reference to code segment
     #[inline]

@@ -444,7 +444,7 @@ where
     fn edit<F, E, S>(&mut self, pos: u16, editor: F) -> Result<(), E>
     where
         F: FnOnce(&mut Instr<S>) -> Result<(), E>,
-        E: std::error::Error + From<CodeEofError>,
+        E: From<CodeEofError>,
         S: InstructionSet,
     {
         let prev_pos = self.seek(pos)?;

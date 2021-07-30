@@ -25,7 +25,7 @@ pub const LIBS_SEGMENT_MAX_COUNT: usize = 1 << 8;
 /// nodes in a library dependency tree.
 pub const LIBS_MAX_TOTAL: usize = 1024;
 
-pub const ISAE_SEGMENT_MAX_LEN: usize = 1 << 8;
+pub const ISAE_SEGMENT_MAX_LEN: usize = 0xFF;
 
 pub const ISAE_SEGMENT_MAX_COUNT: usize = 32;
 

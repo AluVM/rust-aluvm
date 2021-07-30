@@ -21,7 +21,7 @@ use bitcoin_hashes::Hash;
 
 use crate::data::encoding::DecodeError::InvalidBool;
 use crate::data::{ByteStr, FloatLayout, IntLayout, Layout, MaybeNumber, Number};
-use crate::libs::{Lib, LibId, LibSeg, LibSegOverflow, LibSite, SegmentError};
+use crate::libs::{IsaSeg, IsaSegError, Lib, LibId, LibSeg, LibSegOverflow, LibSite, SegmentError};
 
 /// Trait for encodable container data structures used by AluVM and runtime environments
 pub trait Encode {
@@ -113,7 +113,12 @@ pub enum DecodeError {
     /// Library segment construction error
     #[display(inner)]
     #[from]
-    LibSegOverflow(LibSegOverflow),
+    LibSeg(LibSegOverflow),
+
+    /// ISAE segment construction error
+    #[display(inner)]
+    #[from]
+    IsaSeg(IsaSegError),
 }
 
 /// Wrapper around collections which may contain at most [`u8::MAX`] elements
@@ -178,7 +183,7 @@ impl Encode for u8 {
 
     #[inline]
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
-        writer.write(&[*self])?;
+        writer.write_all(&[*self])?;
         Ok(1)
     }
 }
@@ -202,7 +207,7 @@ impl Encode for u16 {
 
     #[inline]
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
-        writer.write(&self.to_le_bytes())?;
+        writer.write_all(&self.to_le_bytes())?;
         Ok(2)
     }
 }
@@ -230,7 +235,7 @@ impl Encode for String {
             return Err(EncodeError::StringTooLong(len));
         }
         (len as u8).encode(&mut writer)?;
-        writer.write(self.as_bytes())?;
+        writer.write_all(self.as_bytes())?;
         Ok(len + 1)
     }
 }
@@ -289,7 +294,7 @@ where
     type Error = EncodeError;
 
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
-        let iter = (&self.0).into_iter();
+        let iter = self.0.into_iter();
         let len = iter.len();
         if len > u8::MAX as usize {
             return Err(EncodeError::ByteLimitExceeded(len));
@@ -334,7 +339,7 @@ where
     type Error = EncodeError;
 
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
-        let iter = (&self.0).into_iter();
+        let iter = self.0.into_iter();
         let len = iter.len();
         if len > u16::MAX as usize {
             return Err(EncodeError::WordLimitExceeded(len));
@@ -406,7 +411,7 @@ impl Encode for ByteStr {
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
         let len = self.len();
         len.encode(&mut writer)?;
-        writer.write(self.as_ref())?;
+        writer.write_all(self.as_ref())?;
         Ok(len as usize + 2)
     }
 }
@@ -462,7 +467,7 @@ impl Encode for Number {
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
         let len = self.len();
         let mut count = len.encode(&mut writer)?;
-        writer.write(self.as_ref())?;
+        writer.write_all(self.as_ref())?;
         count += self.layout().encode(&mut writer)?;
         Ok(count + len as usize)
     }
@@ -588,7 +593,7 @@ impl Encode for LibId {
 
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
         let slice = self.into_inner();
-        writer.write(&slice)?;
+        writer.write_all(&slice)?;
         Ok(slice.len())
     }
 }
@@ -606,11 +611,31 @@ impl Decode for LibId {
     }
 }
 
+impl Encode for IsaSeg {
+    type Error = EncodeError;
+
+    fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
+        self.to_string().encode(writer)
+    }
+}
+
+impl Decode for IsaSeg {
+    type Error = DecodeError;
+
+    fn decode(reader: impl Read) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+    {
+        let s = String::decode(reader)?;
+        IsaSeg::with(s).map_err(DecodeError::from)
+    }
+}
+
 impl Encode for LibSeg {
     type Error = EncodeError;
 
-    fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
-        MaxLenByte::new(self).encode(&mut writer)
+    fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
+        MaxLenByte::new(self).encode(writer)
     }
 }
 
@@ -622,7 +647,7 @@ impl Decode for LibSeg {
         Self: Sized,
     {
         let seg: Vec<_> = MaxLenByte::decode(reader)?.release();
-        Ok(LibSeg::with(seg)?)
+        Ok(LibSeg::from_iter(seg)?)
     }
 }
 

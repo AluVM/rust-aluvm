@@ -13,7 +13,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
 use core::convert::TryFrom;
-use core::fmt::{self, Display, Formatter, Write};
+use core::fmt::{self, Display, Formatter};
 use core::ops::Range;
 
 use amplify::num::error::OverflowError;
@@ -59,8 +59,8 @@ impl BorrowMut<[u8]> for ByteStr {
 impl Extend<u8> for ByteStr {
     fn extend<T: IntoIterator<Item = u8>>(&mut self, iter: T) {
         let mut pos = self.len();
-        let mut iter = iter.into_iter();
-        while let Some(byte) = iter.next() {
+        let iter = iter.into_iter();
+        for byte in iter {
             assert!(pos < u16::MAX);
             self.bytes[pos as usize] = byte;
             pos += 1;
@@ -122,6 +122,8 @@ impl ByteStr {
 #[cfg(feature = "std")]
 impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use std::fmt::Write;
+
         use amplify::hex::ToHex;
         let vec = Vec::from(&self.bytes[..self.len as usize]);
         if f.alternate() {
