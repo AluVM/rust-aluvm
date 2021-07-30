@@ -17,7 +17,7 @@ extern crate aluvm;
 #[macro_use]
 extern crate paste;
 
-use aluvm::isa::ReservedOp;
+use aluvm::isa::Instr;
 use aluvm::libs::Lib;
 use aluvm::Vm;
 
@@ -93,8 +93,8 @@ fn main() {
     };
 
     println!("Instructions:\n{:#?}\n", code);
-    let lib = Lib::<ReservedOp>::assemble(&code).unwrap();
-    let code = lib.disassemble().unwrap();
+    let lib = Lib::assemble(&code).unwrap();
+    let code = lib.disassemble::<Instr>().unwrap();
     println!("Assembly:");
     for instr in code {
         println!("\t\t{}", instr);
@@ -102,7 +102,7 @@ fn main() {
     let lib_repr = lib.to_string();
 
     eprint!("\nExecuting the program {} ... ", lib.id());
-    let mut runtime = Vm::with(lib);
+    let mut runtime = Vm::<Instr>::with(lib);
     match runtime.main() {
         true => eprintln!("success"),
         false => eprintln!("failure"),

@@ -13,47 +13,61 @@
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
+use std::marker::PhantomData;
 
-use amplify::num::error::OverflowError;
-
-use crate::isa::{InstructionSet, ReservedOp};
+use crate::isa::{Instr, InstructionSet, ReservedOp};
 use crate::libs::constants::LIBS_MAX_TOTAL;
 use crate::libs::{Lib, LibId, LibSite};
 use crate::reg::CoreRegs;
 
+/// Errors returned by [`Vm::add_lib`] method
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
+#[display(doc_comments)]
+pub enum Error {
+    /// ISA id {0} is not supported by the selected instruction set
+    IsaNotSupported(String),
+
+    /// Attempt to add library when maximum possible number of libraries is already present in the
+    /// VM
+    TooManyLibs,
+}
+
 /// Alu virtual machine providing single-core execution environment
 #[derive(Getters, Debug, Default)]
-pub struct Vm<E = ReservedOp>
+pub struct Vm<Isa = Instr<ReservedOp>>
 where
-    E: InstructionSet,
+    Isa: InstructionSet,
 {
     /// Libraries known to the runtime, identified by their hashes
-    libs: BTreeMap<LibId, Lib<E>>,
+    libs: BTreeMap<LibId, Lib>,
 
     /// Entrypoint for the main function
     entrypoint: LibSite,
 
     /// A set of registers
     registers: Box<CoreRegs>,
+
+    phantom: PhantomData<Isa>,
 }
 
-impl<E> Vm<E>
+impl<Isa> Vm<Isa>
 where
-    E: InstructionSet,
+    Isa: InstructionSet,
 {
     /// Constructs new virtual machine with no code in it.
     ///
     /// Calling [`Vm::main`] on it will result in machine termination with `st0` set to `false`.
-    pub fn new() -> Vm<E> {
+    pub fn new() -> Vm<Isa> {
         Vm {
             libs: Default::default(),
             entrypoint: Default::default(),
             registers: Default::default(),
+            phantom: Default::default(),
         }
     }
 
     /// Constructs new virtual machine using the provided library.
-    pub fn with(lib: Lib<E>) -> Vm<E> {
+    pub fn with(lib: Lib) -> Vm<Isa> {
         let mut runtime = Vm::new();
         runtime.entrypoint = LibSite::with(0, lib.id());
         runtime.add_lib(lib).expect("adding single library to lib segment overflows");
@@ -65,18 +79,25 @@ where
     /// # Errors
     ///
     /// Checks requirement that the total number of libraries must not exceed [`LIBS_MAX_TOTAL`] and
-    /// returns [`OverflowError`] otherwise
+    /// returns [`Error::TooManyLibs`] otherwise.
+    ///
+    /// Checks that the ISA used by the VM supports ISA extensions specified by the library and
+    /// returns [`Error::IsaNotSupported`] otherwise.
     ///
     /// # Returns
     ///
     /// `true` if the library was already known and `false` otherwise.
     #[inline]
-    pub fn add_lib(&mut self, lib: Lib<E>) -> Result<bool, OverflowError> {
+    pub fn add_lib(&mut self, lib: Lib) -> Result<bool, Error> {
         if self.libs.len() >= LIBS_MAX_TOTAL {
-            Err(OverflowError { max: LIBS_MAX_TOTAL, value: self.libs.len() + 1 })
-        } else {
-            Ok(self.libs.insert(lib.id(), lib).is_none())
+            return Err(Error::TooManyLibs);
         }
+        for isa in &lib.isae {
+            if !Isa::is_supported(isa) {
+                return Err(Error::IsaNotSupported(isa.clone()));
+            }
+        }
+        Ok(self.libs.insert(lib.id(), lib).is_none())
     }
 
     /// Sets new entry point value (used when calling [`Vm::main`])
@@ -100,7 +121,7 @@ where
         let mut call = Some(method);
         while let Some(ref mut site) = call {
             if let Some(lib) = self.libs.get(&site.lib) {
-                call = lib.run(site.pos, &mut self.registers);
+                call = lib.run::<Isa>(site.pos, &mut self.registers);
             } else if let Some(pos) = site.pos.checked_add(1) {
                 site.pos = pos;
             } else {

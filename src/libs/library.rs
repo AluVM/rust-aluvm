@@ -17,7 +17,6 @@ use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::{self, Display, Formatter};
 use core::hash::{Hash as RustHash, Hasher};
-use core::marker::PhantomData;
 use core::str::FromStr;
 use std::convert::TryFrom;
 
@@ -27,7 +26,7 @@ use bitcoin_hashes::{sha256, sha256t, Hash, HashEngine};
 use super::constants::*;
 use super::{Cursor, Read};
 use crate::data::ByteStr;
-use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet, ReservedOp};
+use crate::isa::{BytecodeError, ExecStep, InstructionSet};
 use crate::libs::CodeEofError;
 use crate::reg::CoreRegs;
 
@@ -183,63 +182,44 @@ impl FromStr for LibId {
 
 /// AluVM executable code library
 #[derive(Clone, Debug, Default)]
-pub struct Lib<E = ReservedOp>
-where
-    E: InstructionSet,
-{
-    pub(crate) isae_segment: Vec<String>,
-    pub(crate) libs_segment: LibSeg,
-    pub(crate) code_segment: ByteStr,
-    pub(crate) data_segment: ByteStr,
-    instruction_set: PhantomData<E>,
+pub struct Lib {
+    /// ISA segment
+    pub isae: Vec<String>,
+    /// Code segment
+    pub code: ByteStr,
+    /// Data segment
+    pub data: ByteStr,
+    /// Libs segment
+    pub libs: LibSeg,
 }
 
-impl<E> Display for Lib<E>
-where
-    E: InstructionSet,
-{
+impl Display for Lib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str("ISAE:   ")?;
-        writeln!(f, "{}", &self.isae_segment.join(" "))?;
-        f.write_str("CODE:\n")?;
-        write!(f, "{:#10}", self.code_segment)?;
-        f.write_str("DATA:\n")?;
-        write!(f, "{:#10}", self.data_segment)?;
-        f.write_str("LIBS:   ")?;
-        write!(f, "{:8}", self.libs_segment)
+        writeln!(f, "ISAE:   {}", &self.isae.join(" "))?;
+        write!(f, "CODE:\n{:#10}", self.code)?;
+        write!(f, "DATA:\n{:#10}", self.data)?;
+        write!(f, "LIBS:   {:8}", self.libs)
     }
 }
 
-impl<E> PartialEq for Lib<E>
-where
-    E: InstructionSet,
-{
+impl PartialEq for Lib {
     #[inline]
     fn eq(&self, other: &Self) -> bool { self.id().eq(&other.id()) }
 }
 
-impl<E> Eq for Lib<E> where E: InstructionSet {}
+impl Eq for Lib {}
 
-impl<E> PartialOrd for Lib<E>
-where
-    E: InstructionSet,
-{
+impl PartialOrd for Lib {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
-impl<E> Ord for Lib<E>
-where
-    E: InstructionSet,
-{
+impl Ord for Lib {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering { self.id().cmp(&other.id()) }
 }
 
-impl<E> RustHash for Lib<E>
-where
-    E: InstructionSet,
-{
+impl RustHash for Lib {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) { state.write(&self.id()[..]) }
 }
@@ -268,9 +248,6 @@ pub enum SegmentError {
     /// ISA id {0} includes wrong symbols (must contain only uppercase alphanumeric and start with
     /// letter)
     IsaIdWrongSymbols(String),
-
-    /// ISA id {0} is not supported
-    IsaNotSupported(String),
 }
 
 /// Errors while assembling library from the instruction set
@@ -296,17 +273,14 @@ impl ::std::error::Error for AssemblerError {
     }
 }
 
-impl<E> Lib<E>
-where
-    E: InstructionSet,
-{
+impl Lib {
     /// Constructs library from raw data split into segments
     pub fn with(
         isa: &str,
         bytecode: Vec<u8>,
         data: Vec<u8>,
         libs: LibSeg,
-    ) -> Result<Lib<E>, SegmentError> {
+    ) -> Result<Lib, SegmentError> {
         if isa.len() > ISAE_SEGMENT_MAX_LEN {
             return Err(SegmentError::IsaSegmentTooLarge(isa.len()));
         }
@@ -328,9 +302,6 @@ where
             {
                 return Err(SegmentError::IsaIdWrongSymbols(isae.to_owned()));
             }
-            if !Instr::<E>::is_supported(isae) {
-                return Err(SegmentError::IsaNotSupported(isae.to_owned()));
-            }
             isae_segment.push(isae.to_owned());
         }
 
@@ -341,20 +312,19 @@ where
             return Err(SegmentError::DataSegmentTooLarge(data.len()));
         }
         Ok(Self {
-            isae_segment,
-            libs_segment: libs,
-            code_segment: ByteStr::try_from(bytecode.borrow())
+            isae: isae_segment,
+            libs,
+            code: ByteStr::try_from(bytecode.borrow())
                 .map_err(|_| SegmentError::CodeSegmentTooLarge(bytecode.len()))?,
-            data_segment: ByteStr::try_from(data.borrow())
+            data: ByteStr::try_from(data.borrow())
                 .map_err(|_| SegmentError::DataSegmentTooLarge(bytecode.len()))?,
-            instruction_set: Default::default(),
         })
     }
 
     /// Assembles library from the provided instructions by encoding them into bytecode
-    pub fn assemble<Isae>(code: &[Isae]) -> Result<Lib<E>, AssemblerError>
+    pub fn assemble<Isa>(code: &[Isa]) -> Result<Lib, AssemblerError>
     where
-        Isae: InstructionSet,
+        Isa: InstructionSet,
     {
         let call_sites = code.iter().filter_map(|instr| instr.call_site());
         let libs_segment = LibSeg::from(call_sites)?;
@@ -369,20 +339,22 @@ where
         code_segment.adjust_len(pos);
 
         Ok(Lib {
-            isae_segment: Instr::<E>::isa_ids().iter().map(<&str>::to_string).collect(),
-            libs_segment,
-            code_segment,
-            data_segment,
-            instruction_set: PhantomData::<E>::default(),
+            isae: Isa::isa_ids().iter().map(<&str>::to_string).collect(),
+            libs: libs_segment,
+            code: code_segment,
+            data: data_segment,
         })
     }
 
     /// Disassembles library into a set of instructions
-    pub fn disassemble(&self) -> Result<Vec<Instr<E>>, CodeEofError> {
+    pub fn disassemble<Isa>(&self) -> Result<Vec<Isa>, CodeEofError>
+    where
+        Isa: InstructionSet,
+    {
         let mut code = Vec::new();
-        let mut reader = Cursor::with(&self.code_segment, &self.data_segment, &self.libs_segment);
+        let mut reader = Cursor::with(&self.code, &self.data, &self.libs);
         while !reader.is_eof() {
-            code.push(Instr::read(&mut reader)?);
+            code.push(Isa::read(&mut reader)?);
         }
         Ok(code)
     }
@@ -393,40 +365,42 @@ where
     /// data).
     #[inline]
     pub fn id(&self) -> LibId {
-        LibId::with(self.isae_segment(), &self.code_segment, &self.data_segment, &self.libs_segment)
+        LibId::with(self.isae_segment(), &self.code, &self.data, &self.libs)
     }
 
     /// Returns ISA data
     #[inline]
-    pub fn isae_segment(&self) -> String { self.isae_segment.join(" ") }
+    pub fn isae_segment(&self) -> String { self.isae.join(" ") }
 
     /// Returns reference to code segment
     #[inline]
-    pub fn code_segment(&self) -> &[u8] { self.code_segment.as_ref() }
+    pub fn code_segment(&self) -> &[u8] { self.code.as_ref() }
 
     /// Returns reference to data segment
     #[inline]
-    pub fn data_segment(&self) -> &[u8] { self.data_segment.as_ref() }
+    pub fn data_segment(&self) -> &[u8] { self.data.as_ref() }
 
     /// Returns reference to libraries segment
     #[inline]
-    pub fn libs_segment(&self) -> &LibSeg { &self.libs_segment }
+    pub fn libs_segment(&self) -> &LibSeg { &self.libs }
 
     /// Executes library code starting at entrypoint
     ///
     /// # Returns
     ///
     /// Location for the external code jump, if any
-    pub fn run(&self, entrypoint: u16, registers: &mut CoreRegs) -> Option<LibSite> {
-        let mut cursor =
-            Cursor::with(&self.code_segment.bytes[..], &self.data_segment, &self.libs_segment);
+    pub fn run<Isa>(&self, entrypoint: u16, registers: &mut CoreRegs) -> Option<LibSite>
+    where
+        Isa: InstructionSet,
+    {
+        let mut cursor = Cursor::with(&self.code.bytes[..], &self.data, &self.libs);
         let lib_hash = self.id();
         cursor.seek(entrypoint).ok()?;
 
         while !cursor.is_eof() {
             let pos = cursor.pos();
 
-            let instr = Instr::<E>::read(&mut cursor).ok()?;
+            let instr = Isa::read(&mut cursor).ok()?;
             let next = instr.exec(registers, LibSite::with(pos, lib_hash));
 
             #[cfg(all(debug_assertions, feature = "std"))]

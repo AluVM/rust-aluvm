@@ -21,7 +21,6 @@ use bitcoin_hashes::Hash;
 
 use crate::data::encoding::DecodeError::InvalidBool;
 use crate::data::{ByteStr, FloatLayout, IntLayout, Layout, MaybeNumber, Number};
-use crate::isa::InstructionSet;
 use crate::libs::{Lib, LibId, LibSeg, LibSegOverflow, LibSite, SegmentError};
 
 /// Trait for encodable container data structures used by AluVM and runtime environments
@@ -648,24 +647,18 @@ impl Decode for LibSite {
     }
 }
 
-impl<E> Encode for Lib<E>
-where
-    E: InstructionSet,
-{
+impl Encode for Lib {
     type Error = EncodeError;
 
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
         Ok(self.isae_segment().encode(&mut writer)?
-            + self.code_segment.encode(&mut writer)?
-            + self.data_segment.encode(&mut writer)?
-            + self.libs_segment.encode(&mut writer)?)
+            + self.code.encode(&mut writer)?
+            + self.data.encode(&mut writer)?
+            + self.libs.encode(&mut writer)?)
     }
 }
 
-impl<E> Decode for Lib<E>
-where
-    E: InstructionSet,
-{
+impl Decode for Lib {
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
