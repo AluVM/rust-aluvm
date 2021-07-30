@@ -107,7 +107,7 @@ impl IsaSeg {
         source: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Self, IsaSegError> {
         let isa_codes =
-            source.into_iter().map(|s| s.as_ref().to_owned()).collect::<BTreeSet<String>>();
+            source.into_iter().map(|s| s.as_ref().trim().to_owned()).collect::<BTreeSet<String>>();
         if isa_codes.len() > ISAE_SEGMENT_MAX_COUNT {
             return Err(IsaSegError::SegmentTooManyExt(isa_codes.len()));
         }
@@ -146,7 +146,7 @@ impl IsaSeg {
 
 impl Display for IsaSeg {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        writeln!(f, "{}", self.0.iter().cloned().collect::<Vec<_>>().join(" "))
+        write!(f, "{}", self.0.iter().cloned().collect::<Vec<_>>().join(" "))
     }
 }
 
