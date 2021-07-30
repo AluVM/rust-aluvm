@@ -93,13 +93,13 @@ pub enum DecodeError {
     InvalidBool(u8),
 
     /// invalid UTF8 string data
-    /// \n
+    ///
     /// details: {0}
     #[from]
     InvalidUtf8(FromUtf8Error),
 
     /// number data does not match provided layout {0:?}
-    /// \n
+    ///
     /// number data: {1:#02x?}
     NumberLayout(Layout, Vec<u8>),
 
