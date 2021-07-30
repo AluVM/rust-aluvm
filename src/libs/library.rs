@@ -21,7 +21,6 @@ use core::marker::PhantomData;
 use core::str::FromStr;
 use std::convert::TryFrom;
 
-use amplify::num::u24;
 use bech32::{FromBase32, ToBase32};
 use bitcoin_hashes::{sha256, sha256t, Hash, HashEngine};
 
@@ -60,6 +59,28 @@ impl sha256t::Tag for LibIdTag {
 pub struct LibId(sha256t::Hash<LibIdTag>);
 
 impl LibId {
+    /// Computes LibId from the provided data
+    pub fn with(
+        isae: impl AsRef<str>,
+        code: impl AsRef<[u8]>,
+        data: impl AsRef<[u8]>,
+        libs: &LibSeg,
+    ) -> LibId {
+        let isae = isae.as_ref();
+        let code = code.as_ref();
+        let data = data.as_ref();
+        let mut engine = LibId::engine();
+        engine.input(&(isae.len() as u8).to_le_bytes()[..]);
+        engine.input(isae.as_bytes());
+        engine.input(&code.len().to_le_bytes()[..]);
+        engine.input(code.as_ref());
+        engine.input(&data.len().to_le_bytes()[..]);
+        engine.input(data.as_ref());
+        engine.input(&[libs.count()]);
+        libs.iter().for_each(|lib| engine.input(&lib[..]));
+        LibId::from_engine(engine)
+    }
+
     /// Constructs library id from a binary representation of the hash data
     #[inline]
     pub fn from_bytes(array: [u8; LibId::LEN]) -> LibId {
@@ -248,7 +269,7 @@ pub enum SegmentError {
     /// letter)
     IsaIdWrongSymbols(String),
 
-    /// ISA id {0} has a wrong length
+    /// ISA id {0} is not supported
     IsaNotSupported(String),
 }
 
@@ -372,20 +393,7 @@ where
     /// data).
     #[inline]
     pub fn id(&self) -> LibId {
-        let mut engine = LibId::engine();
-        let isae = &*self.isae_segment();
-        let code = &self.code_segment();
-        let data = &self.data_segment();
-        let libs = &self.libs_segment();
-        engine.input(&(isae.len() as u8).to_le_bytes()[..]);
-        engine.input(isae.as_bytes());
-        engine.input(&(code.len() as u16).to_le_bytes()[..]);
-        engine.input(code);
-        engine.input(&u24::with(data.len() as u32).to_le_bytes()[..]);
-        engine.input(data);
-        engine.input(&(libs.set.len() as u16).to_le_bytes()[..]);
-        libs.set.iter().for_each(|lib| engine.input(&lib[..]));
-        LibId::from_engine(engine)
+        LibId::with(self.isae_segment(), &self.code_segment, &self.data_segment, &self.libs_segment)
     }
 
     /// Returns ISA data
@@ -555,6 +563,10 @@ impl LibSeg {
         let table = set.iter().enumerate().map(|(index, id)| (index as u8, *id)).collect();
         Ok(LibSeg { set, table })
     }
+
+    /// Returns number of libraries in the lib segment
+    #[inline]
+    pub fn count(&self) -> u8 { self.set.len() as u8 }
 
     /// Returns library id with a given index
     #[inline]
