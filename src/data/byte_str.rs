@@ -124,11 +124,7 @@ impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify::hex::ToHex;
         let vec = Vec::from(&self.bytes[..self.len as usize]);
-        if let Ok(s) = String::from_utf8(vec) {
-            f.write_str("\"")?;
-            f.write_str(&s)?;
-            f.write_str("\"")
-        } else if f.alternate() && self.len() > 4 {
+        if f.alternate() {
             for (line, slice) in self.as_ref().chunks(16).enumerate() {
                 write!(f, "  \x1B[1;34m{:>5x}0  |  \x1B[0m", line)?;
                 for (pos, byte) in slice.iter().enumerate() {
@@ -161,6 +157,10 @@ impl Display for ByteStr {
             Ok(())
             // write!(f, "{}..{}", self.bytes[..4].to_hex(), self.bytes[(self.len() -
             // 4)..].to_hex())
+        } else if let Ok(s) = String::from_utf8(vec) {
+            f.write_str("\"")?;
+            f.write_str(&s)?;
+            f.write_str("\"")
         } else {
             f.write_str(&self.as_ref().to_hex())
         }
