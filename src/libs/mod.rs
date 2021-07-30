@@ -15,9 +15,9 @@ pub mod constants;
 mod cursor;
 mod library;
 mod rw;
+mod segs;
 
 pub use cursor::Cursor;
-pub use library::{
-    AssemblerError, Lib, LibId, LibIdError, LibIdTag, LibSeg, LibSegOverflow, LibSite, SegmentError,
-};
+pub use library::{AssemblerError, Lib, LibId, LibIdError, LibIdTag, LibSite, SegmentError};
 pub use rw::{CodeEofError, Read, Write, WriteError};
+pub use segs::{LibSeg, LibSegOverflow};
