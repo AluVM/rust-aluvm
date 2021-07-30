@@ -126,7 +126,7 @@ impl Display for ByteStr {
         let vec = Vec::from(&self.bytes[..self.len as usize]);
         if f.alternate() {
             for (line, slice) in self.as_ref().chunks(16).enumerate() {
-                write!(f, "  \x1B[1;34m{:>5x}0  |  \x1B[0m", line)?;
+                write!(f, "\x1B[0;35m{:>1$x}0  |  \x1B[0m", line, f.width().unwrap_or(1) - 1)?;
                 for (pos, byte) in slice.iter().enumerate() {
                     write!(f, "{:02x} ", byte)?;
                     if pos == 7 {
@@ -138,7 +138,7 @@ impl Display for ByteStr {
                 }
                 write!(
                     f,
-                    "{:1$}\x1B[1;34m|\x1B[0m  ",
+                    "{:1$}\x1B[0;35m|\x1B[0m  ",
                     ' ',
                     16usize.saturating_sub(slice.len()) * 3 + 1
                 )?;
@@ -147,7 +147,7 @@ impl Display for ByteStr {
                         || byte.is_ascii_whitespace()
                         || !byte.is_ascii()
                     {
-                        s!("\x1B[5;38;240m·\x1B[0m")
+                        s!("\x1B[0;35m·\x1B[0m")
                     } else {
                         String::from(char::from(*byte))
                     })?;

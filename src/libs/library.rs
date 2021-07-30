@@ -199,14 +199,14 @@ where
     E: InstructionSet,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str("ISAE: ")?;
-        f.write_str(&self.isae_segment.join(" "))?;
-        f.write_str("\nCODE: \n")?;
-        write!(f, "{:#}", self.code_segment)?;
-        f.write_str("\nDATA: \n")?;
-        write!(f, "{:#}", self.data_segment)?;
-        f.write_str("\nLIBS: ")?;
-        Display::fmt(&self.libs_segment, f)
+        f.write_str("ISAE:   ")?;
+        writeln!(f, "{}", &self.isae_segment.join(" "))?;
+        f.write_str("CODE:\n")?;
+        write!(f, "{:#10}", self.code_segment)?;
+        f.write_str("DATA:\n")?;
+        write!(f, "{:#10}", self.data_segment)?;
+        f.write_str("LIBS:   ")?;
+        write!(f, "{:8}", self.libs_segment)
     }
 }
 
@@ -612,9 +612,14 @@ impl LibSeg {
 
 impl Display for LibSeg {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.set.iter().try_for_each(|lib| {
-            Display::fmt(lib, f)?;
-            f.write_str("\n      ")
+        self.set.iter().enumerate().try_for_each(|(line, lib)| {
+            writeln!(
+                f,
+                "{:>2$}{}",
+                "",
+                lib,
+                if line == 0 { 0 } else { f.width().unwrap_or_default() }
+            )
         })
     }
 }
