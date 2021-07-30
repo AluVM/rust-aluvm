@@ -1125,9 +1125,10 @@ impl Bytecode for BytesOp {
             BytesOp::Con(reg1, reg2, no, offset, len) => {
                 writer.write_u4(reg1)?;
                 writer.write_u4(reg2)?;
-                writer.write_u6(*no)?;
+                writer.write_u5(no)?;
                 writer.write_u5(offset)?;
                 writer.write_u5(len)?;
+                writer.write_bool(false)?;
             }
             BytesOp::Extr(src, dst, index, offset) | BytesOp::Inj(src, dst, index, offset) => {
                 writer.write_u5(src)?;
@@ -1201,13 +1202,17 @@ impl Bytecode for BytesOp {
                 reader.read_u4()?.into(),
             ),
             INSTR_EQ => Self::Eq(reader.read_u4()?.into(), reader.read_u4()?.into()),
-            INSTR_CON => Self::Con(
-                reader.read_u4()?.into(),
-                reader.read_u4()?.into(),
-                reader.read_u6()?,
-                reader.read_u5()?.into(),
-                reader.read_u5()?.into(),
-            ),
+            INSTR_CON => {
+                let op = Self::Con(
+                    reader.read_u4()?.into(),
+                    reader.read_u4()?.into(),
+                    reader.read_u5()?.into(),
+                    reader.read_u5()?.into(),
+                    reader.read_u5()?.into(),
+                );
+                let _ = reader.read_bool()?;
+                op
+            }
             INSTR_EXTR => Self::Extr(
                 reader.read_u5()?.into(),
                 reader.read_u3()?.into(),

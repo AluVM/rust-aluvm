@@ -14,7 +14,7 @@ use core::convert::TryFrom;
 use amplify::num::error::OverflowError;
 use amplify::num::{u3, u4, u5};
 
-use crate::reg::Register;
+use crate::reg::{RegAll, Register};
 
 /// All possible register indexes for `a` and `r` register sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -543,5 +543,17 @@ impl TryFrom<Reg32> for RegS {
 
     fn try_from(value: Reg32) -> Result<Self, Self::Error> {
         u5::try_from(value as u8).map(RegS::from)
+    }
+}
+
+impl TryFrom<RegAll> for RegS {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RegAll) -> Result<Self, Self::Error> {
+        match value {
+            RegAll::S => Ok(RegS(u4::with(0))),
+            _ => Err(()),
+        }
     }
 }

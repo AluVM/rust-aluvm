@@ -11,8 +11,6 @@
 
 use alloc::boxed::Box;
 
-use amplify::num::u6;
-
 use super::{
     DeleteFlag, FloatEqFlag, InsertFlag, InstructionSet, IntFlags, MergeFlag, RoundingFlag,
     SignFlag, SplitFlag,
@@ -586,7 +584,7 @@ pub enum BytesOp {
     /// size of the data segment, the instruction truncates the string to the part that is present
     /// in the data segment (or zero-length string if the offset exceeds data segment length) and
     /// sets `st0` to `false`. Otherwise, `st0` is unaffected.
-    #[display("put     s16[{0}],{1}")]
+    #[display("put     {0},{1}")]
     Put(
         /** Destination `s` register index */ RegS,
         Box<ByteStr>,
@@ -596,11 +594,11 @@ pub enum BytesOp {
     ),
 
     /// Move bytestring value between registers
-    #[display("mov     s16[{0}],s16[{1}]")]
+    #[display("mov     {0},s16[{1}]")]
     Mov(/** Source `s` register index */ RegS, /** Destination `s` register index */ RegS),
 
     /// Swap bytestring value between registers
-    #[display("swp     s16[{0}],s16[{1}]")]
+    #[display("swp     {0},s16[{1}]")]
     Swp(/** First `s` register index */ RegS, /** Second `s` register index */ RegS),
 
     /// Fill segment of bytestring with specific byte value, setting the length of the string in
@@ -621,7 +619,7 @@ pub enum BytesOp {
     ///
     /// If any of the offsets or value registers are unset, sets `st0` to `false` and does not
     /// change destination value.
-    #[display("fill    s16[{0}],a16{1},a16{2},a8{3}")]
+    #[display("fill    {0},a16{1},a16{2},a8{3}")]
     Fill(
         /** `s` register index */ RegS,
         /** `a16` register holding first offset */ Reg32,
@@ -634,7 +632,7 @@ pub enum BytesOp {
     ///
     /// If the string register is empty, or destination register can't fit the length, sets `st0`
     /// to `false` and destination register to `None`.
-    #[display("len     s16[{0}],a16[0]")]
+    #[display("len     {0},a16[0]")]
     Len(/** `s` register index */ RegS, RegA, Reg32),
 
     /// Count number of byte occurrences from the `a8` register within the string and stores that
@@ -645,7 +643,7 @@ pub enum BytesOp {
     ///
     /// If the source byte value register is uninitialized, sets destination register to `None` and
     /// `st0` to `false`.
-    #[display("cnt     s16[{0}],{1},a16[0]")]
+    #[display("cnt     {0},a8{1},a16{2}")]
     Cnt(
         /** `s` register index */ RegS,
         /** `a8` register with the byte value */ Reg16,
@@ -655,17 +653,17 @@ pub enum BytesOp {
     /// Check equality of two strings, putting result into `st0`.
     ///
     /// If both of strings are uninitialized, `st0` assigned `true` value.
-    #[display("cmp     s16[{0}],s16[{0}]")]
+    #[display("cmp     {0},{1}")]
     Eq(RegS, RegS),
 
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
     /// fragment"), putting it to the destination `u16` registers. If strings have no conjoint
     /// fragment sets destination to `None`.
-    #[display("con     s16[{0}],s16[{1}],u16{2},u16{3}")]
+    #[display("con     {0},{1},a16{2},u16{3},u16{4}")]
     Con(
         /** First source string register */ RegS,
         /** Second source string register */ RegS,
-        /** Number of the conjoint fragment to match */ u6,
+        /** Index of the conjoint fragment to match */ Reg32,
         /** `u16` register index to save the offset of the conjoint fragment */ Reg32,
         /** `u16` register index to save the length of the conjoint fragment */ Reg32,
     ),
@@ -676,7 +674,7 @@ pub enum BytesOp {
     ///
     /// If the number of occurrences is `u16::MAX + 1`, sets `a16[1]` to `u16::MAX` and `st0` to
     /// `false`.
-    #[display("find    s16[{0}],s16[{1}],a16[1]")]
+    #[display("find    {0},{1},a16[1]")]
     Find(/** `s` register with string */ RegS, /** `s` register with matching fragment */ RegS),
 
     /// Extract byte string slice into general `r` register. The length of the extracted string is
@@ -686,7 +684,7 @@ pub enum BytesOp {
     ///
     /// If the source string register - or offset register is uninitialized, sets destination to
     /// uninitialized state and `st0` to `false`.
-    #[display("extr    s16{0},a16{1},{2}{3}")]
+    #[display("extr    {0},{1}{2},{1}{3}")]
     Extr(/** `s` register index */ RegS, RegR, Reg16, /** `a16` register with offset */ Reg16),
 
     /// Inject general `R` register value at a given position to string register, replacing value
@@ -695,7 +693,7 @@ pub enum BytesOp {
     /// are initialized with zeros. If the length of the inserted string plus insert offset exceeds
     /// the maximum string register length (2^16 bytes), than the destination register is set to
     /// `None` state and `st0` is set to `false`. Otherwise, `st0` value is not modified.
-    #[display("inj     s16{0},a16{1},{2}{3}")]
+    #[display("inj     {0},{1}{2},{1}{3}")]
     Inj(
         /** `s` register index acting as the source and destination */ RegS,
         RegR,
@@ -707,7 +705,7 @@ pub enum BytesOp {
     /// of the joined string exceeds the maximum string register length (2^16 bytes), than the
     /// destination register is set to `None` state and `st0` is set to `false`. Otherwise,
     /// `st0` value is not modified.
-    #[display("join    s16[{0}],s16[{1}],s16[{2}]")]
+    #[display("join    {0},{1},{2}")]
     Join(/** Source 1 */ RegS, /** Source 2 */ RegS, /** Destination */ RegS),
 
     /// Split bytestring at a given offset taken from `a16` register into two destination strings,
@@ -743,7 +741,7 @@ pub enum BytesOp {
     /// Rule on `st0` changes: if at least one of the destination registers is set to `None`, or
     /// `offset` value exceeds source string length, `st0` is set to `false`; otherwise its value
     /// is not modified
-    #[display("splt.{2}  s16[{0}],a16{1},s16[{3}],s16[{4}]")]
+    #[display("splt.{2}  {0},a16{1},{3},{4}")]
     Splt(
         SplitFlag,
         /** `a16` register index with offset value */ Reg32,
@@ -781,7 +779,7 @@ pub enum BytesOp {
     /// </pre>
     ///
     /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
-    #[display("ins.{3}   s16[{0}],s16[{1}],a16{2}")]
+    #[display("ins.{3}   {0},{1},a16{2}")]
     Ins(
         InsertFlag,
         /** `a16` register index with offset value for insert location */ Reg32,
@@ -807,7 +805,7 @@ pub enum BytesOp {
     /// `offset_start > src_len`:
     ///   (1) set destination to `None`
     ///   (2) set destination to zero-length string
-    /// `offset_end > src_len && offser_start <= src_len`:
+    /// `offset_end > src_len && offset_start <= src_len`:
     ///   (1) set destination to `None`
     ///   (3) set destination to the fragment of the string `offset_start..src_len`
     ///   (4) set destination to the fragment of the string `offset_start..src_len` and extend
@@ -817,7 +815,7 @@ pub enum BytesOp {
     /// `flag1` and `flag2` arguments indicate whether `st0` should be set to `false` if
     /// `offset_start > src_len` and `offset_end > src_len && offser_start <= src_len`.
     /// In all other cases, `st0` value is not modified.
-    #[display("del.{0}   s16[{7}],s16[{8}],{1}{2},{3}{4},{5},{6}")]
+    #[display("del.{0}   {7},{8},{1}{2},{3}{4},{5},{6}")]
     Del(
         DeleteFlag,
         RegA2,
@@ -836,7 +834,7 @@ pub enum BytesOp {
     ///
     /// If the source string register is uninitialized, resets destination to the uninitialized
     /// state and sets `st0` to `false`.
-    #[display("rev     s16[{0}],s16[{1}]")]
+    #[display("rev     {0},{1}")]
     Rev(/** Source */ RegS, /** Destination */ RegS),
 }
 
