@@ -890,7 +890,10 @@ impl Debug for Number {
 impl Display for Number {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.layout {
-            Layout::Integer(IntLayout { signed: false, .. }) if self.min_bit_len() > 12 => {
+            Layout::Integer(IntLayout { signed: false, .. }) if self.min_bit_len() <= 12 => {
+                write!(f, "{}", u16::from(self))
+            }
+            Layout::Integer(IntLayout { signed: false, .. }) if self.min_bit_len() < 16 * 8 => {
                 write!(f, "0x{:X}", self)
             }
             Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 16 => {
@@ -899,7 +902,7 @@ impl Display for Number {
             Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 16 => {
                 Display::fmt(&u128::from(self), f)
             }
-            Layout::Integer(IntLayout { signed: false, .. }) if self.min_bit_len() < 256 => {
+            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 32 => {
                 Display::fmt(&u256::from(self), f)
             }
             Layout::Integer(IntLayout { signed: false, .. }) if self.min_bit_len() < 512 => {
@@ -1060,9 +1063,9 @@ macro_rules! impl_number_bytes_conv {
     ($len:literal) => {
         impl From<Number> for [u8; $len] {
             fn from(val: Number) -> Self {
-                let len = val.len() as usize;
+                let len = val.min_bit_len() as usize / 8;
                 assert!(
-                    val.len() <= $len,
+                    len <= $len,
                     "attempt to convert number into a byte array with incorrect length",
                 );
                 let mut bytes = [0u8; $len];
@@ -1102,7 +1105,7 @@ macro_rules! impl_number_int_conv {
         impl From<Number> for $ty {
             fn from(val: Number) -> Self {
                 assert!(
-                    val.layout.bytes() as u32 <= $len,
+                    val.min_bit_len() <= $len * 8,
                     "attempt to convert Number into type with lower bit dimension"
                 );
                 $ty::from_le_bytes(<[u8; $len]>::from(val))
@@ -1127,7 +1130,7 @@ macro_rules! impl_number_float_conv {
         impl From<Number> for $ty {
             fn from(val: Number) -> Self {
                 assert!(
-                    val.layout.bytes() as u32 <= $len,
+                    val.min_bit_len() <= $len * 8,
                     "attempt to convert Number into type with lower bit dimension"
                 );
                 $ty::from_bits(val.into())
