@@ -17,9 +17,9 @@
 /// # extern crate alloc;
 /// # #[macro_use] extern crate aluvm;
 /// # use paste::paste;
-/// # use aluvm::{Vm};
+/// # use aluvm::Vm;
 /// # use aluvm::libs::Lib;
-/// # use aluvm::isa::ReservedOp;
+/// # use aluvm::isa::Instr;
 ///
 /// let code = aluasm! {
 ///         clr     r1024[5]                        ;
@@ -35,8 +35,8 @@
 ///         jmp     0                               ;
 /// };
 ///
-/// let lib = Lib::<ReservedOp>::assemble(&code).unwrap();
-/// let mut vm = Vm::with(lib);
+/// let lib = Lib::assemble(&code).unwrap();
+/// let mut vm = Vm::<Instr>::with(lib);
 /// match vm.main() {
 ///     true => println!("success"),
 ///     false => println!("failure"),

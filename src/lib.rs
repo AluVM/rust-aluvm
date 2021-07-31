@@ -128,7 +128,7 @@ pub mod data;
 pub mod isa;
 pub mod libs;
 pub mod reg;
-mod vm;
+pub mod vm;
 
 pub use isa::Isa;
 pub use vm::Vm;

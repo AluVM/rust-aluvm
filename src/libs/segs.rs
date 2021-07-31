@@ -28,10 +28,10 @@ use crate::libs::{LibId, LibSite};
 #[cfg_attr(feature = "std", derive(Error))]
 #[display(doc_comments)]
 pub enum SegmentError {
-    /// the size of the CODE segment is {0}, which exceeds [`CODE_SEGMENT_MAX_LEN`]
+    /// the size of the CODE segment is {0}, which exceeds `CODE_SEGMENT_MAX_LEN`
     CodeSegmentTooLarge(usize),
 
-    /// the size of the DATA segment is {0}, which exceeds [`DATA_SEGMENT_MAX_LEN`]
+    /// the size of the DATA segment is {0}, which exceeds `DATA_SEGMENT_MAX_LEN`
     DataSegmentTooLarge(usize),
 
     /// ISA segment error
@@ -254,7 +254,7 @@ impl LibSeg {
     ///
     /// # Errors
     ///
-    /// Checks requirement that the total number of libraries must not exceed [`LIBS_MAX_TOTAL`] and
+    /// Checks requirement that the total number of libraries must not exceed `LIBS_MAX_TOTAL` and
     /// returns [`LibSegOverflow`] otherwise
     ///
     /// # Returns

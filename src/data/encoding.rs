@@ -72,7 +72,7 @@ pub enum EncodeError {
     /// string length is {0}, which exceeds 255 bytes limit
     StringTooLong(usize),
 
-    /// collection contains {0} items, which exceeds [`u18::MAX`] limit
+    /// collection contains {0} items, which exceeds [`u16::MAX`] limit
     ByteLimitExceeded(usize),
 
     /// collection contains {0} items, which exceeds [`u16::MAX`] limit
