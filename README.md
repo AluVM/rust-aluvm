@@ -29,7 +29,7 @@ edge computing, multiparty computing (including deterministic machine learning),
 client-side-validation, sandboxed Internet2 computing and genetic algorithms.
 
 For more details on AluVM, please check [the specification][AluVM], watch
-detailed presentation on [YouTube] or [check slides] from the presentation.
+detailed presentation on [YouTube] or check [slides] from the presentation.
 
 
 ## Design
@@ -123,7 +123,7 @@ Check [the specification][AluVM] for the details.
 
 ## History
 
-- The need for AluVM recognized as a part of RGB project on the
+- The need for AluVM recognized as a part of RGB project in
   Mar, the 24 & 31st, 2021 (see developers call <https://youtu.be/JmKNyOMv68I>)
 - Concept was presented on 19th of May 2021 
   ([check the recoding](https://youtu.be/Mma0oyiVbSE))
