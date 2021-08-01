@@ -131,7 +131,7 @@ Check [the specification][AluVM] for the details.
   ([ISA & API docs](https://docs.rs/aluvm/0.1.0/alure/))
 - v0.2 release with multiple enhancements on the 9 Jun 2021
   ([ISA & API docs](https://docs.rs/aluvm/0.2.1/aluvm/)) – see presentation
-  on [Youtube] or read [slides](https://github.com/LNP-BP/presentations/blob/master/Presentation%20slides/RGB%20VM%20%26%20scripting.pdf)
+  on [Youtube] or read [slides]
 
 [AluVM]: https://github.com/internet2-org/aluvm-spec
 [YouTube]: https://www.youtube.com/watch?v=brfWta7XXFQ
