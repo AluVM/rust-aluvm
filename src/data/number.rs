@@ -1259,3 +1259,38 @@ impl Display for Step {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn asserting_layouts_kinds() {
+        let signed_integer_layout = Layout::Integer(IntLayout::signed(33));
+        assert!(signed_integer_layout.is_signed_int());
+        assert!(!signed_integer_layout.is_unsigned_int());
+        assert!(!signed_integer_layout.is_float());
+                
+        let unsigned_integer_layout = Layout::Integer(IntLayout::unsigned(33));
+        assert!(unsigned_integer_layout.is_unsigned_int());
+        assert!(!unsigned_integer_layout.is_signed_int());
+        assert!(!unsigned_integer_layout.is_float());
+
+        let float_layout = Layout::Float(FloatLayout::BFloat16);
+        assert!(float_layout.is_float());
+        assert!(!float_layout.is_signed_int());
+        assert!(!float_layout.is_unsigned_int());
+    }
+
+    #[test]
+    fn returning_bytes() {
+        let signed_integer_layout = Layout::Integer(IntLayout::signed(3));
+        assert_eq!(signed_integer_layout.bytes(), 3);
+        
+        let unsigned_integer_layout = Layout::Integer(IntLayout::unsigned(3));
+        assert_eq!(unsigned_integer_layout.bytes(), 3);
+
+        let float_layout = Layout::Float(FloatLayout::BFloat16);
+        assert_eq!(float_layout.bytes(), 2);
+    }
+}
