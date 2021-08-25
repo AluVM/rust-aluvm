@@ -16,7 +16,7 @@ exclude = [".github"]
 name = "aluvm"
 
 [dependencies]
-amplify = { version = "3.7.1", default-features = false, features = ["derive"] }
+amplify = { version = "3.7.1", default-features = false, features = ["derive", "hex"] }
 paste = "1"
 bitcoin_hashes = { version = "0.9.6", default-features = false } # this is most well-maintained generic hash implementation library
 bech32 = { version = "0.8.1", default-features = false }
