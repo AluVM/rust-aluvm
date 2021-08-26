@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "aluvm"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "amplify",
  "bech32",
@@ -69,9 +69,9 @@ checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
 
 [[package]]
 name = "bitcoin_hashes"
-version = "0.9.7"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ce18265ec2324ad075345d5814fbeed4f41f0a660055dc78840b74d19b874b1"
+checksum = "006cc91e1a1d99819bc5b8214be3555c1f0611b169f527a1fdc54ed1f2b745b0"
 
 [[package]]
 name = "bitflags"
