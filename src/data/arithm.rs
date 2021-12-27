@@ -23,9 +23,9 @@ impl PartialEq for Number {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         (self.layout() == other.layout()
-            || self.layout().is_signed_int() && other.layout().is_unsigned_int()
-            || self.layout().is_unsigned_int() && other.layout().is_signed_int())
-            && self.to_clean().eq(&other.to_clean())
+            || (self.layout().is_signed_int() && other.layout().is_unsigned_int())
+            || (self.layout().is_unsigned_int() && other.layout().is_signed_int()))
+            && self.to_clean()[..].eq(&other.to_clean()[..])
     }
 }
 
@@ -500,5 +500,29 @@ impl Number {
         } else {
             self.applying_sign(false)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ops_on_numbers() {
+        let x = Number::from(0);
+        let y = Number::from(0);
+        assert_eq!(x, y);
+        let x = Number::from(0);
+        let y = Number::from(1);
+        assert!(x < y);
+        // TODO fix constructor for negative values
+        // let x = Number::from(1);
+        // let y = Number::from(-1);
+        // assert_eq!(true, x > y);
+        let x = Number::from(127);
+        let y = Number::from(128);
+        let z = Number::from(1);
+        assert!(x < y);
+        assert_eq!(x.int_add(z, IntFlags { signed: false, wrap: false }), Some(y))
     }
 }
