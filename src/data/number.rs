@@ -1063,7 +1063,7 @@ macro_rules! impl_number_bytes_conv {
     ($len:literal) => {
         impl From<Number> for [u8; $len] {
             fn from(val: Number) -> Self {
-                let len = val.min_bit_len() as usize / 8;
+                let len = val.min_bit_len() as usize / 8 + 1;
                 assert!(
                     len <= $len,
                     "attempt to convert number into a byte array with incorrect length",
@@ -1292,5 +1292,13 @@ mod tests {
 
         let float_layout = Layout::Float(FloatLayout::BFloat16);
         assert_eq!(float_layout.bytes(), 2);
+    }
+
+    #[test]
+    fn is_zero_test() {
+        let num = Number::from(0);
+        assert_eq!(true, num.is_zero());
+        let num = Number::from(1);
+        assert_eq!(false, num.is_zero());
     }
 }
