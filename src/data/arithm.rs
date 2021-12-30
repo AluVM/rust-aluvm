@@ -23,9 +23,9 @@ impl PartialEq for Number {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         (self.layout() == other.layout()
-            || self.layout().is_signed_int() && other.layout().is_unsigned_int()
-            || self.layout().is_unsigned_int() && other.layout().is_signed_int())
-            && self.to_clean().eq(&other.to_clean())
+            || (self.layout().is_signed_int() && other.layout().is_unsigned_int())
+            || (self.layout().is_unsigned_int() && other.layout().is_signed_int()))
+            && self.to_clean()[..].eq(&other.to_clean()[..])
     }
 }
 
@@ -500,5 +500,47 @@ impl Number {
         } else {
             self.applying_sign(false)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compare_numbers() {
+        let x = Number::from(0);
+        let y = Number::from(0);
+        assert_eq!(x, y);
+        let x = Number::from(0);
+        let y = Number::from(1);
+        assert!(x < y);
+        let x = Number::from(1);
+        let y = Number::from(-1);
+        assert_eq!(true, x > y);
+        let x = Number::from(-128);
+        let y = Number::from(-127);
+        assert_eq!(true, x < y);
+    }
+
+    #[test]
+    fn int_add() {
+        let x = Number::from(1);
+        let y = Number::from(2);
+        let z = Number::from(3);
+        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), Some(z));
+        let x = Number::from(255u8);
+        let y = Number::from(1u8);
+        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), None);
+        let x = Number::from(1);
+        let y = Number::from(-1);
+        let z = Number::from(0);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), None);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
+        let x = Number::from(-2);
+        let y = Number::from(-1);
+        let z = Number::from(-3);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), None);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
     }
 }
