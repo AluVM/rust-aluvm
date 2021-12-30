@@ -669,7 +669,10 @@ impl Number {
         if self.layout.is_unsigned_int() {
             return true;
         }
-        self[self.layout.sign_byte()] & 0x80 > 0
+        if self.is_zero() {
+            return false;
+        }
+        self[self.layout.sign_byte()] & 0x80 == 0
     }
 
     /// Detects if the value is equal to zero
@@ -735,8 +738,8 @@ impl Number {
             (from, to) if from == to => false,
             // We need to change only bit dimensions
             (
-                Layout::Integer(IntLayout { signed: false, .. }),
-                Layout::Integer(IntLayout { signed: false, bytes: len2 }),
+                Layout::Integer(IntLayout { .. }),
+                Layout::Integer(IntLayout { bytes: len2, .. }),
             ) => {
                 let bit_len = self.min_bit_len();
                 self.layout = to;
@@ -1101,7 +1104,7 @@ macro_rules! impl_number_bytes_conv {
 }
 
 macro_rules! impl_number_int_conv {
-    ($ty:ident, $len:literal) => {
+    ($ty:ident, $len:literal, $signed:expr) => {
         impl From<Number> for $ty {
             fn from(val: Number) -> Self {
                 assert!(
@@ -1117,7 +1120,12 @@ macro_rules! impl_number_int_conv {
                 let mut bytes = [0u8; 1024];
                 let le = val.to_le_bytes();
                 bytes[0..le.len()].copy_from_slice(&le[..]);
-                Number { layout: Layout::unsigned(le.len() as u16), bytes }
+                if $signed {
+                    Number { layout: Layout::signed(le.len() as u16), bytes }
+                } else {
+                    Number { layout: Layout::unsigned(le.len() as u16), bytes }
+                }
+
             }
         }
 
@@ -1193,14 +1201,14 @@ impl_number_bytes_conv!(256);
 impl_number_bytes_conv!(512);
 impl_number_bytes_conv!(1024);
 
-impl_number_int_conv!(u8, 1);
-impl_number_int_conv!(u16, 2);
-impl_number_int_conv!(u32, 4);
-impl_number_int_conv!(u64, 8);
-impl_number_int_conv!(u128, 16);
-impl_number_int_conv!(u256, 32);
-impl_number_int_conv!(u512, 64);
-impl_number_int_conv!(u1024, 128);
+impl_number_int_conv!(u8, 1, false);
+impl_number_int_conv!(u16, 2, false);
+impl_number_int_conv!(u32, 4, false);
+impl_number_int_conv!(u64, 8, false);
+impl_number_int_conv!(u128, 16, false);
+impl_number_int_conv!(u256, 32, false);
+impl_number_int_conv!(u512, 64, false);
+impl_number_int_conv!(u1024, 128, false);
 
 mod _float_impl {
     use half::bf16;
@@ -1217,11 +1225,11 @@ mod _float_impl {
     impl_number_float_conv!(Quad, QuadS, 16, IeeeQuad);
 }
 
-impl_number_int_conv!(i8, 1);
-impl_number_int_conv!(i16, 2);
-impl_number_int_conv!(i32, 4);
-impl_number_int_conv!(i64, 8);
-impl_number_int_conv!(i128, 16);
+impl_number_int_conv!(i8, 1, true);
+impl_number_int_conv!(i16, 2, true);
+impl_number_int_conv!(i32, 4, true);
+impl_number_int_conv!(i64, 8, true);
+impl_number_int_conv!(i128, 16, true);
 
 /// Value for step instructions which can be displayed as a part of operation mnemonic
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
@@ -1300,5 +1308,31 @@ mod tests {
         assert_eq!(true, num.is_zero());
         let num = Number::from(1);
         assert_eq!(false, num.is_zero());
+    }
+
+    #[test]
+    fn is_unsigned_int_test() {
+        let num = Number::from(0u8);
+        assert_eq!(true, num.layout.is_unsigned_int());
+        let num = Number::from(0i8);
+        assert_eq!(false, num.layout.is_unsigned_int());
+        let num = Number::from(1u16);
+        assert_eq!(true, num.layout.is_unsigned_int());
+        let num = Number::from(1i16);
+        assert_eq!(false, num.layout.is_unsigned_int());
+        let num = Number::from(-1);
+        assert_eq!(false, num.layout.is_unsigned_int());
+    }
+
+    #[test]
+    fn is_positive_test() {
+        let num = Number::from(1);
+        assert_eq!(true, num.is_positive());
+        let num = Number::from(0);
+        assert_eq!(false, num.is_positive());
+        let num = Number::from(-1);
+        assert_eq!(false, num.is_positive());
+        let num = Number::from(127);
+        assert_eq!(true, num.is_positive());
     }
 }

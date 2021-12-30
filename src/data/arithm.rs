@@ -508,21 +508,39 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ops_on_numbers() {
+    fn compare_numbers() {
         let x = Number::from(0);
         let y = Number::from(0);
         assert_eq!(x, y);
         let x = Number::from(0);
         let y = Number::from(1);
         assert!(x < y);
-        // TODO fix constructor for negative values
-        // let x = Number::from(1);
-        // let y = Number::from(-1);
-        // assert_eq!(true, x > y);
-        let x = Number::from(127);
-        let y = Number::from(128);
-        let z = Number::from(1);
-        assert!(x < y);
-        assert_eq!(x.int_add(z, IntFlags { signed: false, wrap: false }), Some(y))
+        let x = Number::from(1);
+        let y = Number::from(-1);
+        assert_eq!(true, x > y);
+        let x = Number::from(-128);
+        let y = Number::from(-127);
+        assert_eq!(true, x < y);
+    }
+
+    #[test]
+    fn int_add() {
+        let x = Number::from(1);
+        let y = Number::from(2);
+        let z = Number::from(3);
+        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), Some(z));
+        let x = Number::from(255u8);
+        let y = Number::from(1u8);
+        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), None);
+        let x = Number::from(1);
+        let y = Number::from(-1);
+        let z = Number::from(0);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), None);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
+        let x = Number::from(-2);
+        let y = Number::from(-1);
+        let z = Number::from(-3);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), None);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
     }
 }
