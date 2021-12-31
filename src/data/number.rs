@@ -1066,7 +1066,7 @@ macro_rules! impl_number_bytes_conv {
     ($len:literal) => {
         impl From<Number> for [u8; $len] {
             fn from(val: Number) -> Self {
-                let len = val.min_bit_len() as usize / 8 + 1;
+                let len = (val.min_bit_len() + 7) as usize / 8;
                 assert!(
                     len <= $len,
                     "attempt to convert number into a byte array with incorrect length",
@@ -1271,6 +1271,11 @@ impl Display for Step {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bytes_conv_test() {
+        assert_eq!([255u8], <[u8; 1]>::from(Number::from(255u8)));
+    }
 
     #[test]
     fn asserting_layouts_kinds() {
