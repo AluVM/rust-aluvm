@@ -457,6 +457,50 @@ impl Number {
             _ => Some(val),
         }
     }
+
+    /// Adds or removes negative sign to the number (negates negative or positive number, depending
+    /// on the method argument value)
+    ///
+    /// # Panics
+    ///
+    /// - if applied to unsigned integer layout
+    /// - if attempted to negate the minimum possible value for its layout (e.g. -128 as 1 byte)
+    #[inline]
+    pub fn applying_sign(mut self, sign: impl Into<bool>) -> Option<Number> {
+        let layout = self.layout();
+        match layout {
+            Layout::Integer(IntLayout { signed: true, .. }) => {
+                if !self.is_positive() ^ sign.into() {
+                    if self.count_ones() == 1 && !self.is_positive() {
+                        // attempt to negate the minimum possible value for its layout
+                        return None
+                    }
+                    let mut one = Number::from(1u8);
+                    one.reshape(layout);
+                    (!self).int_add(one, IntFlags { signed: true, wrap: true })
+                } else {
+                    Some(self)
+                }
+            }
+            Layout::Integer(IntLayout { signed: false, .. }) => {
+                // applied to unsigned integer layout
+                return None
+            }
+            Layout::Float(..) => {
+                let sign_byte = layout.sign_byte();
+                if sign.into() {
+                    self[sign_byte] |= 0x80;
+                } else {
+                    self[sign_byte] &= 0x7F;
+                }
+                Some(self)
+            }
+        }
+    }
+
+    /// Removes negative sign if present (negates negative number)
+    #[inline]
+    pub fn without_sign(self) -> Option<Number> { self.applying_sign(false) }
 }
 
 impl Rem for Number {
@@ -487,16 +531,16 @@ impl Rem for Number {
 }
 
 impl Neg for Number {
-    type Output = Number;
+    type Output = Option<Number>;
 
     fn neg(self) -> Self::Output { self.applying_sign(self.is_positive()) }
 }
 
 impl Number {
     /// Returns the absolute value of the number
-    pub fn abs(self) -> Number {
+    pub fn abs(self) -> Option<Number> {
         if self.is_positive() {
-            self
+            Some(self)
         } else {
             self.applying_sign(false)
         }
@@ -543,4 +587,80 @@ mod tests {
         assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), None);
         assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
     }
+
+    #[test]
+    fn applying_sign() {
+        let x = Number::from(1i8);
+        let y = Number::from(-1i8);
+        assert_eq!(x.applying_sign(true).unwrap(), y);
+        assert_eq!(x, y.applying_sign(false).unwrap());
+
+        let x = Number::from(1i8);
+        let y = Number::from(1i8);
+        assert_eq!(x.applying_sign(false).unwrap(), y);
+
+        let x = Number::from(bf16::from_f32(7.0_f32));
+        let y = Number::from(bf16::from_f32(-7.0_f32));
+        assert_ne!(x, y);
+        assert_eq!(x.applying_sign(true).unwrap(), y);
+
+        let x = Number::from(bf16::from_f32(7.0_f32));
+        let y = Number::from(bf16::from_f32(7.0_f32));
+        assert_eq!(x, y);
+        assert_eq!(x.applying_sign(false).unwrap(), y);
+    }
+
+    #[test]
+    fn applying_sign_to_unsigned() {
+        let x = Number::from(1u8);
+        assert_eq!(None, x.applying_sign(false));
+    }
+
+    #[test]
+    fn applying_sign_to_minimum() {
+        let x = Number::from(-128i8);
+        assert_eq!(None, x.applying_sign(false));
+    }
+
+    #[test]
+    fn without_sign() {
+        let x = Number::from(1i8);
+        let y = Number::from(-1i8);
+        assert_eq!(x.without_sign().unwrap(), x);
+        assert_eq!(y.without_sign().unwrap(), x);
+    }
+
+    #[test]
+    fn neg() {
+        let x = Number::from(1i8);
+        let y = Number::from(-1i8);
+        assert_ne!(x, y);
+        assert_eq!(x.neg().unwrap(), y);
+        assert_eq!(x, y.neg().unwrap());
+
+        let x = Number::from(bf16::from_f32(7.0_f32));
+        let y = Number::from(bf16::from_f32(-7.0_f32));
+        assert_ne!(x, y);
+        assert_eq!(x.neg().unwrap(), y);
+        assert_eq!(x, y.neg().unwrap());
+    }
+
+    #[test]
+    fn abs() {
+        let x = Number::from(1i8);
+        let y = Number::from(-1i8);
+        assert_eq!(x, y.abs().unwrap());
+
+        let x = Number::from(bf16::from_f32(12.3_f32));
+        let y = Number::from(bf16::from_f32(-12.3_f32));
+        assert_eq!(x, y.abs().unwrap());
+
+        let x = Number::from(-128i8);
+        assert_eq!(None, x.abs());
+
+        let x = Number::from(-128i16);
+        let y = Number::from(128i16);
+        assert_eq!(x.abs().unwrap(), y);
+    }
+
 }

@@ -679,7 +679,7 @@ impl Number {
     pub fn is_zero(self) -> bool {
         let mut clean = self.to_clean();
         if self.layout.is_float() {
-            clean = clean.without_sign();
+            clean = clean.without_sign().expect("should not fail when it is float");
         }
         clean.to_u1024_bytes() == u1024::from(0u8)
     }
@@ -802,23 +802,6 @@ impl Number {
             (from, to) => todo!("Number layout reshape from {} to {}", from, to),
         }
     }
-
-    /// Adds or removes negative sign to the number (negates negative or positive number, depending
-    /// on the method argument value)
-    #[inline]
-    pub fn applying_sign(mut self, sign: impl Into<bool>) -> Number {
-        let sign_byte = self.layout.sign_byte();
-        if sign.into() {
-            self[sign_byte] |= 0x80;
-        } else {
-            self[sign_byte] &= 0x7F;
-        }
-        self
-    }
-
-    /// Removes negative sign if present (negates negative number)
-    #[inline]
-    pub fn without_sign(self) -> Number { self.applying_sign(false) }
 
     #[doc(hidden)]
     /// Converts the value into `u1024` integer with the bytes corresponding to the internal
