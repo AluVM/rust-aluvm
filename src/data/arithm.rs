@@ -461,20 +461,18 @@ impl Number {
     /// Adds or removes negative sign to the number (negates negative or positive number, depending
     /// on the method argument value)
     ///
-    /// # Panics
-    ///
-    /// - if applied to unsigned integer layout
-    /// - if attempted to negate the minimum possible value for its layout (e.g. -128 as 1 byte)
+    /// Returns None if:
+    ///  - applied to unsigned integer layout
+    ///  - attempted to negate the minimum possible value for its layout (e.g. -128 as 1 byte)
     #[inline]
     pub fn applying_sign(mut self, sign: impl Into<bool>) -> Option<Number> {
         let layout = self.layout();
         match layout {
             Layout::Integer(IntLayout { signed: true, .. }) => {
-                if !self.is_positive() ^ sign.into() {
-                    if self.count_ones() == 1 && !self.is_positive() {
-                        // attempt to negate the minimum possible value for its layout
-                        return None;
-                    }
+                if !self.is_positive() && self.count_ones() == 1 {
+                    // attempt to negate the minimum possible value for its layout
+                    None
+                } else if !self.is_positive() ^ sign.into() {
                     let mut one = Number::from(1u8);
                     one.reshape(layout);
                     (!self).int_add(one, IntFlags { signed: true, wrap: true })
@@ -484,7 +482,7 @@ impl Number {
             }
             Layout::Integer(IntLayout { signed: false, .. }) => {
                 // applied to unsigned integer layout
-                return None;
+                None
             }
             Layout::Float(..) => {
                 let sign_byte = layout.sign_byte();
