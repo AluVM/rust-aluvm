@@ -409,7 +409,9 @@ impl InstructionSet for ArithmeticOp {
 
     fn exec(&self, regs: &mut CoreRegs, _: LibSite) -> ExecStep {
         let is_some = match self {
-            ArithmeticOp::Abs(reg, idx) => regs.set(reg, idx, regs.get(reg, idx).map(Number::abs)),
+            ArithmeticOp::Abs(reg, idx) => {
+                regs.set(reg, idx, regs.get(reg, idx).and_then(Number::abs))
+            }
             ArithmeticOp::AddA(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_both(reg, src, reg, srcdst)
@@ -477,7 +479,9 @@ impl InstructionSet for ArithmeticOp {
                     }
                 }),
             ),
-            ArithmeticOp::Neg(reg, idx) => regs.set(reg, idx, regs.get(reg, idx).map(Number::neg)),
+            ArithmeticOp::Neg(reg, idx) => {
+                regs.set(reg, idx, regs.get(reg, idx).and_then(Number::neg))
+            }
         };
         regs.st0 = is_some;
         ExecStep::Next
