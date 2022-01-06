@@ -737,10 +737,7 @@ impl Number {
         match (self.layout, to) {
             (from, to) if from == to => false,
             // We need to change only bit dimensions
-            (
-                Layout::Integer(IntLayout { .. }),
-                Layout::Integer(IntLayout { bytes: len2, .. }),
-            ) => {
+            (Layout::Integer(IntLayout { .. }), Layout::Integer(IntLayout { bytes: len2, .. })) => {
                 let bit_len = self.min_bit_len();
                 self.layout = to;
                 self.clean();
@@ -1066,7 +1063,7 @@ macro_rules! impl_number_bytes_conv {
     ($len:literal) => {
         impl From<Number> for [u8; $len] {
             fn from(val: Number) -> Self {
-                let len = val.min_bit_len() as usize / 8 + 1;
+                let len = (val.min_bit_len() + 7) as usize / 8;
                 assert!(
                     len <= $len,
                     "attempt to convert number into a byte array with incorrect length",
@@ -1125,7 +1122,6 @@ macro_rules! impl_number_int_conv {
                 } else {
                     Number { layout: Layout::unsigned(le.len() as u16), bytes }
                 }
-
             }
         }
 
@@ -1273,12 +1269,17 @@ mod tests {
     use super::*;
 
     #[test]
+    fn bytes_conv_test() {
+        assert_eq!([255u8], <[u8; 1]>::from(Number::from(255u8)));
+    }
+
+    #[test]
     fn asserting_layouts_kinds() {
         let signed_integer_layout = Layout::Integer(IntLayout::signed(33));
         assert!(signed_integer_layout.is_signed_int());
         assert!(!signed_integer_layout.is_unsigned_int());
         assert!(!signed_integer_layout.is_float());
-                
+
         let unsigned_integer_layout = Layout::Integer(IntLayout::unsigned(33));
         assert!(unsigned_integer_layout.is_unsigned_int());
         assert!(!unsigned_integer_layout.is_signed_int());
@@ -1294,7 +1295,7 @@ mod tests {
     fn returning_bytes() {
         let signed_integer_layout = Layout::Integer(IntLayout::signed(3));
         assert_eq!(signed_integer_layout.bytes(), 3);
-        
+
         let unsigned_integer_layout = Layout::Integer(IntLayout::unsigned(3));
         assert_eq!(unsigned_integer_layout.bytes(), 3);
 
