@@ -473,7 +473,7 @@ impl Number {
                 if !self.is_positive() ^ sign.into() {
                     if self.count_ones() == 1 && !self.is_positive() {
                         // attempt to negate the minimum possible value for its layout
-                        return None
+                        return None;
                     }
                     let mut one = Number::from(1u8);
                     one.reshape(layout);
@@ -484,7 +484,7 @@ impl Number {
             }
             Layout::Integer(IntLayout { signed: false, .. }) => {
                 // applied to unsigned integer layout
-                return None
+                return None;
             }
             Layout::Float(..) => {
                 let sign_byte = layout.sign_byte();
@@ -662,5 +662,4 @@ mod tests {
         let y = Number::from(128i16);
         assert_eq!(x.abs().unwrap(), y);
     }
-
 }
