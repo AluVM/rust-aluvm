@@ -461,9 +461,10 @@ impl Number {
     /// Adds or removes negative sign to the number (negates negative or positive number, depending
     /// on the method argument value)
     ///
-    /// Returns None if:
+    /// # Returns
+    /// Result of the operation as an optional - or `None` if the operation was impossible, specifically:
     ///  - applied to unsigned integer layout
-    ///  - attempted to negate the minimum possible value for its layout (e.g. -128 as 1 byte)
+    ///  - an attempt to negate the minimum possible value for its layout (e.g. -128 as 1 byte)
     #[inline]
     pub fn applying_sign(mut self, sign: impl Into<bool>) -> Option<Number> {
         let layout = self.layout();
