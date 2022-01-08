@@ -108,6 +108,6 @@ fn main() {
         false => eprintln!("failure"),
     }
 
-    println!("\nVM microprocessor core state:\n{:#?}", runtime.registers_ref());
+    println!("\nVM microprocessor core state:\n{:#?}", runtime.registers());
     println!("\n{}\n", lib_repr);
 }

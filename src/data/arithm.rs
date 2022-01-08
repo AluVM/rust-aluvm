@@ -462,7 +462,8 @@ impl Number {
     /// on the method argument value)
     ///
     /// # Returns
-    /// Result of the operation as an optional - or `None` if the operation was impossible, specifically:
+    /// Result of the operation as an optional - or `None` if the operation was impossible,
+    /// specifically:
     ///  - applied to unsigned integer layout
     ///  - an attempt to negate the minimum possible value for its layout (e.g. -128 as 1 byte)
     #[inline]

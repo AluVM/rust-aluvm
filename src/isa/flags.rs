@@ -364,7 +364,7 @@ impl From<RoundingFlag> for Round {
 }
 
 /// Encoding and overflowing flags for integer numbers
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
 pub struct IntFlags {
     /// Treat the integer as signed (`true`) or unsigned (`false`). Signed integers has a different
     /// behaviour on detecting overflows, since they use only 7 bits for significant digits and not
@@ -377,11 +377,6 @@ pub struct IntFlags {
 }
 
 impl Flag for IntFlags {}
-
-impl Default for IntFlags {
-    #[inline]
-    fn default() -> Self { Self { signed: false, wrap: false } }
-}
 
 impl Display for IntFlags {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
