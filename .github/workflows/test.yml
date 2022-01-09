@@ -18,9 +18,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - name: Build & test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --workspace --all-features --no-fail-fast
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Test
+        run: cargo make test

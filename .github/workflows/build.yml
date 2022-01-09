@@ -18,11 +18,10 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - name: Default build
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Default Build
+        run: ALUVM_FEATURES=default cargo make check
   features:
     runs-on: ubuntu-latest
     strategy:
@@ -36,11 +35,10 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - name: Default build
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --features ${{ matrix.feature }}
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Build
+        run: ALUVM_FEATURES=${{ matrix.feature }} cargo make check
   platforms:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -57,11 +55,10 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
       - name: Build with all features
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-features
+        run: cargo make check -e "ALUVM_FEATURES=all"
   toolchains:
     runs-on: ubuntu-latest
     strategy:
@@ -75,11 +72,10 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
           override: true
-      - name: All features
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --workspace --all-targets --all-features
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Build with all features and all targets
+        run: cargo make check-all
   dependency:
     runs-on: ubuntu-latest
     steps:
