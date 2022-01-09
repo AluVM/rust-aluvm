@@ -18,13 +18,11 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          override: true
           components: rustfmt
-      - uses: actions-rs/cargo@v1
-        name: Formatting
-        with:
-          command: fmt
-          args: --all -- --check
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Check formatting
+        run: cargo make fmt-check
   clippy:
     runs-on: ubuntu-latest
     steps:
@@ -33,13 +31,11 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          override: true
           components: clippy
-      - uses: actions-rs/cargo@v1
-        name: Clippy
-        with:
-          command: clippy
-          args: --workspace --all-features
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Clippy
+        run: cargo make clippy
   doc:
     runs-on: ubuntu-latest
     steps:
@@ -48,10 +44,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          override: true
           components: rust-docs
-      - uses: actions-rs/cargo@v1
-        name: Clippy
-        with:
-          command: doc
-          args: --workspace --all-features
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Doc
+        run: cargo make doc
