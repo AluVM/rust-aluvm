@@ -11,6 +11,7 @@
 
 use alloc::boxed::Box;
 use alloc::string::ToString;
+use alloc::vec::Vec;
 use core::fmt::{self, Debug, Formatter};
 
 use amplify::num::{u1024, u256, u512};
@@ -96,7 +97,7 @@ pub struct CoreRegs {
     ///
     /// - [`CALL_STACK_SIZE`] constant
     /// - [`CoreRegs::cp0`] register
-    cs0: Box<[LibSite; CALL_STACK_SIZE]>,
+    cs0: Vec<LibSite>,
 
     /// Defines "top" of the call stack
     cp0: u16,
@@ -139,7 +140,7 @@ impl Default for CoreRegs {
             cy0: 0,
             ca0: 0,
             cl0: None,
-            cs0: Box::new([LibSite::default(); CALL_STACK_SIZE]),
+            cs0: vec![LibSite::default(); CALL_STACK_SIZE],
             cp0: 0,
         }
     }
