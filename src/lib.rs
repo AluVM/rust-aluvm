@@ -117,6 +117,7 @@
 // TODO(#7) Complete assembly compiler for string operations
 // TODO(#8) Implement operations on Edwards curves
 
+#[macro_use]
 extern crate alloc;
 
 #[macro_use]

@@ -908,3 +908,18 @@ impl InstructionSet for ReservedOp {
         ControlFlowOp::Fail.exec(regs, site)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn put_test() {
+        let mut register = CoreRegs::default();
+        let lib_site = LibSite::default();
+        let instr = PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(3).into());
+        instr.exec(&mut register, lib_site);
+        let number = register.get(RegA::A8, Reg32::Reg1).unwrap();
+        assert_eq!(Number::from([3u8; 1]), number);
+    }
+}
