@@ -469,14 +469,9 @@ impl InstructionSet for ArithmeticOp {
                 reg,
                 idx,
                 regs.get(reg, idx).and_then(|val| {
-                    if step.as_i16() < 0 {
-                        val.int_sub(Number::from(-step.as_i16()), IntFlags {
-                            signed: false,
-                            wrap: false,
-                        })
-                    } else {
-                        val.int_add(Number::from(*step), IntFlags { signed: false, wrap: false })
-                    }
+                    let mut n = Number::from(*step);
+                    n.reshape(val.layout());
+                    val.int_add(n, IntFlags { signed: false, wrap: false })
                 }),
             ),
             ArithmeticOp::Neg(reg, idx) => {
@@ -912,14 +907,63 @@ impl InstructionSet for ReservedOp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::data::Step;
 
     #[test]
-    fn put_test() {
+    fn cmp_ne_test() {
         let mut register = CoreRegs::default();
         let lib_site = LibSite::default();
-        let instr = PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(3).into());
-        instr.exec(&mut register, lib_site);
-        let number = register.get(RegA::A8, Reg32::Reg1).unwrap();
-        assert_eq!(Number::from([3u8; 1]), number);
+        PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(12).into())
+            .exec(&mut register, lib_site);
+        PutOp::PutA(RegA::A8, Reg32::Reg2, MaybeNumber::from(9).into())
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2)
+            .exec(&mut register, lib_site);
+        assert_eq!(false, register.st0);
+    }
+
+    #[test]
+    fn cmp_eq_test() {
+        let mut register = CoreRegs::default();
+        let lib_site = LibSite::default();
+        PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(9).into())
+            .exec(&mut register, lib_site);
+        PutOp::PutA(RegA::A8, Reg32::Reg2, MaybeNumber::from(9).into())
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2)
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+    }
+
+    #[test]
+    fn stp_add_test() {
+        let mut register = CoreRegs::default();
+        let lib_site = LibSite::default();
+        PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(3).into())
+            .exec(&mut register, lib_site);
+        ArithmeticOp::Stp(RegA::A8, Reg32::Reg1, Step::with(4)).exec(&mut register, lib_site);
+        PutOp::PutA(RegA::A8, Reg32::Reg2, MaybeNumber::from(7).into())
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2)
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+    }
+
+    #[test]
+    fn stp_sub_test() {
+        let mut register = CoreRegs::default();
+        let lib_site = LibSite::default();
+        PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(3).into())
+            .exec(&mut register, lib_site);
+        ArithmeticOp::Stp(RegA::A8, Reg32::Reg1, Step::with(-4)).exec(&mut register, lib_site);
+        PutOp::PutA(RegA::A8, Reg32::Reg2, MaybeNumber::from(-1i8).into())
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2)
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
     }
 }
