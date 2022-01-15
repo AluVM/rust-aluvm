@@ -766,8 +766,8 @@ impl Bytecode for ArithmeticOp {
             | ArithmeticOp::MulF(_, _, _, _)
             | ArithmeticOp::DivA(_, _, _, _)
             | ArithmeticOp::DivF(_, _, _, _)
-            | ArithmeticOp::Rem(_, _, _, _) => 3,
-            ArithmeticOp::Stp(_, _, _) => 4,
+            | ArithmeticOp::Rem(_, _, _, _)
+            | ArithmeticOp::Stp(_, _, _) => 3,
             ArithmeticOp::Neg(_, _) | ArithmeticOp::Abs(_, _) => 2,
         }
     }
@@ -800,7 +800,7 @@ impl Bytecode for ArithmeticOp {
             ArithmeticOp::Stp(reg, idx, step) => {
                 writer.write_u3(reg)?;
                 writer.write_u5(idx)?;
-                writer.write_i16(step.as_i16())?;
+                writer.write_i8(step.as_i8())?;
             }
             ArithmeticOp::AddA(flags, reg, src1, src2)
             | ArithmeticOp::SubA(flags, reg, src1, src2)
@@ -861,7 +861,7 @@ impl Bytecode for ArithmeticOp {
                 INSTR_STP => {
                     let reg = reader.read_u3()?.into();
                     let idx = reader.read_u5()?.into();
-                    let step = reader.read_i16()?.into();
+                    let step = reader.read_i8()?.into();
                     Self::Stp(reg, idx, step)
                 }
                 INSTR_REM => {

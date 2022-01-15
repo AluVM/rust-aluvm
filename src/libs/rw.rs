@@ -94,9 +94,11 @@ pub trait Read: private::Sealed {
     fn read_u7(&mut self) -> Result<u7, CodeEofError>;
     /// Reads full byte
     fn read_u8(&mut self) -> Result<u8, CodeEofError>;
+    /// Reads two bytes and converts them into a signed integer
+    fn read_i8(&mut self) -> Result<i8, CodeEofError>;
     /// Reads two bytes
     fn read_u16(&mut self) -> Result<u16, CodeEofError>;
-    /// Reads two bytes and convers them into a signed integer
+    /// Reads two bytes and converts them into a signed integer
     fn read_i16(&mut self) -> Result<i16, CodeEofError>;
     /// Reads three bytes
     fn read_u24(&mut self) -> Result<u24, CodeEofError>;
@@ -128,6 +130,8 @@ pub trait Write: private::Sealed {
     fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), WriteError>;
     /// Writes full byte
     fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), WriteError>;
+    /// Writes full byte corresponding to signed integer representation
+    fn write_i8(&mut self, data: impl Into<i8>) -> Result<(), WriteError>;
     /// Writes two bytes
     fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), WriteError>;
     /// Writes two bytes corresponding to signed integer representation

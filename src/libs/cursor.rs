@@ -256,6 +256,17 @@ where
         self.inc_bytes(1).map(|_| byte)
     }
 
+    fn read_i8(&mut self) -> Result<i8, CodeEofError> {
+        if self.is_eof() {
+            return Err(CodeEofError);
+        }
+        let pos = self.byte_pos as usize;
+        let mut buf = [0u8];
+        buf.copy_from_slice(&self.as_ref()[pos..pos + 1]);
+        let byte = i8::from_le_bytes(buf);
+        self.inc_bytes(1).map(|_| byte)
+    }
+
     fn read_u16(&mut self) -> Result<u16, CodeEofError> {
         if self.is_eof() {
             return Err(CodeEofError);
@@ -379,6 +390,13 @@ where
     fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), WriteError> {
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] = data.into();
+        self.inc_bytes(1).map_err(WriteError::from)
+    }
+
+    fn write_i8(&mut self, data: impl Into<i8>) -> Result<(), WriteError> {
+        let data = data.into().to_le_bytes();
+        let pos = self.byte_pos as usize;
+        self.as_mut()[pos] = data[0];
         self.inc_bytes(1).map_err(WriteError::from)
     }
 
