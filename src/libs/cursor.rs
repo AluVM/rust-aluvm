@@ -260,10 +260,7 @@ where
         if self.is_eof() {
             return Err(CodeEofError);
         }
-        let pos = self.byte_pos as usize;
-        let mut buf = [0u8];
-        buf.copy_from_slice(&self.as_ref()[pos..pos + 1]);
-        let byte = i8::from_le_bytes(buf);
+        let byte = self.as_ref()[self.byte_pos as usize] as i8;
         self.inc_bytes(1).map(|_| byte)
     }
 
