@@ -735,7 +735,18 @@ impl Number {
     /// bit information
     pub fn reshape(&mut self, to: Layout) -> bool {
         match (self.layout, to) {
-            (from, to) if from == to => false,
+            (from, to) if from == to => true,
+            (
+                Layout::Integer(IntLayout { signed: true, bytes: b_from }),
+                Layout::Integer(IntLayout { signed: true, bytes: b_to }),
+            ) if !self.is_positive() && b_from < b_to => {
+                self.layout = to;
+                for i in b_from..b_to {
+                    self[i] = 255u8;
+                }
+                self.clean();
+                true
+            }
             // We need to change only bit dimensions
             (Layout::Integer(IntLayout { .. }), Layout::Integer(IntLayout { bytes: len2, .. })) => {
                 let bit_len = self.min_bit_len();
@@ -1318,5 +1329,37 @@ mod tests {
         assert_eq!(false, num.is_positive());
         let num = Number::from(127);
         assert_eq!(true, num.is_positive());
+    }
+
+    #[test]
+    fn reshape_test() {
+        let mut x =
+            Number::with(&[1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
+        let y = Number::with(&[1u8, 0u8], Layout::Integer(IntLayout { signed: false, bytes: 2 }))
+            .unwrap();
+        assert_eq!(true, x.reshape(Layout::Integer(IntLayout { signed: false, bytes: 2 })));
+        assert_eq!(x, y);
+    }
+
+    #[test]
+    fn reshape_with_same_layout_test() {
+        let mut x =
+            Number::with(&[1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
+        let y =
+            Number::with(&[1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
+        assert_eq!(true, x.reshape(Layout::Integer(IntLayout { signed: false, bytes: 1 })));
+        assert_eq!(x, y);
+    }
+
+    #[test]
+    fn reshape_negative_value_test() {
+        let mut x = Number::from(-24i8);
+        let y = Number::from(-24i16);
+        let z = Number::from(-24i128);
+        assert_eq!(x.layout, Layout::Integer(IntLayout { signed: true, bytes: 1 }));
+        assert_eq!(true, x.reshape(Layout::Integer(IntLayout { signed: true, bytes: 2 })));
+        assert_eq!(x, y);
+        assert_eq!(true, x.reshape(Layout::Integer(IntLayout { signed: true, bytes: 16 })));
+        assert_eq!(x, z);
     }
 }
