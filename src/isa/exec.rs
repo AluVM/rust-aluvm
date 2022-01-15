@@ -470,9 +470,7 @@ impl InstructionSet for ArithmeticOp {
                 idx,
                 regs.get(reg, idx).and_then(|val| {
                     let mut n = Number::from(*step);
-                    if !n.reshape(val.layout()) {
-                        unreachable!("reshape target byte length is always greater")
-                    }
+                    debug_assert!(n.reshape(val.layout()), "reshape target byte length is always greater");
                     val.int_add(n, IntFlags { signed: false, wrap: false })
                 }),
             ),
