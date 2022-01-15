@@ -65,7 +65,7 @@ fn main() {
         inc     a16[3]                          ;
         add     5,a16[4]                        ;
         dec     a16[8]                          ;
-        sub     7682,a16[4]                     ;
+        sub     82,a16[4]                       ;
         neg     a64[16]                         ;
         abs     f128[11]                        ;
         and     a32[5],a32[6],a32[5]            ;

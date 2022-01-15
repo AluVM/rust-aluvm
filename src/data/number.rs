@@ -1223,14 +1223,14 @@ impl_number_int_conv!(i128, 16, true);
 
 /// Value for step instructions which can be displayed as a part of operation mnemonic
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
-pub struct Step(#[from] i16);
+pub struct Step(#[from] i8);
 
 impl Step {
     /// Constructs step from a value
-    pub fn with(val: i16) -> Self { Self(val) }
+    pub fn with(val: i8) -> Self { Self(val) }
 
     /// Returns step value
-    pub fn as_i16(self) -> i16 { self.0 }
+    pub fn as_i8(self) -> i8 { self.0 }
 }
 
 impl From<Step> for Number {
