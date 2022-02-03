@@ -23,7 +23,7 @@ use core::ops::{
 };
 use core::str::FromStr;
 
-use amplify::num::{u1024, u256, u512};
+use amplify::num::{i1024, i256, i512, u1024, u256, u512};
 use half::bf16;
 use rustc_apfloat::{ieee, Float, Status};
 
@@ -650,18 +650,17 @@ impl Number {
         if self.len() == 0 {
             return 0;
         }
-        let mut data = self[..].to_vec();
-        let sig_len = if self.layout.is_signed() {
-            data[self.layout.sign_byte() as usize] &= 0x7F;
-            1
-        } else {
-            0
+        let empty_bytes = self[..]
+            .iter()
+            .rev()
+            .take_while(|&&v| if self.is_negative() { v == 0xff } else { v == 0 })
+            .count() as u16;
+        let index = if self.len() > empty_bytes { self.len() - empty_bytes - 1 } else { 0 };
+        let head_bits = match self.is_negative() {
+            true => 8 - self[index].leading_ones(),
+            false => 8 - self[index].leading_zeros(),
         };
-        let mut index = self.len() as usize - 1;
-        while data[index].count_ones() == 0 && index > 0 {
-            index -= 1;
-        }
-        index as u16 * 8 + 8 - data[index].leading_zeros() as u16 + sig_len
+        index * 8 + head_bits as u16 + self.layout.is_signed() as u16
     }
 
     /// Detects if the number value positive (i.e. `>0`) or not.
@@ -675,13 +674,16 @@ impl Number {
         self[self.layout.sign_byte()] & 0x80 == 0
     }
 
+    /// Detects if the number value negative (i.e. `<0`) or not.
+    pub fn is_negative(self) -> bool { !self.is_zero() && !self.is_positive() }
+
     /// Detects if the value is equal to zero
     pub fn is_zero(self) -> bool {
         let mut clean = self.to_clean();
         if self.layout.is_float() {
             clean = clean.without_sign().expect("should not fail when it is float");
         }
-        clean.to_u1024_bytes() == u1024::from(0u8)
+        clean.bytes == [0; 1024]
     }
 
     /// Detects if the value is `NaN`. For integer layouts always false
@@ -814,11 +816,26 @@ impl Number {
         }
     }
 
+    /// Transforms internal value layout.
+    ///
+    /// # Returns
+    /// Transformed number as an optional - or `None` if the operation was impossible without
+    /// discarding bit information and `wrap` is set to false.
+    pub fn reshaped(mut self, to: Layout, wrap: bool) -> Option<Number> {
+        self.reshape(to).then(|| self).or(if wrap { Some(self) } else { None })
+    }
+
     #[doc(hidden)]
     /// Converts the value into `u1024` integer with the bytes corresponding to the internal
     /// representation.
     #[inline]
     pub(super) fn to_u1024_bytes(self) -> u1024 { self.to_clean().into() }
+
+    #[doc(hidden)]
+    /// Converts the value into `u1024` integer with the bytes corresponding to the internal
+    /// representation.
+    #[inline]
+    pub(super) fn to_i1024_bytes(self) -> i1024 { self.to_clean().into() }
 }
 
 /// Errors parsing literal values in AluVM assembly code
@@ -1102,7 +1119,18 @@ macro_rules! impl_number_int_conv {
                     val.min_bit_len() <= $len * 8,
                     "attempt to convert Number into type with lower bit dimension"
                 );
-                $ty::from_le_bytes(<[u8; $len]>::from(val))
+                if $signed {
+                    let mut ret = match val[val.layout.sign_byte()] & 0x80 {
+                        0 => [0u8; $len],
+                        _ => [255u8; $len],
+                    };
+                    for i in 0..val.layout.bytes() {
+                        ret[i as usize] = val[i];
+                    }
+                    $ty::from_le_bytes(ret)
+                } else {
+                    $ty::from_le_bytes(<[u8; $len]>::from(val))
+                }
             }
         }
 
@@ -1220,6 +1248,9 @@ impl_number_int_conv!(i16, 2, true);
 impl_number_int_conv!(i32, 4, true);
 impl_number_int_conv!(i64, 8, true);
 impl_number_int_conv!(i128, 16, true);
+impl_number_int_conv!(i256, 32, true);
+impl_number_int_conv!(i512, 64, true);
+impl_number_int_conv!(i1024, 128, true);
 
 /// Value for step instructions which can be displayed as a part of operation mnemonic
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, From)]
