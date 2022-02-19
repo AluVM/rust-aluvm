@@ -105,6 +105,8 @@ impl Number {
 
 impl Number {
     /// Addition of two integers with configuration flags for overflow and signed format.
+    /// If `signed` flag is inconsistent with Number layout,
+    /// the layout will be discarded before computing.
     ///
     /// # Panics
     ///
@@ -113,26 +115,26 @@ impl Number {
     pub fn int_add(self, rhs: Self, flags: IntFlags) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "adding numbers with different layout");
-        match layout {
-            // Signed and unsigned integers do not differ in their addition, since we use
-            // two's complement system
-            Layout::Integer(IntLayout { .. }) => {
-                let val1 = self.to_u1024_bytes();
-                let val2 = rhs.to_u1024_bytes();
-                let (res, mut overflow) = val1.overflowing_add(val2);
-                let mut res = Number::from(res);
-                overflow |= !res.reshape(layout);
-                if !overflow || flags.wrap {
-                    Some(res)
-                } else {
-                    None
-                }
-            }
-            Layout::Float(_) => panic!("integer addition of float numbers"),
+        match (layout, flags.signed) {
+            (Layout::Integer(IntLayout { bytes, .. }), true) => self
+                .to_i1024_bytes()
+                .checked_add(rhs.to_i1024_bytes())
+                .map(Number::from)
+                .and_then(|n| n.reshaped(Layout::signed(n.layout().bytes()), true))
+                .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then(|| n)),
+            (Layout::Integer(IntLayout { bytes, .. }), false) => self
+                .to_u1024_bytes()
+                .checked_add(rhs.to_u1024_bytes())
+                .map(Number::from)
+                .and_then(|n| n.reshaped(Layout::unsigned(n.layout().bytes()), true))
+                .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then(|| n)),
+            (Layout::Float(_), _) => panic!("integer addition of float numbers"),
         }
     }
 
     /// Subtraction of two integers with configuration flags for overflow and signed format.
+    /// If `signed` flag is inconsistent with Number layout,
+    /// the layout will be discarded before computing.
     ///
     /// # Panics
     ///
@@ -141,26 +143,26 @@ impl Number {
     pub fn int_sub(self, rhs: Self, flags: IntFlags) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "subtracting numbers with different layout");
-        match layout {
-            // Signed and unsigned integers do not differ in their subtraction, since we use
-            // two's complement system
-            Layout::Integer(IntLayout { .. }) => {
-                let val1 = self.to_u1024_bytes();
-                let val2 = rhs.to_u1024_bytes();
-                let (res, mut overflow) = val1.overflowing_sub(val2);
-                let mut res = Number::from(res);
-                overflow |= !res.reshape(layout);
-                if !overflow || flags.wrap {
-                    Some(res)
-                } else {
-                    None
-                }
-            }
-            Layout::Float(_) => panic!("integer subtraction of float numbers"),
+        match (layout, flags.signed) {
+            (Layout::Integer(IntLayout { bytes, .. }), true) => self
+                .to_i1024_bytes()
+                .checked_sub(rhs.to_i1024_bytes())
+                .map(Number::from)
+                .and_then(|n| n.reshaped(Layout::signed(n.layout().bytes()), true))
+                .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then(|| n)),
+            (Layout::Integer(IntLayout { bytes, .. }), false) => self
+                .to_u1024_bytes()
+                .checked_sub(rhs.to_u1024_bytes())
+                .map(Number::from)
+                .and_then(|n| n.reshaped(Layout::unsigned(n.layout().bytes()), true))
+                .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then(|| n)),
+            (Layout::Float(_), _) => panic!("integer subtraction of float numbers"),
         }
     }
 
     /// Multiplication of two integers with configuration flags for overflow and signed format.
+    /// If `signed` flag is inconsistent with Number layout,
+    /// the layout will be discarded before computing.
     ///
     /// # Panics
     ///
@@ -170,33 +172,18 @@ impl Number {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "multiplying numbers with different layout");
         match layout {
-            Layout::Integer(IntLayout { signed: true, .. }) => {
-                let val1 = self.to_u1024_bytes();
-                let val2 = rhs.to_u1024_bytes();
-                let (res, mut overflow) = val1.overflowing_mul(val2);
-                let mut res = Number::from(res);
-                overflow |= !res.reshape(layout);
-                if !overflow || flags.wrap {
-                    Some(res)
-                } else {
-                    None
-                }
-            }
-            Layout::Integer(IntLayout { signed: false, .. }) if layout.bits() <= 128 => {
-                let val1 = i128::try_from(self).expect("integer layout is broken");
-                let val2 = i128::try_from(rhs).expect("integer layout is broken");
-                let (res, mut overflow) = val1.overflowing_mul(val2);
-                let mut res = Number::from(res);
-                overflow |= !res.reshape(layout);
-                if !overflow || flags.wrap {
-                    Some(res)
-                } else {
-                    None
-                }
-            }
-            Layout::Integer(IntLayout { signed: false, .. }) => {
-                todo!("(#9) implement booth multiplication algorithm")
-            }
+            Layout::Integer(IntLayout { signed: true, bytes }) => self
+                .to_i1024_bytes()
+                .checked_mul(rhs.to_i1024_bytes())
+                .map(Number::from)
+                .and_then(|n| n.reshaped(Layout::signed(n.layout().bytes()), true))
+                .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then(|| n)),
+            Layout::Integer(IntLayout { signed: false, bytes }) => self
+                .to_u1024_bytes()
+                .checked_mul(rhs.to_u1024_bytes())
+                .map(Number::from)
+                .and_then(|n| n.reshaped(Layout::unsigned(n.layout().bytes()), true))
+                .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then(|| n)),
             Layout::Float(_) => panic!("integer multiplication of float numbers"),
         }
     }
@@ -562,8 +549,8 @@ mod tests {
         let x = Number::from(1);
         let y = Number::from(-1);
         assert_eq!(true, x > y);
-        let x = Number::from(-128);
-        let y = Number::from(-127);
+        let x = Number::from(-128i8);
+        let y = Number::from(-127i8);
         assert_eq!(true, x < y);
     }
 
@@ -573,19 +560,72 @@ mod tests {
         let y = Number::from(2);
         let z = Number::from(3);
         assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), Some(z));
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), Some(z));
         let x = Number::from(255u8);
         let y = Number::from(1u8);
+        let z = Number::from(0u8);
         assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), None);
-        let x = Number::from(1);
-        let y = Number::from(-1);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: true }), Some(z));
+        let x = Number::from(1i8);
+        let y = Number::from(-1i8);
+        let z = Number::from(0i8);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
+        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), None);
+        let x = Number::from(-2i8);
+        let y = Number::from(-1i8);
+        let z = Number::from(-3i8);
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
+        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), None);
+    }
+
+    #[test]
+    fn int_sub() {
+        let x = Number::from(3u8);
+        let y = Number::from(2u8);
+        let z = Number::from(1u8);
+        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: false }), Some(z));
+        assert_eq!(x.int_sub(y, IntFlags { signed: true, wrap: false }), Some(z));
+        let x = Number::from(0i8);
+        let y = Number::from(42i8);
+        let z = Number::from(-42i8);
+        assert_eq!(x.int_sub(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: false }), None);
+        let x = Number::from(6000);
+        let y = Number::from(5000);
+        let z = Number::from(1000);
+        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: false }), Some(z));
+        let x = Number::from(-10i8);
+        let y = Number::from(-4i8);
+        let z = Number::from(-6i8);
+        let w = Number::from(250u8);
+        assert_eq!(x.int_sub(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: false }), None);
+        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: true }), Some(w), "-6 in unsigned");
+    }
+
+    #[test]
+    fn int_mul() {
+        let x = Number::from(2);
+        let y = Number::from(3);
+        let z = Number::from(6);
+        assert_eq!(x.int_mul(y, IntFlags { signed: false, wrap: false }), Some(z));
+        let x = Number::from(128u8);
+        let y = Number::from(2u8);
+        let z = Number::from(0u8);
+        assert_eq!(x.int_mul(y, IntFlags { signed: false, wrap: false }), None);
+        assert_eq!(x.int_mul(y, IntFlags { signed: false, wrap: true }), Some(z));
+        let x = Number::from(4);
+        let y = Number::from(0);
         let z = Number::from(0);
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), None);
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
+        assert_eq!(x.int_mul(y, IntFlags { signed: true, wrap: false }), Some(z));
         let x = Number::from(-2);
-        let y = Number::from(-1);
-        let z = Number::from(-3);
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), None);
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
+        let y = Number::from(-5);
+        let z = Number::from(10);
+        assert_eq!(x.int_mul(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(x.int_mul(y, IntFlags { signed: true, wrap: true }), Some(z));
     }
 
     #[test]
