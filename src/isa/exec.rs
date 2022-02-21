@@ -662,8 +662,36 @@ impl InstructionSet for BytesOp {
                     regs.set(RegA::A16, Reg32::Reg1, MaybeNumber::none());
                 })
             }
-            BytesOp::Con(reg1, reg2, no, offset, len) => {
-                todo!("(#6) complete bytestring opcode implementation")
+            BytesOp::Con(reg1, reg2, n, offset_dst, len_dst) => {
+                let mut f = || -> Option<()> {
+                    let (s1, s2) = (regs.get_s(*reg1)?, regs.get_s(*reg2)?);
+                    let (r1, r2) = (s1.as_ref(), s2.as_ref());
+                    let n = regs.a16[*n as u8 as usize]?;
+                    let size = ::core::cmp::min(s1.len(), s2.len());
+                    let mut elems = (0..)
+                        .zip(r1.iter().zip(r2).map(|(c1, c2)| c1 == c2))
+                        .take(size as usize)
+                        .skip_while(|(_, c)| !*c);
+                    for _ in 0..n {
+                        while let Some((_, false)) = elems.next() {}
+                        while let Some((_, true)) = elems.next() {}
+                    }
+                    let begin = elems.next();
+                    let end = elems.skip_while(|(_, c)| *c).next();
+                    let (offset, len) = match (begin, end) {
+                        (Some((b, _)), Some((e, _))) => (b, e - b),
+                        (Some((b, _)), None) => (b, size - b),
+                        _ => return None,
+                    };
+                    regs.set(RegA::A16, offset_dst, offset);
+                    regs.set(RegA::A16, len_dst, len);
+                    Some(())
+                };
+                f().unwrap_or_else(|| {
+                    regs.st0 = false;
+                    regs.set(RegA::A16, offset_dst, MaybeNumber::none());
+                    regs.set(RegA::A16, len_dst, MaybeNumber::none());
+                })
             }
             BytesOp::Extr(src, dst, index, offset) => {
                 let mut f = || -> Option<()> {
@@ -1056,6 +1084,80 @@ mod tests {
             .exec(&mut register, lib_site);
         BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg1, Reg16::Reg1).exec(&mut register, lib_site);
         assert_eq!(register.get(RegR::R128, Reg16::Reg1), MaybeNumber::none());
+        assert_eq!(false, register.st0);
+    }
+
+    #[test]
+    fn bytes_con_test() {
+        let mut register = CoreRegs::default();
+        let lib_site = LibSite::default();
+        let s1 = "apple_banana_kiwi".as_bytes();
+        let s2 = "apple@banana@kiwi".as_bytes();
+        BytesOp::Put(1.into(), Box::new(ByteStr::with(s1)), false).exec(&mut register, lib_site);
+        BytesOp::Put(2.into(), Box::new(ByteStr::with(s2)), false).exec(&mut register, lib_site);
+        // apple (0th fragment)
+        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(0).into())
+            .exec(&mut register, lib_site);
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(0u16));
+        assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(5u16));
+        assert_eq!(true, register.st0);
+        // banana (1st fragment)
+        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(1).into())
+            .exec(&mut register, lib_site);
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(6u16));
+        assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(6u16));
+        assert_eq!(true, register.st0);
+        // kiwi (2nd fragment)
+        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(2).into())
+            .exec(&mut register, lib_site);
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(13u16));
+        assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(4u16));
+        assert_eq!(true, register.st0);
+        // no 3rd fragment
+        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(3).into())
+            .exec(&mut register, lib_site);
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
+        assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
+        assert_eq!(false, register.st0);
+
+        let s1 = "aaa".as_bytes();
+        let s2 = "bbb".as_bytes();
+        BytesOp::Put(1.into(), Box::new(ByteStr::with(s1)), false).exec(&mut register, lib_site);
+        BytesOp::Put(2.into(), Box::new(ByteStr::with(s2)), false).exec(&mut register, lib_site);
+        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(0).into())
+            .exec(&mut register, lib_site);
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
+        assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
+        assert_eq!(false, register.st0);
+        ControlFlowOp::Succ.exec(&mut register, lib_site);
+
+        let s1 = [0u8; u16::MAX as usize];
+        let s2 = [0u8; u16::MAX as usize];
+        BytesOp::Put(1.into(), Box::new(ByteStr::with(s1)), false).exec(&mut register, lib_site);
+        BytesOp::Put(2.into(), Box::new(ByteStr::with(s2)), false).exec(&mut register, lib_site);
+        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(0).into())
+            .exec(&mut register, lib_site);
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(0u16));
+        assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(u16::MAX));
+        assert_eq!(true, register.st0);
+        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(1).into())
+            .exec(&mut register, lib_site);
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
+        assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
         assert_eq!(false, register.st0);
     }
 }
