@@ -828,7 +828,12 @@ impl InstructionSet for Secp256k1Op {
             Secp256k1Op::Gen(src, dst) => {
                 let res = regs
                     .get(RegR::R256, src)
-                    .and_then(|src| SecretKey::from_slice(src.as_ref()).ok())
+                    .and_then(|mut src| {
+                        let src = src.as_mut();
+                        // small endian to big endian
+                        src.reverse();
+                        SecretKey::from_slice(src).ok()
+                    })
                     .map(|sk| PublicKey::from_secret_key(SECP256K1, &sk))
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
@@ -849,8 +854,11 @@ impl InstructionSet for Secp256k1Op {
                             })
                             .map(|pk| (scal, pk))
                     })
-                    .and_then(|(scal, mut pk)| {
-                        pk.mul_assign(SECP256K1, scal.as_ref()).map(|_| pk).ok()
+                    .and_then(|(mut scal, mut pk)| {
+                        let scal = scal.as_mut();
+                        // small endian to big endian
+                        scal.reverse();
+                        pk.mul_assign(SECP256K1, scal).map(|_| pk).ok()
                     })
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
@@ -873,7 +881,7 @@ impl InstructionSet for Secp256k1Op {
                             PublicKey::from_slice(&pk2).ok().map(|pk2| (pk1, pk2))
                         })
                     })
-                    .and_then(|(pk1, pk2)| pk1.combine(&pk2).map(|_| pk1).ok())
+                    .and_then(|(pk1, pk2)| pk1.combine(&pk2).ok())
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
                     .map(|pk| Number::from_slice(&pk[1..]));
@@ -942,7 +950,7 @@ impl InstructionSet for ReservedOp {
 mod tests {
     use super::*;
     use crate::data::{Layout, Step};
-    use crate::reg::Reg16;
+    use crate::reg::{Reg16, Reg8, RegBlockAR};
 
     #[test]
     fn cmp_ne_test() {
@@ -968,6 +976,16 @@ mod tests {
             .exec(&mut register, lib_site);
         assert_eq!(true, register.st0);
         CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2)
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+        assert_eq!(MaybeNumber::none(), register.get(RegA::A8, Reg32::Reg5));
+        assert_eq!(MaybeNumber::none(), register.get(RegA::A8, Reg32::Reg6));
+        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg5, Reg32::Reg6)
+            .exec(&mut register, lib_site);
+        assert_eq!(false, register.st0);
+        ControlFlowOp::Succ.exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+        CmpOp::EqA(NoneEqFlag::Equal, RegA::A8, Reg32::Reg5, Reg32::Reg6)
             .exec(&mut register, lib_site);
         assert_eq!(true, register.st0);
     }
@@ -1159,5 +1177,76 @@ mod tests {
         assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
         assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
         assert_eq!(false, register.st0);
+    }
+
+    #[test]
+    #[cfg(feature = "secp256k1")]
+    fn secp256k1_add_test() {
+        let mut register = CoreRegs::default();
+        let lib_site = LibSite::default();
+        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(600u16).into())
+            .exec(&mut register, lib_site);
+        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(1200u16).into())
+            .exec(&mut register, lib_site);
+        PutOp::PutR(RegR::R256, Reg32::Reg3, MaybeNumber::from(1800u16).into())
+            .exec(&mut register, lib_site);
+        Secp256k1Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site);
+        Secp256k1Op::Gen(Reg32::Reg2, Reg8::Reg2).exec(&mut register, lib_site);
+        Secp256k1Op::Add(Reg32::Reg1, Reg8::Reg2).exec(&mut register, lib_site);
+        Secp256k1Op::Gen(Reg32::Reg3, Reg8::Reg3).exec(&mut register, lib_site);
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg2, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+    }
+
+    #[test]
+    #[cfg(feature = "secp256k1")]
+    fn secp256k1_mul_test() {
+        let mut register = CoreRegs::default();
+        let lib_site = LibSite::default();
+        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(2u8).into())
+            .exec(&mut register, lib_site);
+        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(3u8).into())
+            .exec(&mut register, lib_site);
+        PutOp::PutR(RegR::R256, Reg32::Reg3, MaybeNumber::from(6u8).into())
+            .exec(&mut register, lib_site);
+        Secp256k1Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site);
+        Secp256k1Op::Mul(RegBlockAR::R, Reg32::Reg2, Reg32::Reg1, Reg32::Reg2)
+            .exec(&mut register, lib_site);
+        Secp256k1Op::Gen(Reg32::Reg3, Reg8::Reg3).exec(&mut register, lib_site);
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg2, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+    }
+
+    #[test]
+    #[cfg(feature = "secp256k1")]
+    fn secp256k1_neg_test() {
+        let mut register = CoreRegs::default();
+        let lib_site = LibSite::default();
+        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(1u8).into())
+            .exec(&mut register, lib_site);
+        Secp256k1Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site);
+        Secp256k1Op::Neg(Reg32::Reg1, Reg8::Reg2).exec(&mut register, lib_site);
+        Secp256k1Op::Neg(Reg32::Reg2, Reg8::Reg3).exec(&mut register, lib_site);
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg2)
+            .exec(&mut register, lib_site);
+        assert_eq!(false, register.st0);
+        ControlFlowOp::Succ.exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg3)
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
+        PutOp::PutR(RegR::R256, Reg32::Reg5, MaybeNumber::from(5u8).into())
+            .exec(&mut register, lib_site);
+        PutOp::PutR(RegR::R256, Reg32::Reg6, MaybeNumber::from(6u8).into())
+            .exec(&mut register, lib_site);
+        Secp256k1Op::Gen(Reg32::Reg5, Reg8::Reg5).exec(&mut register, lib_site);
+        Secp256k1Op::Gen(Reg32::Reg6, Reg8::Reg6).exec(&mut register, lib_site);
+        // -G + 6G
+        Secp256k1Op::Add(Reg32::Reg2, Reg8::Reg6).exec(&mut register, lib_site);
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg5, Reg32::Reg6)
+            .exec(&mut register, lib_site);
+        assert_eq!(true, register.st0);
     }
 }
