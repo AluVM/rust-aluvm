@@ -23,9 +23,9 @@ use core::ops::{
 };
 use core::str::FromStr;
 
+use amplify::num::apfloat::{ieee, Float, Status, StatusAnd};
 use amplify::num::{i1024, i256, i512, u1024, u256, u512};
 use half::bf16;
-use rustc_apfloat::{ieee, Float, Status};
 
 /// Trait of different number layouts
 pub trait NumberLayout: Copy {
@@ -413,6 +413,18 @@ impl Display for MaybeNumber {
     }
 }
 
+impl FromStr for MaybeNumber {
+    type Err = LiteralParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(if s.contains(&['p'][..]) {
+            ieee::Quad::from_str(s)?.into()
+        } else {
+            Number::from_str(s)?.into()
+        })
+    }
+}
+
 /// Type holding number of any layout
 #[derive(Copy, Clone)]
 pub struct Number {
@@ -695,7 +707,7 @@ impl Number {
             Layout::Float(FloatLayout::IeeeSingle) => ieee::Single::from(self).is_nan(),
             Layout::Float(FloatLayout::IeeeDouble) => ieee::Double::from(self).is_nan(),
             Layout::Float(FloatLayout::IeeeQuad) => ieee::Quad::from(self).is_nan(),
-            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float NaN detection"),
+            Layout::Float(FloatLayout::IeeeOct) => ieee::Oct::from(self).is_nan(),
             Layout::Float(FloatLayout::X87DoubleExt) => {
                 ieee::X87DoubleExtended::from(self).is_nan()
             }
@@ -770,23 +782,29 @@ impl Number {
                     FloatLayout::FloatTapered => unimplemented!("tapered float layout conversion"),
                 };
                 *self = match l2 {
-                    FloatLayout::BFloat16 => {
-                        bf16::from_str(&value).map(Number::from).expect("float layout conversion")
-                    }
+                    FloatLayout::BFloat16 => bf16::from_str(&value)
+                        .ok()
+                        .and_then(|v| MaybeNumber::from(v).0)
+                        .expect("float layout conversion"),
                     FloatLayout::IeeeHalf => ieee::Half::from_str(&value)
-                        .map(Number::from)
+                        .ok()
+                        .and_then(|v| MaybeNumber::from(v).0)
                         .expect("float layout conversion"),
                     FloatLayout::IeeeSingle => ieee::Single::from_str(&value)
-                        .map(Number::from)
+                        .ok()
+                        .and_then(|v| MaybeNumber::from(v).0)
                         .expect("float layout conversion"),
                     FloatLayout::IeeeDouble => ieee::Double::from_str(&value)
-                        .map(Number::from)
+                        .ok()
+                        .and_then(|v| MaybeNumber::from(v).0)
                         .expect("float layout conversion"),
                     FloatLayout::X87DoubleExt => ieee::X87DoubleExtended::from_str(&value)
-                        .map(Number::from)
+                        .ok()
+                        .and_then(|v| MaybeNumber::from(v).0)
                         .expect("float layout conversion"),
                     FloatLayout::IeeeQuad => ieee::Quad::from_str(&value)
-                        .map(Number::from)
+                        .ok()
+                        .and_then(|v| MaybeNumber::from(v).0)
                         .expect("float layout conversion"),
                     FloatLayout::IeeeOct => {
                         unimplemented!("IEEE octal precision layout conversion")
@@ -798,14 +816,12 @@ impl Number {
             (Layout::Float(fl), Layout::Integer(_)) => {
                 let val = match fl {
                     FloatLayout::BFloat16 => todo!("BFloat16 to integer conversion"),
-                    FloatLayout::IeeeHalf => ieee::Half::from(*self).to_i128(128),
-                    FloatLayout::IeeeSingle => ieee::Single::from(*self).to_i128(128),
-                    FloatLayout::IeeeDouble => ieee::Double::from(*self).to_i128(128),
-                    FloatLayout::X87DoubleExt => ieee::X87DoubleExtended::from(*self).to_i128(128),
-                    FloatLayout::IeeeQuad => ieee::Quad::from(*self).to_i128(128),
-                    FloatLayout::IeeeOct => {
-                        unimplemented!("IEEE octal precision layout conversion")
-                    }
+                    FloatLayout::IeeeHalf => ieee::Half::from(*self).to_i256(256),
+                    FloatLayout::IeeeSingle => ieee::Single::from(*self).to_i256(256),
+                    FloatLayout::IeeeDouble => ieee::Double::from(*self).to_i256(256),
+                    FloatLayout::X87DoubleExt => ieee::X87DoubleExtended::from(*self).to_i256(256),
+                    FloatLayout::IeeeQuad => ieee::Quad::from(*self).to_i256(256),
+                    FloatLayout::IeeeOct => ieee::Oct::from(*self).to_i256(256),
                     FloatLayout::FloatTapered => unimplemented!("tapered float layout conversion"),
                 };
                 *self = Number::from(val.value);
@@ -851,7 +867,7 @@ pub enum LiteralParseError {
     /// Error parsing float value
     #[from]
     #[display(Debug)]
-    Float(rustc_apfloat::ParseError),
+    Float(amplify::num::apfloat::ParseError),
 
     /// Unknown literal
     #[display("unknown token `{0}` while parsing AluVM assembly literal")]
@@ -868,8 +884,6 @@ impl FromStr for Number {
             u128::from_str_radix(s, 8)?.into()
         } else if let Some(s) = s.strip_prefix("0b") {
             u128::from_str_radix(s, 2)?.into()
-        } else if s.contains(&['E', 'e'][..]) {
-            ieee::Double::from_str(s)?.into()
         } else if s.starts_with('-') {
             i128::from_str(s)?.into()
         } else {
@@ -1147,39 +1161,6 @@ macro_rules! impl_number_int_conv {
             }
         }
 
-        impl_number_ty_conv!($ty, $len);
-    };
-}
-
-macro_rules! impl_number_float_conv {
-    ($ty:ident, $tys:ident, $len:literal, $layout:ident) => {
-        impl From<Number> for $ty {
-            fn from(val: Number) -> Self {
-                assert!(
-                    val.min_bit_len() <= $len * 8,
-                    "attempt to convert Number into type with lower bit dimension"
-                );
-                $ty::from_bits(val.into())
-            }
-        }
-
-        impl From<&$ty> for Number {
-            fn from(val: &$ty) -> Self {
-                // TODO(#17) Filter negative zeros
-                // TODO(#17) Filter NaN values
-                let mut bytes = [0u8; 1024];
-                let le = val.to_bits().to_le_bytes();
-                bytes[0..le.len()].copy_from_slice(&le[..]);
-                Number { layout: Layout::float(FloatLayout::$layout), bytes }
-            }
-        }
-
-        impl_number_ty_conv!($ty, $len);
-    };
-}
-
-macro_rules! impl_number_ty_conv {
-    ($ty:ident, $len:literal) => {
         impl From<&Number> for $ty {
             fn from(val: &Number) -> Self { $ty::from(*val) }
         }
@@ -1206,6 +1187,48 @@ macro_rules! impl_number_ty_conv {
     };
 }
 
+macro_rules! impl_number_float_conv {
+    ($ty:ident, $tys:ident, $len:literal, $layout:ident) => {
+        impl From<Number> for $ty {
+            fn from(val: Number) -> Self {
+                assert!(
+                    val.min_bit_len() <= $len * 8,
+                    "attempt to convert Number into type with lower bit dimension"
+                );
+                $ty::from_bits(val.into())
+            }
+        }
+
+        impl From<&Number> for $ty {
+            fn from(val: &Number) -> Self { $ty::from(*val) }
+        }
+
+        impl From<$ty> for MaybeNumber {
+            fn from(mut val: $ty) -> Self {
+                if val.is_nan() {
+                    return MaybeNumber::none();
+                }
+                if val == -$ty::ZERO {
+                    val = $ty::ZERO
+                }
+                let mut bytes = [0u8; 1024];
+                let le = val.to_bits().to_le_bytes();
+                bytes[0..le.len()].copy_from_slice(&le[..]);
+                MaybeNumber::some(Number { layout: Layout::float(FloatLayout::$layout), bytes })
+            }
+        }
+    };
+}
+
+impl<T: ::core::convert::Into<MaybeNumber>> From<StatusAnd<T>> for MaybeNumber {
+    fn from(init: StatusAnd<T>) -> Self {
+        match init.status {
+            Status::OK | Status::INEXACT => init.value.into(),
+            _ => MaybeNumber::none(),
+        }
+    }
+}
+
 impl_number_bytes_conv!(1);
 impl_number_bytes_conv!(2);
 impl_number_bytes_conv!(4);
@@ -1229,9 +1252,9 @@ impl_number_int_conv!(u512, 64, false);
 impl_number_int_conv!(u1024, 128, false);
 
 mod _float_impl {
+    use amplify::num::apfloat::ieee::*;
+    use amplify::num::apfloat::Float;
     use half::bf16;
-    use rustc_apfloat::ieee::*;
-    use rustc_apfloat::Float;
 
     use super::*;
 
@@ -1241,6 +1264,7 @@ mod _float_impl {
     impl_number_float_conv!(Double, DoubleS, 8, IeeeDouble);
     impl_number_float_conv!(X87DoubleExtended, X87DoubleExtendedS, 10, X87DoubleExt);
     impl_number_float_conv!(Quad, QuadS, 16, IeeeQuad);
+    impl_number_float_conv!(Oct, OctS, 32, IeeeOct);
 }
 
 impl_number_int_conv!(i8, 1, true);

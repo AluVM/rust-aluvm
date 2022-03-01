@@ -14,9 +14,9 @@ use alloc::string::ToString;
 use alloc::vec::Vec;
 use core::fmt::{self, Debug, Formatter};
 
+use amplify::num::apfloat::ieee;
 use amplify::num::{u1024, u256, u512};
 use half::bf16;
-use rustc_apfloat::ieee;
 
 use super::{Reg32, RegA, RegAFR, RegF, RegR, RegS};
 use crate::data::{ByteStr, MaybeNumber, Number};
@@ -48,8 +48,7 @@ pub struct CoreRegs {
     pub(crate) f64: [Option<ieee::Double>; 32],
     pub(crate) f80: [Option<ieee::X87DoubleExtended>; 32],
     pub(crate) f128: [Option<ieee::Quad>; 32],
-    // TODO(#4) Replace with `ieee::Oct` once it will be implemented
-    pub(crate) f256: [Option<u256>; 32],
+    pub(crate) f256: [Option<ieee::Oct>; 32],
     // TODO(#5) Implement tapered floating point type
     pub(crate) f512: [Option<u512>; 32],
 
@@ -198,40 +197,48 @@ impl CoreRegs {
     pub fn get(&self, reg: impl Into<RegAFR>, index: impl Into<Reg32>) -> MaybeNumber {
         let index = index.into() as usize;
         match reg.into() {
-            RegAFR::A(a) => match a {
-                RegA::A8 => self.a8[index].map(Number::from),
-                RegA::A16 => self.a16[index].map(Number::from),
-                RegA::A32 => self.a32[index].map(Number::from),
-                RegA::A64 => self.a64[index].map(Number::from),
-                RegA::A128 => self.a128[index].map(Number::from),
-                RegA::A256 => self.a256[index].map(Number::from),
-                RegA::A512 => self.a512[index].map(Number::from),
-                RegA::A1024 => self.a1024[index].map(Number::from),
-            },
+            RegAFR::A(a) => {
+                let n = match a {
+                    RegA::A8 => self.a8[index].map(Number::from),
+                    RegA::A16 => self.a16[index].map(Number::from),
+                    RegA::A32 => self.a32[index].map(Number::from),
+                    RegA::A64 => self.a64[index].map(Number::from),
+                    RegA::A128 => self.a128[index].map(Number::from),
+                    RegA::A256 => self.a256[index].map(Number::from),
+                    RegA::A512 => self.a512[index].map(Number::from),
+                    RegA::A1024 => self.a1024[index].map(Number::from),
+                };
+                n.into()
+            }
 
-            RegAFR::R(r) => match r {
-                RegR::R128 => self.r128[index].map(Number::from),
-                RegR::R160 => self.r160[index].map(Number::from),
-                RegR::R256 => self.r256[index].map(Number::from),
-                RegR::R512 => self.r512[index].map(Number::from),
-                RegR::R1024 => self.r1024[index].map(Number::from),
-                RegR::R2048 => self.r2048[index].map(Number::from),
-                RegR::R4096 => self.r4096[index].map(Number::from),
-                RegR::R8192 => self.r8192[index].map(Number::from),
-            },
+            RegAFR::R(r) => {
+                let n = match r {
+                    RegR::R128 => self.r128[index].map(Number::from),
+                    RegR::R160 => self.r160[index].map(Number::from),
+                    RegR::R256 => self.r256[index].map(Number::from),
+                    RegR::R512 => self.r512[index].map(Number::from),
+                    RegR::R1024 => self.r1024[index].map(Number::from),
+                    RegR::R2048 => self.r2048[index].map(Number::from),
+                    RegR::R4096 => self.r4096[index].map(Number::from),
+                    RegR::R8192 => self.r8192[index].map(Number::from),
+                };
+                n.into()
+            }
 
-            RegAFR::F(f) => match f {
-                RegF::F16B => self.f16b[index].map(Number::from),
-                RegF::F16 => self.f16[index].map(Number::from),
-                RegF::F32 => self.f32[index].map(Number::from),
-                RegF::F64 => self.f64[index].map(Number::from),
-                RegF::F80 => self.f80[index].map(Number::from),
-                RegF::F128 => self.f128[index].map(Number::from),
-                RegF::F256 => self.f256[index].map(Number::from),
-                RegF::F512 => self.f512[index].map(Number::from),
-            },
+            RegAFR::F(f) => {
+                let n = match f {
+                    RegF::F16B => self.f16b[index].map(MaybeNumber::from),
+                    RegF::F16 => self.f16[index].map(MaybeNumber::from),
+                    RegF::F32 => self.f32[index].map(MaybeNumber::from),
+                    RegF::F64 => self.f64[index].map(MaybeNumber::from),
+                    RegF::F80 => self.f80[index].map(MaybeNumber::from),
+                    RegF::F128 => self.f128[index].map(MaybeNumber::from),
+                    RegF::F256 => self.f256[index].map(MaybeNumber::from),
+                    RegF::F512 => self.f512[index].map(MaybeNumber::from),
+                };
+                n.unwrap_or_else(MaybeNumber::none)
+            }
         }
-        .into()
     }
 
     /// Returns value from one of `S`-registers

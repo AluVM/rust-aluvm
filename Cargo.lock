@@ -12,18 +12,28 @@ dependencies = [
  "curve25519-dalek",
  "half",
  "paste",
- "rustc_apfloat",
  "secp256k1",
 ]
 
 [[package]]
 name = "amplify"
-version = "3.11.0"
+version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d5c30f75c9422d59b24bd82517352a952b433152adde7fba18f9d7666b7f46f"
+checksum = "47cfa6a69eeb140125a63e4f5ae1156a530f8744ea1d35aa1b8b5613e4d8b41d"
 dependencies = [
+ "amplify_apfloat",
  "amplify_derive",
  "amplify_num",
+]
+
+[[package]]
+name = "amplify_apfloat"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97e9b0ef5339382b9137bf53e1a5551c192cdcc38b7cba83f9017efb7619a7a1"
+dependencies = [
+ "amplify_num",
+ "bitflags",
 ]
 
 [[package]]
@@ -40,9 +50,9 @@ dependencies = [
 
 [[package]]
 name = "amplify_num"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7079815b62afb706ad2e8aa9fbb0df1229f74debf4818ecb1544748dea93ee5c"
+checksum = "8d987f94e7127a80238f8f467b756d248bb72345dff59673ffe3fa213b15e503"
 
 [[package]]
 name = "amplify_syn"
@@ -313,15 +323,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "678054eb77286b51581ba43620cc911abf02758c91f93f479767aed0f90458b2"
 dependencies = [
  "rand_core 0.3.1",
-]
-
-[[package]]
-name = "rustc_apfloat"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ded734d8859ecf917c1f743bca773c8fb9793e5fb6ab61a96e3d75d62a50512"
-dependencies = [
- "bitflags",
 ]
 
 [[package]]

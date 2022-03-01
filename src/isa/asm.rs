@@ -148,31 +148,17 @@ macro_rules! instr {
 
     (put $val:literal, $reg:ident[$idx:literal]) => {{
         let s = stringify!($val);
-        let mut number = s
-            .parse::<Number>()
-            .or_else(|_| s.parse::<::rustc_apfloat::ieee::Quad>().map(Number::from))
-            .expect(&format!("invalid number literal `{}`", s));
+        let mut num = s.parse::<MaybeNumber>().expect(&format!("invalid number literal `{}`", s));
         let reg = _reg_ty!(Reg, $reg);
-        number.reshape(reg.layout());
-        Instr::Put(_reg_sfx!(PutOp, Put, $reg)(
-            reg,
-            _reg_idx!($idx),
-            Box::new(MaybeNumber::from(number)),
-        ))
+        num.reshape(reg.layout());
+        Instr::Put(_reg_sfx!(PutOp, Put, $reg)(reg, _reg_idx!($idx), Box::new(num)))
     }};
     (putif $val:literal, $reg:ident[$idx:literal]) => {{
         let s = stringify!($val);
-        let mut number = s
-            .parse::<Number>()
-            .or_else(|_| s.parse::<::rustc_apfloat::ieee::Quad>().map(Number::from))
-            .expect(&format!("invalid number literal `{}`", s));
+        let mut num = s.parse::<MaybeNumber>().expect(&format!("invalid number literal `{}`", s));
         let reg = _reg_ty!(Reg, $reg);
-        number.reshape(reg.layout());
-        Instr::Put(_reg_sfx!(PutOp, PutIf, $reg)(
-            reg,
-            _reg_idx!($idx),
-            Box::new(MaybeNumber::from(number)),
-        ))
+        num.reshape(reg.layout());
+        Instr::Put(_reg_sfx!(PutOp, PutIf, $reg)(reg, _reg_idx!($idx), Box::new(num)))
     }};
 
     (swp $reg1:ident[$idx1:literal], $reg2:ident[$idx2:literal]) => {{
