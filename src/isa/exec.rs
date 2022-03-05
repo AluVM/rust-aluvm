@@ -419,9 +419,9 @@ impl InstructionSet for ArithmeticOp {
                 regs.set(reg, srcdst, res)
             }
             ArithmeticOp::AddF(flags, reg, src, srcdst) => {
-                let res = regs
+                let res: Option<Number> = regs
                     .get_both(reg, src, reg, srcdst)
-                    .and_then(|(val1, val2)| val1.float_add(val2, *flags));
+                    .and_then(|(val1, val2)| val1.float_add(val2, *flags).into());
                 regs.set(reg, srcdst, res)
             }
             ArithmeticOp::SubA(flags, reg, src, srcdst) => {
@@ -431,9 +431,9 @@ impl InstructionSet for ArithmeticOp {
                 regs.set(reg, srcdst, res)
             }
             ArithmeticOp::SubF(flags, reg, src, srcdst) => {
-                let res = regs
+                let res: Option<Number> = regs
                     .get_both(reg, src, reg, srcdst)
-                    .and_then(|(val1, val2)| val1.float_sub(val2, *flags));
+                    .and_then(|(val1, val2)| val1.float_sub(val2, *flags).into());
                 regs.set(reg, srcdst, res)
             }
             ArithmeticOp::MulA(flags, reg, src, srcdst) => {
@@ -443,9 +443,9 @@ impl InstructionSet for ArithmeticOp {
                 regs.set(reg, srcdst, res)
             }
             ArithmeticOp::MulF(flags, reg, src, srcdst) => {
-                let res = regs
+                let res: Option<Number> = regs
                     .get_both(reg, src, reg, srcdst)
-                    .and_then(|(val1, val2)| val1.float_mul(val2, *flags));
+                    .and_then(|(val1, val2)| val1.float_mul(val2, *flags).into());
                 regs.set(reg, srcdst, res)
             }
             ArithmeticOp::DivA(flags, reg, src, srcdst) => {
@@ -455,9 +455,9 @@ impl InstructionSet for ArithmeticOp {
                 regs.set(reg, srcdst, res)
             }
             ArithmeticOp::DivF(flags, reg, src, srcdst) => {
-                let res = regs
+                let res: Option<Number> = regs
                     .get_both(reg, src, reg, srcdst)
-                    .and_then(|(val1, val2)| val1.float_div(val2, *flags));
+                    .and_then(|(val1, val2)| val1.float_div(val2, *flags).into());
                 regs.set(reg, srcdst, res) && !res.map(Number::is_nan).unwrap_or(false)
             }
             ArithmeticOp::Rem(reg1, idx1, reg2, idx2) => {

@@ -16,8 +16,8 @@ use alloc::string::String;
 use core::fmt::{self, Display, Formatter, Write};
 use core::str::FromStr;
 
+use amplify::num::apfloat::Round;
 use amplify::num::{u1, u2, u3};
-use rustc_apfloat::Round;
 
 /// Marker trait for flag types
 pub trait Flag: FromStr<Err = ParseFlagError> + Default {}

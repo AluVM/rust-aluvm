@@ -13,10 +13,11 @@ use core::cmp::Ordering;
 use core::convert::TryFrom;
 use core::ops::{Div, Neg, Rem};
 
+use amplify::num::apfloat::{ieee, Float};
 use half::bf16;
-use rustc_apfloat::{ieee, Float, Status};
 
 use super::{FloatLayout, IntLayout, Layout, Number, NumberLayout};
+use crate::data::MaybeNumber;
 use crate::isa::{IntFlags, RoundingFlag};
 
 impl PartialEq for Number {
@@ -241,49 +242,31 @@ impl Number {
     ///
     /// - if applied to float number layouts
     /// - if numbers in arguments has different layout.
-    pub fn float_add(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
+    pub fn float_add(self, rhs: Self, flag: RoundingFlag) -> MaybeNumber {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "adding numbers with different layout");
-        let (val, status) = match layout {
-            Layout::Float(FloatLayout::BFloat16) => todo!("(#12) addition of BF16 floats"),
+        match layout {
+            Layout::Float(FloatLayout::BFloat16) => (bf16::from(self) + bf16::from(rhs)).into(),
             Layout::Float(FloatLayout::IeeeHalf) => {
-                let val1 = ieee::Half::from(self);
-                let val2 = ieee::Half::from(rhs);
-                let res = val1.add_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Half::from(self).add_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeSingle) => {
-                let val1 = ieee::Single::from(self);
-                let val2 = ieee::Single::from(rhs);
-                let res = val1.add_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Single::from(self).add_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeDouble) => {
-                let val1 = ieee::Double::from(self);
-                let val2 = ieee::Double::from(rhs);
-                let res = val1.add_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Double::from(self).add_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeQuad) => {
-                let val1 = ieee::Quad::from(self);
-                let val2 = ieee::Quad::from(rhs);
-                let res = val1.add_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Quad::from(self).add_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::X87DoubleExt) => {
-                let val1 = ieee::X87DoubleExtended::from(self);
-                let val2 = ieee::X87DoubleExtended::from(rhs);
-                let res = val1.add_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::X87DoubleExtended::from(self).add_r(rhs.into(), flag.into()).into()
             }
-            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float addition"),
+            Layout::Float(FloatLayout::IeeeOct) => {
+                ieee::Oct::from(self).add_r(rhs.into(), flag.into()).into()
+            }
             Layout::Float(FloatLayout::FloatTapered) => todo!("(#5) tapered float addition"),
             Layout::Integer(_) => panic!("float addition of integer numbers"),
-        };
-        match (val.is_nan(), status) {
-            (true, _) => None,
-            (false, Status::OVERFLOW | Status::INEXACT) => None,
-            _ => Some(val),
         }
     }
 
@@ -293,49 +276,31 @@ impl Number {
     ///
     /// - if applied to float number layouts
     /// - if numbers in arguments has different layout.
-    pub fn float_sub(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
+    pub fn float_sub(self, rhs: Self, flag: RoundingFlag) -> MaybeNumber {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "subtracting numbers with different layout");
-        let (val, status) = match layout {
-            Layout::Float(FloatLayout::BFloat16) => todo!("(#12) subtraction of BF16 floats"),
+        match layout {
+            Layout::Float(FloatLayout::BFloat16) => (bf16::from(self) - bf16::from(rhs)).into(),
             Layout::Float(FloatLayout::IeeeHalf) => {
-                let val1 = ieee::Half::from(self);
-                let val2 = ieee::Half::from(rhs);
-                let res = val1.sub_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Half::from(self).sub_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeSingle) => {
-                let val1 = ieee::Single::from(self);
-                let val2 = ieee::Single::from(rhs);
-                let res = val1.sub_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Single::from(self).sub_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeDouble) => {
-                let val1 = ieee::Double::from(self);
-                let val2 = ieee::Double::from(rhs);
-                let res = val1.sub_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Double::from(self).sub_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeQuad) => {
-                let val1 = ieee::Quad::from(self);
-                let val2 = ieee::Quad::from(rhs);
-                let res = val1.sub_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Quad::from(self).sub_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::X87DoubleExt) => {
-                let val1 = ieee::X87DoubleExtended::from(self);
-                let val2 = ieee::X87DoubleExtended::from(rhs);
-                let res = val1.sub_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::X87DoubleExtended::from(self).sub_r(rhs.into(), flag.into()).into()
             }
-            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float subtraction"),
+            Layout::Float(FloatLayout::IeeeOct) => {
+                ieee::Oct::from(self).sub_r(rhs.into(), flag.into()).into()
+            }
             Layout::Float(FloatLayout::FloatTapered) => todo!("(#5) tapered float subtraction"),
             Layout::Integer(_) => panic!("float subtraction of integer numbers"),
-        };
-        match (val.is_nan(), status) {
-            (true, _) => None,
-            (false, Status::OVERFLOW | Status::INEXACT) => None,
-            _ => Some(val),
         }
     }
 
@@ -345,49 +310,31 @@ impl Number {
     ///
     /// - if applied to float number layouts
     /// - if numbers in arguments has different layout.
-    pub fn float_mul(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
+    pub fn float_mul(self, rhs: Self, flag: RoundingFlag) -> MaybeNumber {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "multiplying numbers with different layout");
-        let (val, status) = match layout {
-            Layout::Float(FloatLayout::BFloat16) => todo!("(#12) multiplication of BF16 floats"),
+        match layout {
+            Layout::Float(FloatLayout::BFloat16) => (bf16::from(self) * bf16::from(rhs)).into(),
             Layout::Float(FloatLayout::IeeeHalf) => {
-                let val1 = ieee::Half::from(self);
-                let val2 = ieee::Half::from(rhs);
-                let res = val1.mul_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Half::from(self).mul_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeSingle) => {
-                let val1 = ieee::Single::from(self);
-                let val2 = ieee::Single::from(rhs);
-                let res = val1.mul_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Single::from(self).mul_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeDouble) => {
-                let val1 = ieee::Double::from(self);
-                let val2 = ieee::Double::from(rhs);
-                let res = val1.mul_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Double::from(self).mul_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeQuad) => {
-                let val1 = ieee::Quad::from(self);
-                let val2 = ieee::Quad::from(rhs);
-                let res = val1.mul_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Quad::from(self).mul_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::X87DoubleExt) => {
-                let val1 = ieee::X87DoubleExtended::from(self);
-                let val2 = ieee::X87DoubleExtended::from(rhs);
-                let res = val1.mul_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::X87DoubleExtended::from(self).mul_r(rhs.into(), flag.into()).into()
             }
-            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float multiplication"),
+            Layout::Float(FloatLayout::IeeeOct) => {
+                ieee::Oct::from(self).mul_r(rhs.into(), flag.into()).into()
+            }
             Layout::Float(FloatLayout::FloatTapered) => todo!("(#5) tapered float multiplication"),
             Layout::Integer(_) => panic!("float multiplication of integer numbers"),
-        };
-        match (val.is_nan(), status) {
-            (true, _) => None,
-            (false, Status::OVERFLOW | Status::INEXACT) => None,
-            _ => Some(val),
         }
     }
 
@@ -397,51 +344,31 @@ impl Number {
     ///
     /// - if applied to float number layouts
     /// - if numbers in arguments has different layout.
-    pub fn float_div(self, rhs: Self, flag: RoundingFlag) -> Option<Number> {
+    pub fn float_div(self, rhs: Self, flag: RoundingFlag) -> MaybeNumber {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "dividing numbers with different layout");
-        let (val, status) = match layout {
-            Layout::Float(FloatLayout::BFloat16) => todo!("(#12) division of BF16 floats"),
+        match layout {
+            Layout::Float(FloatLayout::BFloat16) => (bf16::from(self) / bf16::from(rhs)).into(),
             Layout::Float(FloatLayout::IeeeHalf) => {
-                let val1 = ieee::Half::from(self);
-                let val2 = ieee::Half::from(rhs);
-                let res = val1.div_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Half::from(self).div_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeSingle) => {
-                let val1 = ieee::Single::from(self);
-                let val2 = ieee::Single::from(rhs);
-                let res = val1.div_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Single::from(self).div_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeDouble) => {
-                let val1 = ieee::Double::from(self);
-                let val2 = ieee::Double::from(rhs);
-                let res = val1.div_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Double::from(self).div_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::IeeeQuad) => {
-                let val1 = ieee::Quad::from(self);
-                let val2 = ieee::Quad::from(rhs);
-                let res = val1.div_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::Quad::from(self).div_r(rhs.into(), flag.into()).into()
             }
             Layout::Float(FloatLayout::X87DoubleExt) => {
-                let val1 = ieee::X87DoubleExtended::from(self);
-                let val2 = ieee::X87DoubleExtended::from(rhs);
-                let res = val1.div_r(val2, flag.into());
-                (Number::from(res.value), res.status)
+                ieee::X87DoubleExtended::from(self).div_r(rhs.into(), flag.into()).into()
             }
-            Layout::Float(FloatLayout::IeeeOct) => todo!("(#4) 512-bit float division"),
+            Layout::Float(FloatLayout::IeeeOct) => {
+                ieee::Oct::from(self).div_r(rhs.into(), flag.into()).into()
+            }
             Layout::Float(FloatLayout::FloatTapered) => todo!("(#5) tapered float division"),
             Layout::Integer(_) => panic!("float division of integer numbers"),
-        };
-        match (val.is_nan(), status) {
-            (true, _) => None,
-            (false, Status::DIV_BY_ZERO) => None,
-            (false, Status::INVALID_OP) => None,
-            (false, Status::OVERFLOW | Status::INEXACT) => None,
-            _ => Some(val),
         }
     }
 
@@ -536,6 +463,8 @@ impl Number {
 
 #[cfg(test)]
 mod tests {
+    use core::str::FromStr;
+
     use super::*;
 
     #[test]
@@ -600,10 +529,12 @@ mod tests {
         let x = Number::from(-10i8);
         let y = Number::from(-4i8);
         let z = Number::from(-6i8);
-        let w = Number::from(250u8);
+        let w = Number::from(6u8);
         assert_eq!(x.int_sub(y, IntFlags { signed: true, wrap: false }), Some(z));
         assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: false }), None);
-        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: true }), Some(w), "-6 in unsigned");
+        // 246 - 252
+        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: true }), None);
+        assert_eq!(y.int_sub(x, IntFlags { signed: false, wrap: true }), Some(w));
     }
 
     #[test]
@@ -639,13 +570,13 @@ mod tests {
         let y = Number::from(1i8);
         assert_eq!(x.applying_sign(false).unwrap(), y);
 
-        let x = Number::from(bf16::from_f32(7.0_f32));
-        let y = Number::from(bf16::from_f32(-7.0_f32));
+        let x = MaybeNumber::from(bf16::from_f32(7.0_f32)).unwrap();
+        let y = MaybeNumber::from(bf16::from_f32(-7.0_f32)).unwrap();
         assert_ne!(x, y);
         assert_eq!(x.applying_sign(true).unwrap(), y);
 
-        let x = Number::from(bf16::from_f32(7.0_f32));
-        let y = Number::from(bf16::from_f32(7.0_f32));
+        let x = MaybeNumber::from(bf16::from_f32(7.0_f32)).unwrap();
+        let y = MaybeNumber::from(bf16::from_f32(7.0_f32)).unwrap();
         assert_eq!(x, y);
         assert_eq!(x.applying_sign(false).unwrap(), y);
     }
@@ -678,8 +609,8 @@ mod tests {
         assert_eq!(x.neg().unwrap(), y);
         assert_eq!(x, y.neg().unwrap());
 
-        let x = Number::from(bf16::from_f32(7.0_f32));
-        let y = Number::from(bf16::from_f32(-7.0_f32));
+        let x = MaybeNumber::from(bf16::from_f32(7.0_f32)).unwrap();
+        let y = MaybeNumber::from(bf16::from_f32(-7.0_f32)).unwrap();
         assert_ne!(x, y);
         assert_eq!(x.neg().unwrap(), y);
         assert_eq!(x, y.neg().unwrap());
@@ -691,8 +622,8 @@ mod tests {
         let y = Number::from(-1i8);
         assert_eq!(x, y.abs().unwrap());
 
-        let x = Number::from(bf16::from_f32(12.3_f32));
-        let y = Number::from(bf16::from_f32(-12.3_f32));
+        let x = MaybeNumber::from(bf16::from_f32(12.3_f32)).unwrap();
+        let y = MaybeNumber::from(bf16::from_f32(-12.3_f32)).unwrap();
         assert_eq!(x, y.abs().unwrap());
 
         let x = Number::from(-128i8);
@@ -701,5 +632,102 @@ mod tests {
         let x = Number::from(-128i16);
         let y = Number::from(128i16);
         assert_eq!(x.abs().unwrap(), y);
+    }
+
+    #[test]
+    fn float_add() {
+        let x = MaybeNumber::from(ieee::Single::from_str("0x1p+0").unwrap()).unwrap();
+        let y = MaybeNumber::from(ieee::Single::from_str("0x1p+0").unwrap()).unwrap();
+        let z = MaybeNumber::from(ieee::Single::from_str("0x1p+1").unwrap());
+        assert_eq!(x.float_add(y, RoundingFlag::Ceil), z);
+
+        let x = MaybeNumber::from(ieee::Single::from_str("0x1p+0").unwrap()).unwrap();
+        let y = MaybeNumber::from(ieee::Single::ZERO);
+        assert_eq!(x.float_add((-x).unwrap(), RoundingFlag::Ceil), y);
+
+        // overflow
+        let x = MaybeNumber::from(ieee::Single::largest()).unwrap();
+        let y = MaybeNumber::from(ieee::Single::from_str("0x1p+0").unwrap()).unwrap();
+        assert_eq!(x.float_add(y, RoundingFlag::Ceil), MaybeNumber::none());
+    }
+
+    #[test]
+    fn float_sub() {
+        let x = MaybeNumber::from(ieee::Oct::from_str("0x1p+1").unwrap()).unwrap();
+        let y = MaybeNumber::from(ieee::Oct::from_str("0x1p+0").unwrap()).unwrap();
+        let z = MaybeNumber::from(ieee::Oct::from_str("0x1p+0").unwrap());
+        assert_eq!(x.float_sub(y, RoundingFlag::Ceil), z);
+
+        // INF - (-INF) = INF
+        let x = MaybeNumber::from(ieee::Single::INFINITY).unwrap();
+        assert_eq!(x.float_sub((-x).unwrap(), RoundingFlag::Ceil), MaybeNumber::from(x));
+
+        // INF - INF = NaN
+        let x = MaybeNumber::from(ieee::Single::INFINITY).unwrap();
+        assert_eq!(x.float_sub(x, RoundingFlag::Ceil), MaybeNumber::none());
+    }
+
+    #[test]
+    fn float_mul() {
+        let x = MaybeNumber::from(ieee::Single::from_str("0x1p+1").unwrap()).unwrap();
+        let y = MaybeNumber::from(ieee::Single::from_str("0x1p+2").unwrap()).unwrap();
+        let z = MaybeNumber::from(ieee::Single::from_str("0x1p+3").unwrap());
+        assert_eq!(x.float_mul(y, RoundingFlag::Ceil), z);
+    }
+
+    #[test]
+    fn float_div() {
+        let x = MaybeNumber::from(ieee::Single::from_str("0x1p+0").unwrap()).unwrap();
+        let y = MaybeNumber::from(ieee::Single::from_str("0x2p+0").unwrap()).unwrap();
+        let z = MaybeNumber::from(ieee::Single::from_str("0x1p-1").unwrap());
+        assert_eq!(x.float_div(y, RoundingFlag::Ceil), z);
+        let x = MaybeNumber::from(ieee::Single::from_str("0x1p+0").unwrap()).unwrap();
+        let y = MaybeNumber::from(ieee::Single::ZERO).unwrap();
+        assert_eq!(x.float_div(y, RoundingFlag::Ceil), MaybeNumber::none());
+    }
+
+    #[test]
+    fn bf16_add() {
+        let x = MaybeNumber::from(bf16::from_f32(0.5)).unwrap();
+        let y = MaybeNumber::from(bf16::from_f32(1.)).unwrap();
+        let z = MaybeNumber::from(bf16::from_f32(1.5));
+        assert_eq!(x.float_add(y, RoundingFlag::Ceil), z);
+
+        let x = MaybeNumber::from(bf16::from_f32(0.5)).unwrap();
+        let y = MaybeNumber::from(bf16::ZERO);
+        assert_eq!(x.float_add((-x).unwrap(), RoundingFlag::Ceil), y);
+
+        // will not overflow
+        let x = MaybeNumber::from(bf16::MAX).unwrap();
+        let y = MaybeNumber::from(bf16::from_f32(1.)).unwrap();
+        assert_eq!(x.float_add(y, RoundingFlag::Ceil), MaybeNumber::from(x));
+    }
+
+    #[test]
+    fn bf16_sub() {
+        let x = MaybeNumber::from(bf16::from_f32(0.5)).unwrap();
+        let y = MaybeNumber::from(bf16::from_f32(1.)).unwrap();
+        let z = MaybeNumber::from(bf16::from_f32(-0.5));
+        assert_eq!(x.float_sub(y, RoundingFlag::Ceil), z);
+    }
+
+    #[test]
+    fn bf16_mul() {
+        let x = MaybeNumber::from(bf16::from_f32(2.5)).unwrap();
+        let y = MaybeNumber::from(bf16::from_f32(2.)).unwrap();
+        let z = MaybeNumber::from(bf16::from_f32(5.0));
+        assert_eq!(x.float_mul(y, RoundingFlag::Ceil), z);
+    }
+
+    #[test]
+    fn bf16_div() {
+        let x = MaybeNumber::from(bf16::from_f32(6.)).unwrap();
+        let y = MaybeNumber::from(bf16::from_f32(2.)).unwrap();
+        let z = MaybeNumber::from(bf16::from_f32(3.));
+        assert_eq!(x.float_div(y, RoundingFlag::Ceil), z);
+        let x = MaybeNumber::from(bf16::from_f32(6.)).unwrap();
+        let y = MaybeNumber::from(bf16::ZERO).unwrap();
+        let z = MaybeNumber::from(bf16::INFINITY);
+        assert_eq!(x.float_div(y, RoundingFlag::Ceil), z);
     }
 }
