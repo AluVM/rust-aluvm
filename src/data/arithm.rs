@@ -11,7 +11,7 @@
 
 use core::cmp::Ordering;
 use core::convert::TryFrom;
-use core::ops::{Div, Neg, Rem};
+use core::ops::{Neg, Rem};
 
 use amplify::num::apfloat::{ieee, Float};
 use half::bf16;
@@ -172,24 +172,26 @@ impl Number {
     pub fn int_mul(self, rhs: Self, flags: IntFlags) -> Option<Number> {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "multiplying numbers with different layout");
-        match layout {
-            Layout::Integer(IntLayout { signed: true, bytes }) => self
+        match (layout, flags.signed) {
+            (Layout::Integer(IntLayout { bytes, .. }), true) => self
                 .to_i1024_bytes()
                 .checked_mul(rhs.to_i1024_bytes())
                 .map(Number::from)
                 .and_then(|n| n.reshaped(Layout::signed(n.layout().bytes()), true))
                 .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then(|| n)),
-            Layout::Integer(IntLayout { signed: false, bytes }) => self
+            (Layout::Integer(IntLayout { bytes, .. }), false) => self
                 .to_u1024_bytes()
                 .checked_mul(rhs.to_u1024_bytes())
                 .map(Number::from)
                 .and_then(|n| n.reshaped(Layout::unsigned(n.layout().bytes()), true))
                 .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then(|| n)),
-            Layout::Float(_) => panic!("integer multiplication of float numbers"),
+            (Layout::Float(_), _) => panic!("integer multiplication of float numbers"),
         }
     }
 
-    /// Division of two integers with configuration flags for overflow and signed format.
+    /// Division of two integers with configuration flags for Euclidean division and signed format.
+    /// If `signed` flag is inconsistent with Number layout,
+    /// the layout will be discarded before computing.
     ///
     /// # Panics
     ///
@@ -199,41 +201,31 @@ impl Number {
         let layout = self.layout();
         assert_eq!(layout, rhs.layout(), "dividing numbers with different layout");
 
-        if self.is_zero() && rhs.is_zero() {
+        if rhs.is_zero() {
             return None;
         }
-        if rhs.is_zero() {
-            if flags.wrap {
-                return Some(Number::zero(layout));
-            } else {
-                return None;
-            }
+
+        if self.is_zero() {
+            return Some(Number::zero(layout));
         }
 
-        if flags.wrap {
-            todo!("(#10) euclidean division in amplify crate")
+        match (layout, flags.signed) {
+            (Layout::Integer(IntLayout { bytes, .. }), true) => {
+                let res = match flags.wrap {
+                    true => self.to_i1024_bytes().checked_div_euclid(rhs.to_i1024_bytes()),
+                    false => self.to_i1024_bytes().checked_div(rhs.to_i1024_bytes()),
+                };
+                res.map(Number::from)
+                    .and_then(|n| n.reshaped(Layout::signed(n.layout().bytes()), true))
+                    .and_then(|n| n.reshaped(Layout::signed(bytes), false))
+            }
+            (Layout::Integer(IntLayout { bytes, .. }), false) => self
+                .to_u1024_bytes()
+                .checked_div(rhs.to_u1024_bytes())
+                .map(Number::from)
+                .and_then(|n| n.reshaped(Layout::signed(bytes), false)),
+            (Layout::Float(_), _) => panic!("integer division of float numbers"),
         }
-
-        Some(match layout {
-            Layout::Integer(IntLayout { signed: true, .. }) => {
-                let val1 = self.to_u1024_bytes();
-                let val2 = rhs.to_u1024_bytes();
-                let mut res = Number::from(val1.div(val2));
-                debug_assert!(res.reshape(layout));
-                res
-            }
-            Layout::Integer(IntLayout { signed: false, .. }) if layout.bits() <= 128 => {
-                let val1 = i128::try_from(self).expect("integer layout is broken");
-                let val2 = i128::try_from(rhs).expect("integer layout is broken");
-                let mut res = Number::from(val1.div(val2));
-                debug_assert!(res.reshape(layout));
-                res
-            }
-            Layout::Integer(IntLayout { signed: false, .. }) => {
-                todo!("(#11) implement large signed number division algorithm")
-            }
-            Layout::Float(_) => panic!("integer division of float numbers"),
-        })
     }
 
     /// Addition of two floats with configuration flags for rounding.
@@ -557,6 +549,35 @@ mod tests {
         let z = Number::from(10);
         assert_eq!(x.int_mul(y, IntFlags { signed: true, wrap: false }), Some(z));
         assert_eq!(x.int_mul(y, IntFlags { signed: true, wrap: true }), Some(z));
+    }
+
+    #[test]
+    fn int_div() {
+        let x = Number::from(6);
+        let y = Number::from(3);
+        let z = Number::from(2);
+        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: false }), Some(z));
+        let x = Number::from(7);
+        let y = Number::from(2);
+        let z = Number::from(3);
+        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: false }), Some(z));
+        let x = Number::from(4u8);
+        let y = Number::from(0u8);
+        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: false }), None);
+        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: true }), None);
+        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: false }), None);
+        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: true }), None);
+        let x = Number::from(-7i8);
+        let y = Number::from(4i8);
+        let z = Number::from(-1i8);
+        let w = Number::from(-2i8);
+        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: true }), Some(w));
+        let x = Number::from(-128i8);
+        let y = Number::from(-1i8);
+        let z = Number::from(0i8);
+        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: false }), None);
+        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: true }), Some(z));
     }
 
     #[test]
