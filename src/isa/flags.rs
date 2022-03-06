@@ -371,8 +371,9 @@ pub struct IntFlags {
     /// 8.
     pub signed: bool,
 
-    /// Whether overflow must result in modulo-based wrapping (`true`) or set the destination into
-    /// `None` state (`false`).
+    /// With addition / subtraction / multiplication, indicates whether overflow must result in
+    /// modulo-based wrapping (`true`) or set the destination into `None` state (`false`).
+    /// With division, `true` means that Euclidean division should be performed.
     pub wrap: bool,
 }
 

@@ -509,10 +509,10 @@ impl InstructionSet for BitwiseOp {
             }
             BitwiseOp::ShrA(flag, reg1, shift, reg2, srcdst) => {
                 let res = regs.get_both(reg1, shift, reg2, srcdst).map(|(shift, val)| {
-                    if *flag == SignFlag::Unsigned {
-                        val.shr(shift)
+                    if *flag == SignFlag::Signed {
+                        val.into_signed().shr(shift)
                     } else {
-                        val.shr_signed(shift)
+                        val.shr(shift)
                     }
                 });
                 regs.set(reg2, srcdst, res);

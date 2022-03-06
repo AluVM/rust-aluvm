@@ -104,6 +104,15 @@ impl Layout {
         self
     }
 
+    /// Converts signed integer layout into unsigned; does nothing for float layouts
+    #[inline]
+    pub fn into_unsigned(mut self) -> Layout {
+        if let Layout::Integer(il) = &mut self {
+            *il = il.into_unsigned()
+        }
+        self
+    }
+
     /// Updates integer layout (if used) to match signed/unsigned format of some other layout.
     /// Does nothing if any of the layouts are not integer layouts or `other` layout is unsigned.
     #[inline]
@@ -179,6 +188,13 @@ impl IntLayout {
     #[inline]
     pub fn into_signed(mut self) -> IntLayout {
         self.signed = true;
+        self
+    }
+
+    /// Converts signed integer layout into unsigned
+    #[inline]
+    pub fn into_unsigned(mut self) -> IntLayout {
+        self.signed = false;
         self
     }
 
@@ -742,6 +758,24 @@ impl Number {
     #[inline]
     pub fn to_clean(mut self) -> Self {
         self.clean();
+        self
+    }
+
+    /// Converts unsigned integer number into signed; does nothing for float numbers
+    #[inline]
+    pub fn into_signed(mut self) -> Number {
+        if let Layout::Integer(il) = &mut self.layout {
+            *il = il.into_signed()
+        }
+        self
+    }
+
+    /// Converts signed integer number into unsigned; does nothing for float numbers
+    #[inline]
+    pub fn into_unsigned(mut self) -> Number {
+        if let Layout::Integer(il) = &mut self.layout {
+            *il = il.into_unsigned()
+        }
         self
     }
 
@@ -1416,5 +1450,16 @@ mod tests {
         assert_eq!(x, y);
         assert_eq!(true, x.reshape(Layout::Integer(IntLayout { signed: true, bytes: 16 })));
         assert_eq!(x, z);
+    }
+
+    #[test]
+    fn take_sign_test() {
+        let x = Number::from(-1i8);
+        let y = Number::from(255u8);
+        let z = MaybeNumber::from(ieee::Single::SMALLEST).unwrap();
+        assert_eq!(x.into_unsigned(), y);
+        assert_eq!(x.into_unsigned().into_signed(), x);
+        assert_eq!(z.into_unsigned(), z);
+        assert_eq!(z.into_signed(), z);
     }
 }
