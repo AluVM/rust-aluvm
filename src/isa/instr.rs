@@ -929,7 +929,7 @@ pub enum Curve25519Op {
     Add(
         /** Source 1 */ Reg32,
         /** Source 2 */ Reg32,
-        /** Source 3 */ Reg32,
+        /** Destination register */ Reg32,
         /** Allow overflows */ bool,
     ),
 
