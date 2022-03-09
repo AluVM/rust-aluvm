@@ -297,9 +297,13 @@ impl InstructionSet for CmpOp {
     fn exec(&self, regs: &mut CoreRegs, _: LibSite) -> ExecStep {
         match self {
             CmpOp::GtA(sign_flag, reg, idx1, idx2) => {
-                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
-                    val1.applying_sign(sign_flag).cmp(&val2.applying_sign(sign_flag))
-                }) == Some(Ordering::Greater);
+                regs.st0 =
+                    regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                        match bool::from(sign_flag) {
+                            true => val1.into_signed().cmp(&val2.into_signed()),
+                            false => val1.cmp(&val2),
+                        }
+                    }) == Some(Ordering::Greater);
             }
             CmpOp::GtF(eq_flag, reg, idx1, idx2) => {
                 regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
@@ -315,9 +319,13 @@ impl InstructionSet for CmpOp {
                     == Some(Ordering::Greater);
             }
             CmpOp::LtA(sign_flag, reg, idx1, idx2) => {
-                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
-                    val1.applying_sign(sign_flag).cmp(&val2.applying_sign(sign_flag))
-                }) == Some(Ordering::Less);
+                regs.st0 =
+                    regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                        match bool::from(sign_flag) {
+                            true => val1.into_signed().cmp(&val2.into_signed()),
+                            false => val1.cmp(&val2),
+                        }
+                    }) == Some(Ordering::Less);
             }
             CmpOp::LtF(eq_flag, reg, idx1, idx2) => {
                 regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {

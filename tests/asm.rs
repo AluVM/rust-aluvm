@@ -61,6 +61,78 @@ fn a_eq_noneeq_noneq_test() {
     run(code, false)
 }
 
+#[test]
+fn a_gt_u_test() {
+    let code = aluasm! {
+        put     2,a8[1];
+        put     1,a8[2];
+        gt.u    a8[1],a8[2];
+        ret;
+    };
+    run(code, true)
+}
+
+#[test]
+fn a_gt_s_test() {
+    let code = aluasm! {
+        put     1,a8[1];
+        put     255,a8[2]; // -1
+        gt.s    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+    let code = aluasm! {
+        put     1,a8[1];
+        put     -1,a8[2];
+        gt.s    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+    let code = aluasm! {
+        put     1,a8[1];
+        put     2,a8[2];
+        gt.s    a8[1],a8[2];
+        ret;
+    };
+    run(code, false);
+}
+
+#[test]
+fn a_lt_u_test() {
+    let code = aluasm! {
+        put     1,a8[1];
+        put     2,a8[2];
+        lt.u    a8[1],a8[2];
+        ret;
+    };
+    run(code, true)
+}
+
+#[test]
+fn a_lt_s_test() {
+    let code = aluasm! {
+        put     255,a8[1]; // -1
+        put     1,a8[2];
+        lt.s    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+    let code = aluasm! {
+        put     -1,a8[1];
+        put     1,a8[2];
+        lt.s    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+    let code = aluasm! {
+        put     2,a8[1];
+        put     1,a8[2];
+        lt.s    a8[1],a8[2];
+        ret;
+    };
+    run(code, false);
+}
+
 fn run(code: Vec<Instr>, expect_success: bool) {
     let mut runtime = Vm::<Instr>::with(Lib::assemble(&code).unwrap());
     let res = runtime.main();
