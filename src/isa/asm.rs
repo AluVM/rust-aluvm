@@ -392,13 +392,13 @@ macro_rules! instr {
         }
         match _reg_block!($reg1) {
             RegBlockAFR::A => Instr::Cmp(CmpOp::EqA(
-                NoneEqFlag::Equal,
+                NoneEqFlag::NonEqual,
                 _reg_tya!(Reg, $reg1),
                 _reg_idx!($idx1),
                 _reg_idx!($idx2),
             )),
             RegBlockAFR::R => Instr::Cmp(CmpOp::EqR(
-                NoneEqFlag::Equal,
+                NoneEqFlag::NonEqual,
                 _reg_tyr!(Reg, $reg1),
                 _reg_idx!($idx1),
                 _reg_idx!($idx2),
