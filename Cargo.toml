@@ -24,9 +24,12 @@ bech32 = { version = "0.9.0", default-features = false }
 secp256k1 = { version = "0.22.1", optional = true, features = ["global-context"] }
 curve25519-dalek = { version = "3.1", optional = true }
 half = "1.7.1"
+serde_crate = { package = "serde", version = "1", optional = true }
+serde_with = { version = "1.14", optional = true }
 
 [features]
 default = []
-all = ["std", "secp256k1", "curve25519", "strict_encoding"]
+all = ["std", "secp256k1", "curve25519", "strict_encoding", "serde"]
 std = ["amplify/std", "bitcoin_hashes/std", "secp256k1/std", "curve25519-dalek/std", "curve25519-dalek/alloc", "bech32/std"]
 curve25519 = ["curve25519-dalek"]
+serde = ["serde_crate", "serde_with", "amplify/serde", "bitcoin_hashes/serde", "std", "secp256k1/std", "curve25519-dalek/serde"]
