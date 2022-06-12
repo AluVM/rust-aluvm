@@ -102,7 +102,7 @@ fn main() {
     let lib_repr = lib.to_string();
 
     eprint!("\nExecuting the program {} ... ", lib.id());
-    let mut runtime = Vm::<Instr>::with(lib);
+    let mut runtime = Vm::<Instr>::new(lib);
     match runtime.main() {
         true => eprintln!("success"),
         false => eprintln!("failure"),

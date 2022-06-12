@@ -36,7 +36,7 @@
 /// };
 ///
 /// let lib = Lib::assemble(&code).unwrap();
-/// let mut vm = Vm::<Instr>::with(lib);
+/// let mut vm = Vm::<Instr>::new(lib);
 /// match vm.main() {
 ///     true => println!("success"),
 ///     false => println!("failure"),

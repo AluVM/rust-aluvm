@@ -134,7 +134,7 @@ fn a_lt_s_test() {
 }
 
 fn run(code: Vec<Instr>, expect_success: bool) {
-    let mut runtime = Vm::<Instr>::with(Lib::assemble(&code).unwrap());
+    let mut runtime = Vm::<Instr>::new(Lib::assemble(&code).unwrap());
     let res = runtime.main();
     println!("\nVM microprocessor core state:\n{:#?}", runtime.registers());
     assert!(res == expect_success)

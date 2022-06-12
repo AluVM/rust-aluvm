@@ -36,7 +36,7 @@ pub enum Error {
 }
 
 /// Alu virtual machine providing single-core execution environment
-#[derive(Getters, Debug, Default)]
+#[derive(Getters, Debug)]
 pub struct Vm<Isa = Instr<ReservedOp>>
 where
     Isa: InstructionSet,
@@ -57,24 +57,30 @@ impl<Isa> Vm<Isa>
 where
     Isa: InstructionSet,
 {
-    /// Constructs new virtual machine with no code in it.
-    ///
-    /// Calling [`Vm::main`] on it will result in machine termination with `st0` set to `false`.
-    pub fn new() -> Vm<Isa> {
-        Vm {
-            libs: Default::default(),
-            entrypoint: Default::default(),
-            registers: Default::default(),
-            phantom: Default::default(),
-        }
-    }
-
-    /// Constructs new virtual machine using the provided library.
-    pub fn with(lib: Lib) -> Vm<Isa> {
-        let mut runtime = Vm::new();
-        runtime.entrypoint = LibSite::with(0, lib.id());
+    /// Constructs new virtual machine using provided single library.
+    pub fn new(lib: Lib) -> Vm<Isa> {
+        let mut runtime = Vm {
+            libs: bmap!{},
+            entrypoint: LibSite::with(0, lib.id()),
+            registers: default!(),
+            phantom: default!()
+        };
         runtime.add_lib(lib).expect("adding single library to lib segment overflows");
         runtime
+    }
+
+    /// Constructs new virtual machine from a set of libraries with a given entry point.
+    pub fn with(libs: impl IntoIterator<Item = Lib>, entrypoint: LibSite) -> Result<Vm<Isa>, Error> {
+        let mut runtime = Vm {
+            libs: bmap!{},
+            entrypoint,
+            registers: default!(),
+            phantom: default!()
+        };
+        for lib in libs {
+            runtime.add_lib(lib)?;
+        }
+        Ok(runtime)
     }
 
     /// Adds Alu bytecode library to the virtual machine.
