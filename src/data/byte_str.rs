@@ -19,9 +19,6 @@ use core::ops::Range;
 use amplify::num::error::OverflowError;
 
 /// Large binary bytestring object.
-///
-/// NB: Since byte string length is expressed with `u16` integer, it is 0-based, i.e. one character
-/// string has length of `0`.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct ByteStr {
     /// Adjusted slice length.
@@ -196,6 +193,37 @@ mod _strict_encoding {
         fn strict_decode<D: Read>(d: D) -> Result<Self, strict_encoding::Error> {
             let data = Vec::<u8>::strict_decode(d)?;
             Ok(ByteStr::try_from(data.deref()).expect("strict encoding can't read more than 67 kb"))
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+mod _serde {
+    use std::convert::TryFrom;
+    use std::ops::Deref;
+
+    use serde_crate::de::Error;
+    use serde_crate::{Deserialize, Deserializer, Serialize, Serializer};
+
+    use super::ByteStr;
+
+    impl Serialize for ByteStr {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.as_ref().serialize(serializer)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for ByteStr {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let vec = Vec::<u8>::deserialize(deserializer)?;
+            ByteStr::try_from(vec.deref())
+                .map_err(|_| D::Error::invalid_length(vec.len(), &"max u16::MAX bytes"))
         }
     }
 }
