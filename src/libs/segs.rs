@@ -62,6 +62,7 @@ pub enum IsaSegError {
 
 /// ISA extensions segment
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+#[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
 pub struct IsaSeg(BTreeSet<String>);
 
 impl IsaSeg {
@@ -174,6 +175,7 @@ pub struct LibSegOverflow;
 ///
 /// The implementation MUST ensure that the size of the index never exceeds `u16::MAX`.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+#[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
 pub struct LibSeg {
     /// Set maintains unique library ids which may be iterated in lexicographic ordering
     set: BTreeSet<LibId>,

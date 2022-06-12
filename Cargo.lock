@@ -13,6 +13,7 @@ dependencies = [
  "half",
  "paste",
  "secp256k1",
+ "strict_encoding",
 ]
 
 [[package]]
@@ -24,6 +25,7 @@ dependencies = [
  "amplify_apfloat",
  "amplify_derive",
  "amplify_num",
+ "amplify_syn",
 ]
 
 [[package]]
@@ -124,6 +126,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "encoding_derive_helpers"
+version = "1.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc4ba8a88067b85c8714922db6e5f2af47b894d63b771dbb0c4d31d6607e9057"
+dependencies = [
+ "amplify",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -205,6 +219,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "152e20a0fd0519390fc43ab404663af8a0b794273d2a91d60ad4a39f13ffe110"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "strict_encoding"
+version = "1.8.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "808273f63055eab2b628161ec291bf50500f3e7bf4a4e66a9c46cce426b316dd"
+dependencies = [
+ "amplify",
+ "bitcoin_hashes",
+ "half",
+ "strict_encoding_derive",
+]
+
+[[package]]
+name = "strict_encoding_derive"
+version = "1.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bc7b868cb00c8861784b7f463c984c4b2ad20d1f23cec5997ad9cb41e559239"
+dependencies = [
+ "amplify_syn",
+ "encoding_derive_helpers",
+ "proc-macro2",
+ "syn",
 ]
 
 [[package]]

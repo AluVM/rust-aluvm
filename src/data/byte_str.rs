@@ -175,3 +175,27 @@ impl Display for ByteStr {
         write!(f, "{:#04X?}", &self.bytes[0usize..self.len as usize])
     }
 }
+
+#[cfg(feature = "strict_encoding")]
+mod _strict_encoding {
+    use std::convert::TryFrom;
+    use std::io::{Read, Write};
+    use std::ops::Deref;
+
+    use strict_encoding::{StrictDecode, StrictEncode};
+
+    use super::ByteStr;
+
+    impl StrictEncode for ByteStr {
+        fn strict_encode<E: Write>(&self, e: E) -> Result<usize, strict_encoding::Error> {
+            self.as_ref().strict_encode(e)
+        }
+    }
+
+    impl StrictDecode for ByteStr {
+        fn strict_decode<D: Read>(d: D) -> Result<Self, strict_encoding::Error> {
+            let data = Vec::<u8>::strict_decode(d)?;
+            Ok(ByteStr::try_from(data.deref()).expect("strict encoding can't read more than 67 kb"))
+        }
+    }
+}
