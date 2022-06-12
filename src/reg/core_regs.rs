@@ -21,7 +21,7 @@ use half::bf16;
 use super::{Reg32, RegA, RegAFR, RegF, RegR, RegS};
 use crate::data::{ByteStr, MaybeNumber, Number};
 use crate::isa::InstructionSet;
-use crate::libs::LibSite;
+use crate::program::LibSite;
 
 /// Maximal size of call stack.
 ///

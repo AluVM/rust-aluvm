@@ -13,11 +13,13 @@
 
 pub mod constants;
 mod cursor;
-mod model;
+mod lib;
+mod program;
 mod rw;
 mod segs;
 
 pub use cursor::Cursor;
-pub use model::{AssemblerError, Lib, LibId, LibIdError, LibIdTag, LibSite};
+pub use lib::{AssemblerError, Lib, LibId, LibIdError, LibIdTag, LibSite};
+pub use program::{LibError, Program};
 pub use rw::{CodeEofError, Read, Write, WriteError};
 pub use segs::{IsaSeg, IsaSegError, LibSeg, LibSegOverflow, SegmentError};

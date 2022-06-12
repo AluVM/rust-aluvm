@@ -17,11 +17,11 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt::{self, Display, Formatter};
 
-use crate::libs::constants::{
+use crate::program::constants::{
     ISAE_SEGMENT_MAX_COUNT, ISAE_SEGMENT_MAX_LEN, ISA_ID_ALLOWED_CHARS, ISA_ID_ALLOWED_FIRST_CHAR,
     ISA_ID_MAX_LEN, ISA_ID_MIN_LEN, LIBS_SEGMENT_MAX_COUNT,
 };
-use crate::libs::{LibId, LibSite};
+use crate::program::{LibId, LibSite};
 
 /// Errors while processing binary-encoded segment data
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -163,8 +163,8 @@ pub struct LibSegOverflow;
 ///
 /// Library segment keeps ordered collection of [`LibId`] such that the code calling library methods
 /// does not need to reference the whole 32-byte id each time and can just provide the library index
-/// in the libs segment (1 byte). Thus, the total number of libraries which can be used by a
-/// program is limited to 2^8, and the maximum size of libs segment to 32*2^8 (8 kB).
+/// in the program segment (1 byte). Thus, the total number of libraries which can be used by a
+/// program is limited to 2^8, and the maximum size of program segment to 32*2^8 (8 kB).
 ///
 /// Runtime implementations MUST ensure that the total number of libraries used by a single program
 /// do not exceeds [`LIBS_MAX_TOTAL`], limiting the maximum possible total program size for
@@ -173,7 +173,7 @@ pub struct LibSegOverflow;
 /// NB: The program can reference position outside the scope of the library segment size; in this
 ///     case VM performs no-operation and sets `st0` to false.
 ///
-/// Libraries MUST be referenced in the libs segment in lexicographic order.
+/// Libraries MUST be referenced in the program segment in lexicographic order.
 ///
 /// The implementation MUST ensure that the size of the index never exceeds `u16::MAX`.
 ///
@@ -205,7 +205,7 @@ impl<'a> IntoIterator for &'a LibSeg {
 }
 
 impl LibSeg {
-    /// Constructs libs segment from an iterator over call locations.
+    /// Constructs program segment from an iterator over call locations.
     ///
     /// Lib segment deterministically orders library ids according to their [`LibId`] `Ord`
     /// implementation. This is not a requirement, but just a good practice for producing the same
@@ -219,7 +219,7 @@ impl LibSeg {
         LibSeg::from_iter(source.into_iter().map(|site| site.lib))
     }
 
-    /// Constructs libs segment from an iterator over lib ids.
+    /// Constructs program segment from an iterator over lib ids.
     ///
     /// Lib segment deterministically orders library ids according to their [`LibId`] `Ord`
     /// implementation. This is not a requirement, but just a good practice for producing the same
@@ -254,7 +254,7 @@ impl LibSeg {
     ///
     /// # Returns
     ///
-    /// If the library is not present in libs segment, returns `None`.
+    /// If the library is not present in program segment, returns `None`.
     #[inline]
     pub fn index(&self, lib: LibId) -> Option<u8> {
         self.set.iter().position(|l| *l == lib).map(|i| i as u8)

@@ -24,8 +24,8 @@ use bitcoin_hashes::{sha256, sha256t, Hash, HashEngine};
 use super::{Cursor, Read};
 use crate::data::ByteStr;
 use crate::isa::{BytecodeError, ExecStep, InstructionSet};
-use crate::libs::segs::IsaSeg;
-use crate::libs::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
+use crate::program::segs::IsaSeg;
+use crate::program::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
 use crate::reg::CoreRegs;
 
 const LIB_ID_MIDSTATE: [u8; 32] = [
@@ -337,7 +337,7 @@ impl Lib {
     /// # Returns
     ///
     /// Location for the external code jump, if any
-    pub fn run<Isa>(&self, entrypoint: u16, registers: &mut CoreRegs) -> Option<LibSite>
+    pub fn exec<Isa>(&self, entrypoint: u16, registers: &mut CoreRegs) -> Option<LibSite>
     where
         Isa: InstructionSet,
     {

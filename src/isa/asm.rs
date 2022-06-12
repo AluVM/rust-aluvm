@@ -17,8 +17,8 @@
 /// # extern crate alloc;
 /// # #[macro_use] extern crate aluvm;
 /// # use paste::paste;
-/// # use aluvm::Vm;
-/// # use aluvm::libs::Lib;
+/// # use aluvm::{Program, Vm};
+/// # use aluvm::program::Lib;
 /// # use aluvm::isa::Instr;
 ///
 /// let code = aluasm! {
@@ -36,8 +36,9 @@
 /// };
 ///
 /// let lib = Lib::assemble(&code).unwrap();
-/// let mut vm = Vm::<Instr>::new(lib);
-/// match vm.main() {
+/// let program = Program::new(lib);
+/// let mut vm = Vm::<Instr>::new();
+/// match vm.run(&program) {
 ///     true => println!("success"),
 ///     false => println!("failure"),
 /// }
@@ -55,7 +56,7 @@ macro_rules! aluasm {
             Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
             NumericRegister,
         };
-        use aluvm::libs::LibSite;
+        use aluvm::program::LibSite;
         use aluvm::data::{Number, MaybeNumber, Step};
 
         let mut code: Vec<Instr<ReservedOp>> = vec![];

@@ -42,7 +42,8 @@ pub enum WriteError {
     /// attempt to write data which does not fit code segment
     DataNotFittingSegment,
 
-    /// attempt to write library reference for the lib id {0} which is not a part of libs segment
+    /// attempt to write library reference for the lib id {0} which is not a part of program
+    /// segment
     LibAbsent(LibId),
 }
 

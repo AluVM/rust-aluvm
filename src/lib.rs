@@ -128,13 +128,15 @@ extern crate strict_encoding;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
+extern crate core;
 
 pub mod data;
 #[macro_use]
 pub mod isa;
-pub mod libs;
+pub mod program;
 pub mod reg;
 pub mod vm;
 
 pub use isa::Isa;
+pub use program::Program;
 pub use vm::Vm;

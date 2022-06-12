@@ -17,7 +17,7 @@ use super::{
 };
 use crate::data::{ByteStr, MaybeNumber, Step};
 use crate::isa::{ExtendFlag, NoneEqFlag};
-use crate::libs::LibSite;
+use crate::program::LibSite;
 use crate::reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, RegS};
 
 /// Reserved instruction, which equal to [`ControlFlowOp::Fail`].

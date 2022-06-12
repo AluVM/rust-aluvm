@@ -11,125 +11,57 @@
 
 //! Alu virtual machine
 
-use alloc::borrow::ToOwned;
 use alloc::boxed::Box;
-use alloc::collections::BTreeMap;
-use alloc::string::String;
 use core::marker::PhantomData;
 
 use crate::isa::{Instr, InstructionSet, ReservedOp};
-use crate::libs::constants::LIBS_MAX_TOTAL;
-use crate::libs::{Lib, LibId, LibSite};
+use crate::program::LibSite;
 use crate::reg::CoreRegs;
-
-/// Errors returned by [`Vm::add_lib`] method
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
-#[cfg_attr(feature = "std", derive(Error))]
-#[display(doc_comments)]
-pub enum Error {
-    /// ISA id {0} is not supported by the selected instruction set
-    IsaNotSupported(String),
-
-    /// Attempt to add library when maximum possible number of libraries is already present in the
-    /// VM
-    TooManyLibs,
-}
+use crate::Program;
 
 /// Alu virtual machine providing single-core execution environment
-#[derive(Getters, Debug)]
+#[derive(Getters, Debug, Default)]
 pub struct Vm<Isa = Instr<ReservedOp>>
 where
     Isa: InstructionSet,
 {
-    /// Libraries known to the runtime, identified by their hashes
-    libs: BTreeMap<LibId, Lib>,
-
-    /// Entrypoint for the main function
-    entrypoint: LibSite,
-
     /// A set of registers
     registers: Box<CoreRegs>,
 
     phantom: PhantomData<Isa>,
 }
 
+/// Runtime for program execution.
 impl<Isa> Vm<Isa>
 where
     Isa: InstructionSet,
 {
-    /// Constructs new virtual machine using provided single library.
-    pub fn new(lib: Lib) -> Vm<Isa> {
-        let mut runtime = Vm {
-            libs: BTreeMap::new(),
-            entrypoint: LibSite::with(0, lib.id()),
-            registers: default!(),
-            phantom: default!(),
-        };
-        runtime.add_lib(lib).expect("adding single library to lib segment overflows");
-        runtime
+    /// Constructs new virtual machine instance.
+    pub fn new() -> Self {
+        Self { registers: Box::new(Default::default()), phantom: Default::default() }
     }
 
-    /// Constructs new virtual machine from a set of libraries with a given entry point.
-    pub fn with(
-        libs: impl IntoIterator<Item = Lib>,
-        entrypoint: LibSite,
-    ) -> Result<Vm<Isa>, Error> {
-        let mut runtime =
-            Vm { libs: BTreeMap::new(), entrypoint, registers: default!(), phantom: default!() };
-        for lib in libs {
-            runtime.add_lib(lib)?;
-        }
-        Ok(runtime)
-    }
-
-    /// Adds Alu bytecode library to the virtual machine.
-    ///
-    /// # Errors
-    ///
-    /// Checks requirement that the total number of libraries must not exceed [`LIBS_MAX_TOTAL`] and
-    /// returns [`Error::TooManyLibs`] otherwise.
-    ///
-    /// Checks that the ISA used by the VM supports ISA extensions specified by the library and
-    /// returns [`Error::IsaNotSupported`] otherwise.
-    ///
-    /// # Returns
-    ///
-    /// `true` if the library was already known and `false` otherwise.
-    #[inline]
-    pub fn add_lib(&mut self, lib: Lib) -> Result<bool, Error> {
-        if self.libs.len() >= LIBS_MAX_TOTAL {
-            return Err(Error::TooManyLibs);
-        }
-        for isa in &lib.isae {
-            if !Isa::is_supported(isa) {
-                return Err(Error::IsaNotSupported(isa.to_owned()));
-            }
-        }
-        Ok(self.libs.insert(lib.id(), lib).is_none())
-    }
-
-    /// Sets new entry point value (used when calling [`Vm::main`])
-    pub fn set_entrypoint(&mut self, entrypoint: LibSite) { self.entrypoint = entrypoint; }
-
-    /// Executes the program starting from the provided entry point (set with [`Vm::set_entrypoint`]
-    /// and [`Vm::with`], or initialized to 0 offset of the first used library if [`Vm::new`] was
-    /// used).
+    /// Executes the program starting from the provided entry point (set with
+    /// [`Runtime::set_entrypoint`] and [`Runtime::with`], or initialized to 0 offset of the
+    /// first used library if [`Runtime::new`] was used).
     ///
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    pub fn main(&mut self) -> bool { self.call(self.entrypoint) }
+    pub fn run(&mut self, program: &Program<Isa>) -> bool {
+        self.call(program, program.entrypoint())
+    }
 
     /// Executes the program starting from the provided entry point.
     ///
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    pub fn call(&mut self, method: LibSite) -> bool {
+    pub fn call(&mut self, program: &Program<Isa>, method: LibSite) -> bool {
         let mut call = Some(method);
         while let Some(ref mut site) = call {
-            if let Some(lib) = self.libs.get(&site.lib) {
-                call = lib.run::<Isa>(site.pos, &mut self.registers);
+            if let Some(lib) = program.lib(site.lib) {
+                call = lib.exec::<Isa>(site.pos, &mut self.registers);
             } else if let Some(pos) = site.pos.checked_add(1) {
                 site.pos = pos;
             } else {
