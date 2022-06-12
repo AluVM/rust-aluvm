@@ -101,11 +101,10 @@ where
     /// # Errors
     ///
     /// Checks requirement that the total number of libraries must not exceed [`LIBS_MAX_TOTAL`]
-    /// and [`Self::RUNTIME_MAX_TOTAL_LIBS`] - or returns [`Error::TooManyLibs`]
-    /// otherwise.
+    /// and `RUNTIME_MAX_TOTAL_LIBS` - or returns [`LibError::TooManyLibs`] otherwise.
     ///
     /// Checks that the ISA used by the VM supports ISA extensions specified by the library and
-    /// returns [`Error::IsaNotSupported`] otherwise.
+    /// returns [`LibError::IsaNotSupported`] otherwise.
     ///
     /// # Returns
     ///
@@ -130,6 +129,6 @@ where
     pub fn entrypoint(&self) -> LibSite { self.entrypoint }
 
     // TODO: Return error if the library is not known
-    /// Sets new entry point value (used when calling [`Runtime::main`])
+    /// Sets new entry point value (used when calling [`crate::Vm::run`])
     pub fn set_entrypoint(&mut self, entrypoint: LibSite) { self.entrypoint = entrypoint; }
 }

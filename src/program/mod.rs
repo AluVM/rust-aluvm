@@ -14,6 +14,7 @@
 pub mod constants;
 mod cursor;
 mod lib;
+#[allow(clippy::module_inception)]
 mod program;
 mod rw;
 mod segs;

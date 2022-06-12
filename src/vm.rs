@@ -42,8 +42,8 @@ where
     }
 
     /// Executes the program starting from the provided entry point (set with
-    /// [`Runtime::set_entrypoint`] and [`Runtime::with`], or initialized to 0 offset of the
-    /// first used library if [`Runtime::new`] was used).
+    /// [`Program::set_entrypoint`] and [`Program::with`], or initialized to 0 offset of the
+    /// first used library if [`Program::new`] was used).
     ///
     /// # Returns
     ///
