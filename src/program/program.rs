@@ -38,6 +38,9 @@ pub enum LibError {
 /// `RUNTIME_MAX_TOTAL_LIBS`: Maximum total number of libraries supported by a runtime, if it is
 /// less than [`LIBS_MAX_TOTAL`]. If the value set is greater than [`LIBS_MAX_TOTAL`] the
 /// value is ignored and [`LIBS_MAX_TOTAL`] constant is used instead.
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Program<Isa, const RUNTIME_MAX_TOTAL_LIBS: u16 = LIBS_MAX_TOTAL>
 where
     Isa: InstructionSet,
@@ -48,6 +51,8 @@ where
     /// Entrypoint for the main function
     entrypoint: LibSite,
 
+    #[cfg_attr(feature = "strict_encoding", strict_encoding(skip))]
+    #[cfg_attr(feature = "serde", serde(skip))]
     phantom: PhantomData<Isa>,
 }
 
