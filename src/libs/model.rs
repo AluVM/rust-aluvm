@@ -350,7 +350,7 @@ impl Lib {
             let next = instr.exec(registers, LibSite::with(pos, lib_hash));
 
             #[cfg(all(debug_assertions, feature = "std"))]
-            eprint!("\n@{:06}> {:48}; st0={}", pos, instr.to_string(), registers.st0);
+            eprint!("\n@{:06}> {:48}; st0={}", pos, instr, registers.st0);
 
             if !registers.acc_complexity(instr) {
                 #[cfg(all(debug_assertions, feature = "std"))]
