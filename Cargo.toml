@@ -2,7 +2,7 @@
 name = "aluvm"
 description = "AluVM rust implementation"
 version = "0.5.0"
-authors = ["Dr Maxim Orlovsky <orlovsky@pandoracore.com>"]
+authors = ["Dr Maxim Orlovsky <orlovsky@lnp-bp.org>"]
 edition = "2018"
 license = "MIT"
 repository = "https://github.com/internet2-org/rust-aluvm"
