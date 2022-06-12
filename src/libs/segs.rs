@@ -161,8 +161,11 @@ pub struct LibSegOverflow;
 ///
 /// Library segment keeps ordered collection of [`LibId`] such that the code calling library methods
 /// does not need to reference the whole 32-byte id each time and can just provide the library index
-/// in the libs segment (2 bytes). Thus, the total number of libraries which can be used by a
-/// program is limited to 2^16, and the maximum size of libs segment to 32*2^16 (2 MB).
+/// in the libs segment (1 byte). Thus, the total number of libraries which can be used by a
+/// program is limited to 2^8, and the maximum size of libs segment to 32*2^8 (8 kB).
+///
+/// Runtime implementations MUST ensure that the total number of libraries used by a single program
+/// do not exceeds 2^10, limiting the maximum possible total program size for AluVM to ~65 MB.
 ///
 /// NB: The program can reference position outside the scope of the library segment size; in this
 ///     case VM performs no-operation and sets `st0` to false.
