@@ -17,7 +17,7 @@ pub const CODE_SEGMENT_MAX_LEN: usize = 1 << 16;
 
 pub const DATA_SEGMENT_MAX_LEN: usize = 1 << 16;
 
-/// Maximum number of libraries that may be referenced (used by) any other librari; i.e. limit for
+/// Maximum number of libraries that may be referenced (used by) any other library; i.e. limit for
 /// the number of records inside libs segment.
 pub const LIBS_SEGMENT_MAX_COUNT: usize = 1 << 8;
 

@@ -60,23 +60,22 @@ where
     /// Constructs new virtual machine using provided single library.
     pub fn new(lib: Lib) -> Vm<Isa> {
         let mut runtime = Vm {
-            libs: bmap!{},
+            libs: bmap! {},
             entrypoint: LibSite::with(0, lib.id()),
             registers: default!(),
-            phantom: default!()
+            phantom: default!(),
         };
         runtime.add_lib(lib).expect("adding single library to lib segment overflows");
         runtime
     }
 
     /// Constructs new virtual machine from a set of libraries with a given entry point.
-    pub fn with(libs: impl IntoIterator<Item = Lib>, entrypoint: LibSite) -> Result<Vm<Isa>, Error> {
-        let mut runtime = Vm {
-            libs: bmap!{},
-            entrypoint,
-            registers: default!(),
-            phantom: default!()
-        };
+    pub fn with(
+        libs: impl IntoIterator<Item = Lib>,
+        entrypoint: LibSite,
+    ) -> Result<Vm<Isa>, Error> {
+        let mut runtime =
+            Vm { libs: bmap! {}, entrypoint, registers: default!(), phantom: default!() };
         for lib in libs {
             runtime.add_lib(lib)?;
         }
@@ -113,8 +112,8 @@ where
     pub fn set_entrypoint(&mut self, entrypoint: LibSite) { self.entrypoint = entrypoint; }
 
     /// Executes the program starting from the provided entry point (set with [`Vm::set_entrypoint`]
-    /// or initialized to 0 offset of the first used library if [`Vm::new`], [`Vm::default`] or
-    /// [`Vm::with`] were used).
+    /// and [`Vm::with`], or initialized to 0 offset of the first used library if [`Vm::new`] was
+    /// used).
     ///
     /// # Returns
     ///

@@ -166,7 +166,8 @@ pub struct LibSegOverflow;
 /// program is limited to 2^8, and the maximum size of libs segment to 32*2^8 (8 kB).
 ///
 /// Runtime implementations MUST ensure that the total number of libraries used by a single program
-/// do not exceeds 2^10, limiting the maximum possible total program size for AluVM to ~65 MB.
+/// do not exceeds [`LIBS_MAX_TOTAL`], limiting the maximum possible total program size for
+/// AluVM to ~65 MB.
 ///
 /// NB: The program can reference position outside the scope of the library segment size; in this
 ///     case VM performs no-operation and sets `st0` to false.
@@ -174,6 +175,8 @@ pub struct LibSegOverflow;
 /// Libraries MUST be referenced in the libs segment in lexicographic order.
 ///
 /// The implementation MUST ensure that the size of the index never exceeds `u16::MAX`.
+///
+/// [`LIBS_MAX_TOTAL`]: super::constants::LIBS_MAX_TOTAL
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
 pub struct LibSeg {
