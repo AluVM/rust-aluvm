@@ -60,7 +60,7 @@ where
     /// Constructs new virtual machine using provided single library.
     pub fn new(lib: Lib) -> Vm<Isa> {
         let mut runtime = Vm {
-            libs: bmap! {},
+            libs: BTreeMap::new(),
             entrypoint: LibSite::with(0, lib.id()),
             registers: default!(),
             phantom: default!(),
@@ -75,7 +75,7 @@ where
         entrypoint: LibSite,
     ) -> Result<Vm<Isa>, Error> {
         let mut runtime =
-            Vm { libs: bmap! {}, entrypoint, registers: default!(), phantom: default!() };
+            Vm { libs: BTreeMap::new(), entrypoint, registers: default!(), phantom: default!() };
         for lib in libs {
             runtime.add_lib(lib)?;
         }
