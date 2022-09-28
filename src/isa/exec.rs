@@ -1016,7 +1016,7 @@ impl InstructionSet for ReservedOp {
 mod tests {
     use super::*;
     use crate::data::{Layout, Step};
-    use crate::reg::{Reg16, Reg8, RegBlockAR};
+    use crate::reg::{Reg16};
 
     #[test]
     fn cmp_ne_test() {
