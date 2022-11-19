@@ -1018,6 +1018,9 @@ mod tests {
     use crate::data::{Layout, Step};
     use crate::reg::{Reg16};
 
+    #[cfg(feature = "secp256k1")]
+    use crate::reg::{Reg8, RegBlockAR};
+
     #[test]
     fn cmp_ne_test() {
         let mut register = CoreRegs::default();
