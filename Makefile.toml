@@ -1,6 +1,6 @@
 [env]
-ALUVM_TOOLCHAIN = { source = "${ALUVM_TOOLCHAIN}", default_value = "stable", mapping = { "nightly" = "nightly" } }
-ALUVM_FEATURES = { source = "${ALUVM_FEATURES}", default_value = "all", mapping = { "default" = "default", "std" = "std", "secp256k1" = "secp256k1", "curve25519" = "curve25519" } }
+ALUVM_TOOLCHAIN_ = { source = "${ALUVM_TOOLCHAIN}", default_value = "stable", mapping = { "nightly" = "nightly" } }
+ALUVM_FEATURES_ = { source = "${ALUVM_FEATURES}", default_value = "all", mapping = { "default" = "default", "std" = "std", "secp256k1" = "secp256k1", "curve25519" = "curve25519" } }
 
 [tasks.fmt]
 command = "cargo"
@@ -24,15 +24,15 @@ args = ["doc", "--workspace", "--all-features"]
 
 [tasks.test]
 command = "rustup"
-args = ["run", "${ALUVM_TOOLCHAIN}", "cargo", "test", "--workspace", "--features", "${ALUVM_FEATURES}", "--no-fail-fast"]
+args = ["run", "${ALUVM_TOOLCHAIN_}", "cargo", "test", "--workspace", "--features", "${ALUVM_FEATURES_}", "--no-fail-fast"]
 
 [tasks.test-all]
 run_task = { name = ["fmt", "clippy", "test" ] }
 
 [tasks.check]
 command = "rustup"
-args = ["run", "${ALUVM_TOOLCHAIN}", "cargo", "check", "--features", "${ALUVM_FEATURES}"]
+args = ["run", "${ALUVM_TOOLCHAIN_}", "cargo", "check", "--features", "${ALUVM_FEATURES_}"]
 
 [tasks.check-all]
 command = "rustup"
-args = ["run", "${ALUVM_TOOLCHAIN}", "cargo", "check", "--workspace", "--all-targets", "--all-features"]
+args = ["run", "${ALUVM_TOOLCHAIN_}", "cargo", "check", "--workspace", "--all-targets", "--all-features"]
