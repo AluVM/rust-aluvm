@@ -1,7 +1,7 @@
 [package]
 name = "aluvm"
 description = "AluVM rust implementation"
-version = "0.7.0"
+version = "0.8.0-beta.1"
 authors = ["Dr Maxim Orlovsky <orlovsky@lnp-bp.org>"]
 edition = "2018"
 license = "MIT"
@@ -16,7 +16,7 @@ exclude = [".github"]
 name = "aluvm"
 
 [dependencies]
-amplify = { version = "3.12.1", default-features = false, features = ["apfloat", "derive", "hex"] }
+amplify = { version = "3.13.0", default-features = false, features = ["apfloat", "derive", "hex"] }
 paste = "1"
 strict_encoding = { version = "0.8.0", default-features = false, features = ["float", "derive"], optional = true }
 bitcoin_hashes = { version = "0.10.0", default-features = false } # this is most well-maintained generic hash implementation library
