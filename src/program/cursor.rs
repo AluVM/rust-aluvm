@@ -463,10 +463,10 @@ where
         S: InstructionSet,
     {
         let prev_pos = self.seek(pos)?;
-        let mut instr = Instr::read(self)?;
+        let mut instr = Instr::decode(self)?;
         editor(&mut instr)?;
         self.seek(pos)?;
-        instr.write(self).expect("cursor editor fail");
+        instr.encode(self).expect("cursor editor fail");
         self.seek(prev_pos)?;
         Ok(())
     }

@@ -69,21 +69,21 @@ pub trait Bytecode {
     fn call_site(&self) -> Option<LibSite> { None }
 
     /// Writes the instruction as bytecode
-    fn write<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
         writer.write_u8(self.instr_byte())?;
-        self.write_args(writer)
+        self.encode_args(writer)
     }
 
     /// Writes instruction arguments as bytecode, omitting instruction code byte
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write;
 
     /// Reads the instruction from bytecode
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         Self: Sized,
         R: Read;
@@ -156,66 +156,66 @@ where
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
         match self {
-            Instr::ControlFlow(instr) => instr.write_args(writer),
-            Instr::Put(instr) => instr.write_args(writer),
-            Instr::Move(instr) => instr.write_args(writer),
-            Instr::Cmp(instr) => instr.write_args(writer),
-            Instr::Arithmetic(instr) => instr.write_args(writer),
-            Instr::Bitwise(instr) => instr.write_args(writer),
-            Instr::Bytes(instr) => instr.write_args(writer),
-            Instr::Digest(instr) => instr.write_args(writer),
+            Instr::ControlFlow(instr) => instr.encode_args(writer),
+            Instr::Put(instr) => instr.encode_args(writer),
+            Instr::Move(instr) => instr.encode_args(writer),
+            Instr::Cmp(instr) => instr.encode_args(writer),
+            Instr::Arithmetic(instr) => instr.encode_args(writer),
+            Instr::Bitwise(instr) => instr.encode_args(writer),
+            Instr::Bytes(instr) => instr.encode_args(writer),
+            Instr::Digest(instr) => instr.encode_args(writer),
             #[cfg(feature = "secp256k1")]
-            Instr::Secp256k1(instr) => instr.write_args(writer),
+            Instr::Secp256k1(instr) => instr.encode_args(writer),
             #[cfg(feature = "curve25519")]
-            Instr::Curve25519(instr) => instr.write_args(writer),
-            Instr::ExtensionCodes(instr) => instr.write_args(writer),
-            Instr::ReservedInstruction(instr) => instr.write_args(writer),
+            Instr::Curve25519(instr) => instr.encode_args(writer),
+            Instr::ExtensionCodes(instr) => instr.encode_args(writer),
+            Instr::ReservedInstruction(instr) => instr.encode_args(writer),
             Instr::Nop => Ok(()),
         }
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
         let instr = reader.peek_u8()?;
         Ok(match instr {
             instr if ControlFlowOp::instr_range().contains(&instr) => {
-                Instr::ControlFlow(ControlFlowOp::read(reader)?)
+                Instr::ControlFlow(ControlFlowOp::decode(reader)?)
             }
-            instr if PutOp::instr_range().contains(&instr) => Instr::Put(PutOp::read(reader)?),
-            instr if MoveOp::instr_range().contains(&instr) => Instr::Move(MoveOp::read(reader)?),
-            instr if CmpOp::instr_range().contains(&instr) => Instr::Cmp(CmpOp::read(reader)?),
+            instr if PutOp::instr_range().contains(&instr) => Instr::Put(PutOp::decode(reader)?),
+            instr if MoveOp::instr_range().contains(&instr) => Instr::Move(MoveOp::decode(reader)?),
+            instr if CmpOp::instr_range().contains(&instr) => Instr::Cmp(CmpOp::decode(reader)?),
             instr if ArithmeticOp::instr_range().contains(&instr) => {
-                Instr::Arithmetic(ArithmeticOp::read(reader)?)
+                Instr::Arithmetic(ArithmeticOp::decode(reader)?)
             }
             instr if BitwiseOp::instr_range().contains(&instr) => {
-                Instr::Bitwise(BitwiseOp::read(reader)?)
+                Instr::Bitwise(BitwiseOp::decode(reader)?)
             }
             instr if BytesOp::instr_range().contains(&instr) => {
-                Instr::Bytes(BytesOp::read(reader)?)
+                Instr::Bytes(BytesOp::decode(reader)?)
             }
             instr if DigestOp::instr_range().contains(&instr) => {
-                Instr::Digest(DigestOp::read(reader)?)
+                Instr::Digest(DigestOp::decode(reader)?)
             }
             #[cfg(feature = "secp256k1")]
             instr if Secp256k1Op::instr_range().contains(&instr) => {
-                Instr::Secp256k1(Secp256k1Op::read(reader)?)
+                Instr::Secp256k1(Secp256k1Op::decode(reader)?)
             }
             #[cfg(feature = "curve25519")]
             instr if Curve25519Op::instr_range().contains(&instr) => {
-                Instr::Curve25519(Curve25519Op::read(reader)?)
+                Instr::Curve25519(Curve25519Op::decode(reader)?)
             }
             INSTR_RESV_FROM..=INSTR_RESV_TO => {
-                Instr::ReservedInstruction(ReservedOp::read(reader)?)
+                Instr::ReservedInstruction(ReservedOp::decode(reader)?)
             }
             INSTR_NOP => Instr::Nop,
-            INSTR_ISAE_FROM..=INSTR_ISAE_TO => Instr::ExtensionCodes(Extension::read(reader)?),
+            INSTR_ISAE_FROM..=INSTR_ISAE_TO => Instr::ExtensionCodes(Extension::decode(reader)?),
             x => unreachable!("unable to classify instruction {:#010b}", x),
         })
     }
@@ -257,7 +257,7 @@ impl Bytecode for ControlFlowOp {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -276,7 +276,7 @@ impl Bytecode for ControlFlowOp {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -322,7 +322,7 @@ impl Bytecode for PutOp {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -370,7 +370,7 @@ impl Bytecode for PutOp {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -450,7 +450,7 @@ impl Bytecode for MoveOp {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -543,7 +543,7 @@ impl Bytecode for MoveOp {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -625,7 +625,7 @@ impl Bytecode for CmpOp {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -713,7 +713,7 @@ impl Bytecode for CmpOp {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -788,7 +788,7 @@ impl Bytecode for ArithmeticOp {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -832,7 +832,7 @@ impl Bytecode for ArithmeticOp {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -917,7 +917,7 @@ impl Bytecode for BitwiseOp {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -987,7 +987,7 @@ impl Bytecode for BitwiseOp {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -1085,7 +1085,7 @@ impl Bytecode for BytesOp {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -1169,7 +1169,7 @@ impl Bytecode for BytesOp {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -1274,7 +1274,7 @@ impl Bytecode for DigestOp {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -1289,7 +1289,7 @@ impl Bytecode for DigestOp {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -1328,7 +1328,7 @@ impl Bytecode for Secp256k1Op {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -1355,7 +1355,7 @@ impl Bytecode for Secp256k1Op {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -1396,7 +1396,7 @@ impl Bytecode for Curve25519Op {
         }
     }
 
-    fn write_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -1425,7 +1425,7 @@ impl Bytecode for Curve25519Op {
         Ok(())
     }
 
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {
@@ -1460,7 +1460,7 @@ impl Bytecode for ReservedOp {
     fn instr_byte(&self) -> u8 { self.0 }
 
     #[inline]
-    fn write_args<W>(&self, _writer: &mut W) -> Result<(), BytecodeError>
+    fn encode_args<W>(&self, _writer: &mut W) -> Result<(), BytecodeError>
     where
         W: Write,
     {
@@ -1468,7 +1468,7 @@ impl Bytecode for ReservedOp {
     }
 
     #[inline]
-    fn read<R>(reader: &mut R) -> Result<Self, CodeEofError>
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
         R: Read,
     {

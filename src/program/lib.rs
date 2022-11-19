@@ -279,7 +279,7 @@ impl Lib {
         let mut code_segment = ByteStr::default();
         let mut writer = Cursor::<_, ByteStr>::new(&mut code_segment.bytes[..], &libs_segment);
         for instr in code.iter() {
-            instr.write(&mut writer)?;
+            instr.encode(&mut writer)?;
         }
         let pos = writer.pos();
         let data_segment = writer.into_data_segment();
@@ -302,7 +302,7 @@ impl Lib {
         let mut code = Vec::new();
         let mut reader = Cursor::with(&self.code, &self.data, &self.libs);
         while !reader.is_eof() {
-            code.push(Isa::read(&mut reader)?);
+            code.push(Isa::decode(&mut reader)?);
         }
         Ok(code)
     }
@@ -348,7 +348,7 @@ impl Lib {
         while !cursor.is_eof() {
             let pos = cursor.pos();
 
-            let instr = Isa::read(&mut cursor).ok()?;
+            let instr = Isa::decode(&mut cursor).ok()?;
             let next = instr.exec(registers, LibSite::with(pos, lib_hash));
 
             #[cfg(all(debug_assertions, feature = "std"))]
