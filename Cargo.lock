@@ -4,13 +4,13 @@ version = 3
 
 [[package]]
 name = "aluvm"
-version = "0.8.0-beta.1"
+version = "0.9.0-rc.1"
 dependencies = [
  "amplify",
  "bech32",
  "bitcoin_hashes",
  "curve25519-dalek",
- "half 2.1.0",
+ "half",
  "paste",
  "secp256k1",
  "serde",
@@ -91,9 +91,9 @@ checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 
 [[package]]
 name = "bitcoin_hashes"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "006cc91e1a1d99819bc5b8214be3555c1f0611b169f527a1fdc54ed1f2b745b0"
+checksum = "90064b8dee6815a6470d60bad07bbbaee885c0e12d04177138fa3291a01b7bc4"
 dependencies = [
  "serde",
 ]
@@ -227,12 +227,6 @@ dependencies = [
 
 [[package]]
 name = "half"
-version = "1.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
-
-[[package]]
-name = "half"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad6a9459c9c30b177b925162351f97e7d967c7ea8bab3b8352805327daf45554"
@@ -321,18 +315,18 @@ checksum = "4501abdff3ae82a1c1b477a17252eb69cee9e66eb915c1abaa4f44d873df9f09"
 
 [[package]]
 name = "secp256k1"
-version = "0.22.1"
+version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26947345339603ae8395f68e2f3d85a6b0a8ddfe6315818e80b8504415099db0"
+checksum = "d9512ffd81e3a3503ed401f79c33168b9148c75038956039166cd750eaa037c3"
 dependencies = [
  "secp256k1-sys",
 ]
 
 [[package]]
 name = "secp256k1-sys"
-version = "0.5.2"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "152e20a0fd0519390fc43ab404663af8a0b794273d2a91d60ad4a39f13ffe110"
+checksum = "83080e2c2fc1006e625be82e5d1eb6a43b7fd9578b617fcc55814daf286bba4b"
 dependencies = [
  "cc",
 ]
@@ -414,13 +408,13 @@ dependencies = [
 
 [[package]]
 name = "strict_encoding"
-version = "0.8.2"
+version = "0.9.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef7fccd0e9a81be0575f12845e93c2f5becaae168e63b43ab036bd80148aeb58"
+checksum = "ae10097e736d1b74a9e6fc8f202d3446ec78750571ac0bc73b7ab37cb6e2c9ec"
 dependencies = [
  "amplify",
  "bitcoin_hashes",
- "half 1.8.2",
+ "half",
  "strict_encoding_derive",
 ]
 

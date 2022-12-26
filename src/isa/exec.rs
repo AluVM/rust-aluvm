@@ -17,6 +17,7 @@ use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl, Shr};
 
 use bitcoin_hashes::{ripemd160, sha256, sha512, Hash};
+use secp256k1::Scalar;
 
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
@@ -862,11 +863,11 @@ impl InstructionSet for Secp256k1Op {
                             })
                             .map(|pk| (scal, pk))
                     })
-                    .and_then(|(mut scal, mut pk)| {
-                        let scal = scal.as_mut();
-                        // little endian to big endian
-                        scal.reverse();
-                        pk.mul_assign(SECP256K1, scal).map(|_| pk).ok()
+                    .and_then(|(scal, pk)| {
+                        let mut buf = [0u8; 32];
+                        buf.copy_from_slice(scal.as_ref());
+                        let scal = Scalar::from_le_bytes(buf).ok()?;
+                        pk.mul_tweak(SECP256K1, &scal).ok()
                     })
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
@@ -904,9 +905,8 @@ impl InstructionSet for Secp256k1Op {
                         pk[1..].copy_from_slice(&val[..]);
                         PublicKey::from_slice(&pk).ok()
                     })
-                    .map(|mut pk| {
-                        pk.negate_assign(SECP256K1);
-                        pk
+                    .map(|pk| {
+                        pk.negate(SECP256K1)
                     })
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)

@@ -122,6 +122,11 @@ impl Hash for LibId {
 
     #[inline]
     fn from_inner(inner: Self::Inner) -> Self { Self(sha256t::Hash::from_inner(inner)) }
+
+    #[inline]
+    fn all_zeros() -> Self {
+        Self(sha256t::Hash::all_zeros())
+    }
 }
 
 /// Error parsing [`LibId`] bech32m representation
