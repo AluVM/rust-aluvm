@@ -38,7 +38,7 @@ where
 {
     /// Constructs new virtual machine instance.
     pub fn new() -> Self {
-        Self { registers: Box::new(Default::default()), phantom: Default::default() }
+        Self { registers: Box::default(), phantom: Default::default() }
     }
 
     /// Executes the program starting from the provided entry point (set with

@@ -62,7 +62,7 @@ impl Extend<u8> for ByteStr {
             self.bytes[pos as usize] = byte;
             pos += 1;
         }
-        self.len = pos as u16;
+        self.len = pos;
     }
 }
 

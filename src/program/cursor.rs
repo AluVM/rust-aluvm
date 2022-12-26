@@ -329,7 +329,7 @@ where
     Self: 'a,
 {
     fn write_bool(&mut self, data: bool) -> Result<(), WriteError> {
-        let data = if data { 1u8 } else { 0u8 } << self.bit_pos.as_u8();
+        let data = u8::from(data) << self.bit_pos.as_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(1)).map_err(WriteError::from)
