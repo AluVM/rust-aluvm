@@ -5,7 +5,7 @@ version = "0.8.0-beta.1"
 authors = ["Dr Maxim Orlovsky <orlovsky@lnp-bp.org>"]
 edition = "2018"
 license = "MIT"
-repository = "https://github.com/internet2-org/rust-aluvm"
+repository = "https://github.com/aluvm/rust-aluvm"
 homepage = "https://aluvm.org"
 keywords = ["virtual-machine", "emulator", "functional", "risc", "edge-computing"]
 categories = ["no-std", "embedded", "compilers", "cryptography", "emulators"]
@@ -23,7 +23,7 @@ bitcoin_hashes = { version = "0.10.0", default-features = false } # this is most
 bech32 = { version = "0.9.0", default-features = false }
 secp256k1 = { version = "0.22.1", optional = true, features = ["global-context"] }
 curve25519-dalek = { version = "3.2", optional = true }
-half = "1.8.2"
+half = "2.1.0"
 serde_crate = { package = "serde", version = "1", optional = true }
 serde_with = { version = "1.14", optional = true }
 
