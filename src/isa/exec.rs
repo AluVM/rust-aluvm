@@ -904,9 +904,7 @@ impl InstructionSet for Secp256k1Op {
                         pk[1..].copy_from_slice(&val[..]);
                         PublicKey::from_slice(&pk).ok()
                     })
-                    .map(|pk| {
-                        pk.negate(SECP256K1)
-                    })
+                    .map(|pk| pk.negate(SECP256K1))
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
                     .map(|pk| Number::from_slice(&pk[1..]));
@@ -1015,8 +1013,7 @@ impl InstructionSet for ReservedOp {
 mod tests {
     use super::*;
     use crate::data::{Layout, Step};
-    use crate::reg::{Reg16};
-
+    use crate::reg::Reg16;
     #[cfg(feature = "secp256k1")]
     use crate::reg::{Reg8, RegBlockAR};
 
