@@ -17,7 +17,6 @@ use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl, Shr};
 
 use bitcoin_hashes::{ripemd160, sha256, sha512, Hash};
-use secp256k1::Scalar;
 
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
@@ -866,7 +865,7 @@ impl InstructionSet for Secp256k1Op {
                     .and_then(|(scal, pk)| {
                         let mut buf = [0u8; 32];
                         buf.copy_from_slice(scal.as_ref());
-                        let scal = Scalar::from_le_bytes(buf).ok()?;
+                        let scal = secp256k1::Scalar::from_le_bytes(buf).ok()?;
                         pk.mul_tweak(SECP256K1, &scal).ok()
                     })
                     .as_ref()
