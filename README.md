@@ -1,9 +1,9 @@
 # AluVM rust implementation
 
-![Build](https://github.com/internet2-org/rust-aluvm/workflows/Build/badge.svg)
-![Tests](https://github.com/internet2-org/rust-aluvm/workflows/Tests/badge.svg)
-![Lints](https://github.com/internet2-org/rust-aluvm/workflows/Lints/badge.svg)
-[![codecov](https://codecov.io/gh/internet2-org/rust-aluvm/branch/master/graph/badge.svg)](https://codecov.io/gh/internet2-org/rust-aluvm)
+![Build](https://github.com/AluVM/rust-aluvm/workflows/Build/badge.svg)
+![Tests](https://github.com/AluVM/rust-aluvm/workflows/Tests/badge.svg)
+![Lints](https://github.com/AluVM/rust-aluvm/workflows/Lints/badge.svg)
+[![codecov](https://codecov.io/gh/AluVM/rust-aluvm/branch/master/graph/badge.svg)](https://codecov.io/gh/AluVM/rust-aluvm)
 
 [![crates.io](https://img.shields.io/crates/v/aluvm)](https://crates.io/crates/aluvm)
 [![Docs](https://docs.rs/aluvm/badge.svg)](https://docs.rs/aluvm)
@@ -26,7 +26,7 @@ robustness, platform-independent determinism are more important than the
 speed of computation. The main area of AluVM applications (using appropriate 
 ISA extensions) is blockchain environments, consensus-critical computations, 
 edge computing, multiparty computing (including deterministic machine learning),
-client-side-validation, sandboxed Internet2 computing and genetic algorithms.
+client-side-validation, sandboxed computing and genetic algorithms.
 
 For more details on AluVM, please check [the specification][AluVM], watch
 detailed presentation on [YouTube] or check [slides] from the presentation.
@@ -133,6 +133,6 @@ Check [the specification][AluVM] for the details.
   ([ISA & API docs](https://docs.rs/aluvm/0.2.1/aluvm/)) – see presentation
   on [Youtube] or read [slides]
 
-[AluVM]: https://github.com/internet2-org/aluvm-spec
+[AluVM]: https://github.com/AluVM/aluvm-spec
 [YouTube]: https://www.youtube.com/watch?v=brfWta7XXFQ
 [slides]: https://github.com/LNP-BP/presentations/blob/master/Presentation%20slides/Single-use-seals.pdf
