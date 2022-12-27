@@ -122,13 +122,13 @@ impl Number {
                 .checked_add(rhs.to_i1024_bytes())
                 .map(Number::from)
                 .and_then(|n| n.reshaped(Layout::signed(n.layout().bytes()), true))
-                .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then_some(n)),
+                .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then(|| n)),
             (Layout::Integer(IntLayout { bytes, .. }), false) => self
                 .to_u1024_bytes()
                 .checked_add(rhs.to_u1024_bytes())
                 .map(Number::from)
                 .and_then(|n| n.reshaped(Layout::unsigned(n.layout().bytes()), true))
-                .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then_some(n)),
+                .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then(|| n)),
             (Layout::Float(_), _) => panic!("integer addition of float numbers"),
         }
     }
@@ -150,13 +150,13 @@ impl Number {
                 .checked_sub(rhs.to_i1024_bytes())
                 .map(Number::from)
                 .and_then(|n| n.reshaped(Layout::signed(n.layout().bytes()), true))
-                .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then_some(n)),
+                .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then(|| n)),
             (Layout::Integer(IntLayout { bytes, .. }), false) => self
                 .to_u1024_bytes()
                 .checked_sub(rhs.to_u1024_bytes())
                 .map(Number::from)
                 .and_then(|n| n.reshaped(Layout::unsigned(n.layout().bytes()), true))
-                .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then_some(n)),
+                .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then(|| n)),
             (Layout::Float(_), _) => panic!("integer subtraction of float numbers"),
         }
     }
@@ -178,13 +178,13 @@ impl Number {
                 .checked_mul(rhs.to_i1024_bytes())
                 .map(Number::from)
                 .and_then(|n| n.reshaped(Layout::signed(n.layout().bytes()), true))
-                .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then_some(n)),
+                .and_then(|mut n| (n.reshape(Layout::signed(bytes)) || flags.wrap).then(|| n)),
             (Layout::Integer(IntLayout { bytes, .. }), false) => self
                 .to_u1024_bytes()
                 .checked_mul(rhs.to_u1024_bytes())
                 .map(Number::from)
                 .and_then(|n| n.reshaped(Layout::unsigned(n.layout().bytes()), true))
-                .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then_some(n)),
+                .and_then(|mut n| (n.reshape(Layout::unsigned(bytes)) || flags.wrap).then(|| n)),
             (Layout::Float(_), _) => panic!("integer multiplication of float numbers"),
         }
     }

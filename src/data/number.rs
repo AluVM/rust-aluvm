@@ -872,7 +872,7 @@ impl Number {
     /// Transformed number as an optional - or `None` if the operation was impossible without
     /// discarding bit information and `wrap` is set to false.
     pub fn reshaped(mut self, to: Layout, wrap: bool) -> Option<Number> {
-        self.reshape(to).then_some(self).or(if wrap { Some(self) } else { None })
+        self.reshape(to).then(|| self).or(if wrap { Some(self) } else { None })
     }
 
     #[doc(hidden)]
