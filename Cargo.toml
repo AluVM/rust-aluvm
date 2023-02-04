@@ -1,14 +1,15 @@
 [package]
 name = "aluvm"
-description = "AluVM rust implementation"
-version = "0.9.0"
-authors = ["Dr Maxim Orlovsky <orlovsky@lnp-bp.org>"]
-edition = "2018"
-license = "MIT"
+description = "Functional registry-based RISC virtual machine"
+version = "0.10.0-alpha.1"
+authors = ["Dr Maxim Orlovsky <orlovsky@ubideco.org>"]
 repository = "https://github.com/aluvm/rust-aluvm"
 homepage = "https://aluvm.org"
 keywords = ["virtual-machine", "emulator", "functional", "risc", "edge-computing"]
 categories = ["no-std", "embedded", "compilers", "cryptography", "emulators"]
+rust-version = "1.66" # Due to strict encoding library (caused by GAD)
+edition = "2018"
+license = "Apache-2.0"
 readme = "README.md"
 exclude = [".github"]
 
