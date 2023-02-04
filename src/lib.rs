@@ -125,9 +125,9 @@ extern crate alloc;
 
 #[macro_use]
 extern crate amplify;
-#[cfg(feature = "strict_encoding")]
-#[macro_use]
-extern crate strict_encoding;
+// #[cfg(feature = "strict_encoding")]
+// #[macro_use]
+// extern crate strict_encoding;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;

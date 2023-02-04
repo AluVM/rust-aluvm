@@ -52,7 +52,7 @@ impl sha256t::Tag for LibIdTag {
 /// Represents commitment to the library data; any two distinct programs are guaranteed (with SHA256
 /// collision resistance level) to have a distinct library ids.
 #[derive(Wrapper, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, From)]
-#[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
+// #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[wrapper(Debug, LowerHex, Index, IndexRange, IndexFrom, IndexTo, IndexFull)]
 pub struct LibId(sha256t::Hash<LibIdTag>);
@@ -185,7 +185,7 @@ impl FromStr for LibId {
 
 /// AluVM executable code library
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
+// #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Lib {
     /// ISA segment
@@ -388,7 +388,7 @@ impl Lib {
 
 /// Location within a library
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
-#[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
+// #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display("{pos} @ {lib}")]
 pub struct LibSite {

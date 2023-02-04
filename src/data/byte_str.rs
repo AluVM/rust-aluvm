@@ -173,6 +173,7 @@ impl Display for ByteStr {
     }
 }
 
+/*
 #[cfg(feature = "strict_encoding")]
 mod _strict_encoding {
     use std::convert::TryFrom;
@@ -196,6 +197,7 @@ mod _strict_encoding {
         }
     }
 }
+ */
 
 #[cfg(feature = "serde")]
 mod _serde {
