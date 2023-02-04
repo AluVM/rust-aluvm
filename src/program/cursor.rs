@@ -120,26 +120,26 @@ where
         }
         let byte = self.as_ref()[self.byte_pos as usize];
         let mut mask = 0x00u8;
-        let mut cnt = bit_count.as_u8();
+        let mut cnt = bit_count.to_u8();
         while cnt > 0 {
             mask <<= 1;
             mask |= 0x01;
             cnt -= 1;
         }
-        mask <<= self.bit_pos.as_u8();
-        let val = (byte & mask) >> self.bit_pos.as_u8();
+        mask <<= self.bit_pos.to_u8();
+        let val = (byte & mask) >> self.bit_pos.to_u8();
         self.inc_bits(bit_count).map(|_| val)
     }
 
     fn inc_bits(&mut self, bit_count: u3) -> Result<(), CodeEofError> {
-        let pos = self.bit_pos.as_u8() + bit_count.as_u8();
+        let pos = self.bit_pos.to_u8() + bit_count.to_u8();
         self.bit_pos = u3::with(pos % 8);
         self._inc_bytes_inner(pos as u16 / 8)
     }
 
     fn inc_bytes(&mut self, byte_count: u16) -> Result<(), CodeEofError> {
         assert_eq!(
-            self.bit_pos.as_u8(),
+            self.bit_pos.to_u8(),
             0,
             "attempt to access (multiple) bytes at a non-byte aligned position"
         );
@@ -329,56 +329,56 @@ where
     Self: 'a,
 {
     fn write_bool(&mut self, data: bool) -> Result<(), WriteError> {
-        let data = u8::from(data) << self.bit_pos.as_u8();
+        let data = u8::from(data) << self.bit_pos.to_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(1)).map_err(WriteError::from)
     }
 
     fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), WriteError> {
-        let data = data.into().as_u8() << self.bit_pos.as_u8();
+        let data = data.into().into_u8() << self.bit_pos.to_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(1)).map_err(WriteError::from)
     }
 
     fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), WriteError> {
-        let data = data.into().as_u8() << self.bit_pos.as_u8();
+        let data = data.into().to_u8() << self.bit_pos.to_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(2)).map_err(WriteError::from)
     }
 
     fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), WriteError> {
-        let data = data.into().as_u8() << self.bit_pos.as_u8();
+        let data = data.into().to_u8() << self.bit_pos.to_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(3)).map_err(WriteError::from)
     }
 
     fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), WriteError> {
-        let data = data.into().as_u8() << self.bit_pos.as_u8();
+        let data = data.into().to_u8() << self.bit_pos.to_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(4)).map_err(WriteError::from)
     }
 
     fn write_u5(&mut self, data: impl Into<u5>) -> Result<(), WriteError> {
-        let data = data.into().as_u8() << self.bit_pos.as_u8();
+        let data = data.into().to_u8() << self.bit_pos.to_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(5)).map_err(WriteError::from)
     }
 
     fn write_u6(&mut self, data: impl Into<u6>) -> Result<(), WriteError> {
-        let data = data.into().as_u8() << self.bit_pos.as_u8();
+        let data = data.into().to_u8() << self.bit_pos.to_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(6)).map_err(WriteError::from)
     }
 
     fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), WriteError> {
-        let data = data.into().as_u8() << self.bit_pos.as_u8();
+        let data = data.into().to_u8() << self.bit_pos.to_u8();
         let pos = self.byte_pos as usize;
         self.as_mut()[pos] |= data;
         self.inc_bits(u3::with(7)).map_err(WriteError::from)

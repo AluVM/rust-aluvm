@@ -466,11 +466,11 @@ pub struct RegS(#[from] u4);
 impl RegS {
     /// Returns `u8` value corresponding to the register number
     #[inline]
-    pub fn as_u8(self) -> u8 { self.0.as_u8() }
+    pub fn as_u8(self) -> u8 { self.0.to_u8() }
 
     /// Returns `usize` value corresponding to the register number
     #[inline]
-    pub fn as_usize(self) -> usize { self.0.as_u8() as usize }
+    pub fn as_usize(self) -> usize { self.0.to_u8() as usize }
 }
 
 impl Register for RegS {
@@ -485,17 +485,17 @@ impl Default for RegS {
 
 impl From<RegS> for u8 {
     #[inline]
-    fn from(reg: RegS) -> Self { reg.0.as_u8() }
+    fn from(reg: RegS) -> Self { reg.0.to_u8() }
 }
 
 impl From<&RegS> for u8 {
     #[inline]
-    fn from(reg: &RegS) -> Self { reg.0.as_u8() }
+    fn from(reg: &RegS) -> Self { reg.0.to_u8() }
 }
 
 impl From<RegS> for usize {
     #[inline]
-    fn from(reg: RegS) -> Self { reg.0.as_u8() as usize }
+    fn from(reg: RegS) -> Self { reg.0.to_u8() as usize }
 }
 
 impl From<u8> for RegS {
@@ -520,22 +520,22 @@ impl From<&RegS> for u4 {
 
 impl From<u5> for RegS {
     #[inline]
-    fn from(val: u5) -> Self { RegS(u4::with(val.as_u8() % 16)) }
+    fn from(val: u5) -> Self { RegS(u4::with(val.to_u8() % 16)) }
 }
 
 impl From<&u5> for RegS {
     #[inline]
-    fn from(val: &u5) -> Self { RegS(u4::with(val.as_u8() % 16)) }
+    fn from(val: &u5) -> Self { RegS(u4::with(val.to_u8() % 16)) }
 }
 
 impl From<RegS> for u5 {
     #[inline]
-    fn from(reg: RegS) -> Self { u5::with(reg.0.as_u8()) }
+    fn from(reg: RegS) -> Self { u5::with(reg.0.to_u8()) }
 }
 
 impl From<&RegS> for u5 {
     #[inline]
-    fn from(reg: &RegS) -> Self { u5::with(reg.0.as_u8()) }
+    fn from(reg: &RegS) -> Self { u5::with(reg.0.to_u8()) }
 }
 
 impl TryFrom<Reg32> for RegS {

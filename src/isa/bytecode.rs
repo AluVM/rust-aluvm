@@ -554,7 +554,7 @@ impl Bytecode for MoveOp {
             let idx1 = reader.read_u5()?.into();
             let idx2 = reader.read_u5()?.into();
             let reg = reader.read_u3()?;
-            match code.as_u8() {
+            match code.to_u8() {
                 0b000 => MoveOp::MovA(reg.into(), idx1, idx2),
                 0b001 => MoveOp::DupA(reg.into(), idx1, idx2),
                 0b010 => MoveOp::SwpA(reg.into(), idx1, idx2),
@@ -725,7 +725,7 @@ impl Bytecode for CmpOp {
             let idx1 = reader.read_u5()?.into();
             let idx2 = reader.read_u5()?.into();
             let reg = reader.read_u3()?;
-            match (instr, code.as_u8(), flag.as_u8()) {
+            match (instr, code.to_u8(), flag.into_u8()) {
                 (INSTR_LGT, 0b00, _) => CmpOp::GtA(flag.into(), reg.into(), idx1, idx2),
                 (INSTR_LGT, 0b01, _) => CmpOp::LtA(flag.into(), reg.into(), idx1, idx2),
                 (INSTR_LGT, 0b10, _) => CmpOp::GtF(flag.into(), reg.into(), idx1, idx2),
@@ -1010,7 +1010,7 @@ impl Bytecode for BitwiseOp {
             let shift = reader.read_u5()?.into();
             let reg = reader.read_u4()?.into();
             let idx = reader.read_u5()?.into();
-            match code.as_u8() {
+            match code.into_u8() {
                 0b0 => Self::Scl(a2, shift, reg, idx),
                 0b1 => Self::Scr(a2, shift, reg, idx),
                 _ => unreachable!(),
@@ -1023,9 +1023,9 @@ impl Bytecode for BitwiseOp {
             let block = reader.read_u1()?;
             let reg = reader.read_u3()?;
             let idx = reader.read_u5()?.into();
-            let shift2 = u5::with(shift.as_u8() << 1 | sign.as_u8()).into();
+            let shift2 = u5::with(shift.to_u8() << 1 | sign.into_u8()).into();
             let regar = RegAR::from(block, reg);
-            match (code.as_u8(), block.as_u8()) {
+            match (code.into_u8(), block.into_u8()) {
                 (0b0, _) => Self::Shl(a2, shift2, regar, idx),
                 (0b1, 0b0) => Self::ShrA(sign.into(), a2, shift.into(), reg.into(), idx),
                 (0b1, 0b1) => Self::ShrR(a2, shift2, reg.into(), idx),

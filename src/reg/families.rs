@@ -847,17 +847,17 @@ impl From<&RegAF> for u4 {
 impl From<RegAF> for u4 {
     fn from(reg: RegAF) -> Self {
         match reg {
-            RegAF::A(a) => u4::with(u3::from(a).as_u8()),
-            RegAF::F(f) => u4::with(u3::from(f).as_u8() + 8),
+            RegAF::A(a) => u4::with(u3::from(a).to_u8()),
+            RegAF::F(f) => u4::with(u3::from(f).to_u8() + 8),
         }
     }
 }
 
 impl From<u4> for RegAF {
     fn from(val: u4) -> Self {
-        match val.as_u8() {
-            0..=7 => RegAF::A(RegA::from(u3::with(val.as_u8()))),
-            _ => RegAF::F(RegF::from(u3::with(val.as_u8() - 8))),
+        match val.to_u8() {
+            0..=7 => RegAF::A(RegA::from(u3::with(val.to_u8()))),
+            _ => RegAF::F(RegF::from(u3::with(val.to_u8() - 8))),
         }
     }
 }
@@ -929,7 +929,7 @@ impl RegAR {
     /// Constructs register superset from register block and family integer representation
     #[inline]
     pub fn from(block: u1, reg: u3) -> Self {
-        match block.as_u8() {
+        match block.into_u8() {
             0 => RegAR::A(reg.into()),
             1 => RegAR::R(reg.into()),
             _ => unreachable!(),
@@ -962,17 +962,17 @@ impl From<&RegAR> for u4 {
 impl From<RegAR> for u4 {
     fn from(reg: RegAR) -> Self {
         match reg {
-            RegAR::A(a) => u4::with(u3::from(a).as_u8()),
-            RegAR::R(r) => u4::with(u3::from(r).as_u8() + 8),
+            RegAR::A(a) => u4::with(u3::from(a).to_u8()),
+            RegAR::R(r) => u4::with(u3::from(r).to_u8() + 8),
         }
     }
 }
 
 impl From<u4> for RegAR {
     fn from(val: u4) -> Self {
-        match val.as_u8() {
-            0..=7 => RegAR::A(RegA::from(u3::with(val.as_u8()))),
-            _ => RegAR::R(RegR::from(u3::with(val.as_u8() - 8))),
+        match val.to_u8() {
+            0..=7 => RegAR::A(RegA::from(u3::with(val.to_u8()))),
+            _ => RegAR::R(RegR::from(u3::with(val.to_u8() - 8))),
         }
     }
 }

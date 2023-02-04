@@ -89,7 +89,7 @@ impl FromStr for SignFlag {
 impl SignFlag {
     /// Constructs integer sign flag from `u1` value (used in bytecode serialization)
     pub fn from_u1(val: u1) -> SignFlag {
-        match val.as_u8() {
+        match val.into_u8() {
             v if v == SignFlag::Unsigned as u8 => SignFlag::Unsigned,
             v if v == SignFlag::Signed as u8 => SignFlag::Signed,
             _ => unreachable!(),
@@ -162,7 +162,7 @@ impl FromStr for NoneEqFlag {
 impl NoneEqFlag {
     /// Constructs none-equality flag from `u1` value (used in bytecode serialization)
     pub fn from_u1(val: u1) -> NoneEqFlag {
-        match val.as_u8() {
+        match val.into_u8() {
             v if v == NoneEqFlag::Equal as u8 => NoneEqFlag::Equal,
             v if v == NoneEqFlag::NonEqual as u8 => NoneEqFlag::NonEqual,
             _ => unreachable!(),
@@ -238,7 +238,7 @@ impl FromStr for FloatEqFlag {
 impl FloatEqFlag {
     /// Constructs float equality flag from `u1` value (used in bytecode serialization)
     pub fn from_u1(val: u1) -> FloatEqFlag {
-        match val.as_u8() {
+        match val.into_u8() {
             v if v == FloatEqFlag::Exact as u8 => FloatEqFlag::Exact,
             v if v == FloatEqFlag::Rounding as u8 => FloatEqFlag::Rounding,
             _ => unreachable!(),
@@ -327,7 +327,7 @@ impl FromStr for RoundingFlag {
 impl RoundingFlag {
     /// Constructs float rounding flag from `u2` value (used in bytecode serialization)
     pub fn from_u2(val: u2) -> Self {
-        match val.as_u8() {
+        match val.to_u8() {
             v if v == RoundingFlag::TowardsZero as u8 => RoundingFlag::TowardsZero,
             v if v == RoundingFlag::TowardsNearest as u8 => RoundingFlag::TowardsNearest,
             v if v == RoundingFlag::Ceil as u8 => RoundingFlag::Ceil,
@@ -434,7 +434,7 @@ impl FromStr for IntFlags {
 impl IntFlags {
     /// Constructs integer arithmetic flags from `u2` value (used in bytecode serialization)
     pub fn from_u2(val: u2) -> Self {
-        let val = val.as_u8();
+        let val = val.to_u8();
         IntFlags { signed: val & 0x01 == 1, wrap: val & 0x02 >> 1 == 1 }
     }
 
@@ -537,7 +537,7 @@ impl FromStr for MergeFlag {
 impl MergeFlag {
     /// Constructs merge operation flag from `u2` value (used in bytecode serialization)
     pub fn from_u2(val: u2) -> Self {
-        match val.as_u8() {
+        match val.to_u8() {
             v if v == MergeFlag::Set as u8 => MergeFlag::Set,
             v if v == MergeFlag::Add as u8 => MergeFlag::Add,
             v if v == MergeFlag::And as u8 => MergeFlag::And,
@@ -605,7 +605,7 @@ impl FromStr for ExtendFlag {
 impl ExtendFlag {
     /// Constructs extension flag from `u1` value (used in bytecode serialization)
     pub fn from_u1(val: u1) -> ExtendFlag {
-        match val.as_u8() {
+        match val.into_u8() {
             v if v == ExtendFlag::Extend as u8 => ExtendFlag::Extend,
             v if v == ExtendFlag::Fail as u8 => ExtendFlag::Fail,
             _ => unreachable!(),
@@ -737,7 +737,7 @@ impl FromStr for SplitFlag {
 impl SplitFlag {
     /// Constructs split operation flag from `u3` value (used in bytecode serialization)
     pub fn from_u3(val: u3) -> Self {
-        match val.as_u8() {
+        match val.to_u8() {
             v if v == SplitFlag::NoneNone as u8 => SplitFlag::NoneNone,
             v if v == SplitFlag::NoneNoneOnEmpty as u8 => SplitFlag::NoneNoneOnEmpty,
             v if v == SplitFlag::NoneZeroOnEmpty as u8 => SplitFlag::NoneZeroOnEmpty,
@@ -861,7 +861,7 @@ impl FromStr for InsertFlag {
 impl InsertFlag {
     /// Constructs insert operation flag from `u3` value (used in bytecode serialization)
     pub fn from_u3(val: u3) -> Self {
-        match val.as_u8() {
+        match val.to_u8() {
             v if v == InsertFlag::FailOnLen as u8 => InsertFlag::FailOnLen,
             v if v == InsertFlag::FailOnOffset as u8 => InsertFlag::FailOnOffset,
             v if v == InsertFlag::FailOnOffsetLen as u8 => InsertFlag::FailOnOffsetLen,
@@ -957,7 +957,7 @@ impl FromStr for DeleteFlag {
 impl DeleteFlag {
     /// Constructs delete operation flag from `u2` value (used in bytecode serialization)
     pub fn from_u2(val: u2) -> Self {
-        match val.as_u8() {
+        match val.to_u8() {
             v if v == DeleteFlag::None as u8 => DeleteFlag::None,
             v if v == DeleteFlag::Zero as u8 => DeleteFlag::Zero,
             v if v == DeleteFlag::Cut as u8 => DeleteFlag::Cut,
