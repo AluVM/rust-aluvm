@@ -21,9 +21,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![deny(
+    non_upper_case_globals,
+    non_camel_case_types,
+    non_snake_case,
+    unused_mut,
+    unused_imports,
+    dead_code,
+    missing_docs
+)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![deny(dead_code, missing_docs, warnings)]
-// TODO: Remove this once `amplify_derive` become clippy-compatible
 
 //! Rust implementation of AluVM (arithmetic logic unit virtual machine) and assembler from Alu
 //! Assembly language into bytecode.
