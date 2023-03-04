@@ -114,7 +114,7 @@ impl IsaSeg {
     ///
     /// # Error
     ///
-    /// Errors with [`IsaSegError`] if the segment can't be correctly constructed from the probided
+    /// Errors with [`IsaSegError`] if the segment can't be correctly constructed from the provided
     /// data.
     #[allow(clippy::should_implement_trait)]
     pub fn from_iter(
