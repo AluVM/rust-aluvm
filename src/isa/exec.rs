@@ -58,7 +58,7 @@ pub enum ExecStep {
 /// Trait for instructions
 pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
     /// Context: external data which are accessible to the ISA.
-    type Context;
+    type Context<'ctx>;
 
     /// ISA Extensions used by the provided instruction set.
     ///
@@ -97,14 +97,14 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
     ///
     /// Returns whether further execution should be stopped.
     // TODO: Take the instruction by reference
-    fn exec(&self, regs: &mut CoreRegs, site: LibSite, context: &Self::Context) -> ExecStep;
+    fn exec(&self, regs: &mut CoreRegs, site: LibSite, context: &Self::Context<'_>) -> ExecStep;
 }
 
 impl<Extension> InstructionSet for Instr<Extension>
 where
     Extension: InstructionSet,
 {
-    type Context = Extension::Context;
+    type Context<'ctx> = Extension::Context<'ctx>;
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> {
@@ -117,7 +117,7 @@ where
     }
 
     #[inline]
-    fn exec(&self, regs: &mut CoreRegs, site: LibSite, ctx: &Self::Context) -> ExecStep {
+    fn exec(&self, regs: &mut CoreRegs, site: LibSite, ctx: &Self::Context<'_>) -> ExecStep {
         match self {
             Instr::ControlFlow(instr) => instr.exec(regs, site, &()),
             Instr::Put(instr) => instr.exec(regs, site, &()),
@@ -139,7 +139,7 @@ where
 }
 
 impl InstructionSet for ControlFlowOp {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
@@ -182,7 +182,7 @@ impl InstructionSet for ControlFlowOp {
 }
 
 impl InstructionSet for PutOp {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
@@ -232,7 +232,7 @@ impl InstructionSet for PutOp {
 }
 
 impl InstructionSet for MoveOp {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
@@ -314,7 +314,7 @@ impl InstructionSet for MoveOp {
 }
 
 impl InstructionSet for CmpOp {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
@@ -418,7 +418,7 @@ impl InstructionSet for CmpOp {
 }
 
 impl InstructionSet for ArithmeticOp {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
@@ -522,7 +522,7 @@ impl InstructionSet for ArithmeticOp {
 }
 
 impl InstructionSet for BitwiseOp {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
@@ -575,7 +575,7 @@ impl InstructionSet for BitwiseOp {
 }
 
 impl InstructionSet for BytesOp {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
@@ -799,7 +799,7 @@ impl InstructionSet for BytesOp {
 }
 
 impl InstructionSet for DigestOp {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> {
@@ -841,7 +841,7 @@ impl InstructionSet for DigestOp {
 }
 
 impl InstructionSet for Secp256k1Op {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[cfg(not(feature = "secp256k1"))]
     #[inline]
@@ -951,7 +951,7 @@ impl InstructionSet for Secp256k1Op {
 }
 
 impl InstructionSet for Curve25519Op {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[cfg(not(feature = "curve25519"))]
     #[inline]
@@ -1038,7 +1038,7 @@ impl InstructionSet for Curve25519Op {
 }
 
 impl InstructionSet for ReservedOp {
-    type Context = ();
+    type Context<'ctx> = ();
 
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }

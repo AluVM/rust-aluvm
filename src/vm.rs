@@ -58,7 +58,7 @@ where
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    pub fn run(&mut self, program: &impl Program<Isa = Isa>, context: &Isa::Context) -> bool {
+    pub fn run(&mut self, program: &impl Program<Isa = Isa>, context: &Isa::Context<'_>) -> bool {
         self.call(program, program.entrypoint(), context)
     }
 
@@ -71,7 +71,7 @@ where
         &mut self,
         program: &impl Program<Isa = Isa>,
         method: LibSite,
-        context: &Isa::Context,
+        context: &Isa::Context<'_>,
     ) -> bool {
         let mut call = Some(method);
         while let Some(ref mut site) = call {

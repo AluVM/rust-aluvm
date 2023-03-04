@@ -260,7 +260,7 @@ impl Lib {
         &self,
         entrypoint: u16,
         registers: &mut CoreRegs,
-        context: &Isa::Context,
+        context: &Isa::Context<'_>,
     ) -> Option<LibSite>
     where
         Isa: InstructionSet,
