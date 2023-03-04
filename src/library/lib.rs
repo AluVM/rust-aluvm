@@ -304,7 +304,8 @@ impl Lib {
 
 /// Location within a library
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
-// #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
+#[derive(StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = LIB_NAME_ALUVM)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display("{pos} @ {lib}")]
 pub struct LibSite {
