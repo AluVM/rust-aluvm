@@ -21,7 +21,7 @@ name = "asm"
 required-features = ["all"]
 
 [dependencies]
-amplify = { version = "4.0.0-beta.13", default-features = false, features = ["apfloat", "derive", "hex"] }
+amplify = { version = "4.0.0-beta.18", default-features = false, features = ["apfloat", "derive", "hex"] }
 paste = "1"
 strict_encoding = { version = "2.0.0-beta.5", default-features = false, features = ["float", "derive"], optional = true }
 bitcoin_hashes = { version = "0.11.0", default-features = false } # this is most well-maintained generic hash implementation library
