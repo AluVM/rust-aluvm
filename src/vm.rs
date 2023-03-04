@@ -27,7 +27,7 @@ use alloc::boxed::Box;
 use core::marker::PhantomData;
 
 use crate::isa::{Instr, InstructionSet, ReservedOp};
-use crate::program::LibSite;
+use crate::library::LibSite;
 use crate::reg::CoreRegs;
 use crate::Program;
 
@@ -58,7 +58,7 @@ where
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    pub fn run(&mut self, program: &Program<Isa>) -> bool {
+    pub fn run(&mut self, program: &impl Program<Isa = Isa>) -> bool {
         self.call(program, program.entrypoint())
     }
 
@@ -67,7 +67,7 @@ where
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    pub fn call(&mut self, program: &Program<Isa>, method: LibSite) -> bool {
+    pub fn call(&mut self, program: &impl Program<Isa = Isa>, method: LibSite) -> bool {
         let mut call = Some(method);
         while let Some(ref mut site) = call {
             if let Some(lib) = program.lib(site.lib) {

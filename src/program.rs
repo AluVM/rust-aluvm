@@ -25,16 +25,41 @@ use alloc::borrow::ToOwned;
 use alloc::collections::BTreeMap;
 use alloc::string::String;
 use core::marker::PhantomData;
+use std::collections::btree_map;
 
-use super::constants::LIBS_MAX_TOTAL;
-use super::*;
 use crate::isa::InstructionSet;
+use crate::library::constants::LIBS_MAX_TOTAL;
+use crate::library::{Lib, LibId, LibSite};
 
-/// Errors returned by [`Program::add_lib`] method
+/// Trait for a concrete program implementation provided by a runtime environment.
+pub trait Program {
+    /// Instruction set architecture used by the program.
+    type Isa: InstructionSet;
+
+    /// Iterator type over libraries
+    type Iter<'a>: Iterator<Item = &'a Lib>
+    where
+        Self: 'a;
+
+    /// Returns number of libraries used by the program.
+    fn lib_count(&self) -> u16;
+
+    /// Returns an iterator over libraries used by the program.
+    fn libs(&self) -> Self::Iter<'_>;
+
+    /// Returns library corresponding to the provided [`LibId`], if the library is known to the
+    /// program.
+    fn lib(&self, id: LibId) -> Option<&Lib>;
+
+    /// Main entry point into the program.
+    fn entrypoint(&self) -> LibSite;
+}
+
+/// Errors returned by [`Prog::add_lib`] method
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[cfg_attr(feature = "std", derive(Error))]
 #[display(doc_comments)]
-pub enum LibError {
+pub enum ProgError {
     /// ISA id {0} is not supported by the selected instruction set
     IsaNotSupported(String),
 
@@ -43,7 +68,8 @@ pub enum LibError {
     TooManyLibs,
 }
 
-/// An AluVM program executable by a virtual machine.
+/// The most trivial form of a program which is just a collection of libraries with some entry
+/// point.
 ///
 /// # Generics
 ///
@@ -53,14 +79,14 @@ pub enum LibError {
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 // #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct Program<Isa, const RUNTIME_MAX_TOTAL_LIBS: u16 = LIBS_MAX_TOTAL>
+pub struct Prog<Isa, const RUNTIME_MAX_TOTAL_LIBS: u16 = LIBS_MAX_TOTAL>
 where
     Isa: InstructionSet,
 {
-    /// Libraries known to the runtime, identified by their hashes
+    /// Libraries known to the runtime, identified by their hashes.
     libs: BTreeMap<LibId, Lib>,
 
-    /// Entrypoint for the main function
+    /// Entrypoint for the main function.
     entrypoint: LibSite,
 
     // #[cfg_attr(feature = "strict_encoding", strict_encoding(skip))]
@@ -68,18 +94,14 @@ where
     phantom: PhantomData<Isa>,
 }
 
-impl<Isa, const RUNTIME_MAX_TOTAL_LIBS: u16> Program<Isa, RUNTIME_MAX_TOTAL_LIBS>
+impl<Isa, const RUNTIME_MAX_TOTAL_LIBS: u16> Prog<Isa, RUNTIME_MAX_TOTAL_LIBS>
 where
     Isa: InstructionSet,
 {
     const RUNTIME_MAX_TOTAL_LIBS: u16 = RUNTIME_MAX_TOTAL_LIBS;
 
     fn empty_unchecked() -> Self {
-        Program {
-            libs: BTreeMap::new(),
-            entrypoint: LibSite::with(0, zero!()),
-            phantom: default!(),
-        }
+        Prog { libs: BTreeMap::new(), entrypoint: LibSite::with(0, zero!()), phantom: default!() }
     }
 
     /// Constructs new virtual machine runtime using provided single library. Entry point is set
@@ -96,7 +118,7 @@ where
     pub fn with(
         libs: impl IntoIterator<Item = Lib>,
         entrypoint: LibSite,
-    ) -> Result<Self, LibError> {
+    ) -> Result<Self, ProgError> {
         let mut runtime = Self::empty_unchecked();
         for lib in libs {
             runtime.add_lib(lib)?;
@@ -105,42 +127,49 @@ where
         Ok(runtime)
     }
 
-    /// Returns reference to a specific library, if it is part of the current program.
-    pub fn lib(&self, id: LibId) -> Option<&Lib> { self.libs.get(&id) }
-
     /// Adds Alu bytecode library to the virtual machine runtime.
     ///
     /// # Errors
     ///
     /// Checks requirement that the total number of libraries must not exceed [`LIBS_MAX_TOTAL`]
-    /// and `RUNTIME_MAX_TOTAL_LIBS` - or returns [`LibError::TooManyLibs`] otherwise.
+    /// and `RUNTIME_MAX_TOTAL_LIBS` - or returns [`ProgError::TooManyLibs`] otherwise.
     ///
     /// Checks that the ISA used by the VM supports ISA extensions specified by the library and
-    /// returns [`LibError::IsaNotSupported`] otherwise.
+    /// returns [`ProgError::IsaNotSupported`] otherwise.
     ///
     /// # Returns
     ///
     /// `true` if the library was already known and `false` otherwise.
     #[inline]
-    pub fn add_lib(&mut self, lib: Lib) -> Result<bool, LibError> {
-        if self.libs_count() >= LIBS_MAX_TOTAL.min(Self::RUNTIME_MAX_TOTAL_LIBS) {
-            return Err(LibError::TooManyLibs);
+    pub fn add_lib(&mut self, lib: Lib) -> Result<bool, ProgError> {
+        if self.lib_count() >= LIBS_MAX_TOTAL.min(Self::RUNTIME_MAX_TOTAL_LIBS) {
+            return Err(ProgError::TooManyLibs);
         }
         for isa in &lib.isae {
             if !Isa::is_supported(isa) {
-                return Err(LibError::IsaNotSupported(isa.to_owned()));
+                return Err(ProgError::IsaNotSupported(isa.to_owned()));
             }
         }
         Ok(self.libs.insert(lib.id(), lib).is_none())
     }
 
-    /// Returns number of libraries used by the program.
-    pub fn libs_count(&self) -> u16 { self.libs.len() as u16 }
-
-    /// Returns program entry point.
-    pub fn entrypoint(&self) -> LibSite { self.entrypoint }
-
     // TODO: Return error if the library is not known
     /// Sets new entry point value (used when calling [`crate::Vm::run`])
     pub fn set_entrypoint(&mut self, entrypoint: LibSite) { self.entrypoint = entrypoint; }
+}
+
+impl<Isa, const RUNTIME_MAX_TOTAL_LIBS: u16> Program for Prog<Isa, RUNTIME_MAX_TOTAL_LIBS>
+where
+    Isa: InstructionSet,
+{
+    type Isa = Isa;
+    type Iter<'a> = btree_map::Values<'a, LibId, Lib> where Self: 'a;
+
+    fn lib_count(&self) -> u16 { self.libs.len() as u16 }
+
+    fn libs(&self) -> Self::Iter<'_> { self.libs.values() }
+
+    fn lib(&self, id: LibId) -> Option<&Lib> { self.libs.get(&id) }
+
+    fn entrypoint(&self) -> LibSite { self.entrypoint }
 }

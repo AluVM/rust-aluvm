@@ -36,8 +36,8 @@ use bitcoin_hashes::{sha256, sha256t, Hash, HashEngine};
 use super::{Cursor, Read};
 use crate::data::ByteStr;
 use crate::isa::{BytecodeError, ExecStep, InstructionSet};
-use crate::program::segs::IsaSeg;
-use crate::program::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
+use crate::library::segs::IsaSeg;
+use crate::library::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
 use crate::reg::CoreRegs;
 
 const LIB_ID_MIDSTATE: [u8; 32] = [

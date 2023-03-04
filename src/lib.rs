@@ -156,10 +156,11 @@ extern crate core;
 pub mod data;
 #[macro_use]
 pub mod isa;
-pub mod program;
+pub mod library;
+mod program;
 pub mod reg;
-pub mod vm;
+mod vm;
 
 pub use isa::Isa;
-pub use program::Program;
+pub use program::{Prog, ProgError, Program};
 pub use vm::Vm;

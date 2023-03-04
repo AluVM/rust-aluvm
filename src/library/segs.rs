@@ -29,11 +29,11 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt::{self, Display, Formatter};
 
-use crate::program::constants::{
+use crate::library::constants::{
     ISAE_SEGMENT_MAX_COUNT, ISAE_SEGMENT_MAX_LEN, ISA_ID_ALLOWED_CHARS, ISA_ID_ALLOWED_FIRST_CHAR,
     ISA_ID_MAX_LEN, ISA_ID_MIN_LEN, LIBS_SEGMENT_MAX_COUNT,
 };
-use crate::program::{LibId, LibSite};
+use crate::library::{LibId, LibSite};
 
 /// Errors while processing binary-encoded segment data
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]

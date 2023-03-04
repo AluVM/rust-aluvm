@@ -18,8 +18,8 @@ extern crate aluvm;
 extern crate paste;
 
 use aluvm::isa::Instr;
-use aluvm::program::{Lib, Program};
-use aluvm::Vm;
+use aluvm::library::Lib;
+use aluvm::{Prog, Vm};
 
 #[test]
 fn a_eq_test() {
@@ -136,7 +136,7 @@ fn a_lt_s_test() {
 fn run(code: Vec<Instr>, expect_success: bool) {
     let mut runtime = Vm::<Instr>::new();
 
-    let program = Program::<Instr>::new(Lib::assemble(&code).unwrap());
+    let program = Prog::<Instr>::new(Lib::assemble(&code).unwrap());
     let res = runtime.run(&program);
 
     println!("\nVM microprocessor core state:\n{:#?}", runtime.registers());

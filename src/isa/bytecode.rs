@@ -34,7 +34,7 @@ use super::{
     InstructionSet, MoveOp, PutOp, ReservedOp, Secp256k1Op,
 };
 use crate::data::{ByteStr, MaybeNumber};
-use crate::program::{CodeEofError, LibSite, Read, Write, WriteError};
+use crate::library::{CodeEofError, LibSite, Read, Write, WriteError};
 use crate::reg::{RegAR, RegBlockAR};
 
 /// Errors encoding instructions

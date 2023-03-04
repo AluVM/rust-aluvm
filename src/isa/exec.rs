@@ -36,7 +36,7 @@ use super::{
 };
 use crate::data::{ByteStr, MaybeNumber, Number, NumberLayout};
 use crate::isa::{ExtendFlag, FloatEqFlag, IntFlags, MergeFlag, NoneEqFlag, SignFlag};
-use crate::program::{constants, LibSite};
+use crate::library::{constants, LibSite};
 use crate::reg::{CoreRegs, NumericRegister, Reg32, RegA, RegR};
 
 /// Turing machine movement after instruction execution

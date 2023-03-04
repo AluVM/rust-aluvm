@@ -30,7 +30,7 @@ use amplify::num::{u1, u2, u24, u3, u4, u5, u6, u7};
 use super::{CodeEofError, LibId, LibSeg, Read, Write, WriteError};
 use crate::data::Number;
 use crate::isa::{Bytecode, Instr, InstructionSet};
-use crate::program::constants::{CODE_SEGMENT_MAX_LEN, DATA_SEGMENT_MAX_LEN};
+use crate::library::constants::{CODE_SEGMENT_MAX_LEN, DATA_SEGMENT_MAX_LEN};
 use crate::reg::NumericRegister;
 
 /// Cursor for accessing bytecode bounded by [`CODE_SEGMENT_MAX_LEN`] length and data segment

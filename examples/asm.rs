@@ -18,8 +18,8 @@ extern crate aluvm;
 extern crate paste;
 
 use aluvm::isa::Instr;
-use aluvm::program::Lib;
-use aluvm::{Program, Vm};
+use aluvm::library::Lib;
+use aluvm::{Prog, Vm};
 
 fn main() {
     let code = aluasm! {
@@ -102,7 +102,7 @@ fn main() {
     let lib_repr = lib.to_string();
 
     eprint!("\nExecuting the program {} ... ", lib.id());
-    let program = Program::<Instr>::new(lib);
+    let program = Prog::<Instr>::new(lib);
     let mut runtime = Vm::<Instr>::new();
     match runtime.run(&program) {
         true => eprintln!("success"),

@@ -33,7 +33,7 @@ use bitcoin_hashes::Hash;
 
 use crate::data::encoding::DecodeError::InvalidBool;
 use crate::data::{ByteStr, FloatLayout, IntLayout, Layout, MaybeNumber, Number, NumberLayout};
-use crate::program::{
+use crate::library::{
     IsaSeg, IsaSegError, Lib, LibId, LibSeg, LibSegOverflow, LibSite, SegmentError,
 };
 
