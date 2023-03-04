@@ -79,8 +79,8 @@ impl Extend<u8> for ByteStr {
     }
 }
 
-impl From<TinyBlob> for ByteStr {
-    fn from(blob: TinyBlob) -> Self {
+impl From<&TinyBlob> for ByteStr {
+    fn from(blob: &TinyBlob) -> Self {
         let len = blob.len_u8() as u16;
         let mut bytes = [0u8; u16::MAX as usize];
         bytes[0..(len as usize)].copy_from_slice(blob.as_slice());
@@ -88,13 +88,21 @@ impl From<TinyBlob> for ByteStr {
     }
 }
 
-impl From<SmallBlob> for ByteStr {
-    fn from(blob: SmallBlob) -> Self {
+impl From<&SmallBlob> for ByteStr {
+    fn from(blob: &SmallBlob) -> Self {
         let len = blob.len_u16();
         let mut bytes = [0u8; u16::MAX as usize];
         bytes[0..(len as usize)].copy_from_slice(blob.as_slice());
         ByteStr { len, bytes: Box::new(bytes) }
     }
+}
+
+impl From<TinyBlob> for ByteStr {
+    fn from(blob: TinyBlob) -> Self { ByteStr::from(&blob) }
+}
+
+impl From<SmallBlob> for ByteStr {
+    fn from(blob: SmallBlob) -> Self { ByteStr::from(&blob) }
 }
 
 impl TryFrom<&[u8]> for ByteStr {

@@ -23,7 +23,6 @@
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::convert::TryFrom;
 use core::fmt::{self, Display, Formatter};
@@ -180,9 +179,9 @@ impl Lib {
         Ok(Self {
             isae,
             libs,
-            code: ByteStr::try_from(bytecode.borrow())
+            code: ByteStr::try_from(bytecode.as_slice())
                 .map_err(|_| SegmentError::CodeSegmentTooLarge(bytecode.len()))?,
-            data: ByteStr::try_from(data.borrow())
+            data: ByteStr::try_from(data.as_slice())
                 .map_err(|_| SegmentError::DataSegmentTooLarge(bytecode.len()))?,
         })
     }
