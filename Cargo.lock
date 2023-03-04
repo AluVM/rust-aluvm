@@ -16,6 +16,7 @@ dependencies = [
  "secp256k1",
  "serde",
  "strict_encoding",
+ "strict_types",
 ]
 
 [[package]]
@@ -122,6 +123,12 @@ name = "base58"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6107fe1be6682a68940da878d9e9f5e90ca5745b3dec9fd1bb393c8777d4f581"
+
+[[package]]
+name = "base64"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
 
 [[package]]
 name = "bitcoin_hashes"
@@ -446,8 +453,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding"
 version = "2.0.0-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0e6e5cd3593dc19835c8caa34db3400ac2e69a6044f1086b5802b2bd51e1067"
+source = "git+https://github.com/strict-types/strict-encoding#902bd8fcca4292b40be32262b8a48af33ec8728e"
 dependencies = [
  "amplify",
  "half",
@@ -457,14 +463,27 @@ dependencies = [
 [[package]]
 name = "strict_encoding_derive"
 version = "2.0.0-beta.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cb9b35c9d7429212d20ae38bb86ecbc6cd3b3ccf5db6a12d1e2aafa7cedf5b0"
+source = "git+https://github.com/strict-types/strict-encoding#902bd8fcca4292b40be32262b8a48af33ec8728e"
 dependencies = [
  "amplify_syn",
  "heck",
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "strict_types"
+version = "1.0.0-beta.3"
+source = "git+https://github.com/strict-types/strict-types#23e182c6ced83e2a026e5280c34d11928eb675a7"
+dependencies = [
+ "amplify",
+ "baid58",
+ "base64",
+ "blake3",
+ "half",
+ "indexmap",
+ "strict_encoding",
 ]
 
 [[package]]
