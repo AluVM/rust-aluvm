@@ -32,13 +32,13 @@ use crate::reg::CoreRegs;
 use crate::Program;
 
 /// Alu virtual machine providing single-core execution environment
-#[derive(Getters, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct Vm<Isa = Instr<ReservedOp>>
 where
     Isa: InstructionSet,
 {
     /// A set of registers
-    registers: Box<CoreRegs>,
+    pub registers: Box<CoreRegs>,
 
     phantom: PhantomData<Isa>,
 }
