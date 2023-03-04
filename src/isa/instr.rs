@@ -192,7 +192,7 @@ pub enum PutOp {
     PutR(RegR, Reg32, Box<MaybeNumber>),
 
     /// Conditionally assigns a value to `A` register if the register is in uninitialized state.
-    /// If the register is initialized, sets `st0` to `false`.
+    /// If the register is initialized and the value is not `None` sets `st0` to `false`.
     ///
     /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
     ///     this instruction is assembled and the data are not present in the data segment (their
@@ -203,7 +203,7 @@ pub enum PutOp {
     PutIfA(RegA, Reg32, Box<MaybeNumber>),
 
     /// Conditionally assigns a value to `R` register if the register is in uninitialized state.
-    /// If the register is initialized, sets `st0` to `false`.
+    /// If the register is initialized and the value is not `None` sets `st0` to `false`.
     ///
     /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
     ///     this instruction is assembled and the data are not present in the data segment (their

@@ -333,7 +333,7 @@ impl CoreRegs {
     /// Assigns the provided value to the register bit-wise if the register is not initialized.
     /// Silently discards most significant bits until the value fits register bit size.
     ///
-    /// Returns `true` if the value was not `None` and the register was initialized.
+    /// Returns `false` if the register is initialized and the value is not `None`.
     #[inline]
     pub fn set_if(
         &mut self,
@@ -346,7 +346,7 @@ impl CoreRegs {
         if self.get(reg, index).is_none() {
             self.set(reg, index, value)
         } else {
-            false
+            value.into().is_none()
         }
     }
 
