@@ -28,8 +28,7 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::string::FromUtf8Error;
 
-use amplify::IoError;
-use bitcoin_hashes::Hash;
+use amplify::{IoError, Wrapper};
 
 use crate::data::encoding::DecodeError::InvalidBool;
 use crate::data::{ByteStr, FloatLayout, IntLayout, Layout, MaybeNumber, Number, NumberLayout};
@@ -598,7 +597,7 @@ impl Encode for LibId {
     type Error = io::Error;
 
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
-        let slice = self.into_inner();
+        let slice = self.as_slice();
         writer.write_all(&slice)?;
         Ok(slice.len())
     }
@@ -611,9 +610,9 @@ impl Decode for LibId {
     where
         Self: Sized,
     {
-        let mut slice = [0u8; LibId::LEN];
+        let mut slice = [0u8; 32];
         reader.read_exact(&mut slice)?;
-        Ok(LibId::from_inner(slice))
+        Ok(LibId::from_inner(slice.into()))
     }
 }
 

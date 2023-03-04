@@ -145,9 +145,8 @@ extern crate alloc;
 
 #[macro_use]
 extern crate amplify;
-// #[cfg(feature = "strict_encoding")]
-// #[macro_use]
-// extern crate strict_encoding;
+#[macro_use]
+extern crate strict_encoding;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
@@ -164,3 +163,6 @@ mod vm;
 pub use isa::Isa;
 pub use program::{Prog, ProgError, Program};
 pub use vm::Vm;
+
+/// Struct types library name.
+pub const LIB_NAME_ALUVM: &str = "AluVM";
