@@ -58,8 +58,8 @@ where
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    pub fn run(&mut self, program: &impl Program<Isa = Isa>) -> bool {
-        self.call(program, program.entrypoint())
+    pub fn run(&mut self, program: &impl Program<Isa = Isa>, context: &Isa::Context) -> bool {
+        self.call(program, program.entrypoint(), context)
     }
 
     /// Executes the program starting from the provided entry point.
@@ -67,11 +67,16 @@ where
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    pub fn call(&mut self, program: &impl Program<Isa = Isa>, method: LibSite) -> bool {
+    pub fn call(
+        &mut self,
+        program: &impl Program<Isa = Isa>,
+        method: LibSite,
+        context: &Isa::Context,
+    ) -> bool {
         let mut call = Some(method);
         while let Some(ref mut site) = call {
             if let Some(lib) = program.lib(site.lib) {
-                call = lib.exec::<Isa>(site.pos, &mut self.registers);
+                call = lib.exec::<Isa>(site.pos, &mut self.registers, context);
             } else if let Some(pos) = site.pos.checked_add(1) {
                 site.pos = pos;
             } else {

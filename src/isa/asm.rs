@@ -50,7 +50,7 @@
 /// let lib = Lib::assemble(&code).unwrap();
 /// let program = Prog::<Instr>::new(lib);
 /// let mut vm = Vm::<Instr>::new();
-/// match vm.run(&program) {
+/// match vm.run(&program, &()) {
 ///     true => println!("success"),
 ///     false => println!("failure"),
 /// }

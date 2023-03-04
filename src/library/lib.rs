@@ -256,7 +256,12 @@ impl Lib {
     /// # Returns
     ///
     /// Location for the external code jump, if any
-    pub fn exec<Isa>(&self, entrypoint: u16, registers: &mut CoreRegs) -> Option<LibSite>
+    pub fn exec<Isa>(
+        &self,
+        entrypoint: u16,
+        registers: &mut CoreRegs,
+        context: &Isa::Context,
+    ) -> Option<LibSite>
     where
         Isa: InstructionSet,
     {
@@ -268,7 +273,7 @@ impl Lib {
             let pos = cursor.pos();
 
             let instr = Isa::decode(&mut cursor).ok()?;
-            let next = instr.exec(registers, LibSite::with(pos, lib_hash));
+            let next = instr.exec(registers, LibSite::with(pos, lib_hash), context);
 
             #[cfg(all(debug_assertions, feature = "std"))]
             eprint!("\n@{:06}> {:48}; st0={}", pos, instr, registers.st0);

@@ -137,7 +137,7 @@ fn run(code: Vec<Instr>, expect_success: bool) {
     let mut runtime = Vm::<Instr>::new();
 
     let program = Prog::<Instr>::new(Lib::assemble(&code).unwrap());
-    let res = runtime.run(&program);
+    let res = runtime.run(&program, &());
 
     println!("\nVM microprocessor core state:\n{:#?}", runtime.registers);
     assert!(res == expect_success)

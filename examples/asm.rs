@@ -104,7 +104,7 @@ fn main() {
     eprint!("\nExecuting the program {} ... ", lib.id());
     let program = Prog::<Instr>::new(lib);
     let mut runtime = Vm::<Instr>::new();
-    match runtime.run(&program) {
+    match runtime.run(&program, &()) {
         true => eprintln!("success"),
         false => eprintln!("failure"),
     }
