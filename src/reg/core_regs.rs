@@ -350,6 +350,28 @@ impl CoreRegs {
         }
     }
 
+    /// Assigns the provided value to the string register.
+    ///
+    /// Returns `true` if the value was not `None`.
+    pub fn set_s(&mut self, index: impl Into<RegS>, value: Option<ByteStr>) -> bool {
+        let reg = &mut self.s16[index.into().as_usize()];
+        let was_set = reg.is_some();
+        *reg = value;
+        was_set
+    }
+
+    /// Assigns the provided value to the string register if the register is not initialized.
+    ///
+    /// Returns `false` if the register is initialized and the value is not `None`.
+    pub fn set_s_if(&mut self, index: impl Into<RegS>, value: Option<ByteStr>) -> bool {
+        let index = index.into();
+        if self.get_s(index).is_none() {
+            self.set_s(index, value)
+        } else {
+            value.is_none()
+        }
+    }
+
     /// Executes provided operation (as callback function) if and only if all the provided registers
     /// contain a value (initialized). Otherwise, sets destination to `None` and does not calls the
     /// callback.
