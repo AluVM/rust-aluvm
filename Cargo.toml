@@ -1,7 +1,7 @@
 [package]
 name = "aluvm"
 description = "Functional registry-based RISC virtual machine"
-version = "0.10.0-alpha.1"
+version = "0.10.0-beta.1"
 authors = ["Dr Maxim Orlovsky <orlovsky@ubideco.org>"]
 repository = "https://github.com/aluvm/rust-aluvm"
 homepage = "https://aluvm.org"
@@ -25,10 +25,10 @@ name = "asm"
 required-features = ["all"]
 
 [dependencies]
-amplify = { version = "4.0.0-beta.18", default-features = false, features = ["apfloat", "derive", "hex"] }
+amplify = { version = "4.0.0-beta.19", default-features = false, features = ["apfloat", "derive", "hex"] }
 paste = "1"
-strict_encoding = { version = "2.0.0-beta.5", default-features = false, features = ["float", "derive"] }
-strict_types = { version = "1.0.0-beta.3", optional = true }
+strict_encoding = { version = "2.0.0-rc.2", default-features = false, features = ["float", "derive"] }
+strict_types = { version = "1.0.0-beta.4", optional = true }
 bitcoin_hashes = { version = "0.11.0", default-features = false } # this is most well-maintained generic hash implementation library
 blake3 = { version = "1.3.3", default-features = false }
 baid58 = "0.2.0"
@@ -51,7 +51,3 @@ serde = ["serde_crate", "amplify/serde", "std"]
 
 [package.metadata.docs.rs]
 features = [ "all" ]
-
-[patch.crates-io]
-strict_encoding = { git = "https://github.com/strict-types/strict-encoding" }
-strict_types = { git = "https://github.com/strict-types/strict-types" }
