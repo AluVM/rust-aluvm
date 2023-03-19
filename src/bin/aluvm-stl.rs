@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     let sty_id =
-        TypeLibId::from_str("subject_leonid_rudolf_3VG9Cjoyx9MMAY2y4EZBgX9YQoyMngFfNrGLAUFbzQFU")?;
+        TypeLibId::from_str("gordon_george_magic_7UDb1RpkpgFcP3LhPVqSiAXAFfxoBLxtRSvWYwhy8F7W")?;
 
     let imports = bset! {
         Dependency::with(sty_id, libname!(STRICT_TYPES_LIB)),
@@ -50,15 +50,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let lib = LibBuilder::new(libname!(LIB_NAME_ALUVM)).process::<LibSite>()?.compile(imports)?;
     let id = lib.id();
 
-    let ext = match args.get(2).map(String::as_str) {
-        Some("-b") => "stl",
-        Some("-h") => "asc.stl",
+    let ext = match args.get(1).map(String::as_str) {
+        Some("--stl") => "stl",
+        Some("--asc") => "asc.stl",
+        Some("--sty") => "sty",
         _ => "sty",
     };
-    let filename = args.get(3).cloned().unwrap_or_else(|| format!("stl/AluVM.{ext}"));
+    let filename = args.get(2).cloned().unwrap_or_else(|| format!("stl/AluVM.{ext}"));
     let mut file = match args.len() {
-        2 => Box::new(stdout()) as Box<dyn io::Write>,
-        3 | 4 => Box::new(fs::File::create(filename)?) as Box<dyn io::Write>,
+        1 => Box::new(stdout()) as Box<dyn io::Write>,
+        2 | 3 => Box::new(fs::File::create(filename)?) as Box<dyn io::Write>,
         _ => panic!("invalid argument count"),
     };
     match ext {
