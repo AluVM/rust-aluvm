@@ -78,7 +78,8 @@ pub enum ProgError {
 /// value is ignored and [`LIBS_MAX_TOTAL`] constant is used instead.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 // #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+// Removed since after update conflicts with the default const generic
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Prog<Isa, const RUNTIME_MAX_TOTAL_LIBS: u16 = LIBS_MAX_TOTAL>
 where
     Isa: InstructionSet,
@@ -90,7 +91,7 @@ where
     entrypoint: LibSite,
 
     // #[cfg_attr(feature = "strict_encoding", strict_encoding(skip))]
-    #[cfg_attr(feature = "serde", serde(skip))]
+    // #[cfg_attr(feature = "serde", serde(skip))]
     phantom: PhantomData<Isa>,
 }
 
