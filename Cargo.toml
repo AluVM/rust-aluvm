@@ -38,7 +38,7 @@ half = "2.1.0"
 serde_crate = { package = "serde", version = "1", optional = true }
 
 [features]
-default = []
+default = ["std"]
 all = ["stl", "std", "secp256k1", "curve25519", "serde"]
 stl = ["strict_types/base64", "std"]
 std = [

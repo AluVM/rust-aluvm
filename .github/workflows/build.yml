@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        feature: [ stl, std, all, secp256k1, curve25519 ]
+        feature: [ default, stl, std, all, secp256k1, curve25519 ]
     steps:
       - uses: actions/checkout@v2
       - name: Install rust stable
