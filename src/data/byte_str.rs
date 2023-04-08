@@ -25,14 +25,14 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
 use core::convert::TryFrom;
-use core::fmt::{self, Display, Formatter};
+use core::fmt::{self, Debug, Display, Formatter};
 use core::ops::Range;
 
 use amplify::confinement::{SmallBlob, TinyBlob};
 use amplify::num::error::OverflowError;
 
 /// Large binary bytestring object.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ByteStr {
     /// Adjusted slice length.
     len: u16,
@@ -155,12 +155,27 @@ impl ByteStr {
     pub fn to_vec(&self) -> Vec<u8> { self.as_ref().to_vec() }
 }
 
+#[cfg(not(feature = "std"))]
+impl Debug for ByteStr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { write!(f, "{:#04X?}", self.as_ref()) }
+}
+
+#[cfg(feature = "std")]
+impl Debug for ByteStr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use amplify::hex::ToHex;
+
+        f.debug_tuple("ByteStr").field(&self.as_ref().to_hex()).finish()
+    }
+}
+
 #[cfg(feature = "std")]
 impl Display for ByteStr {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use std::fmt::Write;
 
         use amplify::hex::ToHex;
+
         let vec = Vec::from(&self.bytes[..self.len as usize]);
         if f.alternate() {
             for (line, slice) in self.as_ref().chunks(16).enumerate() {
@@ -207,9 +222,7 @@ impl Display for ByteStr {
 
 #[cfg(not(feature = "std"))]
 impl Display for ByteStr {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:#04X?}", &self.bytes[0usize..self.len as usize])
-    }
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { write!(f, "{:#04X?}", self.as_ref()) }
 }
 
 /*
