@@ -45,7 +45,7 @@ pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:aluvm:lib:v01#230304";
 /// Unique identifier for a library.
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default, Debug, Display, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
-#[display(Self::to_baid58)]
+#[display(Self::to_baid58_string)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = LIB_NAME_ALUVM)]
 #[cfg_attr(
@@ -68,6 +68,10 @@ impl FromBaid58<32> for LibId {}
 impl FromStr for LibId {
     type Err = Baid58ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> { Self::from_baid58_str(s) }
+}
+
+impl LibId {
+    fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
 }
 
 impl LibId {

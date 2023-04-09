@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     let sty_id =
-        TypeLibId::from_str("gordon_george_magic_7UDb1RpkpgFcP3LhPVqSiAXAFfxoBLxtRSvWYwhy8F7W")?;
+        TypeLibId::from_str("danube_cotton_kansas_3xcfudRJUuwQ187puYDdNcxGeTpG8AoHyTrfJ9ryo9k6")?;
 
     let imports = bset! {
         Dependency::with(sty_id, libname!(STRICT_TYPES_LIB)),
