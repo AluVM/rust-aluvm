@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "aluvm"
-version = "0.10.0-rc.1"
+version = "0.10.0"
 dependencies = [
  "amplify",
  "baid58",
