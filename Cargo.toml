@@ -1,7 +1,7 @@
 [package]
 name = "aluvm"
 description = "AluVM rust implementation"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Dr Maxim Orlovsky <orlovsky@lnp-bp.org>"]
 edition = "2018"
 license = "MIT"
@@ -24,7 +24,7 @@ bech32 = { version = "0.9.1", default-features = false }
 secp256k1 = { version = "0.24.2", optional = true, features = ["global-context"] }
 curve25519-dalek = { version = "3.2", optional = true }
 half = "2.1.0"
-serde_crate = { package = "serde", version = "1", optional = true }
+serde_crate = { package = "serde", version = "1", features = ["derive"], optional = true }
 serde_with = { version = "1.14", optional = true }
 
 [features]

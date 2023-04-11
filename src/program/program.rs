@@ -40,7 +40,8 @@ pub enum LibError {
 /// value is ignored and [`LIBS_MAX_TOTAL`] constant is used instead.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+// Removed due to a bug in new serde which makes it unable to work with generic defaults
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Program<Isa, const RUNTIME_MAX_TOTAL_LIBS: u16 = LIBS_MAX_TOTAL>
 where
     Isa: InstructionSet,
@@ -52,7 +53,7 @@ where
     entrypoint: LibSite,
 
     #[cfg_attr(feature = "strict_encoding", strict_encoding(skip))]
-    #[cfg_attr(feature = "serde", serde(skip))]
+    // #[cfg_attr(feature = "serde", serde(skip))]
     phantom: PhantomData<Isa>,
 }
 
