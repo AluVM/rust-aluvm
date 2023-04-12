@@ -18,7 +18,7 @@
 /// # #[macro_use] extern crate aluvm;
 /// # use paste::paste;
 /// # use aluvm::{Program, Vm};
-/// # use aluvm::program::Lib;
+/// # use aluvm::program::{Lib, constants::LIBS_MAX_TOTAL};
 /// # use aluvm::isa::Instr;
 ///
 /// let code = aluasm! {
@@ -36,7 +36,7 @@
 /// };
 ///
 /// let lib = Lib::assemble(&code).unwrap();
-/// let program = Program::new(lib);
+/// let program = Program::<_, LIBS_MAX_TOTAL>::new(lib);
 /// let mut vm = Vm::<Instr>::new();
 /// match vm.run(&program) {
 ///     true => println!("success"),
