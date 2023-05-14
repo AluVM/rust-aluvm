@@ -109,7 +109,7 @@ impl TryFrom<&[u8]> for ByteStr {
     type Error = OverflowError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let len = slice.as_ref().len();
+        let len = slice.len();
         if len > u16::MAX as usize {
             return Err(OverflowError { max: u16::MAX as usize + 1, value: len });
         }
