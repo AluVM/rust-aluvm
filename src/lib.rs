@@ -158,6 +158,8 @@ pub mod isa;
 pub mod library;
 mod program;
 pub mod reg;
+#[cfg(feature = "stl")]
+pub mod stl;
 mod vm;
 
 pub use isa::Isa;

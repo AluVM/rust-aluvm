@@ -21,24 +21,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use aluvm::stl;
-use strict_types::typelib::parse_args;
+//! Strict types library generator methods.
 
-fn main() {
-    let (format, dir) = parse_args();
+use strict_types::typelib::{LibBuilder, TranslateError};
+use strict_types::TypeLib;
 
-    stl::aluvm_stl()
-        .serialize(
-            format,
-            dir,
-            "0.1.0",
-            Some(
-                "
-  Description: AluVM data type library
-  Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
-  Copyright (C) 2023 UBIDECO Institute. All rights reserved.
-  License: Apache-2.0",
-            ),
-        )
-        .expect("unable to write to the file");
+use crate::library::LibSite;
+use crate::LIB_NAME_ALUVM;
+
+/// Strict type id for the library providing data types from this crate.
+pub const LIB_ID_ALUVM: &str =
+    "collect_equator_sahara_9ar2N9jT1gHk5Ei9b5uoVoVbvWAXFpiWE2Dxg49iMR2R";
+
+fn _aluvm_stl() -> Result<TypeLib, TranslateError> {
+    LibBuilder::new(libname!(LIB_NAME_ALUVM)).transpile::<LibSite>().compile(bset! {
+        strict_types::stl::strict_types_stl().to_dependency()
+    })
+}
+
+/// Generates strict type library providing data types from this crate.
+pub fn aluvm_stl() -> TypeLib { _aluvm_stl().expect("invalid strict type AluVM library") }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn lib_id() {
+        let lib = aluvm_stl();
+        assert_eq!(lib.id().to_string(), LIB_ID_ALUVM);
+    }
 }
