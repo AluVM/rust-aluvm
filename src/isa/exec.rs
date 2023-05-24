@@ -28,7 +28,7 @@ use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl, Shr};
 
-use bitcoin_hashes::{ripemd160, sha256, sha512, Hash};
+use sha2::Digest;
 
 use super::{
     ArithmeticOp, BitwiseOp, Bytecode, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp,
@@ -817,19 +817,20 @@ impl InstructionSet for DigestOp {
             DigestOp::Ripemd(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
-                let hash = s.map(|s| ripemd160::Hash::hash(s.as_ref()).to_byte_array());
+                let hash: Option<[u8; 20]> =
+                    s.map(|s| ripemd::Ripemd160::digest(s.as_ref()).into());
                 regs.set(RegR::R160, dst, hash);
             }
             DigestOp::Sha256(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
-                let hash = s.map(|s| sha256::Hash::hash(s.as_ref()).to_byte_array());
+                let hash: Option<[u8; 32]> = s.map(|s| sha2::Sha256::digest(s.as_ref()).into());
                 regs.set(RegR::R256, dst, hash);
             }
             DigestOp::Sha512(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
-                let hash = s.map(|s| sha512::Hash::hash(s.as_ref()).to_byte_array());
+                let hash: Option<[u8; 64]> = s.map(|s| sha2::Sha512::digest(s.as_ref()).into());
                 regs.set(RegR::R512, dst, hash);
             }
         }

@@ -31,6 +31,7 @@ use core::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
+use sha2::{Digest, Sha256};
 
 use super::{Cursor, Read};
 use crate::data::ByteStr;
@@ -82,18 +83,24 @@ impl LibId {
         data: impl AsRef<[u8]>,
         libs: &LibSeg,
     ) -> LibId {
-        let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
+        let mut tagger = Sha256::default();
+        tagger.update(LIB_ID_TAG);
+        let tag = tagger.finalize();
+
+        let mut hasher = Sha256::default();
+        hasher.update(&tag);
+        hasher.update(&tag);
 
         let isae = isae.as_ref();
         let code = code.as_ref();
         let data = data.as_ref();
         hasher.update(&(isae.len() as u8).to_le_bytes());
         hasher.update(isae.as_bytes());
-        hasher.update(&code.len().to_le_bytes());
-        hasher.update(code.as_ref());
-        hasher.update(&data.len().to_le_bytes());
-        hasher.update(data.as_ref());
-        hasher.update(&[libs.count()]);
+        hasher.update(&(code.len() as u16).to_le_bytes());
+        hasher.update(code);
+        hasher.update(&(data.len() as u16).to_le_bytes());
+        hasher.update(data);
+        hasher.update(&[libs.count() as u8]);
         for lib in libs {
             hasher.update(lib.as_slice());
         }
