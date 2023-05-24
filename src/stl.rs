@@ -30,13 +30,14 @@ use crate::library::LibSite;
 use crate::LIB_NAME_ALUVM;
 
 /// Strict type id for the library providing data types from this crate.
-pub const LIB_ID_ALUVM: &str =
-    "collect_equator_sahara_9ar2N9jT1gHk5Ei9b5uoVoVbvWAXFpiWE2Dxg49iMR2R";
+pub const LIB_ID_ALUVM: &str = "edition_cuba_sahara_9njuRyHw1Jt7XpohKc7LuNR92R9DWQGvuygn5XJgzpzP";
 
 fn _aluvm_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(LIB_NAME_ALUVM)).transpile::<LibSite>().compile(bset! {
+    LibBuilder::new(libname!(LIB_NAME_ALUVM), tiny_bset! {
         strict_types::stl::strict_types_stl().to_dependency()
     })
+    .transpile::<LibSite>()
+    .compile()
 }
 
 /// Generates strict type library providing data types from this crate.
