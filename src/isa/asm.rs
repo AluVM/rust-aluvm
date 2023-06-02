@@ -57,26 +57,26 @@
 /// ```
 #[macro_export]
 macro_rules! aluasm {
-    ($( $tt:tt )+) => { {
+    ($( $tt:tt )+) => { { #[allow(unused_imports)] {
         use alloc::boxed::Box;
 
-        use aluvm::isa::{
+        use $crate::isa::{
             ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
             MergeFlag, MoveOp, ReservedOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag, NoneEqFlag,
         };
-        use aluvm::reg::{
+        use $crate::reg::{
             Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
             NumericRegister,
         };
-        use aluvm::library::LibSite;
-        use aluvm::data::{Number, MaybeNumber, Step};
+        use $crate::library::LibSite;
+        use $crate::data::{Number, MaybeNumber, Step};
 
         let mut code: Vec<Instr<ReservedOp>> = vec![];
         #[allow(unreachable_code)] {
             aluasm_inner! { code => $( $tt )+ };
         }
         code
-    } }
+    } } }
 }
 
 #[doc(hidden)]
@@ -1222,4 +1222,29 @@ macro_rules! _int_flags {
     ($other:ident) => {
         panic!("wrong integer operation flags")
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use core::str::FromStr;
+
+    use amplify::num::apfloat::ieee;
+    use paste::paste;
+
+    use crate::isa::Instr;
+    use crate::library::Lib;
+    use crate::{Prog, Vm};
+
+    #[test]
+    fn aluasm_float() {
+        let code = aluasm! {
+            put 1.25,f32[8];
+            ret;
+        };
+        let lib = Lib::assemble(&code).unwrap();
+        let program = Prog::<Instr>::new(lib);
+        let mut vm = Vm::<Instr>::new();
+        vm.run(&program, &());
+        assert_eq!(vm.registers.f32[7].unwrap(), ieee::Single::from_str("1.25").unwrap());
+    }
 }

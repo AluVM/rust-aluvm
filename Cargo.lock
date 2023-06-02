@@ -109,9 +109,9 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "baid58"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dce38f6b284b55ab61c1efe2143ac5ca2fcc6090536884e55921f4e002894de"
+checksum = "29eb856caa83b642563396407c1deb5331acd62d9d91cd5a5d0dcab4a825ad4b"
 dependencies = [
  "base58",
  "blake3",
