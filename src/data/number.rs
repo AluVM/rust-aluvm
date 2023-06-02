@@ -445,9 +445,7 @@ impl FromStr for MaybeNumber {
     type Err = LiteralParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(if s.contains(&['p'][..]) {
-            ieee::Quad::from_str(s)?.into()
-        } else if s.contains(".") {
+        Ok(if s.contains(&['p'][..]) || s.contains('.') {
             ieee::Quad::from_str(s)?.into()
         } else {
             Number::from_str(s)?.into()
@@ -1403,54 +1401,54 @@ mod tests {
     #[test]
     fn is_zero_test() {
         let num = Number::from(0);
-        assert_eq!(true, num.is_zero());
+        assert!(num.is_zero());
         let num = Number::from(1);
-        assert_eq!(false, num.is_zero());
+        assert!(!num.is_zero());
     }
 
     #[test]
     fn is_unsigned_int_test() {
         let num = Number::from(0u8);
-        assert_eq!(true, num.layout.is_unsigned_int());
+        assert!(num.layout.is_unsigned_int());
         let num = Number::from(0i8);
-        assert_eq!(false, num.layout.is_unsigned_int());
+        assert!(!num.layout.is_unsigned_int());
         let num = Number::from(1u16);
-        assert_eq!(true, num.layout.is_unsigned_int());
+        assert!(num.layout.is_unsigned_int());
         let num = Number::from(1i16);
-        assert_eq!(false, num.layout.is_unsigned_int());
+        assert!(!num.layout.is_unsigned_int());
         let num = Number::from(-1);
-        assert_eq!(false, num.layout.is_unsigned_int());
+        assert!(!num.layout.is_unsigned_int());
     }
 
     #[test]
     fn is_positive_test() {
         let num = Number::from(1);
-        assert_eq!(true, num.is_positive());
+        assert!(num.is_positive());
         let num = Number::from(0);
-        assert_eq!(false, num.is_positive());
+        assert!(!num.is_positive());
         let num = Number::from(-1);
-        assert_eq!(false, num.is_positive());
+        assert!(!num.is_positive());
         let num = Number::from(127);
-        assert_eq!(true, num.is_positive());
+        assert!(num.is_positive());
     }
 
     #[test]
     fn reshape_test() {
         let mut x =
-            Number::with(&[1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
-        let y = Number::with(&[1u8, 0u8], Layout::Integer(IntLayout { signed: false, bytes: 2 }))
+            Number::with([1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
+        let y = Number::with([1u8, 0u8], Layout::Integer(IntLayout { signed: false, bytes: 2 }))
             .unwrap();
-        assert_eq!(true, x.reshape(Layout::Integer(IntLayout { signed: false, bytes: 2 })));
+        assert!(x.reshape(Layout::Integer(IntLayout { signed: false, bytes: 2 })));
         assert_eq!(x, y);
     }
 
     #[test]
     fn reshape_with_same_layout_test() {
         let mut x =
-            Number::with(&[1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
+            Number::with([1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
         let y =
-            Number::with(&[1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
-        assert_eq!(true, x.reshape(Layout::Integer(IntLayout { signed: false, bytes: 1 })));
+            Number::with([1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
+        assert!(x.reshape(Layout::Integer(IntLayout { signed: false, bytes: 1 })));
         assert_eq!(x, y);
     }
 
@@ -1460,9 +1458,9 @@ mod tests {
         let y = Number::from(-24i16);
         let z = Number::from(-24i128);
         assert_eq!(x.layout, Layout::Integer(IntLayout { signed: true, bytes: 1 }));
-        assert_eq!(true, x.reshape(Layout::Integer(IntLayout { signed: true, bytes: 2 })));
+        assert!(x.reshape(Layout::Integer(IntLayout { signed: true, bytes: 2 })));
         assert_eq!(x, y);
-        assert_eq!(true, x.reshape(Layout::Integer(IntLayout { signed: true, bytes: 16 })));
+        assert!(x.reshape(Layout::Integer(IntLayout { signed: true, bytes: 16 })));
         assert_eq!(x, z);
     }
 

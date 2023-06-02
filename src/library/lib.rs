@@ -72,6 +72,7 @@ impl FromStr for LibId {
 }
 
 impl LibId {
+    #[allow(clippy::wrong_self_convention)] // FIXME #[display] only accepts &self
     fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
 }
 
@@ -88,19 +89,19 @@ impl LibId {
         let tag = tagger.finalize();
 
         let mut hasher = Sha256::default();
-        hasher.update(&tag);
-        hasher.update(&tag);
+        hasher.update(tag);
+        hasher.update(tag);
 
         let isae = isae.as_ref();
         let code = code.as_ref();
         let data = data.as_ref();
-        hasher.update(&(isae.len() as u8).to_le_bytes());
+        hasher.update((isae.len() as u8).to_le_bytes());
         hasher.update(isae.as_bytes());
-        hasher.update(&(code.len() as u16).to_le_bytes());
+        hasher.update((code.len() as u16).to_le_bytes());
         hasher.update(code);
-        hasher.update(&(data.len() as u16).to_le_bytes());
+        hasher.update((data.len() as u16).to_le_bytes());
         hasher.update(data);
-        hasher.update(&[libs.count() as u8]);
+        hasher.update([libs.count()]);
         for lib in libs {
             hasher.update(lib.as_slice());
         }

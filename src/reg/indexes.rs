@@ -31,9 +31,11 @@ use crate::reg::{RegAll, Register};
 /// All possible register indexes for `a` and `r` register sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum Reg32 {
     /// Register with index `[1]`
     #[display("[1]")]
+    #[default]
     Reg1 = 0,
 
     /// Register with index `[2]`
@@ -172,11 +174,6 @@ impl Register for Reg32 {
     fn description() -> &'static str { "5-bit register index" }
 }
 
-impl Default for Reg32 {
-    #[inline]
-    fn default() -> Self { Reg32::Reg1 }
-}
-
 impl From<&Reg32> for u5 {
     #[inline]
     fn from(reg32: &Reg32) -> Self { u5::with(*reg32 as u8) }
@@ -246,9 +243,11 @@ impl From<u5> for Reg32 {
 /// covering initial 16 registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum Reg16 {
     /// Register with index `[1]`
     #[display("[1]")]
+    #[default]
     Reg1 = 0,
 
     /// Register with index `[2]`
@@ -312,11 +311,6 @@ pub enum Reg16 {
     Reg16 = 15,
 }
 
-impl Default for Reg16 {
-    #[inline]
-    fn default() -> Self { Reg16::Reg1 }
-}
-
 impl Register for Reg16 {
     #[inline]
     fn description() -> &'static str { "4-bit register index" }
@@ -378,9 +372,11 @@ impl TryFrom<Reg32> for Reg16 {
 /// initial 8 registers only
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum Reg8 {
     /// Register with index `[1]`
     #[display("[1]")]
+    #[default]
     Reg1 = 0,
 
     /// Register with index `[2]`
@@ -410,11 +406,6 @@ pub enum Reg8 {
     /// Register with index `[8]`
     #[display("[8]")]
     Reg8 = 7,
-}
-
-impl Default for Reg8 {
-    #[inline]
-    fn default() -> Self { Reg8::Reg1 }
 }
 
 impl Register for Reg8 {

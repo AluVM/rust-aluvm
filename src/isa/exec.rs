@@ -1071,13 +1071,13 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
     }
 
     #[test]
@@ -1094,13 +1094,13 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         assert_eq!(MaybeNumber::none(), register.get(RegA::A8, Reg32::Reg5));
         assert_eq!(MaybeNumber::none(), register.get(RegA::A8, Reg32::Reg6));
         CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg5, Reg32::Reg6).exec(
@@ -1108,15 +1108,15 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         CmpOp::EqA(NoneEqFlag::Equal, RegA::A8, Reg32::Reg5, Reg32::Reg6).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     #[test]
@@ -1134,13 +1134,13 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     #[test]
@@ -1158,13 +1158,13 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     #[test]
@@ -1186,19 +1186,19 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         BytesOp::Eq(1.into(), 2.into()).exec(&mut register, lib_site, &());
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         BytesOp::Eq(1.into(), 3.into()).exec(&mut register, lib_site, &());
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         BytesOp::Put(3.into(), Box::new(ByteStr::with([2; u16::MAX as usize])), true).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
     }
 
     #[test]
@@ -1242,7 +1242,7 @@ mod tests {
         let mut num = register.get(RegR::R128, Reg16::Reg2).unwrap();
         num.reshape(Layout::unsigned(s.len() as u16 - 1));
         assert_eq!(num, Number::from_slice("ello".as_bytes()));
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     #[test]
@@ -1268,7 +1268,7 @@ mod tests {
             &(),
         );
         assert_eq!(register.get(RegR::R128, Reg16::Reg1).unwrap(), Number::from(0x07u128));
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
     }
 
     #[test]
@@ -1287,7 +1287,7 @@ mod tests {
             &(),
         );
         assert_eq!(register.get(RegR::R128, Reg16::Reg1), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
     }
 
     #[test]
@@ -1305,7 +1305,7 @@ mod tests {
             &(),
         );
         assert_eq!(register.get(RegR::R128, Reg16::Reg1), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
     }
 
     #[test]
@@ -1337,7 +1337,7 @@ mod tests {
         );
         assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(0u16));
         assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(5u16));
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         // banana (1st fragment)
         PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(1).into()).exec(
             &mut register,
@@ -1351,7 +1351,7 @@ mod tests {
         );
         assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(6u16));
         assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(6u16));
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         // kiwi (2nd fragment)
         PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(2).into()).exec(
             &mut register,
@@ -1365,7 +1365,7 @@ mod tests {
         );
         assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(13u16));
         assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(4u16));
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         // no 3rd fragment
         PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(3).into()).exec(
             &mut register,
@@ -1379,7 +1379,7 @@ mod tests {
         );
         assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
         assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
 
         let s1 = "aaa".as_bytes();
         let s2 = "bbb".as_bytes();
@@ -1405,7 +1405,7 @@ mod tests {
         );
         assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
         assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
 
         let s1 = [0u8; u16::MAX as usize];
@@ -1432,7 +1432,7 @@ mod tests {
         );
         assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(0u16));
         assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(u16::MAX));
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(1).into()).exec(
             &mut register,
             lib_site,
@@ -1445,7 +1445,7 @@ mod tests {
         );
         assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
         assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
     }
 
     #[test]

@@ -481,10 +481,10 @@ mod tests {
         assert!(x < y);
         let x = Number::from(1);
         let y = Number::from(-1);
-        assert_eq!(true, x > y);
+        assert!(x > y);
         let x = Number::from(-128i8);
         let y = Number::from(-127i8);
-        assert_eq!(true, x < y);
+        assert!(x < y);
     }
 
     #[test]
