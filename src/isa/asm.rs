@@ -1245,6 +1245,6 @@ mod tests {
         let program = Prog::<Instr>::new(lib);
         let mut vm = Vm::<Instr>::new();
         vm.run(&program, &());
-        assert_eq!(vm.registers.f32[7].unwrap(), ieee::Single::from_str("1.25").unwrap());
+        assert_eq!(vm.registers.f32[8].unwrap(), ieee::Single::from_str("1.25").unwrap());
     }
 }

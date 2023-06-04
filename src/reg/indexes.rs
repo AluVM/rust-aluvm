@@ -33,134 +33,134 @@ use crate::reg::{RegAll, Register};
 #[repr(u8)]
 #[derive(Default)]
 pub enum Reg32 {
+    /// Register with index `[0]`
+    #[display("[0]")]
+    #[default]
+    Reg0 = 0,
+
     /// Register with index `[1]`
     #[display("[1]")]
-    #[default]
-    Reg1 = 0,
+    Reg1 = 1,
 
     /// Register with index `[2]`
     #[display("[2]")]
-    Reg2 = 1,
+    Reg2 = 2,
 
     /// Register with index `[3]`
     #[display("[3]")]
-    Reg3 = 2,
+    Reg3 = 3,
 
     /// Register with index `[4]`
     #[display("[4]")]
-    Reg4 = 3,
+    Reg4 = 4,
 
     /// Register with index `[5]`
     #[display("[5]")]
-    Reg5 = 4,
+    Reg5 = 5,
 
     /// Register with index `[6]`
     #[display("[6]")]
-    Reg6 = 5,
+    Reg6 = 6,
 
     /// Register with index `[7]`
     #[display("[7]")]
-    Reg7 = 6,
+    Reg7 = 7,
 
     /// Register with index `[8]`
     #[display("[8]")]
-    Reg8 = 7,
+    Reg8 = 8,
 
     /// Register with index `[9]`
     #[display("[9]")]
-    Reg9 = 8,
+    Reg9 = 9,
 
     /// Register with index `[10]`
     #[display("[10]")]
-    Reg10 = 9,
+    Reg10 = 10,
 
     /// Register with index `[11]`
     #[display("[11]")]
-    Reg11 = 10,
+    Reg11 = 11,
 
     /// Register with index `[12]`
     #[display("[12]")]
-    Reg12 = 11,
+    Reg12 = 12,
 
     /// Register with index `[13]`
     #[display("[13]")]
-    Reg13 = 12,
+    Reg13 = 13,
 
     /// Register with index `[14]`
     #[display("[14]")]
-    Reg14 = 13,
+    Reg14 = 14,
 
     /// Register with index `[15]`
     #[display("[15]")]
-    Reg15 = 14,
+    Reg15 = 15,
 
     /// Register with index `[16]`
     #[display("[16]")]
-    Reg16 = 15,
+    Reg16 = 16,
 
     /// Register with index `[17]`
     #[display("[17]")]
-    Reg17 = 16,
+    Reg17 = 17,
 
     /// Register with index `[18]`
     #[display("[18]")]
-    Reg18 = 17,
+    Reg18 = 18,
 
     /// Register with index `[19]`
     #[display("[19]")]
-    Reg19 = 18,
+    Reg19 = 19,
 
     /// Register with index `[20]`
-    #[display("[10]")]
-    Reg20 = 19,
+    #[display("[20]")]
+    Reg20 = 20,
 
     /// Register with index `[21]`
     #[display("[21]")]
-    Reg21 = 20,
+    Reg21 = 21,
 
     /// Register with index `[22]`
     #[display("[22]")]
-    Reg22 = 21,
+    Reg22 = 22,
 
     /// Register with index `[23]`
     #[display("[23]")]
-    Reg23 = 22,
+    Reg23 = 23,
 
     /// Register with index `[24]`
     #[display("[24]")]
-    Reg24 = 23,
+    Reg24 = 24,
 
     /// Register with index `[25]`
     #[display("[25]")]
-    Reg25 = 24,
+    Reg25 = 25,
 
     /// Register with index `[26]`
     #[display("[26]")]
-    Reg26 = 25,
+    Reg26 = 26,
 
     /// Register with index `[27]`
     #[display("[27]")]
-    Reg27 = 26,
+    Reg27 = 27,
 
     /// Register with index `[28]`
     #[display("[28]")]
-    Reg28 = 27,
+    Reg28 = 28,
 
     /// Register with index `[29]`
     #[display("[29]")]
-    Reg29 = 28,
+    Reg29 = 29,
 
     /// Register with index `[30]`
     #[display("[30]")]
-    Reg30 = 29,
+    Reg30 = 30,
 
     /// Register with index `[31]`
     #[display("[31]")]
-    Reg31 = 30,
-
-    /// Register with index `[32]`
-    #[display("[32]")]
-    Reg32 = 31,
+    Reg31 = 31,
 }
 
 impl Reg32 {
@@ -202,6 +202,7 @@ impl From<&Reg32> for Reg32 {
 impl From<u5> for Reg32 {
     fn from(val: u5) -> Self {
         match val {
+            v if v == Reg32::Reg0.into() => Reg32::Reg0,
             v if v == Reg32::Reg1.into() => Reg32::Reg1,
             v if v == Reg32::Reg2.into() => Reg32::Reg2,
             v if v == Reg32::Reg3.into() => Reg32::Reg3,
@@ -233,7 +234,6 @@ impl From<u5> for Reg32 {
             v if v == Reg32::Reg29.into() => Reg32::Reg29,
             v if v == Reg32::Reg30.into() => Reg32::Reg30,
             v if v == Reg32::Reg31.into() => Reg32::Reg31,
-            v if v == Reg32::Reg32.into() => Reg32::Reg32,
             _ => unreachable!(),
         }
     }
@@ -245,70 +245,70 @@ impl From<u5> for Reg32 {
 #[repr(u8)]
 #[derive(Default)]
 pub enum Reg16 {
+    /// Register with index `[0]`
+    #[display("[0]")]
+    #[default]
+    Reg0 = 0,
+
     /// Register with index `[1]`
     #[display("[1]")]
-    #[default]
-    Reg1 = 0,
+    Reg1 = 1,
 
     /// Register with index `[2]`
     #[display("[2]")]
-    Reg2 = 1,
+    Reg2 = 2,
 
     /// Register with index `[3]`
     #[display("[3]")]
-    Reg3 = 2,
+    Reg3 = 3,
 
     /// Register with index `[4]`
     #[display("[4]")]
-    Reg4 = 3,
+    Reg4 = 4,
 
     /// Register with index `[5]`
     #[display("[5]")]
-    Reg5 = 4,
+    Reg5 = 5,
 
     /// Register with index `[6]`
     #[display("[6]")]
-    Reg6 = 5,
+    Reg6 = 6,
 
     /// Register with index `[7]`
     #[display("[7]")]
-    Reg7 = 6,
+    Reg7 = 7,
 
     /// Register with index `[8]`
     #[display("[8]")]
-    Reg8 = 7,
+    Reg8 = 8,
 
     /// Register with index `[9]`
     #[display("[9]")]
-    Reg9 = 8,
+    Reg9 = 9,
 
     /// Register with index `[10]`
     #[display("[10]")]
-    Reg10 = 9,
+    Reg10 = 10,
 
     /// Register with index `[11]`
     #[display("[11]")]
-    Reg11 = 10,
+    Reg11 = 11,
 
     /// Register with index `[12]`
     #[display("[12]")]
-    Reg12 = 11,
+    Reg12 = 12,
 
     /// Register with index `[13]`
     #[display("[13]")]
-    Reg13 = 12,
+    Reg13 = 13,
 
     /// Register with index `[14]`
     #[display("[14]")]
-    Reg14 = 13,
+    Reg14 = 14,
 
     /// Register with index `[15]`
     #[display("[15]")]
-    Reg15 = 14,
-
-    /// Register with index `[16]`
-    #[display("[16]")]
-    Reg16 = 15,
+    Reg15 = 15,
 }
 
 impl Register for Reg16 {
@@ -329,6 +329,7 @@ impl From<Reg16> for u4 {
 impl From<u4> for Reg16 {
     fn from(val: u4) -> Self {
         match val {
+            v if v == Reg16::Reg0.into() => Reg16::Reg0,
             v if v == Reg16::Reg1.into() => Reg16::Reg1,
             v if v == Reg16::Reg2.into() => Reg16::Reg2,
             v if v == Reg16::Reg3.into() => Reg16::Reg3,
@@ -344,7 +345,6 @@ impl From<u4> for Reg16 {
             v if v == Reg16::Reg13.into() => Reg16::Reg13,
             v if v == Reg16::Reg14.into() => Reg16::Reg14,
             v if v == Reg16::Reg15.into() => Reg16::Reg15,
-            v if v == Reg16::Reg16.into() => Reg16::Reg16,
             _ => unreachable!(),
         }
     }
@@ -374,38 +374,38 @@ impl TryFrom<Reg32> for Reg16 {
 #[repr(u8)]
 #[derive(Default)]
 pub enum Reg8 {
+    /// Register with index `[0]`
+    #[display("[0]")]
+    #[default]
+    Reg0 = 0,
+
     /// Register with index `[1]`
     #[display("[1]")]
-    #[default]
-    Reg1 = 0,
+    Reg1 = 1,
 
     /// Register with index `[2]`
     #[display("[2]")]
-    Reg2 = 1,
+    Reg2 = 2,
 
     /// Register with index `[3]`
     #[display("[3]")]
-    Reg3 = 2,
+    Reg3 = 3,
 
     /// Register with index `[4]`
     #[display("[4]")]
-    Reg4 = 3,
+    Reg4 = 4,
 
     /// Register with index `[5]`
     #[display("[5]")]
-    Reg5 = 4,
+    Reg5 = 5,
 
     /// Register with index `[6]`
     #[display("[6]")]
-    Reg6 = 5,
+    Reg6 = 6,
 
     /// Register with index `[7]`
     #[display("[7]")]
-    Reg7 = 6,
-
-    /// Register with index `[8]`
-    #[display("[8]")]
-    Reg8 = 7,
+    Reg7 = 7,
 }
 
 impl Register for Reg8 {
@@ -426,6 +426,7 @@ impl From<Reg8> for u3 {
 impl From<u3> for Reg8 {
     fn from(val: u3) -> Self {
         match val {
+            v if v == Reg8::Reg0.into() => Reg8::Reg0,
             v if v == Reg8::Reg1.into() => Reg8::Reg1,
             v if v == Reg8::Reg2.into() => Reg8::Reg2,
             v if v == Reg8::Reg3.into() => Reg8::Reg3,
@@ -433,7 +434,6 @@ impl From<u3> for Reg8 {
             v if v == Reg8::Reg5.into() => Reg8::Reg5,
             v if v == Reg8::Reg6.into() => Reg8::Reg6,
             v if v == Reg8::Reg7.into() => Reg8::Reg7,
-            v if v == Reg8::Reg8.into() => Reg8::Reg8,
             _ => unreachable!(),
         }
     }

@@ -44,7 +44,7 @@ fn main() {
         eq.e    a8[5],a8[9]                    ;
         eq.n    r160[5],r160[9]                 ;
         eq.e    f64[19],f64[29]                 ;
-        ifn     a32[32]                         ;
+        ifn     a32[31]                         ;
         ifz     r2048[17]                       ;
         inv     st0                             ;
         st.s    a8[1]                           ;
@@ -66,7 +66,7 @@ fn main() {
         add     5,a16[4]                        ;
         dec     a16[8]                          ;
         sub     82,a16[4]                       ;
-        neg     a64[16]                         ;
+        neg     a64[15]                         ;
         abs     f128[11]                        ;
         and     a32[5],a32[6],a32[5]            ;
         xor     r128[5],r128[6],r128[5]         ;
