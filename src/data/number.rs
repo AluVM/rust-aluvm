@@ -445,7 +445,7 @@ impl FromStr for MaybeNumber {
     type Err = LiteralParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(if s.contains(&['p'][..]) || s.contains('.') {
+        Ok(if s.contains('p') || s.contains('.') {
             ieee::Quad::from_str(s)?.into()
         } else {
             Number::from_str(s)?.into()
