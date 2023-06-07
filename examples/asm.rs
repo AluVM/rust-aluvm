@@ -87,8 +87,7 @@ fn main() {
         secpneg r512[1],r512[3]                 ;
         ifz     a16[8]                          ;
         jif     190                             ;
-        jmp     6                               ;
-        call    56 @ alu1wnhusevxmdphv3dh8ada44k0xw66ahq9nzhkv39z07hmudhp380sq0dtml ;
+        call    56 @ alu07EnUZgFtu28sWqqH3womkTopXCkgAGsCLvLnYvNcPLRt ;
         ret                                     ;
     };
 
