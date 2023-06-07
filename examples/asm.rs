@@ -9,17 +9,9 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-extern crate alloc;
-
-#[macro_use]
-extern crate aluvm;
-
-#[macro_use]
-extern crate paste;
-
 use aluvm::isa::Instr;
 use aluvm::library::Lib;
-use aluvm::{Prog, Vm};
+use aluvm::{aluasm, Prog, Vm};
 
 fn main() {
     let code = aluasm! {
