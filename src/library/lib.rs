@@ -47,7 +47,8 @@ pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:aluvm:lib:v01#230304";
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default, Debug, Display, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
 #[display(Self::to_baid58_string)]
-#[derive(StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictType, StrictDecode)]
+#[cfg_attr(feature = "std", derive(StrictEncode))]
 #[strict_type(lib = LIB_NAME_ALUVM)]
 #[cfg_attr(
     feature = "serde",
@@ -320,8 +321,9 @@ impl Lib {
 
 /// Location within a library
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
-#[derive(StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictType, StrictDecode)]
 #[strict_type(lib = LIB_NAME_ALUVM)]
+#[cfg_attr(feature = "std", derive(StrictEncode))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display("{pos} @ {lib}")]
 pub struct LibSite {
