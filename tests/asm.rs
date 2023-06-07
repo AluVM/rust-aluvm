@@ -9,14 +9,44 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use aluvm::data::MaybeNumber;
 use aluvm::isa::Instr;
 use aluvm::library::Lib;
-use aluvm::reg::{Reg32, RegF};
 use aluvm::{aluasm, Prog, Vm};
 
 #[test]
-fn a_eq() {
+fn a8_ne() {
+    let code = aluasm! {
+        put     12,a8[1];
+        put     9,a8[2];
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, false);
+}
+
+#[test]
+fn a8_eq() {
+    let code = aluasm! {
+        put     9,a8[1];
+        put     9,a8[2];
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+    let code = aluasm! {
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, false);
+    let code = aluasm! {
+        eq.e    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+}
+
+#[test]
+fn a16_eq() {
     let code = aluasm! {
         put     4,a16[1];
         put     4,a16[2];
@@ -128,6 +158,30 @@ fn a_lt_s() {
 }
 
 #[test]
+fn stp_add() {
+    let code = aluasm! {
+        put     3,a8[1];
+        add     4,a8[1];
+        put     7,a8[2];
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+}
+
+#[test]
+fn stp_sub() {
+    let code = aluasm! {
+        put     3,a8[1];
+        sub     4,a8[1];
+        put     -1,a8[2];
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+}
+
+#[test]
 fn float() {
     let code = aluasm! {
             put   1.25,f32[8];
@@ -137,7 +191,7 @@ fn float() {
             eq.e  f32[9],f32[10];
             ret;
     };
-    let res = run(code, true);
+    run(code, true);
 }
 
 fn run(code: Vec<Instr>, expect_success: bool) {
