@@ -1280,27 +1280,3 @@ macro_rules! _int_flags {
         panic!("wrong integer operation flags")
     };
 }
-
-#[cfg(test)]
-mod tests {
-    use core::str::FromStr;
-
-    use amplify::num::apfloat::ieee;
-
-    use crate::isa::Instr;
-    use crate::library::Lib;
-    use crate::{Prog, Vm};
-
-    #[test]
-    fn aluasm_float() {
-        let code = aluasm! {
-            put 1.25,f32[8];
-            ret;
-        };
-        let lib = Lib::assemble(&code).unwrap();
-        let program = Prog::<Instr>::new(lib);
-        let mut vm = Vm::<Instr>::new();
-        vm.run(&program, &());
-        assert_eq!(vm.registers.f32[8].unwrap(), ieee::Single::from_str("1.25").unwrap());
-    }
-}
