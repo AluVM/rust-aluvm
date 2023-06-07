@@ -9,71 +9,95 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-extern crate alloc;
-
-#[macro_use]
-extern crate aluvm;
-
-#[macro_use]
-extern crate paste;
-
 use aluvm::isa::Instr;
 use aluvm::library::Lib;
-use aluvm::{Prog, Vm};
+use aluvm::{aluasm, Prog, Vm};
 
 #[test]
-fn a_eq_test() {
+fn a8_ne() {
+    let code = aluasm! {
+        put     12,a8[1];
+        put     9,a8[2];
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, false);
+}
+
+#[test]
+fn a8_eq() {
+    let code = aluasm! {
+        put     9,a8[1];
+        put     9,a8[2];
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+    let code = aluasm! {
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, false);
+    let code = aluasm! {
+        eq.e    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+}
+
+#[test]
+fn a16_eq() {
     let code = aluasm! {
         put     4,a16[1];
         put     4,a16[2];
         eq.n    a16[1],a16[2];
         ret;
     };
-    run(code, true)
+    run(code, true);
 }
 
 #[test]
-fn a_eq_fail_test() {
+fn a_eq_fail() {
     let code = aluasm! {
         put     3,a16[1];
         put     4,a16[2];
         eq.n    a16[1],a16[2];
         ret;
     };
-    run(code, false)
+    run(code, false);
 }
 
 #[test]
-fn a_eq_noneeq_eq_test() {
+fn a_eq_noneeq_eq() {
     let code = aluasm! {
         eq.e    a16[1],a16[2];
         ret;
     };
-    run(code, true)
+    run(code, true);
 }
 
 #[test]
-fn a_eq_noneeq_noneq_test() {
+fn a_eq_noneeq_noneq() {
     let code = aluasm! {
         eq.n    a16[1],a16[2];
         ret;
     };
-    run(code, false)
+    run(code, false);
 }
 
 #[test]
-fn a_gt_u_test() {
+fn a_gt_u() {
     let code = aluasm! {
         put     2,a8[1];
         put     1,a8[2];
         gt.u    a8[1],a8[2];
         ret;
     };
-    run(code, true)
+    run(code, true);
 }
 
 #[test]
-fn a_gt_s_test() {
+fn a_gt_s() {
     let code = aluasm! {
         put     1,a8[1];
         put     255,a8[2]; // -1
@@ -98,18 +122,18 @@ fn a_gt_s_test() {
 }
 
 #[test]
-fn a_lt_u_test() {
+fn a_lt_u() {
     let code = aluasm! {
         put     1,a8[1];
         put     2,a8[2];
         lt.u    a8[1],a8[2];
         ret;
     };
-    run(code, true)
+    run(code, true);
 }
 
 #[test]
-fn a_lt_s_test() {
+fn a_lt_s() {
     let code = aluasm! {
         put     255,a8[1]; // -1
         put     1,a8[2];
@@ -133,6 +157,43 @@ fn a_lt_s_test() {
     run(code, false);
 }
 
+#[test]
+fn stp_add() {
+    let code = aluasm! {
+        put     3,a8[1];
+        add     4,a8[1];
+        put     7,a8[2];
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+}
+
+#[test]
+fn stp_sub() {
+    let code = aluasm! {
+        put     3,a8[1];
+        sub     4,a8[1];
+        put     -1,a8[2];
+        eq.n    a8[1],a8[2];
+        ret;
+    };
+    run(code, true);
+}
+
+#[test]
+fn float() {
+    let code = aluasm! {
+            put   1.25,f32[8];
+            put   1.5,f32[9];
+            put   2.75,f32[10];
+            add.f f32[8],f32[9];
+            eq.e  f32[9],f32[10];
+            ret;
+    };
+    run(code, true);
+}
+
 fn run(code: Vec<Instr>, expect_success: bool) {
     let mut runtime = Vm::<Instr>::new();
 
@@ -140,5 +201,5 @@ fn run(code: Vec<Instr>, expect_success: bool) {
     let res = runtime.run(&program, &());
 
     println!("\nVM microprocessor core state:\n{:#?}", runtime.registers);
-    assert!(res == expect_success)
+    assert!(res == expect_success);
 }

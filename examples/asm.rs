@@ -9,17 +9,9 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-extern crate alloc;
-
-#[macro_use]
-extern crate aluvm;
-
-#[macro_use]
-extern crate paste;
-
 use aluvm::isa::Instr;
 use aluvm::library::Lib;
-use aluvm::{Prog, Vm};
+use aluvm::{aluasm, Prog, Vm};
 
 fn main() {
     let code = aluasm! {
@@ -44,7 +36,7 @@ fn main() {
         eq.e    a8[5],a8[9]                    ;
         eq.n    r160[5],r160[9]                 ;
         eq.e    f64[19],f64[29]                 ;
-        ifn     a32[32]                         ;
+        ifn     a32[31]                         ;
         ifz     r2048[17]                       ;
         inv     st0                             ;
         st.s    a8[1]                           ;
@@ -66,7 +58,7 @@ fn main() {
         add     5,a16[4]                        ;
         dec     a16[8]                          ;
         sub     82,a16[4]                       ;
-        neg     a64[16]                         ;
+        neg     a64[15]                         ;
         abs     f128[11]                        ;
         and     a32[5],a32[6],a32[5]            ;
         xor     r128[5],r128[6],r128[5]         ;
@@ -87,8 +79,7 @@ fn main() {
         secpneg r512[1],r512[3]                 ;
         ifz     a16[8]                          ;
         jif     190                             ;
-        jmp     6                               ;
-        call    56 @ alu1wnhusevxmdphv3dh8ada44k0xw66ahq9nzhkv39z07hmudhp380sq0dtml ;
+        call    56 @ alu07EnUZgFtu28sWqqH3womkTopXCkgAGsCLvLnYvNcPLRt ;
         ret                                     ;
     };
 

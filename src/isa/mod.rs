@@ -45,9 +45,11 @@ pub use instr::{
 /// List of standardised ISA extensions.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[non_exhaustive]
+#[derive(Default)]
 pub enum Isa {
     /// Core ISA instruction set
     #[display("ALU")]
+    #[default]
     Alu,
 
     /// Floating-point operations
@@ -89,11 +91,6 @@ pub enum Isa {
     /// Instructions for biologically-inspired cognitive architectures
     #[display("REBICA")]
     Rebica,
-}
-
-impl Default for Isa {
-    #[inline]
-    fn default() -> Self { Isa::Alu }
 }
 
 impl Isa {

@@ -680,12 +680,12 @@ impl InstructionSet for BytesOp {
                         regs.st0 = false;
                         count -= 1;
                     }
-                    regs.set(RegA::A16, Reg32::Reg1, count as u16);
+                    regs.set(RegA::A16, Reg32::Reg0, count as u16);
                     Some(())
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.set(RegA::A16, Reg32::Reg1, MaybeNumber::none());
+                    regs.set(RegA::A16, Reg32::Reg0, MaybeNumber::none());
                 })
             }
             BytesOp::Rev(reg1, reg2) => {
@@ -698,7 +698,7 @@ impl InstructionSet for BytesOp {
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.set(RegA::A16, Reg32::Reg1, MaybeNumber::none());
+                    regs.set(RegA::A16, Reg32::Reg0, MaybeNumber::none());
                 })
             }
             BytesOp::Con(reg1, reg2, n, offset_dst, len_dst) => {
@@ -1052,120 +1052,10 @@ impl InstructionSet for ReservedOp {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data::{Layout, Step};
+    use crate::data::Layout;
     use crate::reg::Reg16;
     #[cfg(feature = "secp256k1")]
     use crate::reg::{Reg8, RegBlockAR};
-
-    #[test]
-    fn cmp_ne_test() {
-        let mut register = CoreRegs::default();
-        let lib_site = LibSite::default();
-        PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(12).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        PutOp::PutA(RegA::A8, Reg32::Reg2, MaybeNumber::from(9).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(true, register.st0);
-        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(false, register.st0);
-    }
-
-    #[test]
-    fn cmp_eq_test() {
-        let mut register = CoreRegs::default();
-        let lib_site = LibSite::default();
-        PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(9).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        PutOp::PutA(RegA::A8, Reg32::Reg2, MaybeNumber::from(9).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(true, register.st0);
-        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(true, register.st0);
-        assert_eq!(MaybeNumber::none(), register.get(RegA::A8, Reg32::Reg5));
-        assert_eq!(MaybeNumber::none(), register.get(RegA::A8, Reg32::Reg6));
-        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg5, Reg32::Reg6).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(false, register.st0);
-        ControlFlowOp::Succ.exec(&mut register, lib_site, &());
-        assert_eq!(true, register.st0);
-        CmpOp::EqA(NoneEqFlag::Equal, RegA::A8, Reg32::Reg5, Reg32::Reg6).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(true, register.st0);
-    }
-
-    #[test]
-    fn stp_add_test() {
-        let mut register = CoreRegs::default();
-        let lib_site = LibSite::default();
-        PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(3).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        ArithmeticOp::Stp(RegA::A8, Reg32::Reg1, Step::with(4)).exec(&mut register, lib_site, &());
-        PutOp::PutA(RegA::A8, Reg32::Reg2, MaybeNumber::from(7).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(true, register.st0);
-        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(true, register.st0);
-    }
-
-    #[test]
-    fn stp_sub_test() {
-        let mut register = CoreRegs::default();
-        let lib_site = LibSite::default();
-        PutOp::PutA(RegA::A8, Reg32::Reg1, MaybeNumber::from(3).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        ArithmeticOp::Stp(RegA::A8, Reg32::Reg1, Step::with(-4)).exec(&mut register, lib_site, &());
-        PutOp::PutA(RegA::A8, Reg32::Reg2, MaybeNumber::from(-1i8).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(true, register.st0);
-        CmpOp::EqA(NoneEqFlag::NonEqual, RegA::A8, Reg32::Reg1, Reg32::Reg2).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(true, register.st0);
-    }
 
     #[test]
     fn bytes_put_test() {
@@ -1186,19 +1076,19 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         BytesOp::Eq(1.into(), 2.into()).exec(&mut register, lib_site, &());
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         BytesOp::Eq(1.into(), 3.into()).exec(&mut register, lib_site, &());
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         BytesOp::Put(3.into(), Box::new(ByteStr::with([2; u16::MAX as usize])), true).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
     }
 
     #[test]
@@ -1216,7 +1106,20 @@ mod tests {
             lib_site,
             &(),
         );
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(offset as u16).into()).exec(
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(offset as u16).into()).exec(
+            &mut register,
+            lib_site,
+            &(),
+        );
+        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg0, Reg16::Reg0).exec(
+            &mut register,
+            lib_site,
+            &(),
+        );
+        let mut num = register.get(RegR::R128, Reg32::Reg0).unwrap();
+        num.reshape(Layout::unsigned(s.len() as u16));
+        assert_eq!(num, Number::from_slice(s.as_bytes()));
+        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(offset as u16 + 1).into()).exec(
             &mut register,
             lib_site,
             &(),
@@ -1226,23 +1129,10 @@ mod tests {
             lib_site,
             &(),
         );
-        let mut num = register.get(RegR::R128, Reg16::Reg1).unwrap();
-        num.reshape(Layout::unsigned(s.len() as u16));
-        assert_eq!(num, Number::from_slice(s.as_bytes()));
-        PutOp::PutA(RegA::A16, Reg32::Reg2, MaybeNumber::from(offset as u16 + 1).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg2, Reg16::Reg2).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        let mut num = register.get(RegR::R128, Reg16::Reg2).unwrap();
+        let mut num = register.get(RegR::R128, Reg32::Reg1).unwrap();
         num.reshape(Layout::unsigned(s.len() as u16 - 1));
         assert_eq!(num, Number::from_slice("ello".as_bytes()));
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     #[test]
@@ -1257,18 +1147,18 @@ mod tests {
             lib_site,
             &(),
         );
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(offset).into()).exec(
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(offset).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg1, Reg16::Reg1).exec(
+        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg0, Reg16::Reg0).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegR::R128, Reg16::Reg1).unwrap(), Number::from(0x07u128));
-        assert_eq!(false, register.st0);
+        assert_eq!(register.get(RegR::R128, Reg32::Reg0).unwrap(), Number::from(0x07u128));
+        assert!(!register.st0);
     }
 
     #[test]
@@ -1281,31 +1171,31 @@ mod tests {
             lib_site,
             &(),
         );
-        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg1, Reg16::Reg1).exec(
+        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg0, Reg16::Reg0).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegR::R128, Reg16::Reg1), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert_eq!(register.get(RegR::R128, Reg32::Reg0), MaybeNumber::none());
+        assert!(!register.st0);
     }
 
     #[test]
     fn bytes_extr_uninitialized_bytes_test() {
         let mut register = CoreRegs::default();
         let lib_site = LibSite::default();
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(1).into()).exec(
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(1).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg1, Reg16::Reg1).exec(
+        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg0, Reg16::Reg0).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegR::R128, Reg16::Reg1), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert_eq!(register.get(RegR::R128, Reg32::Reg0), MaybeNumber::none());
+        assert!(!register.st0);
     }
 
     #[test]
@@ -1325,61 +1215,61 @@ mod tests {
             &(),
         );
         // apple (0th fragment)
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(0).into()).exec(
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(0).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3).exec(
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg0, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(0u16));
-        assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(5u16));
-        assert_eq!(true, register.st0);
+        assert_eq!(register.get(RegA::A16, Reg32::Reg1).unwrap(), Number::from(0u16));
+        assert_eq!(register.get(RegA::A16, Reg32::Reg2).unwrap(), Number::from(5u16));
+        assert!(register.st0);
         // banana (1st fragment)
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(1).into()).exec(
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(1).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3).exec(
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg0, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(6u16));
-        assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(6u16));
-        assert_eq!(true, register.st0);
+        assert_eq!(register.get(RegA::A16, Reg32::Reg1).unwrap(), Number::from(6u16));
+        assert_eq!(register.get(RegA::A16, Reg32::Reg2).unwrap(), Number::from(6u16));
+        assert!(register.st0);
         // kiwi (2nd fragment)
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(2).into()).exec(
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(2).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3).exec(
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg0, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(13u16));
-        assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(4u16));
-        assert_eq!(true, register.st0);
+        assert_eq!(register.get(RegA::A16, Reg32::Reg1).unwrap(), Number::from(13u16));
+        assert_eq!(register.get(RegA::A16, Reg32::Reg2).unwrap(), Number::from(4u16));
+        assert!(register.st0);
         // no 3rd fragment
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(3).into()).exec(
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(3).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3).exec(
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg0, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
-        assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert_eq!(register.get(RegA::A16, Reg32::Reg1), MaybeNumber::none());
+        assert_eq!(register.get(RegA::A16, Reg32::Reg2), MaybeNumber::none());
+        assert!(!register.st0);
 
         let s1 = "aaa".as_bytes();
         let s2 = "bbb".as_bytes();
@@ -1393,19 +1283,19 @@ mod tests {
             lib_site,
             &(),
         );
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(0).into()).exec(
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(0).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3).exec(
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg0, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
-        assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert_eq!(register.get(RegA::A16, Reg32::Reg1), MaybeNumber::none());
+        assert_eq!(register.get(RegA::A16, Reg32::Reg2), MaybeNumber::none());
+        assert!(!register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
 
         let s1 = [0u8; u16::MAX as usize];
@@ -1420,32 +1310,32 @@ mod tests {
             lib_site,
             &(),
         );
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(0).into()).exec(
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(0).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3).exec(
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg0, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg16::Reg2).unwrap(), Number::from(0u16));
-        assert_eq!(register.get(RegA::A16, Reg16::Reg3).unwrap(), Number::from(u16::MAX));
-        assert_eq!(true, register.st0);
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(1).into()).exec(
+        assert_eq!(register.get(RegA::A16, Reg32::Reg1).unwrap(), Number::from(0u16));
+        assert_eq!(register.get(RegA::A16, Reg32::Reg2).unwrap(), Number::from(u16::MAX));
+        assert!(register.st0);
+        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(1).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Con(1.into(), 2.into(), Reg32::Reg1, Reg32::Reg2, Reg32::Reg3).exec(
+        BytesOp::Con(1.into(), 2.into(), Reg32::Reg0, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg16::Reg2), MaybeNumber::none());
-        assert_eq!(register.get(RegA::A16, Reg16::Reg3), MaybeNumber::none());
-        assert_eq!(false, register.st0);
+        assert_eq!(register.get(RegA::A16, Reg32::Reg1), MaybeNumber::none());
+        assert_eq!(register.get(RegA::A16, Reg32::Reg2), MaybeNumber::none());
+        assert!(!register.st0);
     }
 
     #[test]
@@ -1453,26 +1343,26 @@ mod tests {
     fn secp256k1_add_test() {
         let mut register = CoreRegs::default();
         let lib_site = LibSite::default();
-        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(600u16).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg0, MaybeNumber::from(600u16).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(1200u16).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(1200u16).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg3, MaybeNumber::from(1800u16).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(1800u16).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
+        Secp256k1Op::Gen(Reg32::Reg0, Reg8::Reg0).exec(&mut register, lib_site, &());
         Secp256k1Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site, &());
+        Secp256k1Op::Add(Reg32::Reg0, Reg8::Reg1).exec(&mut register, lib_site, &());
         Secp256k1Op::Gen(Reg32::Reg2, Reg8::Reg2).exec(&mut register, lib_site, &());
-        Secp256k1Op::Add(Reg32::Reg1, Reg8::Reg2).exec(&mut register, lib_site, &());
-        Secp256k1Op::Gen(Reg32::Reg3, Reg8::Reg3).exec(&mut register, lib_site, &());
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg2, Reg32::Reg3).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
@@ -1485,29 +1375,29 @@ mod tests {
     fn secp256k1_mul_test() {
         let mut register = CoreRegs::default();
         let lib_site = LibSite::default();
-        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(2u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg0, MaybeNumber::from(2u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(3u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(3u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg3, MaybeNumber::from(6u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(6u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        Secp256k1Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site, &());
-        Secp256k1Op::Mul(RegBlockAR::R, Reg32::Reg2, Reg32::Reg1, Reg32::Reg2).exec(
+        Secp256k1Op::Gen(Reg32::Reg0, Reg8::Reg0).exec(&mut register, lib_site, &());
+        Secp256k1Op::Mul(RegBlockAR::R, Reg32::Reg1, Reg32::Reg0, Reg32::Reg1).exec(
             &mut register,
             lib_site,
             &(),
         );
-        Secp256k1Op::Gen(Reg32::Reg3, Reg8::Reg3).exec(&mut register, lib_site, &());
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg2, Reg32::Reg3).exec(
+        Secp256k1Op::Gen(Reg32::Reg2, Reg8::Reg2).exec(&mut register, lib_site, &());
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
@@ -1520,15 +1410,15 @@ mod tests {
     fn secp256k1_neg_test() {
         let mut register = CoreRegs::default();
         let lib_site = LibSite::default();
-        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(1u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg0, MaybeNumber::from(1u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        Secp256k1Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site, &());
+        Secp256k1Op::Gen(Reg32::Reg0, Reg8::Reg0).exec(&mut register, lib_site, &());
+        Secp256k1Op::Neg(Reg32::Reg0, Reg8::Reg1).exec(&mut register, lib_site, &());
         Secp256k1Op::Neg(Reg32::Reg1, Reg8::Reg2).exec(&mut register, lib_site, &());
-        Secp256k1Op::Neg(Reg32::Reg2, Reg8::Reg3).exec(&mut register, lib_site, &());
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg2).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg1).exec(
             &mut register,
             lib_site,
             &(),
@@ -1536,27 +1426,27 @@ mod tests {
         assert_eq!(false, register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
         assert_eq!(true, register.st0);
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg3).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
         assert_eq!(true, register.st0);
-        PutOp::PutR(RegR::R256, Reg32::Reg5, MaybeNumber::from(5u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg4, MaybeNumber::from(5u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg6, MaybeNumber::from(6u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg5, MaybeNumber::from(6u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
+        Secp256k1Op::Gen(Reg32::Reg4, Reg8::Reg4).exec(&mut register, lib_site, &());
         Secp256k1Op::Gen(Reg32::Reg5, Reg8::Reg5).exec(&mut register, lib_site, &());
-        Secp256k1Op::Gen(Reg32::Reg6, Reg8::Reg6).exec(&mut register, lib_site, &());
         // -G + 6G
-        Secp256k1Op::Add(Reg32::Reg2, Reg8::Reg6).exec(&mut register, lib_site, &());
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg5, Reg32::Reg6).exec(
+        Secp256k1Op::Add(Reg32::Reg1, Reg8::Reg5).exec(&mut register, lib_site, &());
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg4, Reg32::Reg5).exec(
             &mut register,
             lib_site,
             &(),
@@ -1569,35 +1459,35 @@ mod tests {
     fn curve25519_mul_test() {
         let mut register = CoreRegs::default();
         let lib_site = LibSite::default();
-        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(2u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg0, MaybeNumber::from(2u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(3u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(3u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg3, MaybeNumber::from(6u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(6u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        Curve25519Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site, &());
-        Curve25519Op::Mul(RegBlockAR::R, Reg32::Reg2, Reg32::Reg1, Reg32::Reg2).exec(
+        Curve25519Op::Gen(Reg32::Reg0, Reg8::Reg0).exec(&mut register, lib_site, &());
+        Curve25519Op::Mul(RegBlockAR::R, Reg32::Reg1, Reg32::Reg0, Reg32::Reg1).exec(
             &mut register,
             lib_site,
             &(),
         );
-        Curve25519Op::Gen(Reg32::Reg3, Reg8::Reg3).exec(&mut register, lib_site, &());
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg2, Reg32::Reg3).exec(
+        Curve25519Op::Gen(Reg32::Reg2, Reg8::Reg2).exec(&mut register, lib_site, &());
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
         assert_eq!(true, register.st0);
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg3).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
@@ -1610,30 +1500,30 @@ mod tests {
     fn curve25519_add_test() {
         let mut register = CoreRegs::default();
         let lib_site = LibSite::default();
-        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(600u16).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg0, MaybeNumber::from(600u16).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(1200u16).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(1200u16).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg3, MaybeNumber::from(1800u16).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(1800u16).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
+        Curve25519Op::Gen(Reg32::Reg0, Reg8::Reg0).exec(&mut register, lib_site, &());
         Curve25519Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site, &());
         Curve25519Op::Gen(Reg32::Reg2, Reg8::Reg2).exec(&mut register, lib_site, &());
-        Curve25519Op::Gen(Reg32::Reg3, Reg8::Reg3).exec(&mut register, lib_site, &());
-        Curve25519Op::Add(Reg32::Reg1, Reg32::Reg2, Reg32::Reg4, false).exec(
+        Curve25519Op::Add(Reg32::Reg0, Reg32::Reg1, Reg32::Reg3, false).exec(
             &mut register,
             lib_site,
             &(),
         );
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg3, Reg32::Reg4).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg2, Reg32::Reg3).exec(
             &mut register,
             lib_site,
             &(),
@@ -1653,37 +1543,37 @@ mod tests {
         ];
         PutOp::PutR(
             RegR::R256,
-            Reg32::Reg1,
+            Reg32::Reg0,
             MaybeNumber::from(Number::from_slice(l_plus_two_bytes)).into(),
         )
         .exec(&mut register, lib_site, &());
-        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(1u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(1u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg3, MaybeNumber::from(3u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg2, MaybeNumber::from(3u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
+        Curve25519Op::Gen(Reg32::Reg0, Reg8::Reg0).exec(&mut register, lib_site, &());
         Curve25519Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site, &());
         Curve25519Op::Gen(Reg32::Reg2, Reg8::Reg2).exec(&mut register, lib_site, &());
-        Curve25519Op::Gen(Reg32::Reg3, Reg8::Reg3).exec(&mut register, lib_site, &());
-        Curve25519Op::Add(Reg32::Reg1, Reg32::Reg2, Reg32::Reg4, false).exec(
+        Curve25519Op::Add(Reg32::Reg0, Reg32::Reg1, Reg32::Reg3, false).exec(
             &mut register,
             lib_site,
             &(),
         );
         assert_eq!(false, register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
-        Curve25519Op::Add(Reg32::Reg1, Reg32::Reg2, Reg32::Reg4, true).exec(
+        Curve25519Op::Add(Reg32::Reg0, Reg32::Reg1, Reg32::Reg3, true).exec(
             &mut register,
             lib_site,
             &(),
         );
         assert_eq!(true, register.st0);
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg3, Reg32::Reg4).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg2, Reg32::Reg3).exec(
             &mut register,
             lib_site,
             &(),
@@ -1696,15 +1586,15 @@ mod tests {
     fn curve25519_neg_test() {
         let mut register = CoreRegs::default();
         let lib_site = LibSite::default();
-        PutOp::PutR(RegR::R256, Reg32::Reg1, MaybeNumber::from(1u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg0, MaybeNumber::from(1u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        Curve25519Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site, &());
+        Curve25519Op::Gen(Reg32::Reg0, Reg8::Reg0).exec(&mut register, lib_site, &());
+        Curve25519Op::Neg(Reg32::Reg0, Reg8::Reg1).exec(&mut register, lib_site, &());
         Curve25519Op::Neg(Reg32::Reg1, Reg8::Reg2).exec(&mut register, lib_site, &());
-        Curve25519Op::Neg(Reg32::Reg2, Reg8::Reg3).exec(&mut register, lib_site, &());
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg2).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg1).exec(
             &mut register,
             lib_site,
             &(),
@@ -1712,31 +1602,31 @@ mod tests {
         assert_eq!(false, register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
         assert_eq!(true, register.st0);
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg3).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
         assert_eq!(true, register.st0);
-        PutOp::PutR(RegR::R256, Reg32::Reg5, MaybeNumber::from(5u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg4, MaybeNumber::from(5u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
-        PutOp::PutR(RegR::R256, Reg32::Reg6, MaybeNumber::from(6u8).into()).exec(
+        PutOp::PutR(RegR::R256, Reg32::Reg5, MaybeNumber::from(6u8).into()).exec(
             &mut register,
             lib_site,
             &(),
         );
+        Curve25519Op::Gen(Reg32::Reg4, Reg8::Reg4).exec(&mut register, lib_site, &());
         Curve25519Op::Gen(Reg32::Reg5, Reg8::Reg5).exec(&mut register, lib_site, &());
-        Curve25519Op::Gen(Reg32::Reg6, Reg8::Reg6).exec(&mut register, lib_site, &());
         // -G + 6G
-        Curve25519Op::Add(Reg32::Reg2, Reg32::Reg6, Reg32::Reg7, true).exec(
+        Curve25519Op::Add(Reg32::Reg1, Reg32::Reg5, Reg32::Reg6, true).exec(
             &mut register,
             lib_site,
             &(),
         );
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg5, Reg32::Reg7).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg4, Reg32::Reg6).exec(
             &mut register,
             lib_site,
             &(),

@@ -447,8 +447,7 @@ impl Debug for CoreRegs {
         let mut c = 0;
         for i in 0..32 {
             if let Some(v) = self.a8[i] {
-                let j = i + 1;
-                write!(f, "{}a8{}[{}{:02}{}]={}{:02X}{}h\t", reg, eq, reset, j, eq, val, v, reset)?;
+                write!(f, "{}a8{}[{}{:02}{}]={}{:02X}{}h\t", reg, eq, reset, i, eq, val, v, reset)?;
                 c += 1;
             }
         }
@@ -458,11 +457,10 @@ impl Debug for CoreRegs {
         let mut c = 0;
         for i in 0..32 {
             if let Some(v) = self.a16[i] {
-                let j = i + 1;
                 write!(
                     f,
                     "{}a16{}[{}{:02}{}]={}{:04X}{}h\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
                 c += 1;
             }
@@ -473,11 +471,10 @@ impl Debug for CoreRegs {
         let mut c = 0;
         for i in 0..32 {
             if let Some(v) = self.a32[i] {
-                let j = i + 1;
                 write!(
                     f,
                     "{}a32{}[{}{:02}{}]={}{:08X}{}h\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
                 c += 1;
             }
@@ -488,11 +485,10 @@ impl Debug for CoreRegs {
         let mut c = 0;
         for i in 0..32 {
             if let Some(v) = self.a64[i] {
-                let j = i + 1;
                 write!(
                     f,
                     "{}a64{}[{}{:02}{}]={}{:016X}{}h\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
                 c += 1;
             }
@@ -502,44 +498,40 @@ impl Debug for CoreRegs {
         }
         for i in 0..32 {
             if let Some(v) = self.a128[i] {
-                let j = i + 1;
                 write!(
                     f,
                     "{}a128{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.a256[i] {
                 let v = Number::from(v);
-                let j = i + 1;
                 write!(
                     f,
                     "{}a256{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.a512[i] {
                 let v = Number::from(v);
-                let j = i + 1;
                 write!(
                     f,
                     "{}a512{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.a1024[i] {
                 let v = Number::from(v);
-                let j = i + 1;
                 write!(
                     f,
                     "{}a1024{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
@@ -548,8 +540,7 @@ impl Debug for CoreRegs {
         let mut c = 0;
         for i in 0..32 {
             if let Some(v) = self.f16b[i] {
-                let j = i + 1;
-                write!(f, "{}f16b{}[{}{:02}{}]={}{}{}\t", reg, eq, reset, j, eq, val, v, reset)?;
+                write!(f, "{}f16b{}[{}{:02}{}]={}{}{}\t", reg, eq, reset, i, eq, val, v, reset)?;
                 c += 1;
             }
         }
@@ -559,8 +550,7 @@ impl Debug for CoreRegs {
         let mut c = 0;
         for i in 0..32 {
             if let Some(v) = self.f16[i] {
-                let j = i + 1;
-                write!(f, "{}f16{}[{}{:02}{}]={}{}{}\t", reg, eq, reset, j, eq, val, v, reset)?;
+                write!(f, "{}f16{}[{}{:02}{}]={}{}{}\t", reg, eq, reset, i, eq, val, v, reset)?;
                 c += 1;
             }
         }
@@ -570,8 +560,7 @@ impl Debug for CoreRegs {
         let mut c = 0;
         for i in 0..32 {
             if let Some(v) = self.f32[i] {
-                let j = i + 1;
-                write!(f, "{}f32{}[{}{:02}{}]={}{}{}\t", reg, eq, reset, j, eq, val, v, reset)?;
+                write!(f, "{}f32{}[{}{:02}{}]={}{}{}\t", reg, eq, reset, i, eq, val, v, reset)?;
                 c += 1;
             }
         }
@@ -581,8 +570,7 @@ impl Debug for CoreRegs {
         let mut c = 0;
         for i in 0..32 {
             if let Some(v) = self.f64[i] {
-                let j = i + 1;
-                write!(f, "{}f64{}[{}{:02}{}]={}{}{}\t", reg, eq, reset, j, eq, val, v, reset)?;
+                write!(f, "{}f64{}[{}{:02}{}]={}{}{}\t", reg, eq, reset, i, eq, val, v, reset)?;
                 c += 1;
             }
         }
@@ -591,38 +579,34 @@ impl Debug for CoreRegs {
         }
         for i in 0..32 {
             if let Some(v) = self.f80[i] {
-                let j = i + 1;
-                write!(f, "{}f80{}[{}{:02}{}]={}{}{}\n\t\t", reg, eq, reset, j, eq, val, v, reset)?;
+                write!(f, "{}f80{}[{}{:02}{}]={}{}{}\n\t\t", reg, eq, reset, i, eq, val, v, reset)?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.f128[i] {
-                let j = i + 1;
                 write!(
                     f,
                     "{}f128{}[{}{:02}{}]={}{}{}\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.f256[i] {
-                let j = i + 1;
                 write!(
                     f,
                     "{}f256{}[{}{:02}{}]={}{}{}\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.f512[i] {
-                let j = i + 1;
                 let v = Number::from(v);
                 write!(
                     f,
                     "{}f512{}[{}{:02}{}]={}{}{}\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
@@ -630,89 +614,81 @@ impl Debug for CoreRegs {
         write!(f, "\n{}R-REG:{}\t", sect, reset)?;
         for i in 0..32 {
             if let Some(v) = self.r128[i] {
-                let j = i + 1;
                 let v = Number::from(v);
                 write!(
                     f,
                     "{}r128{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.r160[i] {
-                let j = i + 1;
                 let v = Number::from(v);
                 write!(
                     f,
                     "{}r160{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.r256[i] {
-                let j = i + 1;
                 let v = Number::from(v);
                 write!(
                     f,
                     "{}r256{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.r512[i] {
-                let j = i + 1;
                 let v = Number::from(v);
                 write!(
                     f,
                     "{}r512{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.r1024[i] {
-                let j = i + 1;
                 let v = Number::from(v);
                 write!(
                     f,
                     "{}r1024{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.r2048[i] {
-                let j = i + 1;
                 let v = Number::from(v);
                 write!(
                     f,
                     "{}r2048{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.r4096[i] {
-                let j = i + 1;
                 let v = Number::from(v);
                 write!(
                     f,
                     "{}r4096{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
         for i in 0..32 {
             if let Some(v) = self.r8192[i] {
-                let j = i + 1;
                 let v = Number::from(v);
                 write!(
                     f,
                     "{}r8192{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, j, eq, val, v, reset
+                    reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
         }
