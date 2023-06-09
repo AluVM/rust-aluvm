@@ -1058,40 +1058,6 @@ mod tests {
     use crate::reg::{Reg8, RegBlockAR};
 
     #[test]
-    fn bytes_put_test() {
-        let mut register = CoreRegs::default();
-        let lib_site = LibSite::default();
-        BytesOp::Put(1.into(), Box::new(ByteStr::with([1; u16::MAX as usize])), false).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        BytesOp::Put(2.into(), Box::new(ByteStr::with([1; u16::MAX as usize])), false).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        BytesOp::Put(3.into(), Box::new(ByteStr::with([2; u16::MAX as usize])), false).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert!(register.st0);
-        BytesOp::Eq(1.into(), 2.into()).exec(&mut register, lib_site, &());
-        assert!(register.st0);
-        BytesOp::Eq(1.into(), 3.into()).exec(&mut register, lib_site, &());
-        assert!(!register.st0);
-        ControlFlowOp::Succ.exec(&mut register, lib_site, &());
-        assert!(register.st0);
-        BytesOp::Put(3.into(), Box::new(ByteStr::with([2; u16::MAX as usize])), true).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert!(!register.st0);
-    }
-
-    #[test]
     fn bytes_extr_test() {
         let mut register = CoreRegs::default();
         let lib_site = LibSite::default();

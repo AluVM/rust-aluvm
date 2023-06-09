@@ -61,7 +61,7 @@ macro_rules! aluasm {
         use std::boxed::Box;
 
         use $crate::isa::{
-            ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
+            ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
             MergeFlag, MoveOp, ReservedOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag, NoneEqFlag,
         };
         use $crate::reg::{
@@ -69,7 +69,7 @@ macro_rules! aluasm {
             NumericRegister,
         };
         use $crate::library::LibSite;
-        use $crate::data::{Number, MaybeNumber, Step};
+        use $crate::data::{ByteStr, Number, MaybeNumber, Step};
 
         let mut code: Vec<Instr<ReservedOp>> = vec![];
         #[allow(unreachable_code)] {
@@ -113,6 +113,10 @@ macro_rules! aluasm_inner {
     };
     { $code:ident => $op:ident $arglit:literal , $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op $arglit , $arg [ $idx ] });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $arg:ident [ $idx:literal ] , $arglit:literal ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arg [ $idx ] , $arglit });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
     { $code:ident => $op:ident . $flag:ident $arg:ident [ $idx:literal ], $arglit:expr ; $($tt:tt)* } => {
@@ -162,6 +166,9 @@ macro_rules! instr {
         ))
     };
 
+    (put s16[$idx:literal], $val:literal) => {{
+        Instr::Bytes(BytesOp::Put(RegS::from($idx), Box::new(ByteStr::with($val)), false))
+    }};
     (put $val:literal, $reg:ident[$idx:literal]) => {{
         let s = stringify!($val);
         let mut num = s.parse::<MaybeNumber>().expect(&format!("invalid number literal `{}`", s));
@@ -446,6 +453,9 @@ macro_rules! instr {
             $crate::_reg_idx!($idx1),
             $crate::_reg_idx!($idx2),
         ))
+    }};
+    (cmp s16[$idx1:literal],s16[$idx2:literal]) => {{
+        Instr::Bytes(BytesOp::Eq(RegS::from($idx1), RegS::from($idx2)))
     }};
     (ifn $reg:ident[$idx:literal]) => {
         match $crate::_reg_block!($reg) {

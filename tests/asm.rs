@@ -194,6 +194,24 @@ fn float() {
     run(code, true);
 }
 
+#[test]
+fn bytes_put() {
+    let code = aluasm! {
+            put   s16[1],"aaa";
+            put   s16[2],"aaa";
+            cmp   s16[1],s16[2];
+            ret;
+    };
+    run(code, true);
+    let code = aluasm! {
+            put   s16[1],"aaa";
+            put   s16[2],"bbb";
+            cmp   s16[1],s16[2];
+            ret;
+    };
+    run(code, false);
+}
+
 fn run(code: Vec<Instr>, expect_success: bool) {
     let mut runtime = Vm::<Instr>::new();
 
