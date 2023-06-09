@@ -734,13 +734,18 @@ impl InstructionSet for BytesOp {
             }
             BytesOp::Extr(src, dst, index, offset) => {
                 let mut f = || -> Option<()> {
-                    let s = regs.get_s(*src)?.clone();
-                    let offset = regs.a16[*offset as u8 as usize]?;
-                    let end = offset.checked_add(dst.layout().bytes()).unwrap_or_else(|| {
-                        regs.st0 = false;
-                        u16::MAX
-                    });
-                    let num = Number::from_slice(&s.as_ref()[offset as usize..end as usize]);
+                    let s_len = regs.get_s(*src)?.len();
+                    let offset = regs.a16[*offset as u8 as usize].filter(|e| *e < s_len)?;
+                    let end = offset
+                        .checked_add(dst.layout().bytes())
+                        .filter(|e| *e < s_len)
+                        .unwrap_or_else(|| {
+                            regs.st0 = false;
+                            s_len
+                        });
+                    let num = Number::from_slice(
+                        &regs.get_s(*src)?.as_ref()[offset as usize..end as usize],
+                    );
                     regs.set(dst, index, num);
                     Some(())
                 };
@@ -1052,117 +1057,8 @@ impl InstructionSet for ReservedOp {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data::Layout;
-    use crate::reg::Reg16;
     #[cfg(feature = "secp256k1")]
     use crate::reg::{Reg8, RegBlockAR};
-
-    #[test]
-    fn bytes_extr_test() {
-        let mut register = CoreRegs::default();
-        let lib_site = LibSite::default();
-        let mut bytes = [0; u16::MAX as usize];
-        let offset = 5;
-        let s = "hello";
-        for (i, e) in s.as_bytes().iter().enumerate() {
-            bytes[offset + i] = *e;
-        }
-        BytesOp::Put(1.into(), Box::new(ByteStr::with(bytes)), false).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(offset as u16).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg0, Reg16::Reg0).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        let mut num = register.get(RegR::R128, Reg32::Reg0).unwrap();
-        num.reshape(Layout::unsigned(s.len() as u16));
-        assert_eq!(num, Number::from_slice(s.as_bytes()));
-        PutOp::PutA(RegA::A16, Reg32::Reg1, MaybeNumber::from(offset as u16 + 1).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg1, Reg16::Reg1).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        let mut num = register.get(RegR::R128, Reg32::Reg1).unwrap();
-        num.reshape(Layout::unsigned(s.len() as u16 - 1));
-        assert_eq!(num, Number::from_slice("ello".as_bytes()));
-        assert!(register.st0);
-    }
-
-    #[test]
-    fn bytes_extr_offset_overflow_test() {
-        let mut register = CoreRegs::default();
-        let lib_site = LibSite::default();
-        let mut bytes = [0; u16::MAX as usize];
-        let offset = u16::MAX - 1;
-        bytes[offset as usize] = 7;
-        BytesOp::Put(1.into(), Box::new(ByteStr::with(bytes)), false).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(offset).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg0, Reg16::Reg0).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(register.get(RegR::R128, Reg32::Reg0).unwrap(), Number::from(0x07u128));
-        assert!(!register.st0);
-    }
-
-    #[test]
-    fn bytes_extr_uninitialized_regr_test() {
-        let mut register = CoreRegs::default();
-        let lib_site = LibSite::default();
-        let bytes = [0; u16::MAX as usize];
-        BytesOp::Put(1.into(), Box::new(ByteStr::with(bytes)), false).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg0, Reg16::Reg0).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(register.get(RegR::R128, Reg32::Reg0), MaybeNumber::none());
-        assert!(!register.st0);
-    }
-
-    #[test]
-    fn bytes_extr_uninitialized_bytes_test() {
-        let mut register = CoreRegs::default();
-        let lib_site = LibSite::default();
-        PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(1).into()).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        BytesOp::Extr(1.into(), RegR::R128, Reg16::Reg0, Reg16::Reg0).exec(
-            &mut register,
-            lib_site,
-            &(),
-        );
-        assert_eq!(register.get(RegR::R128, Reg32::Reg0), MaybeNumber::none());
-        assert!(!register.st0);
-    }
 
     #[test]
     fn bytes_con_test() {

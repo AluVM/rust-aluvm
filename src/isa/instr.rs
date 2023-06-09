@@ -696,7 +696,7 @@ pub enum BytesOp {
     ///
     /// If the source string register - or offset register is uninitialized, sets destination to
     /// uninitialized state and `st0` to `false`.
-    #[display("extr    {0},{1}{2},{1}{3}")]
+    #[display("extr    {0},{1}{2},a16{3}")]
     Extr(/** `s` register index */ RegS, RegR, Reg16, /** `a16` register with offset */ Reg16),
 
     /// Inject general `R` register value at a given position to string register, replacing value

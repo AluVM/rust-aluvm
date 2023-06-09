@@ -166,6 +166,14 @@ macro_rules! instr {
         ))
     };
 
+    (extr s16[$idx:literal], $regr:ident[$regr_idx:literal],a16[$offset_idx:literal]) => {
+        Instr::Bytes(BytesOp::Extr(
+            RegS::from($idx),
+            $crate::_reg_ty!(Reg, $regr),
+            $crate::_reg_idx16!($regr_idx),
+            $crate::_reg_idx16!($offset_idx),
+        ))
+    };
     (put s16[$idx:literal], $val:literal) => {{
         Instr::Bytes(BytesOp::Put(RegS::from($idx), Box::new(ByteStr::with($val)), false))
     }};
