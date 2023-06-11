@@ -163,6 +163,8 @@ pub mod stl;
 mod vm;
 
 pub use isa::Isa;
+#[doc(hidden)]
+pub use paste::paste;
 pub use program::{Prog, ProgError, Program};
 pub use vm::Vm;
 

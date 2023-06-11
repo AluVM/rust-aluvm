@@ -55,13 +55,15 @@
 #[macro_export]
 macro_rules! aluasm {
     ($( $tt:tt )+) => { { #[allow(unused_imports)] {
-        #[cfg(not(feature = "std"))]
+        #[cfg(feature = "alloc")]
+        extern crate alloc;
+        #[cfg(feature = "alloc")]
         use alloc::boxed::Box;
-        #[cfg(feature = "std")]
+        #[cfg(not(feature = "alloc"))]
         use std::boxed::Box;
 
         use $crate::isa::{
-            ArithmeticOp, BitwiseOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
+            ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
             MergeFlag, MoveOp, ReservedOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag, NoneEqFlag,
         };
         use $crate::reg::{
@@ -69,7 +71,7 @@ macro_rules! aluasm {
             NumericRegister,
         };
         use $crate::library::LibSite;
-        use $crate::data::{Number, MaybeNumber, Step};
+        use $crate::data::{ByteStr, Number, MaybeNumber, Step};
 
         let mut code: Vec<Instr<ReservedOp>> = vec![];
         #[allow(unreachable_code)] {
@@ -113,6 +115,10 @@ macro_rules! aluasm_inner {
     };
     { $code:ident => $op:ident $arglit:literal , $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op $arglit , $arg [ $idx ] });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $arg:ident [ $idx:literal ] , $arglit:literal ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arg [ $idx ] , $arglit });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
     { $code:ident => $op:ident . $flag:ident $arg:ident [ $idx:literal ], $arglit:expr ; $($tt:tt)* } => {
@@ -162,6 +168,17 @@ macro_rules! instr {
         ))
     };
 
+    (extr s16[$idx:literal], $regr:ident[$regr_idx:literal],a16[$offset_idx:literal]) => {
+        Instr::Bytes(BytesOp::Extr(
+            RegS::from($idx),
+            $crate::_reg_ty!(Reg, $regr),
+            $crate::_reg_idx16!($regr_idx),
+            $crate::_reg_idx16!($offset_idx),
+        ))
+    };
+    (put s16[$idx:literal], $val:literal) => {{
+        Instr::Bytes(BytesOp::Put(RegS::from($idx), Box::new(ByteStr::with($val)), false))
+    }};
     (put $val:literal, $reg:ident[$idx:literal]) => {{
         let s = stringify!($val);
         let mut num = s.parse::<MaybeNumber>().expect(&format!("invalid number literal `{}`", s));
@@ -446,6 +463,9 @@ macro_rules! instr {
             $crate::_reg_idx!($idx1),
             $crate::_reg_idx!($idx2),
         ))
+    }};
+    (cmp s16[$idx1:literal],s16[$idx2:literal]) => {{
+        Instr::Bytes(BytesOp::Eq(RegS::from($idx1), RegS::from($idx2)))
     }};
     (ifn $reg:ident[$idx:literal]) => {
         match $crate::_reg_block!($reg) {
@@ -927,78 +947,78 @@ macro_rules! _reg_block {
 #[macro_export]
 macro_rules! _reg_sfx {
     ($a:ident, $b:ident,a8) => {
-        ::paste::paste! { $a :: [<$b A>] }
+        $crate::paste! { $a :: [<$b A>] }
     };
     ($a:ident, $b:ident,a16) => {
-        ::paste::paste! { $a :: [<$b A>] }
+        $crate::paste! { $a :: [<$b A>] }
     };
     ($a:ident, $b:ident,a32) => {
-        ::paste::paste! { $a :: [<$b A>] }
+        $crate::paste! { $a :: [<$b A>] }
     };
     ($a:ident, $b:ident,a64) => {
-        ::paste::paste! { $a :: [<$b A>] }
+        $crate::paste! { $a :: [<$b A>] }
     };
     ($a:ident, $b:ident,a128) => {
-        ::paste::paste! { $a :: [<$b A>] }
+        $crate::paste! { $a :: [<$b A>] }
     };
     ($a:ident, $b:ident,a256) => {
-        ::paste::paste! { $a :: [<$b A>] }
+        $crate::paste! { $a :: [<$b A>] }
     };
     ($a:ident, $b:ident,a512) => {
-        ::paste::paste! { $a :: [<$b A>] }
+        $crate::paste! { $a :: [<$b A>] }
     };
     ($a:ident, $b:ident,a1024) => {
-        ::paste::paste! { $a :: [<$b A>] }
+        $crate::paste! { $a :: [<$b A>] }
     };
 
     ($a:ident, $b:ident,f16b) => {
-        ::paste::paste! { $a :: [<$b F>] }
+        $crate::paste! { $a :: [<$b F>] }
     };
     ($a:ident, $b:ident,f16) => {
-        ::paste::paste! { $a :: [<$b F>] }
+        $crate::paste! { $a :: [<$b F>] }
     };
     ($a:ident, $b:ident,f32) => {
-        ::paste::paste! { $a :: [<$b F>] }
+        $crate::paste! { $a :: [<$b F>] }
     };
     ($a:ident, $b:ident,f64) => {
-        ::paste::paste! { $a :: [<$b F>] }
+        $crate::paste! { $a :: [<$b F>] }
     };
     ($a:ident, $b:ident,f80) => {
-        ::paste::paste! { $a :: [<$b F>] }
+        $crate::paste! { $a :: [<$b F>] }
     };
     ($a:ident, $b:ident,f128) => {
-        ::paste::paste! { $a :: [<$b F>] }
+        $crate::paste! { $a :: [<$b F>] }
     };
     ($a:ident, $b:ident,f256) => {
-        ::paste::paste! { $a :: [<$b F>] }
+        $crate::paste! { $a :: [<$b F>] }
     };
     ($a:ident, $b:ident,f512) => {
-        ::paste::paste! { $a :: [<$b F>] }
+        $crate::paste! { $a :: [<$b F>] }
     };
 
     ($a:ident, $b:ident,r128) => {
-        ::paste::paste! { $a :: [<$b R>] }
+        $crate::paste! { $a :: [<$b R>] }
     };
     ($a:ident, $b:ident,r160) => {
-        ::paste::paste! { $a :: [<$b R>] }
+        $crate::paste! { $a :: [<$b R>] }
     };
     ($a:ident, $b:ident,r256) => {
-        ::paste::paste! { $a :: [<$b R>] }
+        $crate::paste! { $a :: [<$b R>] }
     };
     ($a:ident, $b:ident,r512) => {
-        ::paste::paste! { $a :: [<$b R>] }
+        $crate::paste! { $a :: [<$b R>] }
     };
     ($a:ident, $b:ident,r1024) => {
-        ::paste::paste! { $a :: [<$b R>] }
+        $crate::paste! { $a :: [<$b R>] }
     };
     ($a:ident, $b:ident,r2048) => {
-        ::paste::paste! { $a :: [<$b R>] }
+        $crate::paste! { $a :: [<$b R>] }
     };
     ($a:ident, $b:ident,r4096) => {
-        ::paste::paste! { $a :: [<$b R>] }
+        $crate::paste! { $a :: [<$b R>] }
     };
     ($a:ident, $b:ident,r8192) => {
-        ::paste::paste! { $a :: [<$b R>] }
+        $crate::paste! { $a :: [<$b R>] }
     };
 }
 
@@ -1006,78 +1026,78 @@ macro_rules! _reg_sfx {
 #[macro_export]
 macro_rules! _reg_ty {
     ($ident:ident,a8) => {
-        ::paste::paste! { [<$ident A>] :: A8 }
+        $crate::paste! { [<$ident A>] :: A8 }
     };
     ($ident:ident,a16) => {
-        ::paste::paste! { [<$ident A>] :: A16 }
+        $crate::paste! { [<$ident A>] :: A16 }
     };
     ($ident:ident,a32) => {
-        ::paste::paste! { [<$ident A>] :: A32 }
+        $crate::paste! { [<$ident A>] :: A32 }
     };
     ($ident:ident,a64) => {
-        ::paste::paste! { [<$ident A>] :: A64 }
+        $crate::paste! { [<$ident A>] :: A64 }
     };
     ($ident:ident,a128) => {
-        ::paste::paste! { [<$ident A>] :: A128 }
+        $crate::paste! { [<$ident A>] :: A128 }
     };
     ($ident:ident,a256) => {
-        ::paste::paste! { [<$ident A>] :: A256 }
+        $crate::paste! { [<$ident A>] :: A256 }
     };
     ($ident:ident,a512) => {
-        ::paste::paste! { [<$ident A>] :: A512 }
+        $crate::paste! { [<$ident A>] :: A512 }
     };
     ($ident:ident,a1024) => {
-        ::paste::paste! { [<$ident A>] :: A1024 }
+        $crate::paste! { [<$ident A>] :: A1024 }
     };
 
     ($ident:ident,f16b) => {
-        ::paste::paste! { [<$ident F>] :: F16B }
+        $crate::paste! { [<$ident F>] :: F16B }
     };
     ($ident:ident,f16) => {
-        ::paste::paste! { [<$ident F>] :: F16 }
+        $crate::paste! { [<$ident F>] :: F16 }
     };
     ($ident:ident,f32) => {
-        ::paste::paste! { [<$ident F>] :: F32 }
+        $crate::paste! { [<$ident F>] :: F32 }
     };
     ($ident:ident,f64) => {
-        ::paste::paste! { [<$ident F>] :: F64 }
+        $crate::paste! { [<$ident F>] :: F64 }
     };
     ($ident:ident,f80) => {
-        ::paste::paste! { [<$ident F>] :: F80 }
+        $crate::paste! { [<$ident F>] :: F80 }
     };
     ($ident:ident,f128) => {
-        ::paste::paste! { [<$ident F>] :: F128 }
+        $crate::paste! { [<$ident F>] :: F128 }
     };
     ($ident:ident,f256) => {
-        ::paste::paste! { [<$ident F>] :: F256 }
+        $crate::paste! { [<$ident F>] :: F256 }
     };
     ($ident:ident,f512) => {
-        ::paste::paste! { [<$ident F>] :: F512 }
+        $crate::paste! { [<$ident F>] :: F512 }
     };
 
     ($ident:ident,r128) => {
-        ::paste::paste! { [<$ident R>] :: R128 }
+        $crate::paste! { [<$ident R>] :: R128 }
     };
     ($ident:ident,r160) => {
-        ::paste::paste! { [<$ident R>] :: R160 }
+        $crate::paste! { [<$ident R>] :: R160 }
     };
     ($ident:ident,r256) => {
-        ::paste::paste! { [<$ident R>] :: R256 }
+        $crate::paste! { [<$ident R>] :: R256 }
     };
     ($ident:ident,r512) => {
-        ::paste::paste! { [<$ident R>] :: R512 }
+        $crate::paste! { [<$ident R>] :: R512 }
     };
     ($ident:ident,r1024) => {
-        ::paste::paste! { [<$ident R>] :: R1024 }
+        $crate::paste! { [<$ident R>] :: R1024 }
     };
     ($ident:ident,r2048) => {
-        ::paste::paste! { [<$ident R>] :: R2048 }
+        $crate::paste! { [<$ident R>] :: R2048 }
     };
     ($ident:ident,r4096) => {
-        ::paste::paste! { [<$ident R>] :: R4096 }
+        $crate::paste! { [<$ident R>] :: R4096 }
     };
     ($ident:ident,r8192) => {
-        ::paste::paste! { [<$ident R>] :: R8192 }
+        $crate::paste! { [<$ident R>] :: R8192 }
     };
 }
 
@@ -1085,10 +1105,10 @@ macro_rules! _reg_ty {
 #[macro_export]
 macro_rules! _reg_tya2 {
     ($ident:ident,a8) => {
-        ::paste::paste! { [<$ident A2>] :: A8 }
+        $crate::paste! { [<$ident A2>] :: A8 }
     };
     ($ident:ident,a16) => {
-        ::paste::paste! { [<$ident A2>] :: A16 }
+        $crate::paste! { [<$ident A2>] :: A16 }
     };
 }
 
@@ -1096,28 +1116,28 @@ macro_rules! _reg_tya2 {
 #[macro_export]
 macro_rules! _reg_tya {
     ($ident:ident,a8) => {
-        ::paste::paste! { [<$ident A>] :: A8 }
+        $crate::paste! { [<$ident A>] :: A8 }
     };
     ($ident:ident,a16) => {
-        ::paste::paste! { [<$ident A>] :: A16 }
+        $crate::paste! { [<$ident A>] :: A16 }
     };
     ($ident:ident,a32) => {
-        ::paste::paste! { [<$ident A>] :: A32 }
+        $crate::paste! { [<$ident A>] :: A32 }
     };
     ($ident:ident,a64) => {
-        ::paste::paste! { [<$ident A>] :: A64 }
+        $crate::paste! { [<$ident A>] :: A64 }
     };
     ($ident:ident,a128) => {
-        ::paste::paste! { [<$ident A>] :: A128 }
+        $crate::paste! { [<$ident A>] :: A128 }
     };
     ($ident:ident,a256) => {
-        ::paste::paste! { [<$ident A>] :: A256 }
+        $crate::paste! { [<$ident A>] :: A256 }
     };
     ($ident:ident,a512) => {
-        ::paste::paste! { [<$ident A>] :: A512 }
+        $crate::paste! { [<$ident A>] :: A512 }
     };
     ($ident:ident,a1024) => {
-        ::paste::paste! { [<$ident A>] :: A1024 }
+        $crate::paste! { [<$ident A>] :: A1024 }
     };
     ($ident:ident, $other:ident) => {
         panic!("operation requires `A` register")
@@ -1128,28 +1148,28 @@ macro_rules! _reg_tya {
 #[macro_export]
 macro_rules! _reg_tyf {
     ($ident:ident,f16b) => {
-        ::paste::paste! { [<$ident F>] :: F16B }
+        $crate::paste! { [<$ident F>] :: F16B }
     };
     ($ident:ident,f16) => {
-        ::paste::paste! { [<$ident F>] :: F16 }
+        $crate::paste! { [<$ident F>] :: F16 }
     };
     ($ident:ident,f32) => {
-        ::paste::paste! { [<$ident F>] :: F32 }
+        $crate::paste! { [<$ident F>] :: F32 }
     };
     ($ident:ident,f64) => {
-        ::paste::paste! { [<$ident F>] :: F64 }
+        $crate::paste! { [<$ident F>] :: F64 }
     };
     ($ident:ident,f80) => {
-        ::paste::paste! { [<$ident F>] :: F80 }
+        $crate::paste! { [<$ident F>] :: F80 }
     };
     ($ident:ident,f128) => {
-        ::paste::paste! { [<$ident F>] :: F128 }
+        $crate::paste! { [<$ident F>] :: F128 }
     };
     ($ident:ident,f256) => {
-        ::paste::paste! { [<$ident F>] :: F256 }
+        $crate::paste! { [<$ident F>] :: F256 }
     };
     ($ident:ident,f512) => {
-        ::paste::paste! { [<$ident F>] :: F512 }
+        $crate::paste! { [<$ident F>] :: F512 }
     };
     ($ident:ident, $other:ident) => {
         panic!("operation requires `F` register")
@@ -1160,28 +1180,28 @@ macro_rules! _reg_tyf {
 #[macro_export]
 macro_rules! _reg_tyr {
     ($ident:ident,r128) => {
-        ::paste::paste! { [<$ident R>] :: R128 }
+        $crate::paste! { [<$ident R>] :: R128 }
     };
     ($ident:ident,r160) => {
-        ::paste::paste! { [<$ident R>] :: R160 }
+        $crate::paste! { [<$ident R>] :: R160 }
     };
     ($ident:ident,r256) => {
-        ::paste::paste! { [<$ident R>] :: R256 }
+        $crate::paste! { [<$ident R>] :: R256 }
     };
     ($ident:ident,r512) => {
-        ::paste::paste! { [<$ident R>] :: R512 }
+        $crate::paste! { [<$ident R>] :: R512 }
     };
     ($ident:ident,r1024) => {
-        ::paste::paste! { [<$ident R>] :: R1024 }
+        $crate::paste! { [<$ident R>] :: R1024 }
     };
     ($ident:ident,r2048) => {
-        ::paste::paste! { [<$ident R>] :: R2048 }
+        $crate::paste! { [<$ident R>] :: R2048 }
     };
     ($ident:ident,r4096) => {
-        ::paste::paste! { [<$ident R>] :: R4096 }
+        $crate::paste! { [<$ident R>] :: R4096 }
     };
     ($ident:ident,r8192) => {
-        ::paste::paste! { [<$ident R>] :: R8192 }
+        $crate::paste! { [<$ident R>] :: R8192 }
     };
     ($ident:ident, $other:ident) => {
         panic!("operation requires `R` register")
@@ -1192,7 +1212,7 @@ macro_rules! _reg_tyr {
 #[macro_export]
 macro_rules! _reg_idx {
     ($idx:literal) => {
-        ::paste::paste! { Reg32::[<Reg $idx>] }
+        $crate::paste! { Reg32::[<Reg $idx>] }
     };
 }
 
@@ -1200,7 +1220,7 @@ macro_rules! _reg_idx {
 #[macro_export]
 macro_rules! _reg_idx8 {
     ($idx:literal) => {
-        ::paste::paste! { Reg8::[<Reg $idx>] }
+        $crate::paste! { Reg8::[<Reg $idx>] }
     };
 }
 
@@ -1208,7 +1228,7 @@ macro_rules! _reg_idx8 {
 #[macro_export]
 macro_rules! _reg_idx16 {
     ($idx:literal) => {
-        ::paste::paste! { Reg16::[<Reg $idx>] }
+        $crate::paste! { Reg16::[<Reg $idx>] }
     };
 }
 
