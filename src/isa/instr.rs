@@ -606,11 +606,11 @@ pub enum BytesOp {
     ),
 
     /// Move bytestring value between registers
-    #[display("mov     {0},s16[{1}]")]
+    #[display("mov     {0},{1}")]
     Mov(/** Source `s` register index */ RegS, /** Destination `s` register index */ RegS),
 
     /// Swap bytestring value between registers
-    #[display("swp     {0},s16[{1}]")]
+    #[display("swp     {0},{1}")]
     Swp(/** First `s` register index */ RegS, /** Second `s` register index */ RegS),
 
     /// Fill segment of bytestring with specific byte value, setting the length of the string in
@@ -644,7 +644,7 @@ pub enum BytesOp {
     ///
     /// If the string register is empty, or destination register can't fit the length, sets `st0`
     /// to `false` and destination register to `None`.
-    #[display("len     {0},a16[0]")]
+    #[display("len     {0},{1}{2}")]
     Len(/** `s` register index */ RegS, RegA, Reg32),
 
     /// Count number of byte occurrences from the `a8` register within the string and stores that
