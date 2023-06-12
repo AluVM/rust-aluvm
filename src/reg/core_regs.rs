@@ -693,6 +693,12 @@ impl Debug for CoreRegs {
             }
         }
 
+        write!(f, "\n{}S-REG:{}\t", sect, reset)?;
+        for i in 0..16 {
+            if let Some(ref v) = self.s16[i] {
+                write!(f, "{}s16{}[{}{:02}{}]={}{}{}\n\t", reg, eq, reset, i, eq, val, v, reset)?;
+            }
+        }
         Ok(())
     }
 }
