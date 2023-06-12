@@ -197,16 +197,16 @@ fn float() {
 #[test]
 fn bytes_put() {
     let code = aluasm! {
-            put   s16[1],"aaa";
-            put   s16[2],"aaa";
-            cmp   s16[1],s16[2];
+            put   "aaa",s16[1];
+            put   "aaa",s16[2];
+            eq    s16[1],s16[2];
             ret;
     };
     run(code, true);
     let code = aluasm! {
-            put   s16[1],"aaa";
-            put   s16[2],"bbb";
-            cmp   s16[1],s16[2];
+            put   "aaa",s16[1];
+            put   "bbb",s16[2];
+            eq    s16[1],s16[2];
             ret;
     };
     run(code, false);
@@ -215,7 +215,7 @@ fn bytes_put() {
 #[test]
 fn bytes_extr() {
     let code = aluasm! {
-            put    s16[0],"################@@@@@@";
+            put    "################@@@@@@",s16[0];
             put    0,a16[0];
             extr   s16[0],r128[0],a16[0];
             put    0x23232323232323232323232323232323,r128[1];
@@ -224,7 +224,7 @@ fn bytes_extr() {
     };
     run(code, true);
     let code = aluasm! {
-            put    s16[0],"################@@@@@@";
+            put    "################@@@@@@",s16[0];
             put    3,a16[0];
             extr   s16[0],r128[0],a16[0];
             put    0x40404023232323232323232323232323,r128[1];
@@ -237,35 +237,35 @@ fn bytes_extr() {
 #[test]
 fn bytes_extr_offset_exceed() {
     let code = aluasm! {
-            put    s16[0],"123456788901234567";
+            put    "123456788901234567",s16[0];
             put    0,a16[0];
             extr   s16[0],r128[0],a16[0];
             ret;
     };
     run(code, true);
     let code = aluasm! {
-            put    s16[0],"123456788901234567";
+            put    "123456788901234567",s16[0];
             put    1,a16[0];
             extr   s16[0],r128[0],a16[0];
             ret;
     };
     run(code, true);
     let code = aluasm! {
-            put    s16[0],"123456788901234567";
+            put    "123456788901234567",s16[0];
             put    2,a16[0];
             extr   s16[0],r128[0],a16[0];
             ret;
     };
     run(code, false);
     let code = aluasm! {
-            put    s16[0],"123456788901234567";
+            put    "123456788901234567",s16[0];
             put    2,a16[0];
             extr   s16[0],r128[0],a16[0];
             ret;
     };
     run(code, false);
     let code = aluasm! {
-            put    s16[0],"################@";
+            put    "################@",s16[0];
             put    1,a16[0];
             extr   s16[0],r128[0],a16[0];
             put    0x40232323232323232323232323232323,r128[1];
@@ -274,14 +274,14 @@ fn bytes_extr_offset_exceed() {
     };
     run(code, true);
     let code = aluasm! {
-            put    s16[0],"123456788901234567";
+            put    "123456788901234567",s16[0];
             put    100,a16[0];
             extr   s16[0],r128[0],a16[0];
             ret;
     };
     run(code, false);
     let code = aluasm! {
-            put    s16[0],"123";
+            put    "123",s16[0];
             put    0,a16[0];
             extr   s16[0],r128[0],a16[0];
             ret;
@@ -292,13 +292,13 @@ fn bytes_extr_offset_exceed() {
 #[test]
 fn bytes_extr_uninitialized_offset() {
     let code = aluasm! {
-            put    s16[0],"12345678890123456";
+            put    "12345678890123456",s16[0];
             extr   s16[0],r128[0],a16[0];
             ret;
     };
     run(code, false);
     let code = aluasm! {
-            put    s16[0],"12345678890123456";
+            put    "12345678890123456",s16[0];
             extr   s16[0],r128[0],a16[0];
             eq.e   r128[0],r128[1];
             ret;

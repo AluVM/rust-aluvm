@@ -598,8 +598,8 @@ pub enum BytesOp {
     /// sets `st0` to `false`. Otherwise, `st0` is unaffected.
     #[display("put     {0},{1}")]
     Put(
-        /** Destination `s` register index */ RegS,
         Box<ByteStr>,
+        /** Destination `s` register index */ RegS,
         /** Indicates that the operation must set `st0` to false; i.e. string data are not
          * completely read from the data segment */
         bool,
@@ -665,7 +665,7 @@ pub enum BytesOp {
     /// Check equality of two strings, putting result into `st0`.
     ///
     /// If both of strings are uninitialized, `st0` assigned `true` value.
-    #[display("cmp     {0},{1}")]
+    #[display("eq      {0},{1}")]
     Eq(RegS, RegS),
 
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint

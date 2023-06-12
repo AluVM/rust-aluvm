@@ -586,7 +586,7 @@ impl InstructionSet for BytesOp {
     #[allow(warnings)]
     fn exec(&self, regs: &mut CoreRegs, _site: LibSite, _: &()) -> ExecStep {
         match self {
-            BytesOp::Put(reg, bytes, st0) => {
+            BytesOp::Put(bytes, reg, st0) => {
                 regs.s16[reg.as_usize()] = Some(*bytes.clone());
                 if *st0 {
                     regs.st0 = false
@@ -1066,12 +1066,12 @@ mod tests {
         let lib_site = LibSite::default();
         let s1 = "apple_banana_kiwi".as_bytes();
         let s2 = "apple@banana@kiwi".as_bytes();
-        BytesOp::Put(1.into(), Box::new(ByteStr::with(s1)), false).exec(
+        BytesOp::Put(Box::new(ByteStr::with(s1)), 1.into(), false).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Put(2.into(), Box::new(ByteStr::with(s2)), false).exec(
+        BytesOp::Put(Box::new(ByteStr::with(s2)), 2.into(), false).exec(
             &mut register,
             lib_site,
             &(),
@@ -1135,12 +1135,12 @@ mod tests {
 
         let s1 = "aaa".as_bytes();
         let s2 = "bbb".as_bytes();
-        BytesOp::Put(1.into(), Box::new(ByteStr::with(s1)), false).exec(
+        BytesOp::Put(Box::new(ByteStr::with(s1)), 1.into(), false).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Put(2.into(), Box::new(ByteStr::with(s2)), false).exec(
+        BytesOp::Put(Box::new(ByteStr::with(s2)), 2.into(), false).exec(
             &mut register,
             lib_site,
             &(),
@@ -1162,12 +1162,12 @@ mod tests {
 
         let s1 = [0u8; u16::MAX as usize];
         let s2 = [0u8; u16::MAX as usize];
-        BytesOp::Put(1.into(), Box::new(ByteStr::with(s1)), false).exec(
+        BytesOp::Put(Box::new(ByteStr::with(s1)), 1.into(), false).exec(
             &mut register,
             lib_site,
             &(),
         );
-        BytesOp::Put(2.into(), Box::new(ByteStr::with(s2)), false).exec(
+        BytesOp::Put(Box::new(ByteStr::with(s2)), 2.into(), false).exec(
             &mut register,
             lib_site,
             &(),
