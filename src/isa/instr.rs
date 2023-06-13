@@ -635,7 +635,7 @@ pub enum BytesOp {
     Fill(
         /** `s` register index */ RegS,
         /** `a16` register holding first offset */ Reg32,
-        /** `a16` register holding second offset (inclusive) */ Reg32,
+        /** `a16` register holding second offset (exclusive) */ Reg32,
         /** `a8` register index holding the value */ Reg32,
         /** Exception handling flag */ ExtendFlag,
     ),
