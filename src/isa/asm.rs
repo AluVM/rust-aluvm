@@ -63,7 +63,7 @@ macro_rules! aluasm {
         use std::boxed::Box;
 
         use $crate::isa::{
-            ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, DigestOp, FloatEqFlag, Instr, IntFlags,
+            ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, DigestOp, ExtendFlag, FloatEqFlag, Instr, IntFlags,
             MergeFlag, MoveOp, ReservedOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag, NoneEqFlag,
         };
         use $crate::reg::{
@@ -178,6 +178,24 @@ macro_rules! instr {
     };
     (put $val:literal,s16[$idx:literal]) => {{
         Instr::Bytes(BytesOp::Put(Box::new(ByteStr::with(&$val)), RegS::from($idx), false))
+    }};
+    (fill.e s16[$idx0:literal],a16[$idx1:literal],a16[$idx2:literal],a8[$idx3:literal]) => {{
+        Instr::Bytes(BytesOp::Fill(
+            RegS::from($idx0),
+            $crate::_reg_idx!($idx1),
+            $crate::_reg_idx!($idx2),
+            $crate::_reg_idx!($idx3),
+            ExtendFlag::Extend,
+        ))
+    }};
+    (fill.f s16[$idx0:literal],a16[$idx1:literal],a16[$idx2:literal],a8[$idx3:literal]) => {{
+        Instr::Bytes(BytesOp::Fill(
+            RegS::from($idx0),
+            $crate::_reg_idx!($idx1),
+            $crate::_reg_idx!($idx2),
+            $crate::_reg_idx!($idx3),
+            ExtendFlag::Fail,
+        ))
     }};
     (put $val:literal, $reg:ident[$idx:literal]) => {{
         let s = stringify!($val);

@@ -631,7 +631,7 @@ pub enum BytesOp {
     ///
     /// If any of the offsets or value registers are unset, sets `st0` to `false` and does not
     /// change destination value.
-    #[display("fill    {0},a16{1},a16{2},a8{3}")]
+    #[display("fill.{4}    {0},a16{1},a16{2},a8{3}")]
     Fill(
         /** `s` register index */ RegS,
         /** `a16` register holding first offset */ Reg32,
