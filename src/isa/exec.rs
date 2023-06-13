@@ -619,7 +619,7 @@ impl InstructionSet for BytesOp {
                     if bs.len() <= range.end && *flag == ExtendFlag::Fail {
                         return None;
                     }
-                    bs.fill(o1..o2, val);
+                    bs.fill(range, val);
                     Some(())
                 };
                 f().unwrap_or_else(|| regs.st0 = false);
