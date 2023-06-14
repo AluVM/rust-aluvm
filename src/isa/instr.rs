@@ -631,11 +631,11 @@ pub enum BytesOp {
     ///
     /// If any of the offsets or value registers are unset, sets `st0` to `false` and does not
     /// change destination value.
-    #[display("fill    {0},a16{1},a16{2},a8{3}")]
+    #[display("fill.{4}    {0},a16{1},a16{2},a8{3}")]
     Fill(
         /** `s` register index */ RegS,
         /** `a16` register holding first offset */ Reg32,
-        /** `a16` register holding second offset (inclusive) */ Reg32,
+        /** `a16` register holding second offset (exclusive) */ Reg32,
         /** `a8` register index holding the value */ Reg32,
         /** Exception handling flag */ ExtendFlag,
     ),
@@ -665,7 +665,7 @@ pub enum BytesOp {
     /// Check equality of two strings, putting result into `st0`.
     ///
     /// If both of strings are uninitialized, `st0` assigned `true` value.
-    #[display("cmp     {0},{1}")]
+    #[display("eq      {0},{1}")]
     Eq(RegS, RegS),
 
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint

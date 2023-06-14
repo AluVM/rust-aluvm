@@ -16,8 +16,8 @@ use aluvm::{aluasm, Prog, Vm};
 #[test]
 fn a8_ne() {
     let code = aluasm! {
-        put     12,a8[1];
-        put     9,a8[2];
+        put     a8[1],12;
+        put     a8[2],9;
         eq.n    a8[1],a8[2];
         ret;
     };
@@ -27,8 +27,8 @@ fn a8_ne() {
 #[test]
 fn a8_eq() {
     let code = aluasm! {
-        put     9,a8[1];
-        put     9,a8[2];
+        put     a8[1],9;
+        put     a8[2],9;
         eq.n    a8[1],a8[2];
         ret;
     };
@@ -48,8 +48,8 @@ fn a8_eq() {
 #[test]
 fn a16_eq() {
     let code = aluasm! {
-        put     4,a16[1];
-        put     4,a16[2];
+        put     a16[1],4;
+        put     a16[2],4;
         eq.n    a16[1],a16[2];
         ret;
     };
@@ -59,8 +59,8 @@ fn a16_eq() {
 #[test]
 fn a_eq_fail() {
     let code = aluasm! {
-        put     3,a16[1];
-        put     4,a16[2];
+        put     a16[1],3;
+        put     a16[2],4;
         eq.n    a16[1],a16[2];
         ret;
     };
@@ -88,8 +88,8 @@ fn a_eq_noneeq_noneq() {
 #[test]
 fn a_gt_u() {
     let code = aluasm! {
-        put     2,a8[1];
-        put     1,a8[2];
+        put     a8[1],2;
+        put     a8[2],1;
         gt.u    a8[1],a8[2];
         ret;
     };
@@ -99,22 +99,22 @@ fn a_gt_u() {
 #[test]
 fn a_gt_s() {
     let code = aluasm! {
-        put     1,a8[1];
-        put     255,a8[2]; // -1
+        put     a8[1],1;
+        put     a8[2],255; // -1
         gt.s    a8[1],a8[2];
         ret;
     };
     run(code, true);
     let code = aluasm! {
-        put     1,a8[1];
-        put     -1,a8[2];
+        put     a8[1],1;
+        put     a8[2],-1;
         gt.s    a8[1],a8[2];
         ret;
     };
     run(code, true);
     let code = aluasm! {
-        put     1,a8[1];
-        put     2,a8[2];
+        put     a8[1],1;
+        put     a8[2],2;
         gt.s    a8[1],a8[2];
         ret;
     };
@@ -124,8 +124,8 @@ fn a_gt_s() {
 #[test]
 fn a_lt_u() {
     let code = aluasm! {
-        put     1,a8[1];
-        put     2,a8[2];
+        put     a8[1],1;
+        put     a8[2],2;
         lt.u    a8[1],a8[2];
         ret;
     };
@@ -135,22 +135,22 @@ fn a_lt_u() {
 #[test]
 fn a_lt_s() {
     let code = aluasm! {
-        put     255,a8[1]; // -1
-        put     1,a8[2];
+        put     a8[1],255;
+        put     a8[2],1;
         lt.s    a8[1],a8[2];
         ret;
     };
     run(code, true);
     let code = aluasm! {
-        put     -1,a8[1];
-        put     1,a8[2];
+        put     a8[1],-1;
+        put     a8[2],1;
         lt.s    a8[1],a8[2];
         ret;
     };
     run(code, true);
     let code = aluasm! {
-        put     2,a8[1];
-        put     1,a8[2];
+        put     a8[1],2;
+        put     a8[2],1;
         lt.s    a8[1],a8[2];
         ret;
     };
@@ -160,9 +160,9 @@ fn a_lt_s() {
 #[test]
 fn stp_add() {
     let code = aluasm! {
-        put     3,a8[1];
-        add     4,a8[1];
-        put     7,a8[2];
+        put     a8[1],3;
+        add     a8[1],4;
+        put     a8[2],7;
         eq.n    a8[1],a8[2];
         ret;
     };
@@ -172,9 +172,9 @@ fn stp_add() {
 #[test]
 fn stp_sub() {
     let code = aluasm! {
-        put     3,a8[1];
-        sub     4,a8[1];
-        put     -1,a8[2];
+        put     a8[1],3;
+        sub     a8[1],4;
+        put     a8[2],-1;
         eq.n    a8[1],a8[2];
         ret;
     };
@@ -184,10 +184,10 @@ fn stp_sub() {
 #[test]
 fn float() {
     let code = aluasm! {
-            put   1.25,f32[8];
-            put   1.5,f32[9];
-            put   2.75,f32[10];
-            add.f f32[8],f32[9];
+            put   f32[8],1.25;
+            put   f32[9],1.5;
+            put   f32[10],2.75;
+            add.f f32[9],f32[8];
             eq.e  f32[9],f32[10];
             ret;
     };
@@ -199,14 +199,14 @@ fn bytes_put() {
     let code = aluasm! {
             put   s16[1],"aaa";
             put   s16[2],"aaa";
-            cmp   s16[1],s16[2];
+            eq    s16[1],s16[2];
             ret;
     };
     run(code, true);
     let code = aluasm! {
             put   s16[1],"aaa";
             put   s16[2],"bbb";
-            cmp   s16[1],s16[2];
+            eq    s16[1],s16[2];
             ret;
     };
     run(code, false);
@@ -216,18 +216,18 @@ fn bytes_put() {
 fn bytes_extr() {
     let code = aluasm! {
             put    s16[0],"################@@@@@@";
-            put    0,a16[0];
-            extr   s16[0],r128[0],a16[0];
-            put    0x23232323232323232323232323232323,r128[1];
+            put    a16[0],0;
+            extr   r128[0],s16[0],a16[0];
+            put    r128[1],0x23232323232323232323232323232323;
             eq.n   r128[0],r128[1];
             ret;
     };
     run(code, true);
     let code = aluasm! {
             put    s16[0],"################@@@@@@";
-            put    3,a16[0];
-            extr   s16[0],r128[0],a16[0];
-            put    0x40404023232323232323232323232323,r128[1];
+            put    a16[0],3;
+            extr   r128[0],s16[0],a16[0];
+            put    r128[1],0x40404023232323232323232323232323;
             eq.n   r128[0],r128[1];
             ret;
     };
@@ -238,52 +238,52 @@ fn bytes_extr() {
 fn bytes_extr_offset_exceed() {
     let code = aluasm! {
             put    s16[0],"123456788901234567";
-            put    0,a16[0];
-            extr   s16[0],r128[0],a16[0];
+            put    a16[0],0;
+            extr   r128[0],s16[0],a16[0];
             ret;
     };
     run(code, true);
     let code = aluasm! {
             put    s16[0],"123456788901234567";
-            put    1,a16[0];
-            extr   s16[0],r128[0],a16[0];
+            put    a16[0],1;
+            extr   r128[0],s16[0],a16[0];
             ret;
     };
     run(code, true);
     let code = aluasm! {
             put    s16[0],"123456788901234567";
-            put    2,a16[0];
-            extr   s16[0],r128[0],a16[0];
+            put    a16[0],2;
+            extr   r128[0],s16[0],a16[0];
             ret;
     };
     run(code, false);
     let code = aluasm! {
             put    s16[0],"123456788901234567";
-            put    2,a16[0];
-            extr   s16[0],r128[0],a16[0];
+            put    a16[0],2;
+            extr   r128[0],s16[0],a16[0];
             ret;
     };
     run(code, false);
     let code = aluasm! {
             put    s16[0],"################@";
-            put    1,a16[0];
-            extr   s16[0],r128[0],a16[0];
-            put    0x40232323232323232323232323232323,r128[1];
+            put    a16[0],1;
+            extr   r128[0],s16[0],a16[0];
+            put    r128[1],0x40232323232323232323232323232323;
             eq.n   r128[0],r128[1];
             ret;
     };
     run(code, true);
     let code = aluasm! {
             put    s16[0],"123456788901234567";
-            put    100,a16[0];
-            extr   s16[0],r128[0],a16[0];
+            put    a16[0],100;
+            extr   r128[0],s16[0],a16[0];
             ret;
     };
     run(code, false);
     let code = aluasm! {
             put    s16[0],"123";
-            put    0,a16[0];
-            extr   s16[0],r128[0],a16[0];
+            put    a16[0],0;
+            extr   r128[0],s16[0],a16[0];
             ret;
     };
     run(code, false);
@@ -293,13 +293,13 @@ fn bytes_extr_offset_exceed() {
 fn bytes_extr_uninitialized_offset() {
     let code = aluasm! {
             put    s16[0],"12345678890123456";
-            extr   s16[0],r128[0],a16[0];
+            extr   r128[0],s16[0],a16[0];
             ret;
     };
     run(code, false);
     let code = aluasm! {
             put    s16[0],"12345678890123456";
-            extr   s16[0],r128[0],a16[0];
+            extr   r128[0],s16[0],a16[0];
             eq.e   r128[0],r128[1];
             ret;
     };
@@ -309,14 +309,14 @@ fn bytes_extr_uninitialized_offset() {
 #[test]
 fn bytes_extr_uninitialized_bytes() {
     let code = aluasm! {
-            put    0,a16[0];
-            extr   s16[0],r128[0],a16[0];
+            put    a16[0],0;
+            extr   r128[0],s16[0],a16[0];
             ret;
     };
     run(code, false);
     let code = aluasm! {
-            put    0,a16[0];
-            extr   s16[0],r128[0],a16[0];
+            put    a16[0],0;
+            extr   r128[0],s16[0],a16[0];
             eq.e   r128[0],r128[1];
             ret;
     };

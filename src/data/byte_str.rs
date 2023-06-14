@@ -137,16 +137,20 @@ impl ByteStr {
     #[inline]
     pub fn is_empty(&self) -> bool { self.len == 0 }
 
-    /// Adjusts the length of the string if necessary
+    /// Adjusts the length of the string
     #[inline]
     pub fn adjust_len(&mut self, new_len: u16) { self.len = new_len }
+
+    /// Extends the length of the string if necessary
+    #[inline]
+    pub fn extend_len(&mut self, new_len: u16) { self.len = new_len.max(self.len) }
 
     /// Fills range within a string with the provided byte value, increasing string length if
     /// necessary
     pub fn fill(&mut self, range: Range<u16>, val: u8) {
         let start = range.start;
         let end = range.end;
-        self.adjust_len(end);
+        self.extend_len(end);
         self.bytes[start as usize..end as usize].fill(val);
     }
 
