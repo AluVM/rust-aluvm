@@ -1102,7 +1102,7 @@ impl Bytecode for BytesOp {
         W: Write,
     {
         match self {
-            BytesOp::Put(bytes, reg, _) => {
+            BytesOp::Put(reg, bytes, _) => {
                 writer.write_u8(reg)?;
                 writer.write_data(bytes.as_ref())?;
             }
@@ -1189,7 +1189,7 @@ impl Bytecode for BytesOp {
             INSTR_PUT => {
                 let index = reader.read_u8()?;
                 let (data, st0) = reader.read_data()?;
-                Self::Put(Box::new(ByteStr::with(data)), index.into(), st0)
+                Self::Put(index.into(), Box::new(ByteStr::with(data)), st0)
             }
             INSTR_MVS => Self::Mov(reader.read_u4()?.into(), reader.read_u4()?.into()),
             INSTR_SWP => Self::Swp(reader.read_u4()?.into(), reader.read_u4()?.into()),
