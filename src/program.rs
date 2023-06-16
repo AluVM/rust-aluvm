@@ -22,10 +22,9 @@
 // limitations under the License.
 
 use alloc::borrow::ToOwned;
-use alloc::collections::BTreeMap;
+use alloc::collections::{btree_map, BTreeMap};
 use alloc::string::String;
 use core::marker::PhantomData;
-use std::collections::btree_map;
 
 use crate::isa::InstructionSet;
 use crate::library::constants::LIBS_MAX_TOTAL;

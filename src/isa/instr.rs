@@ -606,11 +606,11 @@ pub enum BytesOp {
     ),
 
     /// Move bytestring value between registers
-    #[display("mov     {0},s16[{1}]")]
+    #[display("mov     {0},{1}")]
     Mov(/** Source `s` register index */ RegS, /** Destination `s` register index */ RegS),
 
     /// Swap bytestring value between registers
-    #[display("swp     {0},s16[{1}]")]
+    #[display("swp     {0},{1}")]
     Swp(/** First `s` register index */ RegS, /** Second `s` register index */ RegS),
 
     /// Fill segment of bytestring with specific byte value, setting the length of the string in
@@ -631,11 +631,11 @@ pub enum BytesOp {
     ///
     /// If any of the offsets or value registers are unset, sets `st0` to `false` and does not
     /// change destination value.
-    #[display("fill    {0},a16{1},a16{2},a8{3}")]
+    #[display("fill.{4}    {0},a16{1},a16{2},a8{3}")]
     Fill(
         /** `s` register index */ RegS,
         /** `a16` register holding first offset */ Reg32,
-        /** `a16` register holding second offset (inclusive) */ Reg32,
+        /** `a16` register holding second offset (exclusive) */ Reg32,
         /** `a8` register index holding the value */ Reg32,
         /** Exception handling flag */ ExtendFlag,
     ),
@@ -644,7 +644,7 @@ pub enum BytesOp {
     ///
     /// If the string register is empty, or destination register can't fit the length, sets `st0`
     /// to `false` and destination register to `None`.
-    #[display("len     {0},a16[0]")]
+    #[display("len     {0},{1}{2}")]
     Len(/** `s` register index */ RegS, RegA, Reg32),
 
     /// Count number of byte occurrences from the `a8` register within the string and stores that
@@ -665,7 +665,7 @@ pub enum BytesOp {
     /// Check equality of two strings, putting result into `st0`.
     ///
     /// If both of strings are uninitialized, `st0` assigned `true` value.
-    #[display("cmp     {0},{1}")]
+    #[display("eq      {0},{1}")]
     Eq(RegS, RegS),
 
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
@@ -696,7 +696,7 @@ pub enum BytesOp {
     ///
     /// If the source string register - or offset register is uninitialized, sets destination to
     /// uninitialized state and `st0` to `false`.
-    #[display("extr    {0},{1}{2},{1}{3}")]
+    #[display("extr    {0},{1}{2},a16{3}")]
     Extr(/** `s` register index */ RegS, RegR, Reg16, /** `a16` register with offset */ Reg16),
 
     /// Inject general `R` register value at a given position to string register, replacing value

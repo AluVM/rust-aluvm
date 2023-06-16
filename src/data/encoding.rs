@@ -598,7 +598,7 @@ impl Encode for LibId {
 
     fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
         let slice = self.as_slice();
-        writer.write_all(&slice)?;
+        writer.write_all(slice)?;
         Ok(slice.len())
     }
 }

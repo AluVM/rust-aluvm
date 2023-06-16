@@ -44,6 +44,7 @@ pub trait NumericRegister: Register {
 /// Enumeration of integer arithmetic registers (`A`-registers)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum RegA {
     /// 8-bit arithmetics register
     #[display("a8")]
@@ -59,6 +60,7 @@ pub enum RegA {
 
     /// 64-bit arithmetics register
     #[display("a64")]
+    #[default]
     A64 = 3,
 
     /// 128-bit arithmetics register
@@ -76,10 +78,6 @@ pub enum RegA {
     /// 1024-bit arithmetics register
     #[display("a1024")]
     A1024 = 7,
-}
-
-impl Default for RegA {
-    fn default() -> Self { RegA::A64 }
 }
 
 impl Register for RegA {
@@ -182,18 +180,16 @@ impl TryFrom<RegAll> for RegA {
 /// registers)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum RegA2 {
     /// 8-bit arithmetics register
     #[display("a8")]
+    #[default]
     A8 = 0,
 
     /// 16-bit arithmetics register
     #[display("a16")]
     A16 = 1,
-}
-
-impl Default for RegA2 {
-    fn default() -> Self { RegA2::A8 }
 }
 
 impl Register for RegA2 {
@@ -259,6 +255,7 @@ impl TryFrom<RegAll> for RegA2 {
 /// Enumeration of float arithmetic registers (`F`-registers)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum RegF {
     /// 16-bit bfloat16 format used in machine learning
     #[display("f16b")]
@@ -274,6 +271,7 @@ pub enum RegF {
 
     /// 64-bit IEEE-754 binary64 double-precision
     #[display("f64")]
+    #[default]
     F64 = 3,
 
     /// 80-bit IEEE-754 extended precision
@@ -291,10 +289,6 @@ pub enum RegF {
     /// 512-bit tapered floating point
     #[display("f512")]
     F512 = 7,
-}
-
-impl Default for RegF {
-    fn default() -> Self { RegF::F64 }
 }
 
 impl Register for RegF {
@@ -390,6 +384,7 @@ impl TryFrom<RegAll> for RegF {
 /// used for cryptography)
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum RegR {
     /// 128-bit non-arithmetics register
     #[display("r128")]
@@ -401,6 +396,7 @@ pub enum RegR {
 
     /// 256-bit non-arithmetics register
     #[display("r256")]
+    #[default]
     R256 = 2,
 
     /// 512-bit non-arithmetics register
@@ -422,10 +418,6 @@ pub enum RegR {
     /// 8192-bit non-arithmetics register
     #[display("r8192")]
     R8192 = 7,
-}
-
-impl Default for RegR {
-    fn default() -> Self { RegR::R256 }
 }
 
 impl Register for RegR {
@@ -1014,18 +1006,16 @@ impl TryFrom<RegAll> for RegAR {
 
 /// Block of registers, either integer arithmetic or non-arithmetic (general) registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[derive(Default)]
 pub enum RegBlockAR {
     /// Arithmetic integer registers (`A` registers)
     #[display("a")]
+    #[default]
     A,
 
     /// Non-arithmetic (generic) registers (`R` registers)
     #[display("r")]
     R,
-}
-
-impl Default for RegBlockAR {
-    fn default() -> Self { RegBlockAR::A }
 }
 
 impl Register for RegBlockAR {
@@ -1059,9 +1049,11 @@ impl TryFrom<RegAll> for RegBlockAR {
 
 /// Block of registers, either integer, float arithmetic or non-arithmetic (general) registers
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[derive(Default)]
 pub enum RegBlockAFR {
     /// Arithmetic integer registers (`A` registers)
     #[display("a")]
+    #[default]
     A,
 
     /// Arithmetic float registers (`F` registers)
@@ -1071,10 +1063,6 @@ pub enum RegBlockAFR {
     /// Non-arithmetic (generic) registers (`R` registers)
     #[display("r")]
     R,
-}
-
-impl Default for RegBlockAFR {
-    fn default() -> Self { RegBlockAFR::A }
 }
 
 impl Register for RegBlockAFR {
@@ -1109,9 +1097,11 @@ impl TryFrom<RegAll> for RegBlockAFR {
 
 /// Blocks of registers including all non-control register types
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[derive(Default)]
 pub enum RegBlock {
     /// Arithmetic integer registers (`A` registers)
     #[display("a")]
+    #[default]
     A,
 
     /// Arithmetic float registers (`F` registers)
@@ -1125,10 +1115,6 @@ pub enum RegBlock {
     /// Byte-string registers (`S` registers)
     #[display("s")]
     S,
-}
-
-impl Default for RegBlock {
-    fn default() -> Self { RegBlock::A }
 }
 
 impl Register for RegBlock {

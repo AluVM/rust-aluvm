@@ -31,6 +31,7 @@ use core::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
+use sha2::{Digest, Sha256};
 
 use super::{Cursor, Read};
 use crate::data::ByteStr;
@@ -46,7 +47,8 @@ pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:aluvm:lib:v01#230304";
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default, Debug, Display, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
 #[display(Self::to_baid58_string)]
-#[derive(StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictType, StrictDecode)]
+#[cfg_attr(feature = "std", derive(StrictEncode))]
 #[strict_type(lib = LIB_NAME_ALUVM)]
 #[cfg_attr(
     feature = "serde",
@@ -71,6 +73,7 @@ impl FromStr for LibId {
 }
 
 impl LibId {
+    #[allow(clippy::wrong_self_convention)] // FIXME #[display] only accepts &self
     fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
 }
 
@@ -82,18 +85,24 @@ impl LibId {
         data: impl AsRef<[u8]>,
         libs: &LibSeg,
     ) -> LibId {
-        let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
+        let mut tagger = Sha256::default();
+        tagger.update(LIB_ID_TAG);
+        let tag = tagger.finalize();
+
+        let mut hasher = Sha256::default();
+        hasher.update(tag);
+        hasher.update(tag);
 
         let isae = isae.as_ref();
         let code = code.as_ref();
         let data = data.as_ref();
-        hasher.update(&(isae.len() as u8).to_le_bytes());
+        hasher.update((isae.len() as u8).to_le_bytes());
         hasher.update(isae.as_bytes());
-        hasher.update(&code.len().to_le_bytes());
-        hasher.update(code.as_ref());
-        hasher.update(&data.len().to_le_bytes());
-        hasher.update(data.as_ref());
-        hasher.update(&[libs.count()]);
+        hasher.update((code.len() as u16).to_le_bytes());
+        hasher.update(code);
+        hasher.update((data.len() as u16).to_le_bytes());
+        hasher.update(data);
+        hasher.update([libs.count()]);
         for lib in libs {
             hasher.update(lib.as_slice());
         }
@@ -312,8 +321,9 @@ impl Lib {
 
 /// Location within a library
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
-#[derive(StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictType, StrictDecode)]
 #[strict_type(lib = LIB_NAME_ALUVM)]
+#[cfg_attr(feature = "std", derive(StrictEncode))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display("{pos} @ {lib}")]
 pub struct LibSite {
