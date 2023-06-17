@@ -644,7 +644,7 @@ pub enum BytesOp {
     ///
     /// If the string register is empty, or destination register can't fit the length, sets `st0`
     /// to `false` and destination register to `None`.
-    #[display("len     {0},{1}{2}")]
+    #[display("len     {1}{2},{0}")]
     Len(/** `s` register index */ RegS, RegA, Reg32),
 
     /// Count number of byte occurrences from the `a8` register within the string and stores that
@@ -655,7 +655,7 @@ pub enum BytesOp {
     ///
     /// If the source byte value register is uninitialized, sets destination register to `None` and
     /// `st0` to `false`.
-    #[display("cnt     {0},a8{1},a16{2}")]
+    #[display("cnt     a16{2},{0},a8{1}")]
     Cnt(
         /** `s` register index */ RegS,
         /** `a8` register with the byte value */ Reg16,
