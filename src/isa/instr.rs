@@ -650,11 +650,8 @@ pub enum BytesOp {
     /// Count number of byte occurrences from the `a8` register within the string and stores that
     /// value into destination `a16` register.
     ///
-    /// If the string register is empty, or destination register can't fit the length, sets `st0`
-    /// to `false` and destination register to `None`.
-    ///
-    /// If the source byte value register is uninitialized, sets destination register to `None` and
-    /// `st0` to `false`.
+    /// If the string register is empty, or the source byte value register is uninitialized, sets
+    /// `st0` to `false` and destination register to `None`.
     #[display("cnt     a16{2},{0},a8{1}")]
     Cnt(
         /** `s` register index */ RegS,
