@@ -677,13 +677,13 @@ pub enum BytesOp {
         /** `a16` register index to save the length of the conjoint fragment */ Reg32,
     ),
 
-    /// Count number of occurrences of one string within another putting result to `a16[1]`,
+    /// Count number of occurrences of one string within another putting result to `a16[0]`,
     ///
-    /// If the first or the second string is `None`, sets `st0` to `false` and `a16[1]` to `None`.
+    /// If the first or the second string is `None`, sets `st0` to `false` and `a16[0]` to `None`.
     ///
-    /// If the number of occurrences is `u16::MAX + 1`, sets `a16[1]` to `u16::MAX` and `st0` to
+    /// If the number of occurrences is `u16::MAX + 1`, sets `a16[0]` to `u16::MAX` and `st0` to
     /// `false`.
-    #[display("find    {0},{1},a16[1]")]
+    #[display("find    a16[0],{0},{1}")]
     Find(/** `s` register with string */ RegS, /** `s` register with matching fragment */ RegS),
 
     /// Extract byte string slice into general `r` register. The length of the extracted string is

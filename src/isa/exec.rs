@@ -669,10 +669,11 @@ impl InstructionSet for BytesOp {
                     let (s1, s2) = regs.get_both_s(*reg1, *reg2)?;
                     let r1 = s1.as_ref();
                     let r2 = s2.as_ref();
-                    let len = r2.len();
+                    let r1_len = r1.len();
+                    let r2_len = r2.len();
                     let mut count = 0usize;
-                    for i in 0..r1.len() {
-                        if r1[i..len] == r2[..len] {
+                    for i in 0..(r1_len + 1).saturating_sub(r2_len) {
+                        if &r1[i..(i + r2_len)] == r2 {
                             count += 1;
                         }
                     }
