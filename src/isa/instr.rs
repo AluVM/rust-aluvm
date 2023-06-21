@@ -662,7 +662,7 @@ pub enum BytesOp {
     /// Check equality of two strings, putting result into `st0`.
     ///
     /// If both of strings are uninitialized, `st0` assigned `true` value.
-    #[display("cmp     {0},{1}")]
+    #[display("eq      {0},{1}")]
     Eq(RegS, RegS),
 
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
