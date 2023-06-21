@@ -176,8 +176,8 @@ macro_rules! instr {
             $crate::_reg_idx16!($offset_idx),
         ))
     };
-    (put $val:literal,s16[$idx:literal]) => {{
-        Instr::Bytes(BytesOp::Put(Box::new(ByteStr::with(&$val)), RegS::from($idx), false))
+    (put s16[$idx:literal], $val:literal) => {{
+        Instr::Bytes(BytesOp::Put(RegS::from($idx), Box::new(ByteStr::with($val)), false))
     }};
     (fill.e s16[$idx0:literal],a16[$idx1:literal],a16[$idx2:literal],a8[$idx3:literal]) => {{
         Instr::Bytes(BytesOp::Fill(
@@ -482,7 +482,7 @@ macro_rules! instr {
             $crate::_reg_idx!($idx2),
         ))
     }};
-    (eq s16[$idx1:literal],s16[$idx2:literal]) => {{
+    (cmp s16[$idx1:literal],s16[$idx2:literal]) => {{
         Instr::Bytes(BytesOp::Eq(RegS::from($idx1), RegS::from($idx2)))
     }};
     (ifn $reg:ident[$idx:literal]) => {
