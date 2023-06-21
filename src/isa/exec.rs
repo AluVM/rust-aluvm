@@ -669,14 +669,7 @@ impl InstructionSet for BytesOp {
                     let (s1, s2) = regs.get_both_s(*reg1, *reg2)?;
                     let r1 = s1.as_ref();
                     let r2 = s2.as_ref();
-                    let r1_len = r1.len();
-                    let r2_len = r2.len();
-                    let mut count = 0usize;
-                    for i in 0..(r1_len + 1).saturating_sub(r2_len) {
-                        if &r1[i..(i + r2_len)] == r2 {
-                            count += 1;
-                        }
-                    }
+                    let count = r1.windows(r2.len()).filter(|r1| *r1 == r2).count();
                     assert!(count <= u16::MAX as usize);
                     regs.set(RegA::A16, Reg32::Reg0, count as u16);
                     Some(())
