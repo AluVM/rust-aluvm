@@ -677,10 +677,7 @@ impl InstructionSet for BytesOp {
                             count += 1;
                         }
                     }
-                    if count > u16::MAX as usize {
-                        regs.st0 = false;
-                        count -= 1;
-                    }
+                    assert!(count <= u16::MAX as usize);
                     regs.set(RegA::A16, Reg32::Reg0, count as u16);
                     Some(())
                 };

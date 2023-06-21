@@ -680,9 +680,6 @@ pub enum BytesOp {
     /// Count number of occurrences of one string within another putting result to `a16[0]`,
     ///
     /// If the first or the second string is `None`, sets `st0` to `false` and `a16[0]` to `None`.
-    ///
-    /// If the number of occurrences is `u16::MAX + 1`, sets `a16[0]` to `u16::MAX` and `st0` to
-    /// `false`.
     #[display("find    a16[0],{0},{1}")]
     Find(/** `s` register with string */ RegS, /** `s` register with matching fragment */ RegS),
 
