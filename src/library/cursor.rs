@@ -184,7 +184,11 @@ where
         // We write the value only if the value is not yet present in the data segment
         let len = bytes.len();
         let offset = self.data.as_ref().len();
-        if let Some(offset) = self.data.as_ref().windows(len).position(|window| window == bytes) {
+        if len == 0 {
+            Ok(offset as u16)
+        } else if let Some(offset) =
+            self.data.as_ref().windows(len).position(|window| window == bytes)
+        {
             Ok(offset as u16)
         } else if offset + len > DATA_SEGMENT_MAX_LEN {
             Err(WriteError::DataNotFittingSegment)

@@ -644,18 +644,15 @@ pub enum BytesOp {
     ///
     /// If the string register is empty, or destination register can't fit the length, sets `st0`
     /// to `false` and destination register to `None`.
-    #[display("len     {0},{1}{2}")]
+    #[display("len     {1}{2},{0}")]
     Len(/** `s` register index */ RegS, RegA, Reg32),
 
     /// Count number of byte occurrences from the `a8` register within the string and stores that
     /// value into destination `a16` register.
     ///
-    /// If the string register is empty, or destination register can't fit the length, sets `st0`
-    /// to `false` and destination register to `None`.
-    ///
-    /// If the source byte value register is uninitialized, sets destination register to `None` and
-    /// `st0` to `false`.
-    #[display("cnt     {0},a8{1},a16{2}")]
+    /// If the string register is empty, or the source byte value register is uninitialized, sets
+    /// `st0` to `false` and destination register to `None`.
+    #[display("cnt     a16{2},{0},a8{1}")]
     Cnt(
         /** `s` register index */ RegS,
         /** `a8` register with the byte value */ Reg16,
@@ -669,15 +666,15 @@ pub enum BytesOp {
     Eq(RegS, RegS),
 
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
-    /// fragment"), putting it to the destination `u16` registers. If strings have no conjoint
+    /// fragment"), putting it to the destination `a16` registers. If strings have no conjoint
     /// fragment sets destination to `None`.
-    #[display("con     {0},{1},a16{2},u16{3},u16{4}")]
+    #[display("con     a16{3},a16{4},{0},{1},a16{2}")]
     Con(
         /** First source string register */ RegS,
         /** Second source string register */ RegS,
         /** Index of the conjoint fragment to match */ Reg32,
-        /** `u16` register index to save the offset of the conjoint fragment */ Reg32,
-        /** `u16` register index to save the length of the conjoint fragment */ Reg32,
+        /** `a16` register index to save the offset of the conjoint fragment */ Reg32,
+        /** `a16` register index to save the length of the conjoint fragment */ Reg32,
     ),
 
     /// Count number of occurrences of one string within another putting result to `a16[1]`,
