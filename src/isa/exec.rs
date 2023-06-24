@@ -812,8 +812,12 @@ impl InstructionSet for DigestOp {
             DigestOp::Ripemd(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
-                let hash: Option<[u8; 20]> =
-                    s.map(|s| ripemd::Ripemd160::digest(s.as_ref()).into());
+                let hash = s.map(|s| {
+                    let mut hash: [u8; 20] = ripemd::Ripemd160::digest(s.as_ref()).into();
+                    // RIPEMD-160 is big-endian
+                    hash.reverse();
+                    hash
+                });
                 regs.set(RegR::R160, dst, hash);
             }
             DigestOp::Sha256(src, dst) => {
