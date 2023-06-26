@@ -170,7 +170,7 @@ pub enum PutOp {
     ///     this instruction is assembled and the data are not present in the data segment (their
     ///     offset + length exceeds data segment size) the operation will set destination register
     ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
-    #[display("put     {2},{0}{1}")]
+    #[display("put     {0}{1},{2}")]
     PutA(RegA, Reg32, Box<MaybeNumber>),
 
     /// Unconditionally assigns a value to `F` register
@@ -179,7 +179,7 @@ pub enum PutOp {
     ///     this instruction is assembled and the data are not present in the data segment (their
     ///     offset + length exceeds data segment size) the operation will set destination register
     ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
-    #[display("put     {2},{0}{1}")]
+    #[display("put     {0}{1},{2}")]
     PutF(RegF, Reg32, Box<MaybeNumber>),
 
     /// Unconditionally assigns a value to `R` register
@@ -188,7 +188,7 @@ pub enum PutOp {
     ///     this instruction is assembled and the data are not present in the data segment (their
     ///     offset + length exceeds data segment size) the operation will set destination register
     ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
-    #[display("put     {2},{0}{1}")]
+    #[display("put     {0}{1},{2}")]
     PutR(RegR, Reg32, Box<MaybeNumber>),
 
     /// Conditionally assigns a value to `A` register if the register is in uninitialized state.
@@ -199,7 +199,7 @@ pub enum PutOp {
     ///     offset + length exceeds data segment size) _and_ the destination register is
     ///     initialized, the operation will set destination register into undefined state and `st0`
     ///     to `false`. Otherwise, `st0` value is changed according to the general operation rules.
-    #[display("putif   {2},{0}{1}")]
+    #[display("putif   {0}{1},{2}")]
     PutIfA(RegA, Reg32, Box<MaybeNumber>),
 
     /// Conditionally assigns a value to `R` register if the register is in uninitialized state.
@@ -210,7 +210,7 @@ pub enum PutOp {
     ///     offset + length exceeds data segment size) _and_ the destination register is
     ///     initialized, the operation will set destination register into undefined state and `st0`
     ///     to `false`. Otherwise, `st0` value is changed according to the general operation rules.
-    #[display("putif   {2},{0}{1}")]
+    #[display("putif   {0}{1},{2}")]
     PutIfR(RegR, Reg32, Box<MaybeNumber>),
 }
 
@@ -470,7 +470,7 @@ pub enum ArithmeticOp {
     /// Increment/decrement register value on a given signed step.
     ///
     /// Sets the destination to `None` and `st0` to `false` in case of overflow.
-    #[display("{2:#}     {2}{0}{1}")]
+    #[display("{2:#}     {0}{1},{2}")]
     Stp(RegA, Reg32, Step),
 
     /// Negates most significant bit
@@ -644,7 +644,7 @@ pub enum BytesOp {
     ///
     /// If the string register is empty, or destination register can't fit the length, sets `st0`
     /// to `false` and destination register to `None`.
-    #[display("len     {1}{2},{0}")]
+    #[display("len     {0},{1}{2}")]
     Len(/** `s` register index */ RegS, RegA, Reg32),
 
     /// Count number of byte occurrences from the `a8` register within the string and stores that
@@ -652,7 +652,7 @@ pub enum BytesOp {
     ///
     /// If the string register is empty, or the source byte value register is uninitialized, sets
     /// `st0` to `false` and destination register to `None`.
-    #[display("cnt     a16{2},{0},a8{1}")]
+    #[display("cnt     {0},a8{1},a16{2}")]
     Cnt(
         /** `s` register index */ RegS,
         /** `a8` register with the byte value */ Reg16,
@@ -668,7 +668,7 @@ pub enum BytesOp {
     /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
     /// fragment"), putting it to the destination `a16` registers. If strings have no conjoint
     /// fragment sets destination to `None`.
-    #[display("con     a16{3},a16{4},{0},{1},a16{2}")]
+    #[display("con     {0},{1},a16{2},a16{3},a16{4}")]
     Con(
         /** First source string register */ RegS,
         /** Second source string register */ RegS,
