@@ -669,17 +669,8 @@ impl InstructionSet for BytesOp {
                     let (s1, s2) = regs.get_both_s(*reg1, *reg2)?;
                     let r1 = s1.as_ref();
                     let r2 = s2.as_ref();
-                    let len = r2.len();
-                    let mut count = 0usize;
-                    for i in 0..r1.len() {
-                        if r1[i..len] == r2[..len] {
-                            count += 1;
-                        }
-                    }
-                    if count > u16::MAX as usize {
-                        regs.st0 = false;
-                        count -= 1;
-                    }
+                    let count = r1.windows(r2.len()).filter(|r1| *r1 == r2).count();
+                    assert!(count <= u16::MAX as usize);
                     regs.set(RegA::A16, Reg32::Reg0, count as u16);
                     Some(())
                 };
@@ -698,7 +689,7 @@ impl InstructionSet for BytesOp {
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.set(RegA::A16, Reg32::Reg0, MaybeNumber::none());
+                    regs.s16[reg2.as_usize()] = None;
                 })
             }
             BytesOp::Con(reg1, reg2, n, offset_dst, len_dst) => {
@@ -822,8 +813,12 @@ impl InstructionSet for DigestOp {
             DigestOp::Ripemd(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
-                let hash: Option<[u8; 20]> =
-                    s.map(|s| ripemd::Ripemd160::digest(s.as_ref()).into());
+                let hash = s.map(|s| {
+                    let mut hash: [u8; 20] = ripemd::Ripemd160::digest(s.as_ref()).into();
+                    // RIPEMD-160 is big-endian
+                    hash.reverse();
+                    hash
+                });
                 regs.set(RegR::R160, dst, hash);
             }
             DigestOp::Sha256(src, dst) => {
