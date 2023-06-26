@@ -689,6 +689,7 @@ impl InstructionSet for BytesOp {
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
+                    regs.s16[reg2.as_usize()] = None;
                 })
             }
             BytesOp::Con(reg1, reg2, n, offset_dst, len_dst) => {
