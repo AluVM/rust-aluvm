@@ -461,29 +461,29 @@ where
 
 #[cfg(test)]
 mod tests {
-    use amplify::num::u5;
+    use amplify::num::{u2, u3, u5, u7};
 
     use super::Cursor;
     use crate::data::ByteStr;
-    use crate::library::{CodeEofError, LibSeg};
+    use crate::library::{LibSeg, Read, Write};
 
     #[test]
     fn read() {
         let libseg = LibSeg::default();
         let mut cursor = Cursor::<_, ByteStr>::new([0b01010111, 0b00001001], &libseg);
-        assert_eq!(cursor.read(u5::with(2)).unwrap(), 0b00000011);
-        assert_eq!(cursor.read(u5::with(2)).unwrap(), 0b00000001);
-        assert_eq!(cursor.read(u5::with(8)).unwrap(), 0b10010101);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000011);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000001);
+        assert_eq!(cursor.read_u8().unwrap(), 0b10010101);
 
         let mut cursor = Cursor::<_, ByteStr>::new([0b01010111, 0b00001001], &libseg);
-        assert_eq!(cursor.read(u5::with(2)).unwrap(), 0b00000011);
-        assert_eq!(cursor.read(u5::with(3)).unwrap(), 0b00000101);
-        assert_eq!(cursor.read(u5::with(8)).unwrap(), 0b01001010);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000011);
+        assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000101);
+        assert_eq!(cursor.read_u8().unwrap(), 0b01001010);
 
         let mut cursor = Cursor::<_, ByteStr>::new([0b01110111, 0b00001111], &libseg);
-        assert_eq!(cursor.read(u5::with(8)).unwrap(), 0b01110111);
-        assert_eq!(cursor.read(u5::with(3)).unwrap(), 0b00000111);
-        assert_eq!(cursor.read(u5::with(5)).unwrap(), 0b00000001);
+        assert_eq!(cursor.read_u8().unwrap(), 0b01110111);
+        assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000111);
+        assert_eq!(cursor.read_u5().unwrap().to_u8(), 0b00000001);
 
         let bytes = 0b11101011_11110000_01110111;
         let mut cursor = Cursor::<_, ByteStr>::new(u32::to_le_bytes(bytes), &libseg);
@@ -494,9 +494,9 @@ mod tests {
     fn read_eof() {
         let libseg = LibSeg::default();
         let mut cursor = Cursor::<_, ByteStr>::new([0b01010111], &libseg);
-        assert_eq!(cursor.read(u5::with(2)).unwrap(), 0b00000011);
-        assert_eq!(cursor.read(u5::with(2)).unwrap(), 0b00000001);
-        assert_eq!(cursor.read(u5::with(8)), Err(CodeEofError));
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000011);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000001);
+        assert!(cursor.read_u8().is_err());
     }
 
     #[test]
@@ -504,21 +504,23 @@ mod tests {
         let libseg = LibSeg::default();
         let mut code = [0, 0, 0, 0, 0, 0];
         let mut cursor = Cursor::<_, ByteStr>::new(&mut code, &libseg);
-        cursor.write(u32::from_le_bytes([0b00000011, 0, 0, 0]), u5::with(2)).unwrap();
-        cursor.write(u32::from_le_bytes([0b00000101, 0, 0, 0]), u5::with(3)).unwrap();
-        cursor.write(u32::from_le_bytes([0b01011111, 0, 0, 0]), u5::with(7)).unwrap();
-        cursor.write(u32::from_le_bytes([0b11100111, 0b00000001, 0, 0]), u5::with(9)).unwrap();
-        cursor.write(u32::from_le_bytes([0b00000110, 0, 0, 0]), u5::with(3)).unwrap();
-        let two_bytes = 0b11110000_10101010u32;
-        cursor.write(two_bytes, u5::with(16)).unwrap();
+        cursor.write_u2(u2::with(0b00000011)).unwrap();
+        cursor.write_u3(u3::with(0b00000101)).unwrap();
+        cursor.write_u7(u7::with(0b01011111)).unwrap();
+        cursor.write_u8(0b11100111).unwrap();
+        cursor.write_bool(true).unwrap();
+        cursor.write_u3(u3::with(0b00000110)).unwrap();
+        let two_bytes = 0b11110000_10101010u16;
+        cursor.write_u16(two_bytes).unwrap();
 
         let mut cursor = Cursor::<_, ByteStr>::new(code, &libseg);
-        assert_eq!(cursor.read(u5::with(2)).unwrap(), 0b00000011);
-        assert_eq!(cursor.read(u5::with(3)).unwrap(), 0b00000101);
-        assert_eq!(cursor.read(u5::with(7)).unwrap(), 0b01011111);
-        assert_eq!(cursor.read(u5::with(9)).unwrap(), 0b00000001_11100111);
-        assert_eq!(cursor.read(u5::with(3)).unwrap(), 0b00000110);
-        assert_eq!(cursor.read(u5::with(16)).unwrap(), two_bytes);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000011);
+        assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000101);
+        assert_eq!(cursor.read_u7().unwrap().to_u8(), 0b01011111);
+        assert_eq!(cursor.read_u8().unwrap(), 0b11100111);
+        assert_eq!(cursor.read_bool().unwrap(), true);
+        assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000110);
+        assert_eq!(cursor.read_u16().unwrap(), two_bytes);
     }
 
     #[test]
@@ -526,12 +528,9 @@ mod tests {
         let libseg = LibSeg::default();
         let mut code = [0, 0];
         let mut cursor = Cursor::<_, ByteStr>::new(&mut code, &libseg);
-        cursor.write(u32::from_le_bytes([0b00000011, 0, 0, 0]), u5::with(2)).unwrap();
-        cursor.write(u32::from_le_bytes([0b00000101, 0, 0, 0]), u5::with(3)).unwrap();
-        cursor.write(u32::from_le_bytes([0b01011111, 0, 0, 0]), u5::with(7)).unwrap();
-        assert_eq!(
-            cursor.write(u32::from_le_bytes([0b11100111, 0b00000001, 0, 0]), u5::with(9)),
-            Err(CodeEofError)
-        );
+        cursor.write_u2(u2::with(0b00000011)).unwrap();
+        cursor.write_u3(u3::with(0b00000101)).unwrap();
+        cursor.write_u7(u7::with(0b01011111)).unwrap();
+        assert!(cursor.write_u8(0b11100111).is_err());
     }
 }
