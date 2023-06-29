@@ -731,7 +731,7 @@ pub enum BytesOp {
     ///   (2) first <- None, second <- `src_len > 0` ? src : None; `st0` <- false
     ///   (3) first <- None, second <- `src_len > 0` ? src : zero-len; `st0` <- false
     ///   (4) first <- zero-len, second <- `src_len > 0` ? src : zero-len
-    /// `offset > 0 && offset < src_len`: `st0` always set to false
+    /// `offset > 0 && offset > src_len`: `st0` always set to false
     ///   (1) first, second <- None
     ///   (5) first <- short, second <- None
     ///   (6) first <- short, second <- zero-len
@@ -741,7 +741,7 @@ pub enum BytesOp {
     ///   (1) first, second <- None; `st0` <- false
     ///   (5,7) first <- ok, second <- None; `st0` <- false
     ///   (6,8) first <- ok, second <- zero-len
-    /// `offset > src_len`: operation succeeds anyway, `st0` value is not changed
+    /// `offset < src_len`: operation succeeds anyway, `st0` value is not changed
     /// </pre>
     ///
     /// Rule on `st0` changes: if at least one of the destination registers is set to `None`, or
