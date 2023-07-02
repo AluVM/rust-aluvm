@@ -26,6 +26,7 @@ use alloc::string::ToString;
 use alloc::vec::Vec;
 use core::fmt::{self, Debug, Formatter};
 
+use amplify::hex::ToHex;
 use amplify::num::apfloat::ieee;
 use amplify::num::{u1024, u256, u512};
 use half::bf16;
@@ -229,10 +230,10 @@ impl CoreRegs {
                     RegR::R160 => self.r160[index].map(Number::from),
                     RegR::R256 => self.r256[index].map(Number::from),
                     RegR::R512 => self.r512[index].map(Number::from),
-                    RegR::R1024 => self.r1024[index].map(Number::from),
-                    RegR::R2048 => self.r2048[index].map(Number::from),
-                    RegR::R4096 => self.r4096[index].map(Number::from),
-                    RegR::R8192 => self.r8192[index].map(Number::from),
+                    RegR::R1024 => self.r1024[index].as_ref().map(Number::from_slice),
+                    RegR::R2048 => self.r2048[index].as_ref().map(Number::from_slice),
+                    RegR::R4096 => self.r4096[index].as_ref().map(Number::from_slice),
+                    RegR::R8192 => self.r8192[index].as_ref().map(Number::from_slice),
                 };
                 n.into()
             }
@@ -250,6 +251,21 @@ impl CoreRegs {
                 };
                 n.unwrap_or_else(MaybeNumber::none)
             }
+        }
+    }
+
+    /// Retrieves mutable reference to R-register value
+    pub fn get_r(&mut self, reg: impl Into<RegR>, index: impl Into<Reg32>) -> Option<&mut [u8]> {
+        let index = index.into().to_usize();
+        match reg.into() {
+            RegR::R128 => self.r128[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R160 => self.r160[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R256 => self.r256[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R512 => self.r512[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R1024 => self.r1024[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R2048 => self.r2048[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R4096 => self.r4096[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R8192 => self.r8192[index].as_mut().map(|x| x.as_mut_slice()),
         }
     }
 
@@ -653,42 +669,66 @@ impl Debug for CoreRegs {
             }
         }
         for i in 0..32 {
-            if let Some(v) = self.r1024[i] {
-                let v = Number::from(v);
+            if let Some(v) = &self.r1024[i] {
                 write!(
                     f,
-                    "{}r1024{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    "{}r1024{}[{}{:02}{}]={}{}{}h\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_hex().to_uppercase(),
+                    reset
                 )?;
             }
         }
         for i in 0..32 {
-            if let Some(v) = self.r2048[i] {
-                let v = Number::from(v);
+            if let Some(v) = &self.r2048[i] {
                 write!(
                     f,
-                    "{}r2048{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    "{}r2048{}[{}{:02}{}]={}{}{}h\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_hex().to_uppercase(),
+                    reset
                 )?;
             }
         }
         for i in 0..32 {
-            if let Some(v) = self.r4096[i] {
-                let v = Number::from(v);
+            if let Some(v) = &self.r4096[i] {
                 write!(
                     f,
-                    "{}r4096{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    "{}r4096{}[{}{:02}{}]={}{}{}h\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_hex().to_uppercase(),
+                    reset
                 )?;
             }
         }
         for i in 0..32 {
-            if let Some(v) = self.r8192[i] {
-                let v = Number::from(v);
+            if let Some(v) = &self.r8192[i] {
                 write!(
                     f,
-                    "{}r8192{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    "{}r8192{}[{}{:02}{}]={}{}{}h\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_hex().to_uppercase(),
+                    reset
                 )?;
             }
         }
