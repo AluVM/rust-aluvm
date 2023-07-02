@@ -37,7 +37,7 @@ use super::{
 use crate::data::{ByteStr, MaybeNumber, Number, NumberLayout};
 use crate::isa::{ExtendFlag, FloatEqFlag, IntFlags, MergeFlag, NoneEqFlag, SignFlag};
 use crate::library::{constants, LibSite};
-use crate::reg::{CoreRegs, NumericRegister, Reg32, RegA, RegR};
+use crate::reg::{CoreRegs, NumericRegister, Reg32, RegA, RegA2, RegAR, RegR};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -541,9 +541,35 @@ impl InstructionSet for BitwiseOp {
             BitwiseOp::Not(reg, idx) => {
                 regs.set(reg, idx, !regs.get(reg, idx));
             }
-            BitwiseOp::Shl(reg1, shift, reg2, srcdst) => {
-                regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shl::shl)
-            }
+            BitwiseOp::Shl(reg1, shift, reg2, srcdst) => match reg2 {
+                RegAR::A(_) => regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shl::shl),
+                RegAR::R(r) => {
+                    let mut f = || -> Option<()> {
+                        let shift = match reg1 {
+                            RegA2::A8 => regs.a8[shift.to_usize()]? as usize,
+                            RegA2::A16 => regs.a16[shift.to_usize()]? as usize,
+                        };
+                        let original = regs.get_r(*r, srcdst)?;
+                        let n_bytes = r.bytes() as usize;
+                        let mut ret = [0u8; 1024];
+                        let word_shift = shift / 8;
+                        let bit_shift = shift % 8;
+                        for i in 0..n_bytes {
+                            // Shift
+                            if bit_shift < 8 && i + word_shift < n_bytes {
+                                ret[i + word_shift] += original[i] << bit_shift;
+                            }
+                            // Carry
+                            if bit_shift > 0 && i + word_shift + 1 < n_bytes {
+                                ret[i + word_shift + 1] += original[i] >> (8 - bit_shift);
+                            }
+                        }
+                        original.copy_from_slice(&ret[..n_bytes]);
+                        Some(())
+                    };
+                    f().unwrap_or_else(|| regs.st0 = false);
+                }
+            },
             BitwiseOp::ShrA(flag, reg1, shift, reg2, srcdst) => {
                 let res = regs.get_both(reg1, shift, reg2, srcdst).map(|(shift, val)| {
                     if *flag == SignFlag::Signed {
