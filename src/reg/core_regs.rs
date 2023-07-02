@@ -230,10 +230,10 @@ impl CoreRegs {
                     RegR::R160 => self.r160[index].map(Number::from),
                     RegR::R256 => self.r256[index].map(Number::from),
                     RegR::R512 => self.r512[index].map(Number::from),
-                    RegR::R1024 => self.r1024[index].as_ref().map(Number::from_slice),
-                    RegR::R2048 => self.r2048[index].as_ref().map(Number::from_slice),
-                    RegR::R4096 => self.r4096[index].as_ref().map(Number::from_slice),
-                    RegR::R8192 => self.r8192[index].as_ref().map(Number::from_slice),
+                    RegR::R1024 => self.r1024[index].map(Number::from),
+                    RegR::R2048 => self.r2048[index].map(Number::from),
+                    RegR::R4096 => self.r4096[index].map(Number::from),
+                    RegR::R8192 => self.r8192[index].map(Number::from),
                 };
                 n.into()
             }
@@ -255,7 +255,11 @@ impl CoreRegs {
     }
 
     /// Retrieves mutable reference to R-register value
-    pub fn get_r(&mut self, reg: impl Into<RegR>, index: impl Into<Reg32>) -> Option<&mut [u8]> {
+    pub fn get_r_mut(
+        &mut self,
+        reg: impl Into<RegR>,
+        index: impl Into<Reg32>,
+    ) -> Option<&mut [u8]> {
         let index = index.into().to_usize();
         match reg.into() {
             RegR::R128 => self.r128[index].as_mut().map(|x| x.as_mut_slice()),

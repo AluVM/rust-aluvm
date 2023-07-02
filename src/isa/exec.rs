@@ -549,7 +549,7 @@ impl InstructionSet for BitwiseOp {
                             RegA2::A8 => regs.a8[shift.to_usize()]? as usize,
                             RegA2::A16 => regs.a16[shift.to_usize()]? as usize,
                         };
-                        let original = regs.get_r(*r, srcdst)?;
+                        let original = regs.get_r_mut(*r, srcdst)?;
                         let n_bytes = r.bytes() as usize;
                         let mut ret = [0u8; 1024];
                         let word_shift = shift / 8;
