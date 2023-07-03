@@ -202,6 +202,7 @@ impl InstructionSet for PutOp {
                 regs.set(reg, index, MaybeNumber::none());
             }
             PutOp::PutA(reg, index, number) => {
+                println!("put {:?} {:?}", reg, index);
                 if !regs.set(reg, index, **number) {
                     regs.st0 = false;
                 }
@@ -583,7 +584,28 @@ impl InstructionSet for BitwiseOp {
                 regs.set(reg2, srcdst, res);
             }
             BitwiseOp::ShrR(reg1, shift, reg2, srcdst) => {
-                regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shr::shr)
+                let mut f = || -> Option<()> {
+                    let shift = match reg1 {
+                        RegA2::A8 => regs.a8[shift.to_usize()]? as usize,
+                        RegA2::A16 => regs.a16[shift.to_usize()]? as usize,
+                    };
+                    let original = regs.get_r_mut(*reg2, srcdst)?;
+                    let n_bytes = reg2.bytes() as usize;
+                    let mut ret = [0u8; 1024];
+                    let word_shift = shift / 8;
+                    let bit_shift = shift % 8;
+                    for i in word_shift..n_bytes {
+                        // Shift
+                        ret[i - word_shift] += original[i] >> bit_shift;
+                        // Carry
+                        if bit_shift > 0 && i < n_bytes - 1 {
+                            ret[i - word_shift] += original[i + 1] << (8 - bit_shift);
+                        }
+                    }
+                    original.copy_from_slice(&ret[..n_bytes]);
+                    Some(())
+                };
+                f().unwrap_or_else(|| regs.st0 = false);
             }
             BitwiseOp::Scl(reg1, shift, reg2, srcdst) => {
                 regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scl)
