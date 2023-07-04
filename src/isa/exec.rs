@@ -572,19 +572,22 @@ impl InstructionSet for BitwiseOp {
                 regs.set(reg, idx, !regs.get(reg, idx));
             }
             BitwiseOp::Shl(reg1, shift, reg2, srcdst) => match reg2 {
-                RegAR::A(_) => regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shl::shl),
+                RegAR::A(a) => {
+                    let msb = regs.get(a, srcdst).unwrap_or_default()[a.bytes() - 1] & 0x80;
+                    regs.st0 = msb == 0x80;
+                    regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shl::shl)
+                }
                 RegAR::R(r) => {
-                    let mut f = || -> Option<()> {
-                        let shift = match reg1 {
-                            RegA2::A8 => regs.a8[shift.to_usize()]? as usize,
-                            RegA2::A16 => regs.a16[shift.to_usize()]? as usize,
-                        };
-                        let original = regs.get_r_mut(*r, srcdst)?;
+                    let shift = match reg1 {
+                        RegA2::A8 => regs.a8[shift.to_usize()].unwrap_or_default() as usize,
+                        RegA2::A16 => regs.a16[shift.to_usize()].unwrap_or_default() as usize,
+                    };
+                    if let Some(original) = regs.get_r_mut(*r, srcdst) {
+                        let msb = original.last().copied().unwrap_or_default() & 0x80;
                         let n_bytes = reg2.bytes() as usize;
                         original.copy_from_slice(&shl(original, shift, n_bytes)[..n_bytes]);
-                        Some(())
-                    };
-                    f().unwrap_or_else(|| regs.st0 = false);
+                        regs.st0 = msb == 0x80;
+                    }
                 }
             },
             BitwiseOp::ShrA(flag, reg1, shift, reg2, srcdst) => {
@@ -600,27 +603,30 @@ impl InstructionSet for BitwiseOp {
                 regs.set(reg2, srcdst, res);
             }
             BitwiseOp::ShrR(reg1, shift, reg2, srcdst) => {
-                let mut f = || -> Option<()> {
-                    let shift = match reg1 {
-                        RegA2::A8 => regs.a8[shift.to_usize()]? as usize,
-                        RegA2::A16 => regs.a16[shift.to_usize()]? as usize,
-                    };
-                    let original = regs.get_r_mut(*reg2, srcdst)?;
+                let shift = match reg1 {
+                    RegA2::A8 => regs.a8[shift.to_usize()].unwrap_or_default() as usize,
+                    RegA2::A16 => regs.a16[shift.to_usize()].unwrap_or_default() as usize,
+                };
+                if let Some(original) = regs.get_r_mut(*reg2, srcdst) {
+                    let lsb = original[0] & 1;
                     let n_bytes = reg2.bytes() as usize;
                     original.copy_from_slice(&shr(original, shift, n_bytes)[..n_bytes]);
-                    Some(())
-                };
-                f().unwrap_or_else(|| regs.st0 = false);
+                    regs.st0 = lsb == 1;
+                }
             }
             BitwiseOp::Scl(reg1, shift, reg2, srcdst) => match reg2 {
-                RegAR::A(_) => regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scl),
+                RegAR::A(_) => {
+                    let msb = regs.get(reg2, srcdst).unwrap_or_default()[reg2.bytes() - 1] & 0x80;
+                    regs.st0 = msb == 0x80;
+                    regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scl)
+                }
                 RegAR::R(r) => {
-                    let mut f = || -> Option<()> {
-                        let shift = match reg1 {
-                            RegA2::A8 => regs.a8[shift.to_usize()]? as usize,
-                            RegA2::A16 => regs.a16[shift.to_usize()]? as usize,
-                        };
-                        let original = regs.get_r_mut(*r, srcdst)?;
+                    let shift = match reg1 {
+                        RegA2::A8 => regs.a8[shift.to_usize()].unwrap_or_default() as usize,
+                        RegA2::A16 => regs.a16[shift.to_usize()].unwrap_or_default() as usize,
+                    };
+                    if let Some(original) = regs.get_r_mut(*r, srcdst) {
+                        let msb = original.last().copied().unwrap_or_default() & 0x80;
                         let n_bytes = reg2.bytes() as usize;
                         let mut shl = shl(original, shift, n_bytes);
                         let shr = shr(original, reg2.bits() as usize - shift, n_bytes);
@@ -628,20 +634,19 @@ impl InstructionSet for BitwiseOp {
                             shl[i] |= shr[i];
                         }
                         original.copy_from_slice(&shl[..n_bytes]);
-                        Some(())
-                    };
-                    f().unwrap_or_else(|| regs.st0 = false);
+                        regs.st0 = msb == 0x80;
+                    }
                 }
             },
             BitwiseOp::Scr(reg1, shift, reg2, srcdst) => match reg2 {
                 RegAR::A(_) => regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scr),
                 RegAR::R(r) => {
-                    let mut f = || -> Option<()> {
-                        let shift = match reg1 {
-                            RegA2::A8 => regs.a8[shift.to_usize()]? as usize,
-                            RegA2::A16 => regs.a16[shift.to_usize()]? as usize,
-                        };
-                        let original = regs.get_r_mut(*r, srcdst)?;
+                    let shift = match reg1 {
+                        RegA2::A8 => regs.a8[shift.to_usize()].unwrap_or_default() as usize,
+                        RegA2::A16 => regs.a16[shift.to_usize()].unwrap_or_default() as usize,
+                    };
+                    if let Some(original) = regs.get_r_mut(*r, srcdst) {
+                        let lsb = original[0] & 1;
                         let n_bytes = reg2.bytes() as usize;
                         let mut shr = shr(original, shift, n_bytes);
                         let shl = shl(original, reg2.bits() as usize - shift, n_bytes);
@@ -649,16 +654,18 @@ impl InstructionSet for BitwiseOp {
                             shr[i] |= shl[i];
                         }
                         original.copy_from_slice(&shr[..n_bytes]);
-                        Some(())
-                    };
-                    f().unwrap_or_else(|| regs.st0 = false);
+                        regs.st0 = lsb == 1;
+                    }
                 }
             },
             BitwiseOp::RevA(reg, idx) => {
                 regs.set(reg, idx, regs.get(reg, idx).map(Number::reverse_bits));
             }
             BitwiseOp::RevR(reg, idx) => {
-                regs.set(reg, idx, regs.get(reg, idx).map(Number::reverse_bits));
+                if let Some(original) = regs.get_r_mut(*reg, idx) {
+                    original.reverse();
+                    original.iter_mut().for_each(|byte| *byte = byte.reverse_bits());
+                }
             }
         }
         ExecStep::Next
