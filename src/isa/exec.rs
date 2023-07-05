@@ -625,6 +625,7 @@ impl InstructionSet for BitwiseOp {
                         RegA2::A8 => regs.a8[shift.to_usize()].unwrap_or_default() as usize,
                         RegA2::A16 => regs.a16[shift.to_usize()].unwrap_or_default() as usize,
                     };
+                    let shift = shift % reg2.bits() as usize;
                     if let Some(original) = regs.get_r_mut(*r, srcdst) {
                         let msb = original.last().copied().unwrap_or_default() & 0x80;
                         let n_bytes = reg2.bytes() as usize;
@@ -639,12 +640,17 @@ impl InstructionSet for BitwiseOp {
                 }
             },
             BitwiseOp::Scr(reg1, shift, reg2, srcdst) => match reg2 {
-                RegAR::A(_) => regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scr),
+                RegAR::A(_) => {
+                    let lsb = regs.get(reg2, srcdst).unwrap_or_default()[0] & 1;
+                    regs.st0 = lsb == 1;
+                    regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scr)
+                }
                 RegAR::R(r) => {
                     let shift = match reg1 {
                         RegA2::A8 => regs.a8[shift.to_usize()].unwrap_or_default() as usize,
                         RegA2::A16 => regs.a16[shift.to_usize()].unwrap_or_default() as usize,
                     };
+                    let shift = shift % reg2.bits() as usize;
                     if let Some(original) = regs.get_r_mut(*r, srcdst) {
                         let lsb = original[0] & 1;
                         let n_bytes = reg2.bytes() as usize;
