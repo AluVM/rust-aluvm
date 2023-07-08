@@ -1043,7 +1043,7 @@ impl Bytecode for BitwiseOp {
                     let block = reader.read_u1()?;
                     let reg = reader.read_u3()?;
                     let idx = reader.read_u5()?.into();
-                    let shift2 = u5::with(shift.to_u8() << 1 | sign.into_u8()).into();
+                    let shift2 = u5::with(sign.into_u8() << 4 | shift.to_u8()).into();
                     match block.into_u8() {
                         0b0 => Self::ShrA(sign.into(), a2, shift.into(), reg.into(), idx),
                         0b1 => Self::ShrR(a2, shift2, reg.into(), idx),
