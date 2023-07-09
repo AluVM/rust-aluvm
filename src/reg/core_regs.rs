@@ -771,3 +771,40 @@ impl Debug for CoreRegs {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use amplify::num::u4;
+
+    use super::*;
+
+    // Checks that we do not overflow the stack if using all registers
+    #[test]
+    fn init_all() {
+        let mut regs = CoreRegs::new();
+
+        for reg in RegA::ALL {
+            for idx in Reg32::ALL {
+                regs.set(reg, idx, u8::from(idx));
+            }
+        }
+
+        for reg in RegF::ALL {
+            for idx in Reg32::ALL {
+                regs.set(reg, idx, u8::from(idx));
+            }
+        }
+
+        for reg in RegR::ALL {
+            for idx in Reg32::ALL {
+                regs.set(reg, idx, u8::from(idx));
+            }
+        }
+
+        for idx in 0u8..16 {
+            regs.set_s(u4::with(idx), Some(ByteStr::with(format!("string index {idx}"))));
+        }
+
+        eprintln!("{regs:#?}");
+    }
+}
