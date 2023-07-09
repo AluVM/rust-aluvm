@@ -27,7 +27,7 @@ use alloc::vec::Vec;
 use core::fmt::{self, Debug, Formatter};
 
 use amplify::hex::ToHex;
-use amplify::num::apfloat::ieee;
+use amplify::num::apfloat::{ieee, Float};
 use amplify::num::{u1024, u256, u512};
 use half::bf16;
 
@@ -599,7 +599,18 @@ impl Debug for CoreRegs {
         }
         for i in 0..32 {
             if let Some(v) = self.f80[i] {
-                write!(f, "{}f80{}[{}{:02}{}]={}{}{}\n\t\t", reg, eq, reset, i, eq, val, v, reset)?;
+                write!(
+                    f,
+                    "{}f80{}[{}{:02}{}]={}{}{}\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_bits(),
+                    reset
+                )?;
             }
         }
         for i in 0..32 {
@@ -607,7 +618,14 @@ impl Debug for CoreRegs {
                 write!(
                     f,
                     "{}f128{}[{}{:02}{}]={}{}{}\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_bits(),
+                    reset
                 )?;
             }
         }
@@ -616,7 +634,14 @@ impl Debug for CoreRegs {
                 write!(
                     f,
                     "{}f256{}[{}{:02}{}]={}{}{}\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_bits(),
+                    reset
                 )?;
             }
         }
@@ -625,7 +650,7 @@ impl Debug for CoreRegs {
                 let v = Number::from(v);
                 write!(
                     f,
-                    "{}f512{}[{}{:02}{}]={}{}{}\n\t\t",
+                    "{}f512{}[{}{:02}{}]={}{:x}{}\n\t\t",
                     reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
