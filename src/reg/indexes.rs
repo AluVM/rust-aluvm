@@ -164,6 +164,42 @@ pub enum Reg32 {
 }
 
 impl Reg32 {
+    /// Constant enumerating all register indexes.
+    pub const ALL: [Reg32; 32] = [
+        Reg32::Reg0,
+        Reg32::Reg1,
+        Reg32::Reg2,
+        Reg32::Reg3,
+        Reg32::Reg4,
+        Reg32::Reg5,
+        Reg32::Reg6,
+        Reg32::Reg7,
+        Reg32::Reg8,
+        Reg32::Reg9,
+        Reg32::Reg10,
+        Reg32::Reg11,
+        Reg32::Reg12,
+        Reg32::Reg13,
+        Reg32::Reg14,
+        Reg32::Reg15,
+        Reg32::Reg16,
+        Reg32::Reg17,
+        Reg32::Reg18,
+        Reg32::Reg19,
+        Reg32::Reg20,
+        Reg32::Reg21,
+        Reg32::Reg22,
+        Reg32::Reg23,
+        Reg32::Reg24,
+        Reg32::Reg25,
+        Reg32::Reg26,
+        Reg32::Reg27,
+        Reg32::Reg28,
+        Reg32::Reg29,
+        Reg32::Reg30,
+        Reg32::Reg31,
+    ];
+
     /// Returns `usize` representation of the register index
     #[inline]
     pub fn to_usize(self) -> usize { self as u8 as usize }
@@ -311,6 +347,28 @@ pub enum Reg16 {
     Reg15 = 15,
 }
 
+impl Reg16 {
+    /// Constant enumerating all register indexes.
+    pub const ALL: [Reg16; 16] = [
+        Reg16::Reg0,
+        Reg16::Reg1,
+        Reg16::Reg2,
+        Reg16::Reg3,
+        Reg16::Reg4,
+        Reg16::Reg5,
+        Reg16::Reg6,
+        Reg16::Reg7,
+        Reg16::Reg8,
+        Reg16::Reg9,
+        Reg16::Reg10,
+        Reg16::Reg11,
+        Reg16::Reg12,
+        Reg16::Reg13,
+        Reg16::Reg14,
+        Reg16::Reg15,
+    ];
+}
+
 impl Register for Reg16 {
     #[inline]
     fn description() -> &'static str { "4-bit register index" }
@@ -406,6 +464,20 @@ pub enum Reg8 {
     /// Register with index `[7]`
     #[display("[7]")]
     Reg7 = 7,
+}
+
+impl Reg8 {
+    /// Constant enumerating all register indexes.
+    pub const ALL: [Reg8; 8] = [
+        Reg8::Reg0,
+        Reg8::Reg1,
+        Reg8::Reg2,
+        Reg8::Reg3,
+        Reg8::Reg4,
+        Reg8::Reg5,
+        Reg8::Reg6,
+        Reg8::Reg7,
+    ];
 }
 
 impl Register for Reg8 {
