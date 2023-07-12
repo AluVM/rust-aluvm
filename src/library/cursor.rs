@@ -126,21 +126,32 @@ where
     #[inline]
     fn as_ref(&self) -> &[u8] { self.bytecode.as_ref() }
 
-    fn extract(&mut self, bit_count: u3) -> Result<u8, CodeEofError> {
-        if self.is_eof() {
-            return Err(CodeEofError);
-        }
-        let byte = self.as_ref()[self.byte_pos as usize];
-        let mut mask = 0x00u8;
+    fn read(&mut self, bit_count: u5) -> Result<u32, CodeEofError> {
+        let mut ret = 0u32;
         let mut cnt = bit_count.to_u8();
         while cnt > 0 {
-            mask <<= 1;
-            mask |= 0x01;
-            cnt -= 1;
+            if self.is_eof() {
+                return Err(CodeEofError);
+            }
+            let byte = self.as_ref()[self.byte_pos as usize];
+            let remaining_bits = 8 - self.bit_pos.to_u8();
+            let mask = match remaining_bits < cnt {
+                true => 0xFFu8 << self.bit_pos.to_u8(),
+                false => (((1u16 << (cnt)) - 1) << (self.bit_pos.to_u8() as u16)) as u8,
+            };
+            let value = ((byte & mask) >> self.bit_pos.to_u8()) as u32;
+            ret |= (value << (bit_count.to_u8() - cnt)) as u32;
+            match remaining_bits.min(cnt) {
+                8 => {
+                    self.inc_bytes(1)?;
+                }
+                _ => {
+                    self.inc_bits(u3::with(remaining_bits.min(cnt)))?;
+                }
+            }
+            cnt = cnt.saturating_sub(remaining_bits);
         }
-        mask <<= self.bit_pos.to_u8();
-        let val = (byte & mask) >> self.bit_pos.to_u8();
-        self.inc_bits(bit_count).map(|_| val)
+        Ok(ret)
     }
 
     fn inc_bits(&mut self, bit_count: u3) -> Result<(), CodeEofError> {
@@ -172,6 +183,31 @@ where
     Self: 'a,
 {
     fn as_mut(&mut self) -> &mut [u8] { self.bytecode.as_mut() }
+
+    fn write(&mut self, value: u32, bit_count: u5) -> Result<(), CodeEofError> {
+        let mut cnt = bit_count.to_u8();
+        let value = ((value as u64) << (self.bit_pos.to_u8())).to_le_bytes();
+        let n_bytes = (cnt + self.bit_pos.to_u8() + 7) / 8;
+        for i in 0..n_bytes {
+            if self.is_eof() {
+                return Err(CodeEofError);
+            }
+            let byte_pos = self.byte_pos as usize;
+            let bit_pos = self.bit_pos.to_u8();
+            let byte = &mut self.as_mut()[byte_pos];
+            *byte |= value[i as usize];
+            match (bit_pos, cnt) {
+                (0, cnt) if cnt >= 8 => {
+                    self.inc_bytes(1)?;
+                }
+                (_, cnt) => {
+                    self.inc_bits(u3::with(cnt.min(8 - bit_pos)))?;
+                }
+            }
+            cnt = cnt.saturating_sub(cnt.min(8 - bit_pos));
+        }
+        Ok(())
+    }
 }
 
 impl<'a, T, D> Cursor<'a, T, D>
@@ -184,7 +220,11 @@ where
         // We write the value only if the value is not yet present in the data segment
         let len = bytes.len();
         let offset = self.data.as_ref().len();
-        if let Some(offset) = self.data.as_ref().windows(len).position(|window| window == bytes) {
+        if len == 0 {
+            Ok(offset as u16)
+        } else if let Some(offset) =
+            self.data.as_ref().windows(len).position(|window| window == bytes)
+        {
             Ok(offset as u16)
         } else if offset + len > DATA_SEGMENT_MAX_LEN {
             Err(WriteError::DataNotFittingSegment)
@@ -224,89 +264,66 @@ where
         Ok(self.as_ref()[self.byte_pos as usize])
     }
 
-    fn read_bool(&mut self) -> Result<bool, CodeEofError> {
-        if self.is_eof() {
-            return Err(CodeEofError);
-        }
-        let byte = self.extract(u3::with(1))?;
-        Ok(byte == 0x01)
-    }
+    fn read_bool(&mut self) -> Result<bool, CodeEofError> { Ok(self.read(u5::with(1))? == 0x01) }
 
     fn read_u1(&mut self) -> Result<u1, CodeEofError> {
-        Ok(self.extract(u3::with(1))?.try_into().expect("bit extractor failure"))
+        let res = self.read(u5::with(1))? as u8;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_u2(&mut self) -> Result<u2, CodeEofError> {
-        Ok(self.extract(u3::with(2))?.try_into().expect("bit extractor failure"))
+        let res = self.read(u5::with(2))? as u8;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_u3(&mut self) -> Result<u3, CodeEofError> {
-        Ok(self.extract(u3::with(3))?.try_into().expect("bit extractor failure"))
+        let res = self.read(u5::with(3))? as u8;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_u4(&mut self) -> Result<u4, CodeEofError> {
-        Ok(self.extract(u3::with(4))?.try_into().expect("bit extractor failure"))
+        let res = self.read(u5::with(4))? as u8;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_u5(&mut self) -> Result<u5, CodeEofError> {
-        Ok(self.extract(u3::with(5))?.try_into().expect("bit extractor failure"))
+        let res = self.read(u5::with(5))? as u8;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_u6(&mut self) -> Result<u6, CodeEofError> {
-        Ok(self.extract(u3::with(6))?.try_into().expect("bit extractor failure"))
+        let res = self.read(u5::with(6))? as u8;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_u7(&mut self) -> Result<u7, CodeEofError> {
-        Ok(self.extract(u3::with(7))?.try_into().expect("bit extractor failure"))
+        let res = self.read(u5::with(7))? as u8;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_u8(&mut self) -> Result<u8, CodeEofError> {
-        if self.is_eof() {
-            return Err(CodeEofError);
-        }
-        let byte = self.as_ref()[self.byte_pos as usize];
-        self.inc_bytes(1).map(|_| byte)
+        let res = self.read(u5::with(8))? as u8;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_i8(&mut self) -> Result<i8, CodeEofError> {
-        if self.is_eof() {
-            return Err(CodeEofError);
-        }
-        let byte = self.as_ref()[self.byte_pos as usize] as i8;
-        self.inc_bytes(1).map(|_| byte)
+        let res = self.read(u5::with(8))? as i8;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_u16(&mut self) -> Result<u16, CodeEofError> {
-        if self.is_eof() {
-            return Err(CodeEofError);
-        }
-        let pos = self.byte_pos as usize;
-        let mut buf = [0u8; 2];
-        buf.copy_from_slice(&self.as_ref()[pos..pos + 2]);
-        let word = u16::from_le_bytes(buf);
-        self.inc_bytes(2).map(|_| word)
+        let res = self.read(u5::with(16))? as u16;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_i16(&mut self) -> Result<i16, CodeEofError> {
-        if self.is_eof() {
-            return Err(CodeEofError);
-        }
-        let pos = self.byte_pos as usize;
-        let mut buf = [0u8; 2];
-        buf.copy_from_slice(&self.as_ref()[pos..pos + 2]);
-        let word = i16::from_le_bytes(buf);
-        self.inc_bytes(2).map(|_| word)
+        let res = self.read(u5::with(16))? as i16;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     fn read_u24(&mut self) -> Result<u24, CodeEofError> {
-        if self.is_eof() {
-            return Err(CodeEofError);
-        }
-        let pos = self.byte_pos as usize;
-        let mut buf = [0u8; 3];
-        buf.copy_from_slice(&self.as_ref()[pos..pos + 3]);
-        let word = u24::from_le_bytes(buf);
-        self.inc_bytes(3).map(|_| word)
+        let res = self.read(u5::with(24))?;
+        Ok(res.try_into().expect("bit extractor failure"))
     }
 
     #[inline]
@@ -341,97 +358,55 @@ where
     Self: 'a,
 {
     fn write_bool(&mut self, data: bool) -> Result<(), WriteError> {
-        let data = u8::from(data) << self.bit_pos.to_u8();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(1)).map_err(WriteError::from)
+        self.write(data as u32, u5::with(1)).map_err(WriteError::from)
     }
 
     fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), WriteError> {
-        let data = data.into().into_u8() << self.bit_pos.to_u8();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(1)).map_err(WriteError::from)
+        self.write(data.into().into_u8() as u32, u5::with(1)).map_err(WriteError::from)
     }
 
     fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), WriteError> {
-        let data = data.into().to_u8() << self.bit_pos.to_u8();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(2)).map_err(WriteError::from)
+        self.write(data.into().to_u8() as u32, u5::with(2)).map_err(WriteError::from)
     }
 
     fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), WriteError> {
-        let data = data.into().to_u8() << self.bit_pos.to_u8();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(3)).map_err(WriteError::from)
+        self.write(data.into().to_u8() as u32, u5::with(3)).map_err(WriteError::from)
     }
 
     fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), WriteError> {
-        let data = data.into().to_u8() << self.bit_pos.to_u8();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(4)).map_err(WriteError::from)
+        self.write(data.into().to_u8() as u32, u5::with(4)).map_err(WriteError::from)
     }
 
     fn write_u5(&mut self, data: impl Into<u5>) -> Result<(), WriteError> {
-        let data = data.into().to_u8() << self.bit_pos.to_u8();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(5)).map_err(WriteError::from)
+        self.write(data.into().to_u8() as u32, u5::with(5)).map_err(WriteError::from)
     }
 
     fn write_u6(&mut self, data: impl Into<u6>) -> Result<(), WriteError> {
-        let data = data.into().to_u8() << self.bit_pos.to_u8();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(6)).map_err(WriteError::from)
+        self.write(data.into().to_u8() as u32, u5::with(6)).map_err(WriteError::from)
     }
 
     fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), WriteError> {
-        let data = data.into().to_u8() << self.bit_pos.to_u8();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] |= data;
-        self.inc_bits(u3::with(7)).map_err(WriteError::from)
+        self.write(data.into().to_u8() as u32, u5::with(7)).map_err(WriteError::from)
     }
 
     fn write_u8(&mut self, data: impl Into<u8>) -> Result<(), WriteError> {
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] = data.into();
-        self.inc_bytes(1).map_err(WriteError::from)
+        self.write(data.into() as u32, u5::with(8)).map_err(WriteError::from)
     }
 
     fn write_i8(&mut self, data: impl Into<i8>) -> Result<(), WriteError> {
-        let data = data.into().to_le_bytes();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] = data[0];
-        self.inc_bytes(1).map_err(WriteError::from)
+        self.write(data.into() as u32, u5::with(8)).map_err(WriteError::from)
     }
 
     fn write_u16(&mut self, data: impl Into<u16>) -> Result<(), WriteError> {
-        let data = data.into().to_le_bytes();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] = data[0];
-        self.as_mut()[pos + 1] = data[1];
-        self.inc_bytes(2).map_err(WriteError::from)
+        self.write(data.into() as u32, u5::with(16)).map_err(WriteError::from)
     }
 
     fn write_i16(&mut self, data: impl Into<i16>) -> Result<(), WriteError> {
-        let data = data.into().to_le_bytes();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] = data[0];
-        self.as_mut()[pos + 1] = data[1];
-        self.inc_bytes(2).map_err(WriteError::from)
+        self.write(data.into() as u32, u5::with(16)).map_err(WriteError::from)
     }
 
     fn write_u24(&mut self, data: impl Into<u24>) -> Result<(), WriteError> {
-        let data = data.into().to_le_bytes();
-        let pos = self.byte_pos as usize;
-        self.as_mut()[pos] = data[0];
-        self.as_mut()[pos + 1] = data[1];
-        self.as_mut()[pos + 2] = data[2];
-        self.inc_bytes(3).map_err(WriteError::from)
+        self.write(data.into().into_u32(), u5::with(24)).map_err(WriteError::from)
     }
 
     #[inline]
@@ -481,5 +456,81 @@ where
         instr.encode(self).expect("cursor editor fail");
         self.seek(prev_pos)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use amplify::num::{u2, u3, u5, u7};
+
+    use super::Cursor;
+    use crate::data::ByteStr;
+    use crate::library::{LibSeg, Read, Write};
+
+    #[test]
+    fn read() {
+        let libseg = LibSeg::default();
+        let mut cursor = Cursor::<_, ByteStr>::new([0b01010111, 0b00001001], &libseg);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000011);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000001);
+        assert_eq!(cursor.read_u8().unwrap(), 0b10010101);
+
+        let mut cursor = Cursor::<_, ByteStr>::new([0b01010111, 0b00001001], &libseg);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000011);
+        assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000101);
+        assert_eq!(cursor.read_u8().unwrap(), 0b01001010);
+
+        let mut cursor = Cursor::<_, ByteStr>::new([0b01110111, 0b00001111], &libseg);
+        assert_eq!(cursor.read_u8().unwrap(), 0b01110111);
+        assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000111);
+        assert_eq!(cursor.read_u5().unwrap().to_u8(), 0b00000001);
+
+        let bytes = 0b11101011_11110000_01110111;
+        let mut cursor = Cursor::<_, ByteStr>::new(u32::to_le_bytes(bytes), &libseg);
+        assert_eq!(cursor.read(u5::with(24)).unwrap(), bytes);
+    }
+
+    #[test]
+    fn read_eof() {
+        let libseg = LibSeg::default();
+        let mut cursor = Cursor::<_, ByteStr>::new([0b01010111], &libseg);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000011);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000001);
+        assert!(cursor.read_u8().is_err());
+    }
+
+    #[test]
+    fn write() {
+        let libseg = LibSeg::default();
+        let mut code = [0, 0, 0, 0, 0, 0];
+        let mut cursor = Cursor::<_, ByteStr>::new(&mut code, &libseg);
+        cursor.write_u2(u2::with(0b00000011)).unwrap();
+        cursor.write_u3(u3::with(0b00000101)).unwrap();
+        cursor.write_u7(u7::with(0b01011111)).unwrap();
+        cursor.write_u8(0b11100111).unwrap();
+        cursor.write_bool(true).unwrap();
+        cursor.write_u3(u3::with(0b00000110)).unwrap();
+        let two_bytes = 0b11110000_10101010u16;
+        cursor.write_u16(two_bytes).unwrap();
+
+        let mut cursor = Cursor::<_, ByteStr>::new(code, &libseg);
+        assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000011);
+        assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000101);
+        assert_eq!(cursor.read_u7().unwrap().to_u8(), 0b01011111);
+        assert_eq!(cursor.read_u8().unwrap(), 0b11100111);
+        assert_eq!(cursor.read_bool().unwrap(), true);
+        assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000110);
+        assert_eq!(cursor.read_u16().unwrap(), two_bytes);
+    }
+
+    #[test]
+    fn write_eof() {
+        let libseg = LibSeg::default();
+        let mut code = [0, 0];
+        let mut cursor = Cursor::<_, ByteStr>::new(&mut code, &libseg);
+        cursor.write_u2(u2::with(0b00000011)).unwrap();
+        cursor.write_u3(u3::with(0b00000101)).unwrap();
+        cursor.write_u7(u7::with(0b01011111)).unwrap();
+        assert!(cursor.write_u8(0b11100111).is_err());
     }
 }

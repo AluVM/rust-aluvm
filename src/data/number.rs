@@ -218,15 +218,8 @@ impl IntLayout {
     }
 
     /// Returns whether a `usize`-value fits the layout dimensions.
-    ///
-    /// # Panics
-    ///
-    /// Panics on platforms where usize is less than `u64`
     pub fn fits_usize(self, value: usize) -> bool {
-        (self.bytes() <= 8 && value > u64::MAX as usize)
-            || (self.bytes() <= 4 && value > u32::MAX as usize)
-            || (self.bytes() <= 2 && value > u16::MAX as usize)
-            || (self.bytes() <= 1 && value > u8::MAX as usize)
+        self.bits() >= (usize::BITS - value.leading_zeros()) as u16
     }
 }
 

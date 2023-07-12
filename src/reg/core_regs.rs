@@ -26,7 +26,8 @@ use alloc::string::ToString;
 use alloc::vec::Vec;
 use core::fmt::{self, Debug, Formatter};
 
-use amplify::num::apfloat::ieee;
+use amplify::hex::ToHex;
+use amplify::num::apfloat::{ieee, Float};
 use amplify::num::{u1024, u256, u512};
 use half::bf16;
 
@@ -250,6 +251,25 @@ impl CoreRegs {
                 };
                 n.unwrap_or_else(MaybeNumber::none)
             }
+        }
+    }
+
+    /// Retrieves mutable reference to R-register value
+    pub fn get_r_mut(
+        &mut self,
+        reg: impl Into<RegR>,
+        index: impl Into<Reg32>,
+    ) -> Option<&mut [u8]> {
+        let index = index.into().to_usize();
+        match reg.into() {
+            RegR::R128 => self.r128[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R160 => self.r160[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R256 => self.r256[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R512 => self.r512[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R1024 => self.r1024[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R2048 => self.r2048[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R4096 => self.r4096[index].as_mut().map(|x| x.as_mut_slice()),
+            RegR::R8192 => self.r8192[index].as_mut().map(|x| x.as_mut_slice()),
         }
     }
 
@@ -579,7 +599,18 @@ impl Debug for CoreRegs {
         }
         for i in 0..32 {
             if let Some(v) = self.f80[i] {
-                write!(f, "{}f80{}[{}{:02}{}]={}{}{}\n\t\t", reg, eq, reset, i, eq, val, v, reset)?;
+                write!(
+                    f,
+                    "{}f80{}[{}{:02}{}]={}{}{}\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_bits(),
+                    reset
+                )?;
             }
         }
         for i in 0..32 {
@@ -587,7 +618,14 @@ impl Debug for CoreRegs {
                 write!(
                     f,
                     "{}f128{}[{}{:02}{}]={}{}{}\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_bits(),
+                    reset
                 )?;
             }
         }
@@ -596,7 +634,14 @@ impl Debug for CoreRegs {
                 write!(
                     f,
                     "{}f256{}[{}{:02}{}]={}{}{}\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_bits(),
+                    reset
                 )?;
             }
         }
@@ -605,7 +650,7 @@ impl Debug for CoreRegs {
                 let v = Number::from(v);
                 write!(
                     f,
-                    "{}f512{}[{}{:02}{}]={}{}{}\n\t\t",
+                    "{}f512{}[{}{:02}{}]={}{:x}{}\n\t\t",
                     reg, eq, reset, i, eq, val, v, reset
                 )?;
             }
@@ -653,42 +698,66 @@ impl Debug for CoreRegs {
             }
         }
         for i in 0..32 {
-            if let Some(v) = self.r1024[i] {
-                let v = Number::from(v);
+            if let Some(v) = &self.r1024[i] {
                 write!(
                     f,
-                    "{}r1024{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    "{}r1024{}[{}{:02}{}]={}{}{}h\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_hex().to_uppercase(),
+                    reset
                 )?;
             }
         }
         for i in 0..32 {
-            if let Some(v) = self.r2048[i] {
-                let v = Number::from(v);
+            if let Some(v) = &self.r2048[i] {
                 write!(
                     f,
-                    "{}r2048{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    "{}r2048{}[{}{:02}{}]={}{}{}h\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_hex().to_uppercase(),
+                    reset
                 )?;
             }
         }
         for i in 0..32 {
-            if let Some(v) = self.r4096[i] {
-                let v = Number::from(v);
+            if let Some(v) = &self.r4096[i] {
                 write!(
                     f,
-                    "{}r4096{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    "{}r4096{}[{}{:02}{}]={}{}{}h\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_hex().to_uppercase(),
+                    reset
                 )?;
             }
         }
         for i in 0..32 {
-            if let Some(v) = self.r8192[i] {
-                let v = Number::from(v);
+            if let Some(v) = &self.r8192[i] {
                 write!(
                     f,
-                    "{}r8192{}[{}{:02}{}]={}{:X}{}h\n\t\t",
-                    reg, eq, reset, i, eq, val, v, reset
+                    "{}r8192{}[{}{:02}{}]={}{}{}h\n\t\t",
+                    reg,
+                    eq,
+                    reset,
+                    i,
+                    eq,
+                    val,
+                    v.to_hex().to_uppercase(),
+                    reset
                 )?;
             }
         }
@@ -700,5 +769,42 @@ impl Debug for CoreRegs {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use amplify::num::u4;
+
+    use super::*;
+
+    // Checks that we do not overflow the stack if using all registers
+    #[test]
+    fn init_all() {
+        let mut regs = CoreRegs::new();
+
+        for reg in RegA::ALL {
+            for idx in Reg32::ALL {
+                regs.set(reg, idx, u8::from(idx));
+            }
+        }
+
+        for reg in RegF::ALL {
+            for idx in Reg32::ALL {
+                regs.set(reg, idx, u8::from(idx));
+            }
+        }
+
+        for reg in RegR::ALL {
+            for idx in Reg32::ALL {
+                regs.set(reg, idx, u8::from(idx));
+            }
+        }
+
+        for idx in 0u8..16 {
+            regs.set_s(u4::with(idx), Some(ByteStr::with(format!("string index {idx}"))));
+        }
+
+        eprintln!("{regs:#?}");
     }
 }

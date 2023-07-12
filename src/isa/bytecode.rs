@@ -35,7 +35,7 @@ use super::{
 };
 use crate::data::{ByteStr, MaybeNumber};
 use crate::library::{CodeEofError, LibSite, Read, Write, WriteError};
-use crate::reg::{RegAR, RegBlockAR};
+use crate::reg::RegBlockAR;
 
 /// Errors encoding instructions
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -1030,17 +1030,26 @@ impl Bytecode for BitwiseOp {
         } else if instr == INSTR_SHF {
             let code = reader.read_u1()?;
             let a2 = reader.read_u1()?.into();
-            let shift = reader.read_u4()?;
-            let sign = reader.read_u1()?;
-            let block = reader.read_u1()?;
-            let reg = reader.read_u3()?;
-            let idx = reader.read_u5()?.into();
-            let shift2 = u5::with(shift.to_u8() << 1 | sign.into_u8()).into();
-            let regar = RegAR::from(block, reg);
-            match (code.into_u8(), block.into_u8()) {
-                (0b0, _) => Self::Shl(a2, shift2, regar, idx),
-                (0b1, 0b0) => Self::ShrA(sign.into(), a2, shift.into(), reg.into(), idx),
-                (0b1, 0b1) => Self::ShrR(a2, shift2, reg.into(), idx),
+            match code.into_u8() {
+                0b0 => {
+                    let shift = reader.read_u5()?;
+                    let reg = reader.read_u4()?;
+                    let idx = reader.read_u5()?.into();
+                    Self::Shl(a2, shift.into(), reg.into(), idx)
+                }
+                0b1 => {
+                    let shift = reader.read_u4()?;
+                    let sign = reader.read_u1()?;
+                    let block = reader.read_u1()?;
+                    let reg = reader.read_u3()?;
+                    let idx = reader.read_u5()?.into();
+                    let shift2 = u5::with(sign.into_u8() << 4 | shift.to_u8()).into();
+                    match block.into_u8() {
+                        0b0 => Self::ShrA(sign.into(), a2, shift.into(), reg.into(), idx),
+                        0b1 => Self::ShrR(a2, shift2, reg.into(), idx),
+                        _ => unreachable!(),
+                    }
+                }
                 _ => unreachable!(),
             }
         } else {

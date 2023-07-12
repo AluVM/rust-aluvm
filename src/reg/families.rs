@@ -105,6 +105,18 @@ impl NumericRegister for RegA {
 }
 
 impl RegA {
+    /// Set of all A registers
+    pub const ALL: [RegA; 8] = [
+        RegA::A8,
+        RegA::A16,
+        RegA::A32,
+        RegA::A64,
+        RegA::A128,
+        RegA::A256,
+        RegA::A512,
+        RegA::A1024,
+    ];
+
     /// Constructs [`RegA`] object for a provided requirement for register bit size
     pub fn with(bits: u16) -> Option<Self> {
         Some(match bits {
@@ -328,6 +340,18 @@ impl NumericRegister for RegF {
 }
 
 impl RegF {
+    /// Set of all F registers
+    pub const ALL: [RegF; 8] = [
+        RegF::F16B,
+        RegF::F16,
+        RegF::F32,
+        RegF::F64,
+        RegF::F80,
+        RegF::F128,
+        RegF::F256,
+        RegF::F512,
+    ];
+
     /// Constructs [`RegF`] object for a provided requirement for register bit size
     pub fn with(bits: u16, use_bfloat16: bool) -> Option<Self> {
         Some(match bits {
@@ -445,6 +469,18 @@ impl NumericRegister for RegR {
 }
 
 impl RegR {
+    /// Set of all R registers
+    pub const ALL: [RegR; 8] = [
+        RegR::R128,
+        RegR::R160,
+        RegR::R256,
+        RegR::R512,
+        RegR::R1024,
+        RegR::R2048,
+        RegR::R4096,
+        RegR::R8192,
+    ];
+
     /// Constructs [`RegR`] object for a provided requirement for register bit size
     #[inline]
     pub fn with(bits: u16) -> Option<Self> {
