@@ -44,9 +44,8 @@ use crate::LIB_NAME_ALUVM;
 pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:aluvm:lib:v01#230304";
 
 /// Unique identifier for a library.
-#[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default, Debug, Display, From)]
+#[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default, Debug, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
-#[display(Self::to_baid58_string)]
 #[derive(StrictType, StrictDecode)]
 #[cfg_attr(feature = "std", derive(StrictEncode))]
 #[strict_type(lib = LIB_NAME_ALUVM)]
@@ -69,12 +68,18 @@ impl FromBaid58<32> for LibId {}
 
 impl FromStr for LibId {
     type Err = Baid58ParseError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> { Self::from_baid58_str(s) }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_baid58_str(s.trim_start_matches("urn:ubideco:"))
+    }
 }
-
-impl LibId {
-    #[allow(clippy::wrong_self_convention)] // FIXME #[display] only accepts &self
-    fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
+impl Display for LibId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if f.sign_minus() {
+            write!(f, "urn:ubideco:{::<}", self.to_baid58())
+        } else {
+            write!(f, "urn:ubideco:{::<#}", self.to_baid58())
+        }
+    }
 }
 
 impl LibId {
@@ -338,4 +343,47 @@ impl LibSite {
     /// Constricts library site reference from a given position and library hash
     /// value
     pub fn with(pos: u16, lib: LibId) -> LibSite { LibSite { lib, pos } }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn lib_id_display() {
+        let id = LibId::with("FLOAT", &b"", &b"", &none!());
+        assert_eq!(
+            format!("{id}"),
+            "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#pinball-eternal-colombo"
+        );
+        assert_eq!(
+            format!("{id:-}"),
+            "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ"
+        );
+    }
+
+    #[test]
+    fn lib_id_from_str() {
+        let id = LibId::with("FLOAT", &b"", &b"", &none!());
+        assert_eq!(
+            Ok(id),
+            LibId::from_str(
+                "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#\
+                 pinball-eternal-colombo"
+            )
+        );
+        assert_eq!(
+            Ok(id),
+            LibId::from_str("urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ")
+        );
+        assert_eq!(
+            Ok(id),
+            LibId::from_str(
+                "alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#pinball-eternal-colombo"
+            )
+        );
+        assert_eq!(Ok(id), LibId::from_str("alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ"));
+
+        assert_eq!(Ok(id), LibId::from_str("GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ"));
+    }
 }
