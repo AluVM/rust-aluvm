@@ -344,3 +344,46 @@ impl LibSite {
     /// value
     pub fn with(pos: u16, lib: LibId) -> LibSite { LibSite { lib, pos } }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn lib_id_display() {
+        let id = LibId::with("FLOAT", &b"", &b"", &none!());
+        assert_eq!(
+            format!("{id}"),
+            "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#pinball-eternal-colombo"
+        );
+        assert_eq!(
+            format!("{id:-}"),
+            "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ"
+        );
+    }
+
+    #[test]
+    fn lib_id_from_str() {
+        let id = LibId::with("FLOAT", &b"", &b"", &none!());
+        assert_eq!(
+            Ok(id),
+            LibId::from_str(
+                "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#\
+                 pinball-eternal-colombo"
+            )
+        );
+        assert_eq!(
+            Ok(id),
+            LibId::from_str("urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ")
+        );
+        assert_eq!(
+            Ok(id),
+            LibId::from_str(
+                "alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#pinball-eternal-colombo"
+            )
+        );
+        assert_eq!(Ok(id), LibId::from_str("alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ"));
+
+        assert_eq!(Ok(id), LibId::from_str("GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ"));
+    }
+}
