@@ -140,7 +140,7 @@ where
                 false => (((1u16 << (cnt)) - 1) << (self.bit_pos.to_u8() as u16)) as u8,
             };
             let value = ((byte & mask) >> self.bit_pos.to_u8()) as u32;
-            ret |= (value << (bit_count.to_u8() - cnt)) as u32;
+            ret |= value << (bit_count.to_u8() - cnt);
             match remaining_bits.min(cnt) {
                 8 => {
                     self.inc_bytes(1)?;
@@ -518,7 +518,7 @@ mod tests {
         assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000101);
         assert_eq!(cursor.read_u7().unwrap().to_u8(), 0b01011111);
         assert_eq!(cursor.read_u8().unwrap(), 0b11100111);
-        assert_eq!(cursor.read_bool().unwrap(), true);
+        assert!(cursor.read_bool().unwrap());
         assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000110);
         assert_eq!(cursor.read_u16().unwrap(), two_bytes);
     }

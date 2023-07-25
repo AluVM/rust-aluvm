@@ -32,9 +32,10 @@ use amplify::num::{u1024, u256, u512};
 use half::bf16;
 
 use super::{Reg32, RegA, RegAFR, RegF, RegR, RegS};
-use crate::data::{ByteStr, MaybeNumber, Number};
+use crate::data::{ByteArray, ByteStr, MaybeByteArray, MaybeNumber, Number};
 use crate::isa::InstructionSet;
 use crate::library::LibSite;
+use crate::reg::RegAF;
 
 /// Maximal size of call stack.
 ///
@@ -207,10 +208,10 @@ impl CoreRegs {
     }
 
     /// Retrieves register value
-    pub fn get(&self, reg: impl Into<RegAFR>, index: impl Into<Reg32>) -> MaybeNumber {
+    pub fn get(&self, reg: impl Into<RegAF>, index: impl Into<Reg32>) -> MaybeNumber {
         let index = index.into() as usize;
         match reg.into() {
-            RegAFR::A(a) => {
+            RegAF::A(a) => {
                 let n = match a {
                     RegA::A8 => self.a8[index].map(Number::from),
                     RegA::A16 => self.a16[index].map(Number::from),
@@ -224,21 +225,7 @@ impl CoreRegs {
                 n.into()
             }
 
-            RegAFR::R(r) => {
-                let n = match r {
-                    RegR::R128 => self.r128[index].map(Number::from),
-                    RegR::R160 => self.r160[index].map(Number::from),
-                    RegR::R256 => self.r256[index].map(Number::from),
-                    RegR::R512 => self.r512[index].map(Number::from),
-                    RegR::R1024 => self.r1024[index].map(Number::from),
-                    RegR::R2048 => self.r2048[index].map(Number::from),
-                    RegR::R4096 => self.r4096[index].map(Number::from),
-                    RegR::R8192 => self.r8192[index].map(Number::from),
-                };
-                n.into()
-            }
-
-            RegAFR::F(f) => {
+            RegAF::F(f) => {
                 let n = match f {
                     RegF::F16B => self.f16b[index].map(MaybeNumber::from),
                     RegF::F16 => self.f16[index].map(MaybeNumber::from),
@@ -254,23 +241,20 @@ impl CoreRegs {
         }
     }
 
-    /// Retrieves mutable reference to R-register value
-    pub fn get_r_mut(
-        &mut self,
-        reg: impl Into<RegR>,
-        index: impl Into<Reg32>,
-    ) -> Option<&mut [u8]> {
+    /// Retrieves R-register value
+    pub fn get_r(&self, reg: impl Into<RegR>, index: impl Into<Reg32>) -> MaybeByteArray {
         let index = index.into().to_usize();
-        match reg.into() {
-            RegR::R128 => self.r128[index].as_mut().map(|x| x.as_mut_slice()),
-            RegR::R160 => self.r160[index].as_mut().map(|x| x.as_mut_slice()),
-            RegR::R256 => self.r256[index].as_mut().map(|x| x.as_mut_slice()),
-            RegR::R512 => self.r512[index].as_mut().map(|x| x.as_mut_slice()),
-            RegR::R1024 => self.r1024[index].as_mut().map(|x| x.as_mut_slice()),
-            RegR::R2048 => self.r2048[index].as_mut().map(|x| x.as_mut_slice()),
-            RegR::R4096 => self.r4096[index].as_mut().map(|x| x.as_mut_slice()),
-            RegR::R8192 => self.r8192[index].as_mut().map(|x| x.as_mut_slice()),
-        }
+        let r = match reg.into() {
+            RegR::R128 => self.r128[index].map(ByteArray::from),
+            RegR::R160 => self.r160[index].map(ByteArray::from),
+            RegR::R256 => self.r256[index].map(ByteArray::from),
+            RegR::R512 => self.r512[index].map(ByteArray::from),
+            RegR::R1024 => self.r1024[index].map(ByteArray::from),
+            RegR::R2048 => self.r2048[index].map(ByteArray::from),
+            RegR::R4096 => self.r4096[index].map(ByteArray::from),
+            RegR::R8192 => self.r8192[index].map(ByteArray::from),
+        };
+        r.into()
     }
 
     /// Returns value from one of `S`-registers
@@ -284,12 +268,25 @@ impl CoreRegs {
     #[inline]
     pub fn get_both(
         &self,
-        reg1: impl Into<RegAFR>,
+        reg1: impl Into<RegAF>,
         idx1: impl Into<Reg32>,
-        reg2: impl Into<RegAFR>,
+        reg2: impl Into<RegAF>,
         idx2: impl Into<Reg32>,
     ) -> Option<(Number, Number)> {
         self.get(reg1, idx1).and_then(|val1| self.get(reg2, idx2).map(|val2| (val1, val2)))
+    }
+
+    /// Returns value from two general (`R`) registers only if both of them contain a value;
+    /// otherwise returns `None`.
+    #[inline]
+    pub fn get_both_r(
+        &self,
+        reg1: impl Into<RegR>,
+        idx1: impl Into<Reg32>,
+        reg2: impl Into<RegR>,
+        idx2: impl Into<Reg32>,
+    ) -> Option<(ByteArray, ByteArray)> {
+        self.get_r(reg1, idx1).and_then(|val1| self.get_r(reg2, idx2).map(|val2| (val1, val2)))
     }
 
     /// Returns value from two string (`S`) registers only if both of them contain a value;
@@ -357,7 +354,7 @@ impl CoreRegs {
     #[inline]
     pub fn set_if(
         &mut self,
-        reg: impl Into<RegAFR>,
+        reg: impl Into<RegAF>,
         index: impl Into<Reg32>,
         value: impl Into<MaybeNumber>,
     ) -> bool {
@@ -365,6 +362,50 @@ impl CoreRegs {
         let index = index.into();
         if self.get(reg, index).is_none() {
             self.set(reg, index, value)
+        } else {
+            value.into().is_none()
+        }
+    }
+
+    /// Assigns the provided value to the R register bit-wise. Silently discards most significant
+    /// bits until the value fits register bit size.
+    ///
+    /// Returns `true` if the value was not `None`
+    pub fn set_r(
+        &mut self,
+        reg: impl Into<RegR>,
+        index: impl Into<Reg32>,
+        value: impl Into<MaybeByteArray>,
+    ) -> bool {
+        let index = index.into() as usize;
+        let value: Option<ByteArray> = value.into().into();
+        match reg.into() {
+            RegR::R128 => self.r128[index] = value.map(ByteArray::into),
+            RegR::R160 => self.r160[index] = value.map(ByteArray::into),
+            RegR::R256 => self.r256[index] = value.map(ByteArray::into),
+            RegR::R512 => self.r512[index] = value.map(ByteArray::into),
+            RegR::R1024 => self.r1024[index] = value.map(ByteArray::into),
+            RegR::R2048 => self.r2048[index] = value.map(ByteArray::into),
+            RegR::R4096 => self.r4096[index] = value.map(ByteArray::into),
+            RegR::R8192 => self.r8192[index] = value.map(ByteArray::into),
+        }
+        value.is_some()
+    }
+
+    /// Assigns the provided value to R register if the register is not initialized.
+    ///
+    /// Returns `false` if the register is initialized and the value is not `None`.
+    #[inline]
+    pub fn set_r_if(
+        &mut self,
+        reg: impl Into<RegR>,
+        index: impl Into<Reg32>,
+        value: impl Into<MaybeByteArray>,
+    ) -> bool {
+        let reg = reg.into();
+        let index = index.into();
+        if self.get_r(reg, index).is_none() {
+            self.set_r(reg, index, value)
         } else {
             value.into().is_none()
         }
@@ -399,11 +440,11 @@ impl CoreRegs {
     #[allow(clippy::too_many_arguments)]
     pub fn op(
         &mut self,
-        reg1: impl Into<RegAFR>,
+        reg1: impl Into<RegAF>,
         src1: impl Into<Reg32>,
-        reg2: impl Into<RegAFR>,
+        reg2: impl Into<RegAF>,
         src2: impl Into<Reg32>,
-        reg3: impl Into<RegAFR>,
+        reg3: impl Into<RegAF>,
         dst: impl Into<Reg32>,
         op: fn(Number, Number) -> Number,
     ) {
@@ -412,6 +453,28 @@ impl CoreRegs {
             (Some(val1), Some(val2)) => op(val1, val2).into(),
         };
         self.set(reg3.into(), dst, reg_val);
+    }
+
+    /// Executes provided operation (as callback function) if and only if all the provided registers
+    /// contain a value (initialized). Otherwise, sets destination to `None` and does not calls the
+    /// callback.
+    #[inline]
+    #[allow(clippy::too_many_arguments)]
+    pub fn op_r(
+        &mut self,
+        reg1: impl Into<RegR>,
+        src1: impl Into<Reg32>,
+        reg2: impl Into<RegR>,
+        src2: impl Into<Reg32>,
+        reg3: impl Into<RegR>,
+        dst: impl Into<Reg32>,
+        op: fn(ByteArray, ByteArray) -> ByteArray,
+    ) {
+        let reg_val = match (*self.get_r(reg1.into(), src1), *self.get_r(reg2.into(), src2)) {
+            (None, None) | (None, Some(_)) | (Some(_), None) => MaybeByteArray::none(),
+            (Some(val1), Some(val2)) => op(val1, val2).into(),
+        };
+        self.set_r(reg3.into(), dst, reg_val);
     }
 
     /// Accumulates complexity of the instruction into `ca0`.

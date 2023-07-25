@@ -833,6 +833,16 @@ pub enum RegAF {
     F(RegF),
 }
 
+impl From<&RegA> for RegAF {
+    #[inline]
+    fn from(reg: &RegA) -> Self { Self::A(*reg) }
+}
+
+impl From<&RegF> for RegAF {
+    #[inline]
+    fn from(reg: &RegF) -> Self { Self::F(*reg) }
+}
+
 impl Default for RegAF {
     fn default() -> Self { RegAF::A(Default::default()) }
 }

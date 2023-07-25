@@ -27,6 +27,7 @@ use core::ops::{BitAnd, BitOr, BitXor, Not, Shl, Shr};
 use amplify::num::{i1024, u1024};
 
 use super::{MaybeNumber, Number};
+use crate::data::{ByteArray, MaybeByteArray};
 
 impl Not for MaybeNumber {
     type Output = MaybeNumber;
@@ -147,6 +148,134 @@ impl Number {
     /// significant bit, second least-significant bit becomes second most-significant bit, etc.
     pub fn reverse_bits(mut self) -> Number {
         assert!(self.layout().is_integer(), "reversing bit order of float");
+        let bytes = &mut self[..];
+        bytes.reverse();
+        bytes.iter_mut().for_each(|byte| *byte = byte.reverse_bits());
+        self
+    }
+}
+
+impl Not for MaybeByteArray {
+    type Output = MaybeByteArray;
+
+    #[inline]
+    fn not(self) -> Self::Output { self.map(ByteArray::not).into() }
+}
+
+impl Not for ByteArray {
+    type Output = ByteArray;
+
+    #[inline]
+    fn not(mut self) -> Self::Output {
+        for i in 0..self.len() {
+            self[i] = !self[i];
+        }
+        self
+    }
+}
+
+impl BitAnd for ByteArray {
+    type Output = ByteArray;
+
+    #[inline]
+    fn bitand(mut self, rhs: Self) -> Self::Output {
+        for i in 0..self.len() {
+            self[i] &= rhs[i];
+        }
+        self
+    }
+}
+
+impl BitOr for ByteArray {
+    type Output = ByteArray;
+
+    #[inline]
+    fn bitor(mut self, rhs: Self) -> Self::Output {
+        for i in 0..self.len() {
+            self[i] |= rhs[i];
+        }
+        self
+    }
+}
+
+impl BitXor for ByteArray {
+    type Output = ByteArray;
+
+    #[inline]
+    fn bitxor(mut self, rhs: Self) -> Self::Output {
+        for i in 0..self.len() {
+            self[i] ^= rhs[i];
+        }
+        self
+    }
+}
+
+impl Shl<u16> for ByteArray {
+    type Output = ByteArray;
+
+    #[inline]
+    fn shl(self, rhs: u16) -> Self::Output {
+        let mut ret = ByteArray::from([0; 1024]);
+        let word_shift = rhs / 8;
+        let bit_shift = rhs % 8;
+        for i in 0..self.len() {
+            // Shift
+            if bit_shift < 8 && i + word_shift < self.len() {
+                ret[i + word_shift] += self[i] << bit_shift;
+            }
+            // Carry
+            if bit_shift > 0 && i + word_shift + 1 < self.len() {
+                ret[i + word_shift + 1] += self[i] >> (8 - bit_shift);
+            }
+        }
+        ret
+    }
+}
+
+impl Shr<u16> for ByteArray {
+    type Output = ByteArray;
+
+    #[inline]
+    fn shr(self, rhs: u16) -> Self::Output {
+        let mut ret = ByteArray::from([0; 1024]);
+        let word_shift = rhs / 8;
+        let bit_shift = rhs % 8;
+        for i in word_shift..self.len() {
+            // Shift
+            ret[i - word_shift] += self[i] >> bit_shift;
+            // Carry
+            if bit_shift > 0 && i < self.len() - 1 {
+                ret[i - word_shift] += self[i + 1] << (8 - bit_shift);
+            }
+        }
+        ret
+    }
+}
+
+impl ByteArray {
+    /// Cyclic bit shift left. Panics if the number is not an integer.
+    pub fn scl(self, shift: u16) -> ByteArray {
+        let mut shl = self.shl(shift);
+        let shr = self.shr(self.len() * 8 - shift);
+        for i in 0..self.len() {
+            shl[i] |= shr[i];
+        }
+        shl
+    }
+
+    /// Cyclic bit shift right. Panics if the number is not an integer.
+    pub fn scr(self, shift: u16) -> ByteArray {
+        let mut shr = self.shr(shift);
+        let shl = self.shl(self.len() * 8 - shift);
+        for i in 0..self.len() {
+            shr[i] |= shl[i];
+        }
+        shl
+    }
+
+    /// Reverses the order of bits in the integer. The least significant bit becomes the most
+    /// significant bit, second least-significant bit becomes second most-significant bit, etc.
+    pub fn reverse_bits(mut self) -> ByteArray {
         let bytes = &mut self[..];
         bytes.reverse();
         bytes.iter_mut().for_each(|byte| *byte = byte.reverse_bits());
