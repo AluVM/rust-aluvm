@@ -140,7 +140,7 @@ where
                 false => (((1u16 << (cnt)) - 1) << (self.bit_pos.to_u8() as u16)) as u8,
             };
             let value = ((byte & mask) >> self.bit_pos.to_u8()) as u32;
-            ret |= (value << (bit_count.to_u8() - cnt)) as u32;
+            ret |= value << (bit_count.to_u8() - cnt);
             match remaining_bits.min(cnt) {
                 8 => {
                     self.inc_bytes(1)?;
@@ -303,22 +303,22 @@ where
 
     fn read_u8(&mut self) -> Result<u8, CodeEofError> {
         let res = self.read(u5::with(8))? as u8;
-        Ok(res.try_into().expect("bit extractor failure"))
+        Ok(res)
     }
 
     fn read_i8(&mut self) -> Result<i8, CodeEofError> {
         let res = self.read(u5::with(8))? as i8;
-        Ok(res.try_into().expect("bit extractor failure"))
+        Ok(res)
     }
 
     fn read_u16(&mut self) -> Result<u16, CodeEofError> {
         let res = self.read(u5::with(16))? as u16;
-        Ok(res.try_into().expect("bit extractor failure"))
+        Ok(res)
     }
 
     fn read_i16(&mut self) -> Result<i16, CodeEofError> {
         let res = self.read(u5::with(16))? as i16;
-        Ok(res.try_into().expect("bit extractor failure"))
+        Ok(res)
     }
 
     fn read_u24(&mut self) -> Result<u24, CodeEofError> {
