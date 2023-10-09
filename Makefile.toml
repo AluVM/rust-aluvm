@@ -15,7 +15,7 @@ args = ["fmt", "--all", "--", "--check"]
 [tasks.clippy]
 command = "cargo"
 toolchain = "stable"
-args = ["clippy", "--workspace", "--all-features", "--", "-D warnings"]
+args = ["clippy", "--workspace", "--all-features", "--", "-D", "warnings"]
 
 [tasks.doc]
 command = "cargo"
