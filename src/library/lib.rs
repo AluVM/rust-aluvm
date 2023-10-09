@@ -29,7 +29,7 @@ use core::fmt::{self, Display, Formatter};
 use core::hash::{Hash as RustHash, Hasher};
 use core::str::FromStr;
 
-use amplify::{Bytes32, RawArray};
+use amplify::{ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use sha2::{Digest, Sha256};
 
@@ -62,7 +62,7 @@ pub struct LibId(
 
 impl ToBaid58<32> for LibId {
     const HRI: &'static str = "alu";
-    fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
+    fn to_baid58_payload(&self) -> [u8; 32] { self.to_byte_array() }
 }
 impl FromBaid58<32> for LibId {}
 
@@ -112,7 +112,7 @@ impl LibId {
             hasher.update(lib.as_slice());
         }
 
-        LibId::from_raw_array(hasher.finalize())
+        LibId::from_byte_array(hasher.finalize())
     }
 }
 
