@@ -441,6 +441,13 @@ impl CoreRegs {
     /// Returns vale of `st0` register
     #[inline]
     pub fn status(&self) -> bool { self.st0 }
+
+    /// Set `st0` value to `false`.
+    pub fn set_failure(&mut self) -> bool {
+        let status = self.st0;
+        self.st0 = false;
+        status
+    }
 }
 
 impl Debug for CoreRegs {

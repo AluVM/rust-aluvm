@@ -293,28 +293,32 @@ impl Lib {
             let next = instr.exec(registers, LibSite::with(pos, lib_hash), context);
 
             #[cfg(all(debug_assertions, feature = "std"))]
-            eprint!("\n@{:06}> {:48}; st0={}", pos, instr, registers.st0);
+            eprint!("@{:06}> {}; st0={}", pos, instr, registers.st0);
 
             if !registers.acc_complexity(instr) {
                 #[cfg(all(debug_assertions, feature = "std"))]
-                eprintln!();
+                eprintln!(" -> complexity overflow");
                 return None;
             }
             match next {
                 ExecStep::Stop => {
                     #[cfg(all(debug_assertions, feature = "std"))]
-                    eprintln!();
+                    eprintln!(" -> execution stopped");
                     return None;
                 }
-                ExecStep::Next => continue,
+                ExecStep::Next => {
+                    #[cfg(all(debug_assertions, feature = "std"))]
+                    eprintln!();
+                    continue;
+                }
                 ExecStep::Jump(pos) => {
                     #[cfg(all(debug_assertions, feature = "std"))]
-                    eprint!(" -> {}", pos);
+                    eprintln!(" -> {}", pos);
                     cursor.seek(pos).ok()?;
                 }
                 ExecStep::Call(site) => {
                     #[cfg(all(debug_assertions, feature = "std"))]
-                    eprint!(" -> {}", site);
+                    eprintln!(" -> {}", site);
                     return Some(site);
                 }
             }

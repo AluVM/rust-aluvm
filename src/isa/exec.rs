@@ -113,6 +113,7 @@ where
         set.extend(DigestOp::isa_ids());
         set.extend(Secp256k1Op::isa_ids());
         set.extend(Curve25519Op::isa_ids());
+        set.extend(Extension::isa_ids());
         set
     }
 
