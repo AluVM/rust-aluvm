@@ -529,7 +529,7 @@ impl TryFrom<RegAll> for RegR {
     fn try_from(value: RegAll) -> Result<Self, Self::Error> { value.reg_r().ok_or(()) }
 }
 
-/// Superset of all registers accessible via intstructions. The superset includes `A`, `F`, `R` and
+/// Superset of all registers accessible via instructions. The superset includes `A`, `F`, `R` and
 /// `S` families of registers.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, From)]
 #[display(inner)]

@@ -819,7 +819,7 @@ pub enum BytesOp {
     /// </pre>
     ///
     /// `flag1` and `flag2` arguments indicate whether `st0` should be set to `false` if
-    /// `offset_start > src_len` and `offset_end > src_len && offser_start <= src_len`.
+    /// `offset_start > src_len` and `offset_end > src_len && offset_start <= src_len`.
     /// In all other cases, `st0` value is not modified.
     #[display("del.{0}   {7},{8},{1}{2},{3}{4},{5},{6}")]
     Del(
@@ -830,7 +830,7 @@ pub enum BytesOp {
         /** `a8` or `a16` register index with a second offset for delete location */ Reg32,
         /** `flag1` indicating `st0` value set to false if `offset_start > src_len` */ bool,
         /** `flag2` indicating `st0` value set to false if
-         * `offset_end > src_len && offser_start <= src_len` */
+         * `offset_end > src_len && offset_start <= src_len` */
         bool,
         /** Source `s` register */ RegS,
         /** Destination `s` register */ RegS,

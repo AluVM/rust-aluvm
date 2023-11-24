@@ -919,7 +919,7 @@ pub enum DeleteFlag {
     Zero = 1,
 
     /// Set destination to the fragment of the string `offset_start..src_len` if
-    /// `offset_end > src_len && offser_start <= src_len`.
+    /// `offset_end > src_len && offset_start <= src_len`.
     ///
     /// Matches case (3) in [`crate::isa::BytesOp::Del`] description
     #[display("c")]
@@ -927,7 +927,7 @@ pub enum DeleteFlag {
 
     /// Set destination to the fragment of the string `offset_start..src_len` and extend its length
     /// up to `offset_end - offset_start` with trailing zeros if
-    /// `offset_end > src_len && offser_start <= src_len`.
+    /// `offset_end > src_len && offset_start <= src_len`.
     ///
     /// Matches case (4) in [`crate::isa::BytesOp::Del`] description
     #[display("e")]
