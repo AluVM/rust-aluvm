@@ -54,7 +54,7 @@
 //! ## Design
 //!
 //! The robusness lies at the very core of AluVM. It is designed to avoid any
-//! undefined behaviour. Specificly,
+//! undefined behaviour. Specifically,
 //! * All registers may be in the undefined statel
 //! * Impossible/incorrect operations put destination register into a special *undefined state*;
 //! * Code always extended to 2^16 bytes with zeros, which corresponds to “set st0 register to false
