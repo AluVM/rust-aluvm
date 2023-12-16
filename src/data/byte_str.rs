@@ -216,7 +216,32 @@ impl Display for ByteStr {
             // 4)..].to_hex())
         } else if let Ok(s) = String::from_utf8(vec) {
             f.write_str("\"")?;
-            f.write_str(&s)?;
+            let mut ctl = false;
+            for c in s.chars() {
+                let v = c as u32;
+                if c.is_control() || v <= 0x21 && v >= 0x7F {
+                    if !ctl {
+                        f.write_str("\x1B[2;3m<\x1B[1m")?;
+                        ctl = true;
+                    }
+                    if v <= 0xFF {
+                        write!(f, "{v:02X}")?;
+                    } else if v <= 0xFFFF {
+                        write!(f, "{v:04X}")?;
+                    } else {
+                        write!(f, "{v:08X}")?;
+                    }
+                } else {
+                    if ctl {
+                        f.write_str("\x1B[2m>\x1B[1;23m")?;
+                        ctl = false;
+                    }
+                    f.write_char(c)?;
+                }
+            }
+            if ctl {
+                f.write_str("\x1B[2m>\x1B[1;23m")?;
+            }
             f.write_str("\"")
         } else {
             f.write_str(&self.as_ref().to_hex())
