@@ -28,6 +28,7 @@ use core::convert::TryFrom;
 use core::fmt::{self, Display, Formatter};
 use core::hash::{Hash as RustHash, Hasher};
 use core::str::FromStr;
+use std::io;
 
 use amplify::{ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
@@ -35,7 +36,7 @@ use sha2::{Digest, Sha256};
 
 use super::{Cursor, Read};
 use crate::data::ByteStr;
-use crate::isa::{BytecodeError, ExecStep, InstructionSet};
+use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet, ReservedOp};
 use crate::library::segs::IsaSeg;
 use crate::library::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
 use crate::reg::CoreRegs;
@@ -241,6 +242,23 @@ impl Lib {
             code.push(Isa::decode(&mut reader)?);
         }
         Ok(code)
+    }
+
+    /// Disassembles library into a set of instructions and offsets and prints it to the writer.
+    pub fn print_disassemble<Isa>(&self, mut writer: impl io::Write) -> Result<(), io::Error>
+    where
+        Isa: InstructionSet,
+    {
+        let mut reader = Cursor::with(&self.code, &self.data, &self.libs);
+        while !reader.is_eof() {
+            let pos = reader.offset().0 as usize;
+            write!(writer, "offset_0x{pos:04X}: ")?;
+            match Instr::<Isa>::decode(&mut reader) {
+                Ok(instr) => writeln!(writer, "{instr}")?,
+                Err(_) => writeln!(writer, "\n{}", ByteStr::with(&self.code.as_ref()[pos..]))?,
+            }
+        }
+        Ok(())
     }
 
     /// Returns hash identifier [`LibId`], representing the library in a unique way.

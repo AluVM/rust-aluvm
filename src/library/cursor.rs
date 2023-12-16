@@ -119,6 +119,9 @@ where
         Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, data, libs }
     }
 
+    /// Returns the current offset of the cursor
+    pub const fn offset(&self) -> (u16, u3) { (self.byte_pos, self.bit_pos) }
+
     /// Converts writer into data segment
     #[inline]
     pub fn into_data_segment(self) -> D { self.data }
