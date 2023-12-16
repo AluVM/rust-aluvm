@@ -137,7 +137,11 @@ impl Display for Lib {
         writeln!(f, "ISAE:   {}", &self.isae)?;
         write!(f, "CODE:\n{:#10}", self.code)?;
         write!(f, "DATA:\n{:#10}", self.data)?;
-        write!(f, "LIBS:   {:8}", self.libs)
+        if self.libs.count() > 0 {
+            write!(f, "LIBS:   {:8}", self.libs)
+        } else {
+            write!(f, "LIBS:   none")
+        }
     }
 }
 
@@ -300,28 +304,64 @@ impl Lib {
     where
         Isa: InstructionSet,
     {
+        #[cfg(all(debug_assertions, feature = "std"))]
+        let (m, w, d, g, r, y, z) = (
+            "\x1B[0;35m",
+            "\x1B[1;1m",
+            "\x1B[0;37;2m",
+            "\x1B[0;32m",
+            "\x1B[0;31m",
+            "\x1B[0;33m",
+            "\x1B[0m",
+        );
+
         let mut cursor = Cursor::with(&self.code.bytes[..], &self.data, &self.libs);
         let lib_hash = self.id();
         cursor.seek(entrypoint).ok()?;
 
+        let mut st0 = registers.st0;
         while !cursor.is_eof() {
             let pos = cursor.pos();
 
             let instr = Isa::decode(&mut cursor).ok()?;
+
+            #[cfg(all(debug_assertions, feature = "std"))]
+            {
+                eprint!("{m}@{pos:06}:{z} {: <32}; ", instr.to_string());
+                for reg in instr.src_regs() {
+                    let val = registers.get(reg);
+                    eprint!("{d}{reg}={z}{w}{val}{z} ");
+                }
+            }
+
             let next = instr.exec(registers, LibSite::with(pos, lib_hash), context);
 
             #[cfg(all(debug_assertions, feature = "std"))]
-            eprint!("@{:06}> {}; st0={}", pos, instr, registers.st0);
+            {
+                eprint!("-> ");
+                for reg in instr.dst_regs() {
+                    let val = registers.get(reg);
+                    eprint!("{g}{reg}={y}{val}{z} ");
+                }
+                if st0 != registers.st0 {
+                    let c = if registers.st0 { g } else { r };
+                    eprint!(" {d}st0={z}{c}{}{z} ", registers.st0);
+                }
+            }
+            st0 = registers.st0;
 
             if !registers.acc_complexity(instr) {
                 #[cfg(all(debug_assertions, feature = "std"))]
-                eprintln!(" -> complexity overflow");
+                eprintln!("complexity overflow");
                 return None;
             }
             match next {
                 ExecStep::Stop => {
                     #[cfg(all(debug_assertions, feature = "std"))]
-                    eprintln!(" -> execution stopped");
+                    {
+                        let c = if registers.st0 { g } else { r };
+                        eprintln!("execution stopped; {d}st0={z}{c}{}{z}", registers.st0);
+                    }
                     return None;
                 }
                 ExecStep::Next => {
@@ -331,12 +371,12 @@ impl Lib {
                 }
                 ExecStep::Jump(pos) => {
                     #[cfg(all(debug_assertions, feature = "std"))]
-                    eprintln!(" -> {}", pos);
+                    eprintln!("{}", pos);
                     cursor.seek(pos).ok()?;
                 }
                 ExecStep::Call(site) => {
                     #[cfg(all(debug_assertions, feature = "std"))]
-                    eprintln!(" -> {}", site);
+                    eprintln!("{}", site);
                     return Some(site);
                 }
             }
