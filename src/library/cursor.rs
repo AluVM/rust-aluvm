@@ -435,8 +435,9 @@ where
     ) -> Result<(), WriteError> {
         let len = reg.bytes();
         assert!(
-            len <= value.len(),
-            "value for the register has larger bit length than the register"
+            len >= value.len(),
+            "value for the register has larger bit length {} than the register {len}",
+            value.len()
         );
         value.reshape(reg.layout().using_sign(value.layout()));
         let offset = self.write_unique(&value[..])?;
@@ -464,8 +465,9 @@ mod tests {
     use amplify::num::{u2, u3, u5, u7};
 
     use super::Cursor;
-    use crate::data::ByteStr;
+    use crate::data::{ByteStr, Number};
     use crate::library::{LibSeg, Read, Write};
+    use crate::reg::RegA;
 
     #[test]
     fn read() {
@@ -502,7 +504,7 @@ mod tests {
     #[test]
     fn write() {
         let libseg = LibSeg::default();
-        let mut code = [0, 0, 0, 0, 0, 0];
+        let mut code = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         let mut cursor = Cursor::<_, ByteStr>::new(&mut code, &libseg);
         cursor.write_u2(u2::with(0b00000011)).unwrap();
         cursor.write_u3(u3::with(0b00000101)).unwrap();
@@ -512,8 +514,11 @@ mod tests {
         cursor.write_u3(u3::with(0b00000110)).unwrap();
         let two_bytes = 0b11110000_10101010u16;
         cursor.write_u16(two_bytes).unwrap();
+        let number = Number::from(255u8);
+        cursor.write_number(RegA::A8, number).unwrap();
 
-        let mut cursor = Cursor::<_, ByteStr>::new(code, &libseg);
+        let data = cursor.data;
+        let mut cursor = Cursor::<_, ByteStr>::with(code, data, &libseg);
         assert_eq!(cursor.read_u2().unwrap().to_u8(), 0b00000011);
         assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000101);
         assert_eq!(cursor.read_u7().unwrap().to_u8(), 0b01011111);
@@ -521,6 +526,16 @@ mod tests {
         assert_eq!(cursor.read_bool().unwrap(), true);
         assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000110);
         assert_eq!(cursor.read_u16().unwrap(), two_bytes);
+        assert_eq!(cursor.read_number(RegA::A8).unwrap(), number);
+    }
+
+    #[test]
+    #[should_panic]
+    fn write_fail() {
+        let libseg = LibSeg::default();
+        let mut code = [0, 0, 0, 0, 0, 0];
+        let mut cursor = Cursor::<_, ByteStr>::new(&mut code, &libseg);
+        cursor.write_number(RegA::A8, Number::from(256u16)).unwrap();
     }
 
     #[test]
