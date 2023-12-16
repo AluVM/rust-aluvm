@@ -613,6 +613,10 @@ impl From<&RegS> for u5 {
     fn from(reg: &RegS) -> Self { u5::with(reg.0.to_u8()) }
 }
 
+impl From<RegS> for Reg32 {
+    fn from(reg: RegS) -> Self { u5::from(reg.0).into() }
+}
+
 impl TryFrom<Reg32> for RegS {
     type Error = OverflowError;
 

@@ -194,36 +194,36 @@ impl InstructionSet for PutOp {
     fn exec(&self, regs: &mut CoreRegs, _: LibSite, _: &()) -> ExecStep {
         match self {
             PutOp::ClrA(reg, index) => {
-                regs.set(reg, index, MaybeNumber::none());
+                regs.set_n(reg, index, MaybeNumber::none());
             }
             PutOp::ClrF(reg, index) => {
-                regs.set(reg, index, MaybeNumber::none());
+                regs.set_n(reg, index, MaybeNumber::none());
             }
             PutOp::ClrR(reg, index) => {
-                regs.set(reg, index, MaybeNumber::none());
+                regs.set_n(reg, index, MaybeNumber::none());
             }
             PutOp::PutA(reg, index, number) => {
-                if !regs.set(reg, index, **number) {
+                if !regs.set_n(reg, index, **number) {
                     regs.st0 = false;
                 }
             }
             PutOp::PutF(reg, index, number) => {
-                if !regs.set(reg, index, **number) {
+                if !regs.set_n(reg, index, **number) {
                     regs.st0 = false;
                 }
             }
             PutOp::PutR(reg, index, number) => {
-                if !regs.set(reg, index, **number) {
+                if !regs.set_n(reg, index, **number) {
                     regs.st0 = false;
                 }
             }
             PutOp::PutIfA(reg, index, number) => {
-                if !regs.set_if(reg, index, **number) {
+                if !regs.set_n_if(reg, index, **number) {
                     regs.st0 = false;
                 }
             }
             PutOp::PutIfR(reg, index, number) => {
-                if !regs.set_if(reg, index, **number) {
+                if !regs.set_n_if(reg, index, **number) {
                     regs.st0 = false;
                 }
             }
@@ -241,73 +241,73 @@ impl InstructionSet for MoveOp {
     fn exec(&self, regs: &mut CoreRegs, _: LibSite, _: &()) -> ExecStep {
         match self {
             MoveOp::MovA(reg, idx1, idx2) => {
-                regs.set(reg, idx2, regs.get(reg, idx1));
-                regs.set(reg, idx1, MaybeNumber::none());
+                regs.set_n(reg, idx2, regs.get_n(reg, idx1));
+                regs.set_n(reg, idx1, MaybeNumber::none());
             }
             MoveOp::DupA(reg, idx1, idx2) => {
-                regs.set(reg, idx2, regs.get(reg, idx1));
+                regs.set_n(reg, idx2, regs.get_n(reg, idx1));
             }
             MoveOp::SwpA(reg, idx1, idx2) => {
-                let val = regs.get(reg, idx2);
-                regs.set(reg, idx2, regs.get(reg, idx1));
-                regs.set(reg, idx1, val);
+                let val = regs.get_n(reg, idx2);
+                regs.set_n(reg, idx2, regs.get_n(reg, idx1));
+                regs.set_n(reg, idx1, val);
             }
             MoveOp::MovF(reg, idx1, idx2) => {
-                regs.set(reg, idx2, regs.get(reg, idx1));
-                regs.set(reg, idx1, MaybeNumber::none());
+                regs.set_n(reg, idx2, regs.get_n(reg, idx1));
+                regs.set_n(reg, idx1, MaybeNumber::none());
             }
             MoveOp::DupF(reg, idx1, idx2) => {
-                regs.set(reg, idx2, regs.get(reg, idx1));
+                regs.set_n(reg, idx2, regs.get_n(reg, idx1));
             }
             MoveOp::SwpF(reg, idx1, idx2) => {
-                let val = regs.get(reg, idx2);
-                regs.set(reg, idx2, regs.get(reg, idx1));
-                regs.set(reg, idx1, val);
+                let val = regs.get_n(reg, idx2);
+                regs.set_n(reg, idx2, regs.get_n(reg, idx1));
+                regs.set_n(reg, idx1, val);
             }
             MoveOp::MovR(reg, idx1, idx2) => {
-                regs.set(reg, idx2, regs.get(reg, idx1));
-                regs.set(reg, idx1, MaybeNumber::none());
+                regs.set_n(reg, idx2, regs.get_n(reg, idx1));
+                regs.set_n(reg, idx1, MaybeNumber::none());
             }
             MoveOp::DupR(reg, idx1, idx2) => {
-                regs.set(reg, idx2, regs.get(reg, idx1));
+                regs.set_n(reg, idx2, regs.get_n(reg, idx1));
             }
 
             MoveOp::CpyA(sreg, sidx, dreg, didx) => {
-                let mut val = regs.get(sreg, sidx);
+                let mut val = regs.get_n(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
-                regs.set(dreg, didx, val);
+                regs.set_n(dreg, didx, val);
             }
             MoveOp::CnvA(sreg, sidx, dreg, didx) => {
-                let mut val = regs.get(sreg, sidx);
+                let mut val = regs.get_n(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout().into_signed());
-                regs.set(dreg, didx, val);
+                regs.set_n(dreg, didx, val);
             }
             MoveOp::CnvF(sreg, sidx, dreg, didx) => {
-                let mut val = regs.get(sreg, sidx);
+                let mut val = regs.get_n(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
-                regs.set(dreg, didx, val);
+                regs.set_n(dreg, didx, val);
             }
             MoveOp::CpyR(sreg, sidx, dreg, didx) => {
-                let mut val = regs.get(sreg, sidx);
+                let mut val = regs.get_n(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
-                regs.set(dreg, didx, val);
+                regs.set_n(dreg, didx, val);
             }
             MoveOp::SpyAR(sreg, sidx, dreg, didx) => {
-                let mut val1 = regs.get(sreg, sidx);
-                let mut val2 = regs.get(dreg, didx);
+                let mut val1 = regs.get_n(sreg, sidx);
+                let mut val2 = regs.get_n(dreg, didx);
                 regs.st0 = val1.reshape(dreg.layout()) && val2.reshape(sreg.layout());
-                regs.set(dreg, didx, val1);
-                regs.set(sreg, sidx, val2);
+                regs.set_n(dreg, didx, val1);
+                regs.set_n(sreg, sidx, val2);
             }
             MoveOp::CnvAF(sreg, sidx, dreg, didx) => {
-                let mut val = regs.get(sreg, sidx);
+                let mut val = regs.get_n(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
-                regs.set(dreg, didx, val);
+                regs.set_n(dreg, didx, val);
             }
             MoveOp::CnvFA(sreg, sidx, dreg, didx) => {
-                let mut val = regs.get(sreg, sidx);
+                let mut val = regs.get_n(sreg, sidx);
                 regs.st0 = val.reshape(dreg.layout());
-                regs.set(dreg, didx, val);
+                regs.set_n(dreg, didx, val);
             }
         }
         ExecStep::Next
@@ -323,16 +323,15 @@ impl InstructionSet for CmpOp {
     fn exec(&self, regs: &mut CoreRegs, _: LibSite, _: &()) -> ExecStep {
         match self {
             CmpOp::GtA(sign_flag, reg, idx1, idx2) => {
-                regs.st0 =
-                    regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
-                        match bool::from(sign_flag) {
-                            true => val1.into_signed().cmp(&val2.into_signed()),
-                            false => val1.cmp(&val2),
-                        }
-                    }) == Some(Ordering::Greater);
+                regs.st0 = regs.get_n2(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                    match bool::from(sign_flag) {
+                        true => val1.into_signed().cmp(&val2.into_signed()),
+                        false => val1.cmp(&val2),
+                    }
+                }) == Some(Ordering::Greater);
             }
             CmpOp::GtF(eq_flag, reg, idx1, idx2) => {
-                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                regs.st0 = regs.get_n2(reg, idx1, reg, idx2).map(|(val1, val2)| {
                     if *eq_flag == FloatEqFlag::Rounding {
                         val1.rounding_cmp(&val2)
                     } else {
@@ -341,20 +340,19 @@ impl InstructionSet for CmpOp {
                 }) == Some(Ordering::Greater);
             }
             CmpOp::GtR(reg, idx1, idx2) => {
-                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| val1.cmp(&val2))
+                regs.st0 = regs.get_n2(reg, idx1, reg, idx2).map(|(val1, val2)| val1.cmp(&val2))
                     == Some(Ordering::Greater);
             }
             CmpOp::LtA(sign_flag, reg, idx1, idx2) => {
-                regs.st0 =
-                    regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
-                        match bool::from(sign_flag) {
-                            true => val1.into_signed().cmp(&val2.into_signed()),
-                            false => val1.cmp(&val2),
-                        }
-                    }) == Some(Ordering::Less);
+                regs.st0 = regs.get_n2(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                    match bool::from(sign_flag) {
+                        true => val1.into_signed().cmp(&val2.into_signed()),
+                        false => val1.cmp(&val2),
+                    }
+                }) == Some(Ordering::Less);
             }
             CmpOp::LtF(eq_flag, reg, idx1, idx2) => {
-                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| {
+                regs.st0 = regs.get_n2(reg, idx1, reg, idx2).map(|(val1, val2)| {
                     if *eq_flag == FloatEqFlag::Rounding {
                         val1.rounding_cmp(&val2)
                     } else {
@@ -363,18 +361,18 @@ impl InstructionSet for CmpOp {
                 }) == Some(Ordering::Less);
             }
             CmpOp::LtR(reg, idx1, idx2) => {
-                regs.st0 = regs.get_both(reg, idx1, reg, idx2).map(|(val1, val2)| val1.cmp(&val2))
+                regs.st0 = regs.get_n2(reg, idx1, reg, idx2).map(|(val1, val2)| val1.cmp(&val2))
                     == Some(Ordering::Less);
             }
             CmpOp::EqA(st, reg, idx1, idx2) => {
                 regs.st0 = regs
-                    .get_both(reg, idx1, reg, idx2)
+                    .get_n2(reg, idx1, reg, idx2)
                     .map(|(val1, val2)| val1 == val2)
                     .unwrap_or(*st == NoneEqFlag::Equal);
             }
             CmpOp::EqF(eq_flag, reg, idx1, idx2) => {
                 regs.st0 = regs
-                    .get_both(reg, idx1, reg, idx2)
+                    .get_n2(reg, idx1, reg, idx2)
                     .map(|(val1, val2)| {
                         if *eq_flag == FloatEqFlag::Rounding {
                             val1.rounding_eq(&val2)
@@ -386,21 +384,21 @@ impl InstructionSet for CmpOp {
             }
             CmpOp::EqR(st, reg, idx1, idx2) => {
                 regs.st0 = regs
-                    .get_both(reg, idx1, reg, idx2)
+                    .get_n2(reg, idx1, reg, idx2)
                     .map(|(val1, val2)| val1 == val2)
                     .unwrap_or(*st == NoneEqFlag::Equal);
             }
             CmpOp::IfZA(reg, idx) => {
-                regs.st0 = regs.get(reg, idx).map(Number::is_zero).unwrap_or(false)
+                regs.st0 = regs.get_n(reg, idx).map(Number::is_zero).unwrap_or(false)
             }
             CmpOp::IfZR(reg, idx) => {
-                regs.st0 = regs.get(reg, idx).map(Number::is_zero).unwrap_or(false)
+                regs.st0 = regs.get_n(reg, idx).map(Number::is_zero).unwrap_or(false)
             }
-            CmpOp::IfNA(reg, idx) => regs.st0 = regs.get(reg, idx).is_none(),
-            CmpOp::IfNR(reg, idx) => regs.st0 = regs.get(reg, idx).is_none(),
+            CmpOp::IfNA(reg, idx) => regs.st0 = regs.get_n(reg, idx).is_none(),
+            CmpOp::IfNR(reg, idx) => regs.st0 = regs.get_n(reg, idx).is_none(),
             CmpOp::St(merge_flag, reg, idx) => {
                 let st = Number::from(regs.st0 as u8);
-                let res = match (*regs.get(reg, idx), merge_flag) {
+                let res = match (*regs.get_n(reg, idx), merge_flag) {
                     (None, _) | (_, MergeFlag::Set) => st,
                     (Some(val), MergeFlag::Add) => {
                         val.int_add(st, IntFlags { signed: false, wrap: false }).unwrap_or(val)
@@ -408,7 +406,7 @@ impl InstructionSet for CmpOp {
                     (Some(val), MergeFlag::And) => val & st,
                     (Some(val), MergeFlag::Or) => val | st,
                 };
-                regs.set(reg, idx, Some(res));
+                regs.set_n(reg, idx, Some(res));
             }
             CmpOp::StInv => {
                 regs.st0 = !regs.st0;
@@ -446,65 +444,65 @@ impl InstructionSet for ArithmeticOp {
     fn exec(&self, regs: &mut CoreRegs, _: LibSite, _: &()) -> ExecStep {
         let is_some = match self {
             ArithmeticOp::Abs(reg, idx) => {
-                regs.set(reg, idx, regs.get(reg, idx).and_then(Number::abs))
+                regs.set_n(reg, idx, regs.get_n(reg, idx).and_then(Number::abs))
             }
             ArithmeticOp::AddA(flags, reg, src, srcdst) => {
                 let res = regs
-                    .get_both(reg, src, reg, srcdst)
+                    .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_add(val2, *flags));
-                regs.set(reg, srcdst, res)
+                regs.set_n(reg, srcdst, res)
             }
             ArithmeticOp::AddF(flags, reg, src, srcdst) => {
                 let res: Option<Number> = regs
-                    .get_both(reg, src, reg, srcdst)
+                    .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.float_add(val2, *flags).into());
-                regs.set(reg, srcdst, res)
+                regs.set_n(reg, srcdst, res)
             }
             ArithmeticOp::SubA(flags, reg, src, srcdst) => {
                 let res = regs
-                    .get_both(reg, src, reg, srcdst)
+                    .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_sub(val2, *flags));
-                regs.set(reg, srcdst, res)
+                regs.set_n(reg, srcdst, res)
             }
             ArithmeticOp::SubF(flags, reg, src, srcdst) => {
                 let res: Option<Number> = regs
-                    .get_both(reg, src, reg, srcdst)
+                    .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.float_sub(val2, *flags).into());
-                regs.set(reg, srcdst, res)
+                regs.set_n(reg, srcdst, res)
             }
             ArithmeticOp::MulA(flags, reg, src, srcdst) => {
                 let res = regs
-                    .get_both(reg, src, reg, srcdst)
+                    .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_mul(val2, *flags));
-                regs.set(reg, srcdst, res)
+                regs.set_n(reg, srcdst, res)
             }
             ArithmeticOp::MulF(flags, reg, src, srcdst) => {
                 let res: Option<Number> = regs
-                    .get_both(reg, src, reg, srcdst)
+                    .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.float_mul(val2, *flags).into());
-                regs.set(reg, srcdst, res)
+                regs.set_n(reg, srcdst, res)
             }
             ArithmeticOp::DivA(flags, reg, src, srcdst) => {
                 let res = regs
-                    .get_both(reg, src, reg, srcdst)
+                    .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_div(val2, *flags));
-                regs.set(reg, srcdst, res)
+                regs.set_n(reg, srcdst, res)
             }
             ArithmeticOp::DivF(flags, reg, src, srcdst) => {
                 let res: Option<Number> = regs
-                    .get_both(reg, src, reg, srcdst)
+                    .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.float_div(val2, *flags).into());
-                regs.set(reg, srcdst, res) && !res.map(Number::is_nan).unwrap_or(false)
+                regs.set_n(reg, srcdst, res) && !res.map(Number::is_nan).unwrap_or(false)
             }
             ArithmeticOp::Rem(reg1, idx1, reg2, idx2) => {
                 let res =
-                    regs.get_both(reg1, idx1, reg2, idx2).and_then(|(val1, val2)| val1.rem(val2));
-                regs.set(reg2, idx2, res)
+                    regs.get_n2(reg1, idx1, reg2, idx2).and_then(|(val1, val2)| val1.rem(val2));
+                regs.set_n(reg2, idx2, res)
             }
-            ArithmeticOp::Stp(reg, idx, step) => regs.set(
+            ArithmeticOp::Stp(reg, idx, step) => regs.set_n(
                 reg,
                 idx,
-                regs.get(reg, idx).and_then(|val| {
+                regs.get_n(reg, idx).and_then(|val| {
                     if step.as_i8() < 0 {
                         let mut n = Number::from(-step.as_i8());
                         debug_assert!(
@@ -523,7 +521,7 @@ impl InstructionSet for ArithmeticOp {
                 }),
             ),
             ArithmeticOp::Neg(reg, idx) => {
-                regs.set(reg, idx, regs.get(reg, idx).and_then(Number::neg))
+                regs.set_n(reg, idx, regs.get_n(reg, idx).and_then(Number::neg))
             }
         };
         regs.st0 = is_some;
@@ -579,11 +577,11 @@ impl InstructionSet for BitwiseOp {
                 regs.op(reg, src1, reg, src2, reg, dst, BitXor::bitxor)
             }
             BitwiseOp::Not(reg, idx) => {
-                regs.set(reg, idx, !regs.get(reg, idx));
+                regs.set_n(reg, idx, !regs.get_n(reg, idx));
             }
             BitwiseOp::Shl(reg1, shift, reg2, srcdst) => match reg2 {
                 RegAR::A(a) => {
-                    let msb = regs.get(a, srcdst).unwrap_or_default()[a.bytes() - 1] & 0x80;
+                    let msb = regs.get_n(a, srcdst).unwrap_or_default()[a.bytes() - 1] & 0x80;
                     regs.st0 = msb == 0x80;
                     regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Shl::shl)
                 }
@@ -601,7 +599,7 @@ impl InstructionSet for BitwiseOp {
                 }
             },
             BitwiseOp::ShrA(flag, reg1, shift, reg2, srcdst) => {
-                let res = regs.get_both(reg1, shift, reg2, srcdst).map(|(shift, val)| {
+                let res = regs.get_n2(reg1, shift, reg2, srcdst).map(|(shift, val)| {
                     let lsb = val[0] & 1;
                     regs.st0 = lsb == 1;
                     if *flag == SignFlag::Signed {
@@ -610,7 +608,7 @@ impl InstructionSet for BitwiseOp {
                         val.shr(shift)
                     }
                 });
-                regs.set(reg2, srcdst, res);
+                regs.set_n(reg2, srcdst, res);
             }
             BitwiseOp::ShrR(reg1, shift, reg2, srcdst) => {
                 let shift = match reg1 {
@@ -626,7 +624,7 @@ impl InstructionSet for BitwiseOp {
             }
             BitwiseOp::Scl(reg1, shift, reg2, srcdst) => match reg2 {
                 RegAR::A(_) => {
-                    let msb = regs.get(reg2, srcdst).unwrap_or_default()[reg2.bytes() - 1] & 0x80;
+                    let msb = regs.get_n(reg2, srcdst).unwrap_or_default()[reg2.bytes() - 1] & 0x80;
                     regs.st0 = msb == 0x80;
                     regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scl)
                 }
@@ -651,7 +649,7 @@ impl InstructionSet for BitwiseOp {
             },
             BitwiseOp::Scr(reg1, shift, reg2, srcdst) => match reg2 {
                 RegAR::A(_) => {
-                    let lsb = regs.get(reg2, srcdst).unwrap_or_default()[0] & 1;
+                    let lsb = regs.get_n(reg2, srcdst).unwrap_or_default()[0] & 1;
                     regs.st0 = lsb == 1;
                     regs.op(reg2, srcdst, reg1, shift, reg2, srcdst, Number::scr)
                 }
@@ -675,7 +673,7 @@ impl InstructionSet for BitwiseOp {
                 }
             },
             BitwiseOp::RevA(reg, idx) => {
-                regs.set(reg, idx, regs.get(reg, idx).map(Number::reverse_bits));
+                regs.set_n(reg, idx, regs.get_n(reg, idx).map(Number::reverse_bits));
             }
             BitwiseOp::RevR(reg, idx) => {
                 if let Some(original) = regs.get_r_mut(*reg, idx) {
@@ -745,12 +743,12 @@ impl InstructionSet for BytesOp {
                     if !reg.int_layout().fits_usize(len as usize) {
                         return None;
                     }
-                    regs.set(reg, dst, len as u32);
+                    regs.set_n(reg, dst, len as u32);
                     Some(())
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.set(reg, dst, MaybeNumber::none());
+                    regs.set_n(reg, dst, MaybeNumber::none());
                 });
             }
             BytesOp::Cnt(src, byte, dst) => {
@@ -761,12 +759,12 @@ impl InstructionSet for BytesOp {
                     if !RegA::A16.int_layout().fits_usize(count) {
                         return None;
                     }
-                    regs.set(RegA::A16, dst, count as u32);
+                    regs.set_n(RegA::A16, dst, count as u32);
                     Some(())
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.set(RegA::A16, dst, MaybeNumber::none());
+                    regs.set_n(RegA::A16, dst, MaybeNumber::none());
                 });
             }
             BytesOp::Eq(reg1, reg2) => {
@@ -780,17 +778,17 @@ impl InstructionSet for BytesOp {
             }
             BytesOp::Find(reg1, reg2) => {
                 let mut f = || -> Option<()> {
-                    let (s1, s2) = regs.get_both_s(*reg1, *reg2)?;
+                    let (s1, s2) = regs.get_s2(*reg1, *reg2)?;
                     let r1 = s1.as_ref();
                     let r2 = s2.as_ref();
                     let count = r1.windows(r2.len()).filter(|r1| *r1 == r2).count();
                     assert!(count <= u16::MAX as usize);
-                    regs.set(RegA::A16, Reg32::Reg0, count as u16);
+                    regs.set_n(RegA::A16, Reg32::Reg0, count as u16);
                     Some(())
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.set(RegA::A16, Reg32::Reg0, MaybeNumber::none());
+                    regs.set_n(RegA::A16, Reg32::Reg0, MaybeNumber::none());
                 })
             }
             BytesOp::Rev(reg1, reg2) => {
@@ -827,14 +825,14 @@ impl InstructionSet for BytesOp {
                         (Some((b, _)), None) => (b, size - b),
                         _ => return None,
                     };
-                    regs.set(RegA::A16, offset_dst, offset);
-                    regs.set(RegA::A16, len_dst, len);
+                    regs.set_n(RegA::A16, offset_dst, offset);
+                    regs.set_n(RegA::A16, len_dst, len);
                     Some(())
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.set(RegA::A16, offset_dst, MaybeNumber::none());
-                    regs.set(RegA::A16, len_dst, MaybeNumber::none());
+                    regs.set_n(RegA::A16, offset_dst, MaybeNumber::none());
+                    regs.set_n(RegA::A16, len_dst, MaybeNumber::none());
                 })
             }
             BytesOp::Extr(src, dst, index, offset) => {
@@ -851,18 +849,18 @@ impl InstructionSet for BytesOp {
                     let num = Number::from_slice(
                         &regs.get_s(*src)?.as_ref()[offset as usize..end as usize],
                     );
-                    regs.set(dst, index, num);
+                    regs.set_n(dst, index, num);
                     Some(())
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.set(dst, index, MaybeNumber::none());
+                    regs.set_n(dst, index, MaybeNumber::none());
                 })
             }
             BytesOp::Inj(src, dst, index, offset) => {
                 let mut f = || -> Option<()> {
                     let mut s = regs.get_s(*src)?.clone();
-                    let val = regs.get(dst, index).map(|v| v)?;
+                    let val = regs.get_n(dst, index).map(|v| v)?;
                     let offset = regs.a16[*offset as u8 as usize]?;
                     let end = offset.saturating_add(dst.layout().bytes() - 1);
                     s.adjust_len(end);
@@ -872,12 +870,12 @@ impl InstructionSet for BytesOp {
                 };
                 f().unwrap_or_else(|| {
                     regs.st0 = false;
-                    regs.set(dst, index, MaybeNumber::none());
+                    regs.set_n(dst, index, MaybeNumber::none());
                 })
             }
             BytesOp::Join(src1, src2, dst) => {
                 let mut f = || -> Option<()> {
-                    let (s1, s2) = regs.get_both_s(*src1, *src2)?;
+                    let (s1, s2) = regs.get_s2(*src1, *src2)?;
                     if s1.len() as usize + s2.len() as usize > u16::MAX as usize {
                         return None;
                     }
@@ -933,19 +931,19 @@ impl InstructionSet for DigestOp {
                     hash.reverse();
                     hash
                 });
-                regs.set(RegR::R160, dst, hash);
+                regs.set_n(RegR::R160, dst, hash);
             }
             DigestOp::Sha256(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
                 let hash: Option<[u8; 32]> = s.map(|s| sha2::Sha256::digest(s.as_ref()).into());
-                regs.set(RegR::R256, dst, hash);
+                regs.set_n(RegR::R256, dst, hash);
             }
             DigestOp::Sha512(src, dst) => {
                 let s = regs.get_s(*src);
                 none = s.is_none();
                 let hash: Option<[u8; 64]> = s.map(|s| sha2::Sha512::digest(s.as_ref()).into());
-                regs.set(RegR::R512, dst, hash);
+                regs.set_n(RegR::R512, dst, hash);
             }
         }
         if none {
@@ -985,7 +983,7 @@ impl InstructionSet for Secp256k1Op {
         match self {
             Secp256k1Op::Gen(src, dst) => {
                 let res = regs
-                    .get(RegR::R256, src)
+                    .get_n(RegR::R256, src)
                     .and_then(|mut src| {
                         let src = src.as_mut();
                         // little endian to big endian
@@ -996,15 +994,15 @@ impl InstructionSet for Secp256k1Op {
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
                     .map(|pk| Number::from_slice(&pk[1..]));
-                regs.set(RegR::R512, dst, res);
+                regs.set_n(RegR::R512, dst, res);
             }
 
             Secp256k1Op::Mul(block, scal, src, dst) => {
                 let reg = block.into_reg(256).expect("register set does not match standard");
                 let res = regs
-                    .get(reg, scal)
+                    .get_n(reg, scal)
                     .and_then(|scal| {
-                        regs.get(RegR::R512, src)
+                        regs.get_n(RegR::R512, src)
                             .and_then(|val| {
                                 let mut pk = [4u8; 65];
                                 pk[1..].copy_from_slice(val.as_ref());
@@ -1021,19 +1019,19 @@ impl InstructionSet for Secp256k1Op {
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
                     .map(|pk| Number::from_slice(&pk[1..]));
-                regs.set(RegR::R512, dst, res);
+                regs.set_n(RegR::R512, dst, res);
             }
 
             Secp256k1Op::Add(src, srcdst) => {
                 let res = regs
-                    .get(RegR::R512, src)
+                    .get_n(RegR::R512, src)
                     .and_then(|val| {
                         let mut pk1 = [4u8; 65];
                         pk1[1..].copy_from_slice(val.as_ref());
                         PublicKey::from_slice(&pk1).ok()
                     })
                     .and_then(|pk1| {
-                        regs.get(RegR::R512, srcdst).and_then(|val| {
+                        regs.get_n(RegR::R512, srcdst).and_then(|val| {
                             let mut pk2 = [4u8; 65];
                             pk2[1..].copy_from_slice(val.as_ref());
                             PublicKey::from_slice(&pk2).ok().map(|pk2| (pk1, pk2))
@@ -1043,12 +1041,12 @@ impl InstructionSet for Secp256k1Op {
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
                     .map(|pk| Number::from_slice(&pk[1..]));
-                regs.set(RegR::R512, srcdst, res);
+                regs.set_n(RegR::R512, srcdst, res);
             }
 
             Secp256k1Op::Neg(src, dst) => {
                 let res = regs
-                    .get(RegR::R512, src)
+                    .get_n(RegR::R512, src)
                     .and_then(|val| {
                         let mut pk = [4u8; 65];
                         pk[1..].copy_from_slice(&val[..]);
@@ -1058,7 +1056,7 @@ impl InstructionSet for Secp256k1Op {
                     .as_ref()
                     .map(PublicKey::serialize_uncompressed)
                     .map(|pk| Number::from_slice(&pk[1..]));
-                regs.set(RegR::R512, dst, res);
+                regs.set_n(RegR::R512, dst, res);
             }
         }
         ExecStep::Next
@@ -1109,23 +1107,23 @@ impl InstructionSet for Curve25519Op {
 
         match self {
             Curve25519Op::Gen(src, dst) => {
-                let res = regs.get(RegR::R256, src).map(get_scalar).map(from_scalar);
-                regs.set(RegR::R512, dst, res);
+                let res = regs.get_n(RegR::R256, src).map(get_scalar).map(from_scalar);
+                regs.set_n(RegR::R512, dst, res);
             }
             Curve25519Op::Mul(block, scal, src, dst) => {
                 let reg = block.into_reg(256).expect("register set does not match standard");
-                let lhs = regs.get(reg, scal).map(get_scalar);
-                let rhs = regs.get(reg, src).map(get_scalar);
+                let lhs = regs.get_n(reg, scal).map(get_scalar);
+                let rhs = regs.get_n(reg, src).map(get_scalar);
                 let res = lhs.zip(rhs).map(|(lhs, rhs)| lhs * rhs).map(from_scalar);
-                regs.set(RegR::R512, dst, res);
+                regs.set_n(RegR::R512, dst, res);
             }
             Curve25519Op::Add(lhs, rhs, dst, overflow) => {
                 let lhs = regs
-                    .get(RegR::R512, lhs)
+                    .get_n(RegR::R512, lhs)
                     .map(get_scalar)
                     .map(|s| u256::from_le_bytes(s.to_bytes()));
                 let rhs = regs
-                    .get(RegR::R512, rhs)
+                    .get_n(RegR::R512, rhs)
                     .map(get_scalar)
                     .map(|s| u256::from_le_bytes(s.to_bytes()));
                 let res = lhs
@@ -1141,11 +1139,11 @@ impl InstructionSet for Curve25519Op {
                         }
                     })
                     .map(from_scalar);
-                regs.set(RegR::R512, dst, res);
+                regs.set_n(RegR::R512, dst, res);
             }
             Curve25519Op::Neg(src, dst) => {
-                let res = regs.get(RegR::R512, src).map(get_scalar).map(|s| -s).map(from_scalar);
-                regs.set(RegR::R512, dst, res);
+                let res = regs.get_n(RegR::R512, src).map(get_scalar).map(|s| -s).map(from_scalar);
+                regs.set_n(RegR::R512, dst, res);
             }
         }
         ExecStep::Next
@@ -1196,8 +1194,8 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg32::Reg1).unwrap(), Number::from(0u16));
-        assert_eq!(register.get(RegA::A16, Reg32::Reg2).unwrap(), Number::from(5u16));
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg1).unwrap(), Number::from(0u16));
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg2).unwrap(), Number::from(5u16));
         assert!(register.st0);
         // banana (1st fragment)
         PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(1).into()).exec(
@@ -1210,8 +1208,8 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg32::Reg1).unwrap(), Number::from(6u16));
-        assert_eq!(register.get(RegA::A16, Reg32::Reg2).unwrap(), Number::from(6u16));
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg1).unwrap(), Number::from(6u16));
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg2).unwrap(), Number::from(6u16));
         assert!(register.st0);
         // kiwi (2nd fragment)
         PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(2).into()).exec(
@@ -1224,8 +1222,8 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg32::Reg1).unwrap(), Number::from(13u16));
-        assert_eq!(register.get(RegA::A16, Reg32::Reg2).unwrap(), Number::from(4u16));
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg1).unwrap(), Number::from(13u16));
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg2).unwrap(), Number::from(4u16));
         assert!(register.st0);
         // no 3rd fragment
         PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(3).into()).exec(
@@ -1238,8 +1236,8 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg32::Reg1), MaybeNumber::none());
-        assert_eq!(register.get(RegA::A16, Reg32::Reg2), MaybeNumber::none());
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg1), MaybeNumber::none());
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg2), MaybeNumber::none());
         assert!(!register.st0);
 
         let s1 = "aaa".as_bytes();
@@ -1264,8 +1262,8 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg32::Reg1), MaybeNumber::none());
-        assert_eq!(register.get(RegA::A16, Reg32::Reg2), MaybeNumber::none());
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg1), MaybeNumber::none());
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg2), MaybeNumber::none());
         assert!(!register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
 
@@ -1291,8 +1289,8 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg32::Reg1).unwrap(), Number::from(0u16));
-        assert_eq!(register.get(RegA::A16, Reg32::Reg2).unwrap(), Number::from(u16::MAX));
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg1).unwrap(), Number::from(0u16));
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg2).unwrap(), Number::from(u16::MAX));
         assert!(register.st0);
         PutOp::PutA(RegA::A16, Reg32::Reg0, MaybeNumber::from(1).into()).exec(
             &mut register,
@@ -1304,8 +1302,8 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(register.get(RegA::A16, Reg32::Reg1), MaybeNumber::none());
-        assert_eq!(register.get(RegA::A16, Reg32::Reg2), MaybeNumber::none());
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg1), MaybeNumber::none());
+        assert_eq!(register.get_n(RegA::A16, Reg32::Reg2), MaybeNumber::none());
         assert!(!register.st0);
     }
 

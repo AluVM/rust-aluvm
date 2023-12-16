@@ -36,7 +36,7 @@ use sha2::{Digest, Sha256};
 
 use super::{Cursor, Read};
 use crate::data::ByteStr;
-use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet, ReservedOp};
+use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet};
 use crate::library::segs::IsaSeg;
 use crate::library::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
 use crate::reg::CoreRegs;
