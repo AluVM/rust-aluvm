@@ -550,6 +550,51 @@ impl Display for MaybeNumber {
     }
 }
 
+impl Octal for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => Octal::fmt(val, f),
+        }
+    }
+}
+
+impl LowerHex for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => LowerHex::fmt(val, f),
+        }
+    }
+}
+
+impl UpperHex for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => UpperHex::fmt(val, f),
+        }
+    }
+}
+
+impl LowerExp for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => LowerExp::fmt(val, f),
+        }
+    }
+}
+
+impl UpperExp for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => UpperExp::fmt(val, f),
+        }
+    }
+}
+
 impl FromStr for MaybeNumber {
     type Err = LiteralParseError;
 
