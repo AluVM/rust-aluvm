@@ -234,14 +234,6 @@ where
 }
 
 impl Bytecode for ControlFlowOp {
-    #[inline]
-    fn call_site(&self) -> Option<LibSite> {
-        match self {
-            ControlFlowOp::Call(site) | ControlFlowOp::Exec(site) => Some(*site),
-            _ => None,
-        }
-    }
-
     fn byte_count(&self) -> u16 {
         match self {
             ControlFlowOp::Fail | ControlFlowOp::Succ => 1,
@@ -266,6 +258,14 @@ impl Bytecode for ControlFlowOp {
             ControlFlowOp::Call(_) => INSTR_CALL,
             ControlFlowOp::Exec(_) => INSTR_EXEC,
             ControlFlowOp::Ret => INSTR_RET,
+        }
+    }
+
+    #[inline]
+    fn call_site(&self) -> Option<LibSite> {
+        match self {
+            ControlFlowOp::Call(site) | ControlFlowOp::Exec(site) => Some(*site),
+            _ => None,
         }
     }
 

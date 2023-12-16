@@ -63,6 +63,16 @@ pub enum Reg {
 }
 
 impl Reg {
+    /// Construct register information
+    pub fn new(reg: impl Into<RegAFR>, index: impl Into<Reg32>) -> Self {
+        let index = index.into();
+        match reg.into() {
+            RegAFR::A(reg) => Reg::A(reg, index),
+            RegAFR::F(reg) => Reg::F(reg, index),
+            RegAFR::R(reg) => Reg::R(reg, index),
+        }
+    }
+
     /// Returns family ([`RegBlock`]) of the register
     pub fn family(self) -> RegBlock {
         match self {
