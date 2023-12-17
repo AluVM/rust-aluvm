@@ -39,6 +39,8 @@ use amplify::num::apfloat::{ieee, Float, Status, StatusAnd};
 use amplify::num::{i1024, i256, i512, u1024, u256, u512};
 use half::bf16;
 
+use crate::data::ByteArray;
+
 /// Trait of different number layouts
 pub trait NumberLayout: Copy {
     /// Returns how many bits are used by the layout
@@ -878,6 +880,13 @@ impl Number {
     /// discarding bit information and `wrap` is set to false.
     pub fn reshaped(mut self, to: Layout, wrap: bool) -> Option<Number> {
         self.reshape(to).then(|| self).or(if wrap { Some(self) } else { None })
+    }
+
+    /// todo
+    pub fn into_byte_array(self, length: u16) -> (ByteArray, bool) {
+        let mut ret = ByteArray::from(self.bytes);
+        ret.reshape(length);
+        (ret, length * 8 >= self.min_bit_len())
     }
 
     #[doc(hidden)]

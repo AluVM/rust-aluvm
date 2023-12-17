@@ -25,11 +25,14 @@
 
 mod arithm;
 mod bitwise;
+mod byte_array;
 mod byte_str;
+mod cmp;
 #[cfg(feature = "std")]
 pub mod encoding;
 mod number;
 
+pub use byte_array::{ByteArray, MaybeByteArray};
 pub use byte_str::ByteStr;
 pub use number::{
     FloatLayout, IntLayout, Layout, LiteralParseError, MaybeNumber, Number, NumberLayout, Step,
