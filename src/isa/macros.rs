@@ -119,7 +119,19 @@ macro_rules! aluasm_inner {
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
     { $code:ident => $op:ident $arglit:literal, $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
-        $code.push($crate::instr!{ $op $arglit , $arg [ $idx ] });
+        $code.push($crate::instr!{ $op $arglit, $arg [ $idx ] });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident . $flag:ident $arglit:literal, $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op . $flag $arglit, $arg [ $idx ] });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $arglit1:literal, $arglit2:literal, $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arglit1, $arglit2, $arg [ $idx ] });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident . $flag:ident $arglit1:literal, $arglit2:literal $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op . $flag $arglit1, $arglit2, $arg [ $idx ] });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
     { $code:ident => $op:ident $arg:ident [ $idx:literal ] , $arglit:literal ; $($tt:tt)* } => {
