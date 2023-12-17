@@ -55,12 +55,21 @@
 /// ```
 #[macro_export]
 macro_rules! aluasm {
-    ($( $tt:tt )+) => { { #[allow(unused_imports)] {
+    ($( $tt:tt )+) => {{ #[allow(unused_imports)] {
+        use ::aluvm::isa::ReservedOp;
+        $crate::aluasm_isa! { ext => ReservedOp => $( $tt )+ }
+    } }};
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! aluasm_isa {
+    ($isacrate:path => $isa:ty => $( $tt:tt )+) => {{
         use ::std::boxed::Box;
 
         use ::aluvm::isa::{
             ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, DigestOp, ExtendFlag, FloatEqFlag, Instr, IntFlags,
-            MergeFlag, MoveOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag, NoneEqFlag, ReservedOp
+            MergeFlag, MoveOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag, NoneEqFlag
         };
         use ::aluvm::reg::{
             Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
@@ -69,12 +78,12 @@ macro_rules! aluasm {
         use ::aluvm::library::LibSite;
         use ::aluvm::data::{ByteStr, Number, MaybeNumber, Step};
 
-        let mut code: Vec<Instr<ReservedOp>> = vec![];
+        let mut code: Vec<Instr<$isa>> = vec![];
         #[allow(unreachable_code)] {
-            $crate::aluasm_inner! { code => $( $tt )+ };
+            $crate::aluasm_inner! { code => $( $tt )+ }
         }
         code
-    } } }
+    }}
 }
 
 #[doc(hidden)]
@@ -868,6 +877,9 @@ macro_rules! instr {
         } else {
             Instr::Secp256k1(Secp256k1Op::Neg($crate::_reg_idx!($idx1), $crate::_reg_idx8!($idx2)))
         }
+    };
+    { $code:ident => $($tt:tt)* } => {
+        $isa_instr!($code => $( $tt )*)
     };
 }
 
