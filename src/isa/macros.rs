@@ -57,14 +57,14 @@
 macro_rules! aluasm {
     ($( $tt:tt )+) => {{ #[allow(unused_imports)] {
         use ::aluvm::isa::ReservedOp;
-        $crate::aluasm_isa! { ext => ReservedOp => $( $tt )+ }
+        $crate::aluasm_isa! { ReservedOp => $( $tt )+ }
     } }};
 }
 
 #[doc(hidden)]
 #[macro_export]
 macro_rules! aluasm_isa {
-    ($isacrate:path => $isa:ty => $( $tt:tt )+) => {{
+    ($isa:ty => $( $tt:tt )+) => {{
         use ::std::boxed::Box;
 
         use ::aluvm::isa::{
@@ -890,8 +890,8 @@ macro_rules! instr {
             Instr::Secp256k1(Secp256k1Op::Neg($crate::_reg_idx!($idx1), $crate::_reg_idx8!($idx2)))
         }
     };
-    { $code:ident => $($tt:tt)* } => {
-        $isa_instr!($code => $( $tt )*)
+    { $($tt:tt)+ } => {
+        Instr::ExtensionCodes(isa_instr! { $( $tt )+ })
     };
 }
 
