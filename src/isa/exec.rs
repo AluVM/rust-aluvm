@@ -1627,66 +1627,8 @@ impl InstructionSet for Curve25519Op {
     }
 
     #[cfg(feature = "curve25519")]
-    fn exec(&self, regs: &mut CoreRegs, _site: LibSite, _: &()) -> ExecStep {
-        use amplify::num::u256;
-        use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
-        use curve25519_dalek::scalar::Scalar;
-
-        let get_scalar = |src: Number| {
-            let mut scal = [0u8; 32];
-            scal.copy_from_slice(&src.as_ref()[..32]);
-            Scalar::from_bits(scal)
-        };
-
-        let from_scalar = |scal: Scalar| {
-            let mut n = [0u8; 64];
-            n[..32].copy_from_slice(scal.as_bytes());
-            n[32..].copy_from_slice((ED25519_BASEPOINT_POINT * scal).compress().as_bytes());
-            Number::from_slice(n)
-        };
-
-        match self {
-            Curve25519Op::Gen(src, dst) => {
-                let res = regs.get_n(RegR::R256, src).map(get_scalar).map(from_scalar);
-                regs.set_n(RegR::R512, dst, res);
-            }
-            Curve25519Op::Mul(block, scal, src, dst) => {
-                let reg = block.into_reg(256).expect("register set does not match standard");
-                let lhs = regs.get_n(reg, scal).map(get_scalar);
-                let rhs = regs.get_n(reg, src).map(get_scalar);
-                let res = lhs.zip(rhs).map(|(lhs, rhs)| lhs * rhs).map(from_scalar);
-                regs.set_n(RegR::R512, dst, res);
-            }
-            Curve25519Op::Add(lhs, rhs, dst, overflow) => {
-                let lhs = regs
-                    .get_n(RegR::R512, lhs)
-                    .map(get_scalar)
-                    .map(|s| u256::from_le_bytes(s.to_bytes()));
-                let rhs = regs
-                    .get_n(RegR::R512, rhs)
-                    .map(get_scalar)
-                    .map(|s| u256::from_le_bytes(s.to_bytes()));
-                let res = lhs
-                    .zip(rhs)
-                    .and_then(|(lhs, rhs)| {
-                        let scal = Scalar::from_bits((lhs + rhs).to_le_bytes());
-                        match !*overflow && !scal.is_canonical() {
-                            true => {
-                                regs.st0 = false;
-                                None
-                            }
-                            false => Some(scal.reduce()),
-                        }
-                    })
-                    .map(from_scalar);
-                regs.set_n(RegR::R512, dst, res);
-            }
-            Curve25519Op::Neg(src, dst) => {
-                let res = regs.get_n(RegR::R512, src).map(get_scalar).map(|s| -s).map(from_scalar);
-                regs.set_n(RegR::R512, dst, res);
-            }
-        }
-        ExecStep::Next
+    fn exec(&self, _regs: &mut CoreRegs, _site: LibSite, _: &()) -> ExecStep {
+        todo!("implement Curve256 operations")
     }
 }
 
@@ -1967,6 +1909,7 @@ mod tests {
         assert_eq!(true, register.st0);
     }
 
+    /* TODO: Enable after curve25519 re-implementation
     #[test]
     #[cfg(feature = "curve25519")]
     fn curve25519_mul_test() {
@@ -1994,18 +1937,18 @@ mod tests {
             &(),
         );
         Curve25519Op::Gen(Reg32::Reg2, Reg8::Reg2).exec(&mut register, lib_site, &());
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg1, Reg32::Reg2).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R256, Reg32::Reg1, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg2).exec(
+        assert!(register.st0);
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R256, Reg32::Reg0, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
     }
 
     #[test]
@@ -2036,12 +1979,12 @@ mod tests {
             lib_site,
             &(),
         );
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg2, Reg32::Reg3).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R256, Reg32::Reg2, Reg32::Reg3).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     #[test]
@@ -2070,28 +2013,28 @@ mod tests {
             lib_site,
             &(),
         );
-        Curve25519Op::Gen(Reg32::Reg0, Reg8::Reg0).exec(&mut register, lib_site, &());
+        Curve25519Op::Gen(Reg32::Reg0, Reg8::Reg7).exec(&mut register, lib_site, &());
         Curve25519Op::Gen(Reg32::Reg1, Reg8::Reg1).exec(&mut register, lib_site, &());
         Curve25519Op::Gen(Reg32::Reg2, Reg8::Reg2).exec(&mut register, lib_site, &());
-        Curve25519Op::Add(Reg32::Reg0, Reg32::Reg1, Reg32::Reg3, false).exec(
+        Curve25519Op::Add(Reg32::Reg7, Reg32::Reg1, Reg32::Reg3, false).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
         Curve25519Op::Add(Reg32::Reg0, Reg32::Reg1, Reg32::Reg3, true).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg2, Reg32::Reg3).exec(
+        assert!(register.st0);
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R256, Reg32::Reg2, Reg32::Reg3).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     #[test]
@@ -2107,20 +2050,20 @@ mod tests {
         Curve25519Op::Gen(Reg32::Reg0, Reg8::Reg0).exec(&mut register, lib_site, &());
         Curve25519Op::Neg(Reg32::Reg0, Reg8::Reg1).exec(&mut register, lib_site, &());
         Curve25519Op::Neg(Reg32::Reg1, Reg8::Reg2).exec(&mut register, lib_site, &());
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg1).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R256, Reg32::Reg0, Reg32::Reg1).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
-        assert_eq!(true, register.st0);
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg2).exec(
+        assert!(register.st0);
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R256, Reg32::Reg0, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         PutOp::PutR(RegR::R256, Reg32::Reg4, MaybeNumber::from(5u8).into()).exec(
             &mut register,
             lib_site,
@@ -2139,11 +2082,12 @@ mod tests {
             lib_site,
             &(),
         );
-        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg4, Reg32::Reg6).exec(
+        CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R256, Reg32::Reg4, Reg32::Reg6).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
+     */
 }
