@@ -1822,7 +1822,7 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     #[test]
@@ -1857,7 +1857,7 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     #[test]
@@ -1878,15 +1878,15 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(false, register.st0);
+        assert!(!register.st0);
         ControlFlowOp::Succ.exec(&mut register, lib_site, &());
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg2).exec(
             &mut register,
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
         PutOp::PutR(RegR::R256, Reg32::Reg4, MaybeNumber::from(5u8).into()).exec(
             &mut register,
             lib_site,
@@ -1906,7 +1906,7 @@ mod tests {
             lib_site,
             &(),
         );
-        assert_eq!(true, register.st0);
+        assert!(register.st0);
     }
 
     /* TODO: Enable after curve25519 re-implementation

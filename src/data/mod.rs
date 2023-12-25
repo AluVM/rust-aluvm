@@ -36,6 +36,7 @@ pub use number::{
 };
 
 /// Value which can be extracted from any register.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 pub enum RegValue {
     /// Value extracted from numerical registers

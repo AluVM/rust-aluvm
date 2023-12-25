@@ -526,7 +526,7 @@ mod tests {
         assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000101);
         assert_eq!(cursor.read_u7().unwrap().to_u8(), 0b01011111);
         assert_eq!(cursor.read_u8().unwrap(), 0b11100111);
-        assert_eq!(cursor.read_bool().unwrap(), true);
+        assert!(cursor.read_bool().unwrap());
         assert_eq!(cursor.read_u3().unwrap().to_u8(), 0b00000110);
         assert_eq!(cursor.read_u16().unwrap(), two_bytes);
         assert_eq!(cursor.read_number(RegA::A8).unwrap(), number);

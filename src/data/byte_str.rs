@@ -219,7 +219,7 @@ impl Display for ByteStr {
             let mut ctl = false;
             for c in s.chars() {
                 let v = c as u32;
-                if c.is_control() || v <= 0x21 && v >= 0x7F {
+                if c.is_control() || v <= 0x21 || v >= 0x7F {
                     if !ctl {
                         f.write_str("\x1B[2;3m<\x1B[1m")?;
                         ctl = true;

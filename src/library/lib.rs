@@ -413,7 +413,7 @@ mod test {
 
     #[test]
     fn lib_id_display() {
-        let id = LibId::with("FLOAT", &b"", &b"", &none!());
+        let id = LibId::with("FLOAT", b"", b"", &none!());
         assert_eq!(
             format!("{id}"),
             "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#pinball-eternal-colombo"
@@ -426,7 +426,7 @@ mod test {
 
     #[test]
     fn lib_id_from_str() {
-        let id = LibId::with("FLOAT", &b"", &b"", &none!());
+        let id = LibId::with("FLOAT", b"", b"", &none!());
         assert_eq!(
             Ok(id),
             LibId::from_str(
