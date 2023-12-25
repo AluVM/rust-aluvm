@@ -915,14 +915,14 @@ pub enum Curve25519Op {
     /// Generates new elliptic curve point value saved into destination
     /// register in `r512` set using scalar value from the source `r256`
     /// register
-    #[display("edgen   r256{0},r512{1}")]
+    #[display("edgen   r256{0},r256{1}")]
     Gen(
         /** Register containing scalar */ Reg32,
         /** Destination register to put G * scalar */ Reg8,
     ),
 
     /// Multiplies elliptic curve point on a scalar
-    #[display("edmul   {0}256{1},r512{2},r512{3}")]
+    #[display("edmul   {0}256{1},r256{2},r256{3}")]
     Mul(
         /** Use `a` or `r` register as scalar source */ RegBlockAR,
         /** Scalar register index */ Reg32,
@@ -931,7 +931,7 @@ pub enum Curve25519Op {
     ),
 
     /// Adds two elliptic curve points
-    #[display("edadd   r512{0},r512{1},r512{2},{3}")]
+    #[display("edadd   r512{0},r256{1},r256{2},{3}")]
     Add(
         /** Source 1 */ Reg32,
         /** Source 2 */ Reg32,
@@ -940,6 +940,6 @@ pub enum Curve25519Op {
     ),
 
     /// Negates elliptic curve point
-    #[display("edneg   r512{0},r512{1}")]
+    #[display("edneg   r256{0},r256{1}")]
     Neg(/** Register hilding EC point to negate */ Reg32, /** Destination register */ Reg8),
 }

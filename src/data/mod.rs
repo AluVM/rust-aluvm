@@ -34,3 +34,34 @@ pub use byte_str::ByteStr;
 pub use number::{
     FloatLayout, IntLayout, Layout, LiteralParseError, MaybeNumber, Number, NumberLayout, Step,
 };
+
+/// Value which can be extracted from any register.
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+pub enum RegValue {
+    /// Value extracted from numerical registers
+    #[from]
+    #[from(Number)]
+    Number(MaybeNumber),
+
+    /// Value extracted from string register
+    #[from]
+    #[from(ByteStr)]
+    String(Option<ByteStr>),
+}
+
+mod display {
+    use core::fmt::{self, Display, Formatter};
+
+    use super::*;
+
+    impl Display for RegValue {
+        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+            match self {
+                RegValue::Number(n) => Display::fmt(n, f),
+                RegValue::String(Some(s)) => Display::fmt(s, f),
+                RegValue::String(None) => f.write_str("~"),
+            }
+        }
+    }
+}

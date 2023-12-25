@@ -31,8 +31,8 @@ use amplify::num::apfloat::{ieee, Float};
 use amplify::num::{u1024, u256, u512};
 use half::bf16;
 
-use super::{Reg32, RegA, RegAFR, RegF, RegR, RegS};
-use crate::data::{ByteStr, MaybeNumber, Number};
+use super::{Reg, Reg32, RegA, RegAFR, RegF, RegR, RegS};
+use crate::data::{ByteStr, MaybeNumber, Number, RegValue};
 use crate::isa::InstructionSet;
 use crate::library::LibSite;
 
@@ -206,8 +206,26 @@ impl CoreRegs {
         }
     }
 
-    /// Retrieves register value
-    pub fn get(&self, reg: impl Into<RegAFR>, index: impl Into<Reg32>) -> MaybeNumber {
+    /// Extracts value for any type of registers
+    pub fn get(&self, reg: impl Into<Reg>) -> RegValue {
+        match reg.into() {
+            Reg::A(reg, index) => self.get_n(reg, index).into(),
+            Reg::F(reg, index) => self.get_n(reg, index).into(),
+            Reg::R(reg, index) => self.get_n(reg, index).into(),
+            Reg::S(reg) => self.get_s(reg).cloned().into(),
+        }
+    }
+
+    /// Iterates over values from registers
+    pub fn get_list<'a>(
+        &'a self,
+        reg: impl IntoIterator<Item = impl Into<Reg>> + 'a,
+    ) -> impl Iterator<Item = RegValue> + 'a {
+        reg.into_iter().map(move |reg| self.get(reg))
+    }
+
+    /// Retrieves numeric register value
+    pub fn get_n(&self, reg: impl Into<RegAFR>, index: impl Into<Reg32>) -> MaybeNumber {
         let index = index.into() as usize;
         match reg.into() {
             RegAFR::A(a) => {
@@ -282,20 +300,20 @@ impl CoreRegs {
     /// Returns value from two registers only if both of them contain a value; otherwise returns
     /// `None`.
     #[inline]
-    pub fn get_both(
+    pub fn get_n2(
         &self,
         reg1: impl Into<RegAFR>,
         idx1: impl Into<Reg32>,
         reg2: impl Into<RegAFR>,
         idx2: impl Into<Reg32>,
     ) -> Option<(Number, Number)> {
-        self.get(reg1, idx1).and_then(|val1| self.get(reg2, idx2).map(|val2| (val1, val2)))
+        self.get_n(reg1, idx1).and_then(|val1| self.get_n(reg2, idx2).map(|val2| (val1, val2)))
     }
 
     /// Returns value from two string (`S`) registers only if both of them contain a value;
     /// otherwise returns `None`.
     #[inline]
-    pub fn get_both_s(
+    pub fn get_s2(
         &self,
         idx1: impl Into<RegS>,
         idx2: impl Into<RegS>,
@@ -307,7 +325,7 @@ impl CoreRegs {
     /// until the value fits register bit size.
     ///
     /// Returns `true` if the value was not `None`
-    pub fn set(
+    pub fn set_n(
         &mut self,
         reg: impl Into<RegAFR>,
         index: impl Into<Reg32>,
@@ -355,7 +373,7 @@ impl CoreRegs {
     ///
     /// Returns `false` if the register is initialized and the value is not `None`.
     #[inline]
-    pub fn set_if(
+    pub fn set_n_if(
         &mut self,
         reg: impl Into<RegAFR>,
         index: impl Into<Reg32>,
@@ -363,8 +381,8 @@ impl CoreRegs {
     ) -> bool {
         let reg = reg.into();
         let index = index.into();
-        if self.get(reg, index).is_none() {
-            self.set(reg, index, value)
+        if self.get_n(reg, index).is_none() {
+            self.set_n(reg, index, value)
         } else {
             value.into().is_none()
         }
@@ -407,11 +425,11 @@ impl CoreRegs {
         dst: impl Into<Reg32>,
         op: fn(Number, Number) -> Number,
     ) {
-        let reg_val = match (*self.get(reg1.into(), src1), *self.get(reg2.into(), src2)) {
+        let reg_val = match (*self.get_n(reg1.into(), src1), *self.get_n(reg2.into(), src2)) {
             (None, None) | (None, Some(_)) | (Some(_), None) => MaybeNumber::none(),
             (Some(val1), Some(val2)) => op(val1, val2).into(),
         };
-        self.set(reg3.into(), dst, reg_val);
+        self.set_n(reg3.into(), dst, reg_val);
     }
 
     /// Accumulates complexity of the instruction into `ca0`.
@@ -792,19 +810,19 @@ mod test {
 
         for reg in RegA::ALL {
             for idx in Reg32::ALL {
-                regs.set(reg, idx, u8::from(idx));
+                regs.set_n(reg, idx, u8::from(idx));
             }
         }
 
         for reg in RegF::ALL {
             for idx in Reg32::ALL {
-                regs.set(reg, idx, u8::from(idx));
+                regs.set_n(reg, idx, u8::from(idx));
             }
         }
 
         for reg in RegR::ALL {
             for idx in Reg32::ALL {
-                regs.set(reg, idx, u8::from(idx));
+                regs.set_n(reg, idx, u8::from(idx));
             }
         }
 

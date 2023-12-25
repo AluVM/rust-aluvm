@@ -28,6 +28,7 @@ use core::convert::TryFrom;
 use core::fmt::{self, Display, Formatter};
 use core::hash::{Hash as RustHash, Hasher};
 use core::str::FromStr;
+use std::io;
 
 use amplify::{ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
@@ -35,7 +36,7 @@ use sha2::{Digest, Sha256};
 
 use super::{Cursor, Read};
 use crate::data::ByteStr;
-use crate::isa::{BytecodeError, ExecStep, InstructionSet};
+use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet};
 use crate::library::segs::IsaSeg;
 use crate::library::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
 use crate::reg::CoreRegs;
@@ -136,7 +137,11 @@ impl Display for Lib {
         writeln!(f, "ISAE:   {}", &self.isae)?;
         write!(f, "CODE:\n{:#10}", self.code)?;
         write!(f, "DATA:\n{:#10}", self.data)?;
-        write!(f, "LIBS:   {:8}", self.libs)
+        if self.libs.count() > 0 {
+            write!(f, "LIBS:   {:8}", self.libs)
+        } else {
+            write!(f, "LIBS:   none")
+        }
     }
 }
 
@@ -243,6 +248,23 @@ impl Lib {
         Ok(code)
     }
 
+    /// Disassembles library into a set of instructions and offsets and prints it to the writer.
+    pub fn print_disassemble<Isa>(&self, mut writer: impl io::Write) -> Result<(), io::Error>
+    where
+        Isa: InstructionSet,
+    {
+        let mut reader = Cursor::with(&self.code, &self.data, &self.libs);
+        while !reader.is_eof() {
+            let pos = reader.offset().0 as usize;
+            write!(writer, "offset_0x{pos:04X}: ")?;
+            match Instr::<Isa>::decode(&mut reader) {
+                Ok(instr) => writeln!(writer, "{instr}")?,
+                Err(_) => writeln!(writer, "\n{}", ByteStr::with(&self.code.as_ref()[pos..]))?,
+            }
+        }
+        Ok(())
+    }
+
     /// Returns hash identifier [`LibId`], representing the library in a unique way.
     ///
     /// Lib ID is computed as SHA256 tagged hash of the serialized library segments (ISAE, code,
@@ -282,28 +304,64 @@ impl Lib {
     where
         Isa: InstructionSet,
     {
-        let mut cursor = Cursor::with(&self.code.bytes[..], &self.data, &self.libs);
+        #[cfg(all(debug_assertions, feature = "std"))]
+        let (m, w, d, g, r, y, z) = (
+            "\x1B[0;35m",
+            "\x1B[1;1m",
+            "\x1B[0;37;2m",
+            "\x1B[0;32m",
+            "\x1B[0;31m",
+            "\x1B[0;33m",
+            "\x1B[0m",
+        );
+
+        let mut cursor = Cursor::with(&self.code, &self.data, &self.libs);
         let lib_hash = self.id();
         cursor.seek(entrypoint).ok()?;
 
+        let mut st0 = registers.st0;
         while !cursor.is_eof() {
             let pos = cursor.pos();
 
             let instr = Isa::decode(&mut cursor).ok()?;
+
+            #[cfg(all(debug_assertions, feature = "std"))]
+            {
+                eprint!("{m}@{pos:06}:{z} {: <32}; ", instr.to_string());
+                for reg in instr.src_regs() {
+                    let val = registers.get(reg);
+                    eprint!("{d}{reg}={z}{w}{val}{z} ");
+                }
+            }
+
             let next = instr.exec(registers, LibSite::with(pos, lib_hash), context);
 
             #[cfg(all(debug_assertions, feature = "std"))]
-            eprint!("@{:06}> {}; st0={}", pos, instr, registers.st0);
+            {
+                eprint!("-> ");
+                for reg in instr.dst_regs() {
+                    let val = registers.get(reg);
+                    eprint!("{g}{reg}={y}{val}{z} ");
+                }
+                if st0 != registers.st0 {
+                    let c = if registers.st0 { g } else { r };
+                    eprint!(" {d}st0={z}{c}{}{z} ", registers.st0);
+                }
+            }
+            st0 = registers.st0;
 
             if !registers.acc_complexity(instr) {
                 #[cfg(all(debug_assertions, feature = "std"))]
-                eprintln!(" -> complexity overflow");
+                eprintln!("complexity overflow");
                 return None;
             }
             match next {
                 ExecStep::Stop => {
                     #[cfg(all(debug_assertions, feature = "std"))]
-                    eprintln!(" -> execution stopped");
+                    {
+                        let c = if registers.st0 { g } else { r };
+                        eprintln!("execution stopped; {d}st0={z}{c}{}{z}", registers.st0);
+                    }
                     return None;
                 }
                 ExecStep::Next => {
@@ -313,12 +371,12 @@ impl Lib {
                 }
                 ExecStep::Jump(pos) => {
                     #[cfg(all(debug_assertions, feature = "std"))]
-                    eprintln!(" -> {}", pos);
+                    eprintln!("{}", pos);
                     cursor.seek(pos).ok()?;
                 }
                 ExecStep::Call(site) => {
                     #[cfg(all(debug_assertions, feature = "std"))]
-                    eprintln!(" -> {}", site);
+                    eprintln!("{}", site);
                     return Some(site);
                 }
             }
@@ -355,7 +413,7 @@ mod test {
 
     #[test]
     fn lib_id_display() {
-        let id = LibId::with("FLOAT", &b"", &b"", &none!());
+        let id = LibId::with("FLOAT", b"", b"", &none!());
         assert_eq!(
             format!("{id}"),
             "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#pinball-eternal-colombo"
@@ -368,7 +426,7 @@ mod test {
 
     #[test]
     fn lib_id_from_str() {
-        let id = LibId::with("FLOAT", &b"", &b"", &none!());
+        let id = LibId::with("FLOAT", b"", b"", &none!());
         assert_eq!(
             Ok(id),
             LibId::from_str(

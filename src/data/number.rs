@@ -75,37 +75,71 @@ pub enum Layout {
 }
 
 impl Layout {
+    /// Unsigned 8-bit layout
+    pub const U8: Self = Self::unsigned(1);
+    /// Unsigned 16-bit layout
+    pub const U16: Self = Self::unsigned(2);
+    /// Unsigned 24-bit layout
+    pub const U24: Self = Self::unsigned(3);
+    /// Unsigned 32-bit layout
+    pub const U32: Self = Self::unsigned(4);
+    /// Unsigned 48-bit layout
+    pub const U48: Self = Self::unsigned(6);
+    /// Unsigned 64-bit layout
+    pub const U64: Self = Self::unsigned(8);
+    /// Unsigned 128-bit layout
+    pub const U128: Self = Self::unsigned(16);
+    /// Unsigned 256-bit layout
+    pub const U256: Self = Self::unsigned(32);
+
+    /// Signed 8-bit layout
+    pub const I8: Self = Self::signed(1);
+    /// Signed 16-bit layout
+    pub const I16: Self = Self::signed(2);
+    /// Signed 24-bit layout
+    pub const I24: Self = Self::signed(3);
+    /// Signed 32-bit layout
+    pub const I32: Self = Self::signed(4);
+    /// Signed 48-bit layout
+    pub const I48: Self = Self::signed(6);
+    /// Signed 64-bit layout
+    pub const I64: Self = Self::signed(8);
+    /// Signed 128-bit layout
+    pub const I128: Self = Self::signed(16);
+    /// Signed 256-bit layout
+    pub const I256: Self = Self::signed(32);
+
     /// Returns signed integer layout
     #[inline]
-    pub fn signed(bytes: u16) -> Layout { Layout::Integer(IntLayout::signed(bytes)) }
+    pub const fn signed(bytes: u16) -> Layout { Layout::Integer(IntLayout::signed(bytes)) }
 
     /// Returns unsigned integer layout
     #[inline]
-    pub fn unsigned(bytes: u16) -> Layout { Layout::Integer(IntLayout::unsigned(bytes)) }
+    pub const fn unsigned(bytes: u16) -> Layout { Layout::Integer(IntLayout::unsigned(bytes)) }
 
     /// Constructs float layout
     #[inline]
-    pub fn float(layout: FloatLayout) -> Layout { Layout::Float(layout) }
+    pub const fn float(layout: FloatLayout) -> Layout { Layout::Float(layout) }
 
     /// Detects if the number layout is unsigned integer
     #[inline]
-    pub fn is_unsigned_int(self) -> bool {
+    pub const fn is_unsigned_int(self) -> bool {
         matches!(self, Layout::Integer(IntLayout { signed: false, .. }))
     }
 
     /// Detects if the number layout is signed integer
     #[inline]
-    pub fn is_signed_int(self) -> bool {
+    pub const fn is_signed_int(self) -> bool {
         matches!(self, Layout::Integer(IntLayout { signed: true, .. }))
     }
 
     /// Detects if the number layout is one of integer (signed or unsigned) layouts
     #[inline]
-    pub fn is_integer(self) -> bool { matches!(self, Layout::Integer(_)) }
+    pub const fn is_integer(self) -> bool { matches!(self, Layout::Integer(_)) }
 
     /// Detects if the number layout is one of float layouts
     #[inline]
-    pub fn is_float(self) -> bool { matches!(self, Layout::Float(_)) }
+    pub const fn is_float(self) -> bool { matches!(self, Layout::Float(_)) }
 
     /// Converts unsigned integer layout into signed; does nothing for float layouts
     #[inline]
@@ -188,31 +222,65 @@ impl Display for IntLayout {
 }
 
 impl IntLayout {
+    /// Unsigned 8-bit layout
+    pub const U8: Self = Self::unsigned(1);
+    /// Unsigned 16-bit layout
+    pub const U16: Self = Self::unsigned(2);
+    /// Unsigned 24-bit layout
+    pub const U24: Self = Self::unsigned(3);
+    /// Unsigned 32-bit layout
+    pub const U32: Self = Self::unsigned(4);
+    /// Unsigned 48-bit layout
+    pub const U48: Self = Self::unsigned(6);
+    /// Unsigned 64-bit layout
+    pub const U64: Self = Self::unsigned(8);
+    /// Unsigned 128-bit layout
+    pub const U128: Self = Self::unsigned(16);
+    /// Unsigned 256-bit layout
+    pub const U256: Self = Self::unsigned(32);
+
+    /// Signed 8-bit layout
+    pub const I8: Self = Self::signed(1);
+    /// Signed 16-bit layout
+    pub const I16: Self = Self::signed(2);
+    /// Signed 24-bit layout
+    pub const I24: Self = Self::signed(3);
+    /// Signed 32-bit layout
+    pub const I32: Self = Self::signed(4);
+    /// Signed 48-bit layout
+    pub const I48: Self = Self::signed(6);
+    /// Signed 64-bit layout
+    pub const I64: Self = Self::signed(8);
+    /// Signed 128-bit layout
+    pub const I128: Self = Self::signed(16);
+    /// Signed 256-bit layout
+    pub const I256: Self = Self::signed(32);
+
     /// Returns signed integer layout
     #[inline]
-    pub fn signed(bytes: u16) -> IntLayout { Self { signed: true, bytes } }
+    pub const fn signed(bytes: u16) -> IntLayout { Self { signed: true, bytes } }
 
     /// Returns unsigned integer layout
     #[inline]
-    pub fn unsigned(bytes: u16) -> IntLayout { Self { signed: false, bytes } }
+    pub const fn unsigned(bytes: u16) -> IntLayout { Self { signed: false, bytes } }
 
     /// Converts unsigned integer layout into signed
     #[inline]
-    pub fn into_signed(mut self) -> IntLayout {
+    pub const fn into_signed(mut self) -> IntLayout {
         self.signed = true;
         self
     }
 
     /// Converts signed integer layout into unsigned
     #[inline]
-    pub fn into_unsigned(mut self) -> IntLayout {
+    pub const fn into_unsigned(mut self) -> IntLayout {
         self.signed = false;
         self
     }
 
     /// Updates layout (if used) to match signed/unsigned format of some other layout.
     #[inline]
-    pub fn using_sign(mut self, other: IntLayout) -> IntLayout {
+    pub const fn using_sign(mut self, other: IntLayout) -> IntLayout {
         self.signed = other.signed;
         self
     }
@@ -380,13 +448,61 @@ impl From<&FloatLayout> for Layout {
 pub struct MaybeNumber(Option<Number>);
 
 impl MaybeNumber {
+    /// Zero value in unsigned 8-bit layout
+    pub const ZERO_U8: Self = Self::zero(Layout::U8);
+    /// Zero value in unsigned 16-bit layout
+    pub const ZERO_U16: Self = Self::zero(Layout::U16);
+    /// Zero value in unsigned 24-bit layout
+    pub const ZERO_U24: Self = Self::zero(Layout::U24);
+    /// Zero value in unsigned 32-bit layout
+    pub const ZERO_U32: Self = Self::zero(Layout::U32);
+    /// Zero value in unsigned 48-bit layout
+    pub const ZERO_U48: Self = Self::zero(Layout::U48);
+    /// Zero value in unsigned 64-bit layout
+    pub const ZERO_U64: Self = Self::zero(Layout::U64);
+    /// Zero value in unsigned 128-bit layout
+    pub const ZERO_U128: Self = Self::zero(Layout::U128);
+    /// Zero value in unsigned 256-bit layout
+    pub const ZERO_U256: Self = Self::zero(Layout::U256);
+
+    /// Value of 1 in unsigned 8-bit layout
+    pub const ONE_U8: Self = Self::one(Layout::U8);
+    /// Value of 1 in unsigned 16-bit layout
+    pub const ONE_U16: Self = Self::one(Layout::U16);
+    /// Value of 1 in unsigned 24-bit layout
+    pub const ONE_U24: Self = Self::one(Layout::U24);
+    /// Value of 1 in unsigned 32-bit layout
+    pub const ONE_U32: Self = Self::one(Layout::U32);
+    /// Value of 1 in unsigned 48-bit layout
+    pub const ONE_U48: Self = Self::one(Layout::U48);
+    /// Value of 1 in unsigned 64-bit layout
+    pub const ONE_U64: Self = Self::one(Layout::U64);
+    /// Value of 1 in unsigned 128-bit layout
+    pub const ONE_U128: Self = Self::one(Layout::U128);
+    /// Value of 1 in unsigned 256-bit layout
+    pub const ONE_U256: Self = Self::one(Layout::U256);
+
     /// Creates [`MaybeNumber`] without assigning a value to it
     #[inline]
-    pub fn none() -> MaybeNumber { MaybeNumber(None) }
+    pub const fn none() -> MaybeNumber { MaybeNumber(None) }
 
     /// Creates [`MaybeNumber`] assigning a value to it
     #[inline]
-    pub fn some(val: Number) -> MaybeNumber { MaybeNumber(Some(val)) }
+    pub const fn some(val: Number) -> MaybeNumber { MaybeNumber(Some(val)) }
+
+    /// Creates zero value with a given layout
+    #[inline]
+    pub const fn zero(layout: Layout) -> MaybeNumber {
+        Self::some(Number { layout, bytes: [0u8; 1024] })
+    }
+
+    /// Creates one value with a given layout
+    #[inline]
+    pub const fn one(layout: Layout) -> MaybeNumber {
+        let mut n = Number { layout, bytes: [0u8; 1024] };
+        n.bytes[0] = 1;
+        Self::some(n)
+    }
 
     /// Transforms internal value layout returning whether this was possible without discarding any
     /// bit information
@@ -430,6 +546,51 @@ impl Display for MaybeNumber {
         match self.0 {
             None => f.write_str("~"),
             Some(ref val) => Display::fmt(val, f),
+        }
+    }
+}
+
+impl Octal for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => Octal::fmt(val, f),
+        }
+    }
+}
+
+impl LowerHex for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => LowerHex::fmt(val, f),
+        }
+    }
+}
+
+impl UpperHex for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => UpperHex::fmt(val, f),
+        }
+    }
+}
+
+impl LowerExp for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => LowerExp::fmt(val, f),
+        }
+    }
+}
+
+impl UpperExp for MaybeNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            None => f.write_str("~"),
+            Some(ref val) => UpperExp::fmt(val, f),
         }
     }
 }
@@ -589,9 +750,51 @@ impl IndexMut<RangeToInclusive<u16>> for Number {
 }
 
 impl Number {
+    /// Zero value in unsigned 8-bit layout
+    pub const ZERO_U8: Self = Self::zero(Layout::U8);
+    /// Zero value in unsigned 16-bit layout
+    pub const ZERO_U16: Self = Self::zero(Layout::U16);
+    /// Zero value in unsigned 24-bit layout
+    pub const ZERO_U24: Self = Self::zero(Layout::U24);
+    /// Zero value in unsigned 32-bit layout
+    pub const ZERO_U32: Self = Self::zero(Layout::U32);
+    /// Zero value in unsigned 48-bit layout
+    pub const ZERO_U48: Self = Self::zero(Layout::U48);
+    /// Zero value in unsigned 64-bit layout
+    pub const ZERO_U64: Self = Self::zero(Layout::U64);
+    /// Zero value in unsigned 128-bit layout
+    pub const ZERO_U128: Self = Self::zero(Layout::U128);
+    /// Zero value in unsigned 256-bit layout
+    pub const ZERO_U256: Self = Self::zero(Layout::U256);
+
+    /// Value of 1 in unsigned 8-bit layout
+    pub const ONE_U8: Self = Self::one(Layout::U8);
+    /// Value of 1 in unsigned 16-bit layout
+    pub const ONE_U16: Self = Self::one(Layout::U16);
+    /// Value of 1 in unsigned 24-bit layout
+    pub const ONE_U24: Self = Self::one(Layout::U24);
+    /// Value of 1 in unsigned 32-bit layout
+    pub const ONE_U32: Self = Self::one(Layout::U32);
+    /// Value of 1 in unsigned 48-bit layout
+    pub const ONE_U48: Self = Self::one(Layout::U48);
+    /// Value of 1 in unsigned 64-bit layout
+    pub const ONE_U64: Self = Self::one(Layout::U64);
+    /// Value of 1 in unsigned 128-bit layout
+    pub const ONE_U128: Self = Self::one(Layout::U128);
+    /// Value of 1 in unsigned 256-bit layout
+    pub const ONE_U256: Self = Self::one(Layout::U256);
+
     /// Creates zero value with a given layout
     #[inline]
-    pub fn zero(layout: Layout) -> Number { Number { layout, bytes: [0u8; 1024] } }
+    pub const fn zero(layout: Layout) -> Number { Number { layout, bytes: [0u8; 1024] } }
+
+    /// Creates one value with a given layout
+    #[inline]
+    pub const fn one(layout: Layout) -> Number {
+        let mut n = Number { layout, bytes: [0u8; 1024] };
+        n.bytes[0] = 1;
+        n
+    }
 
     /// Creates value with the specified bit masked
     #[inline]

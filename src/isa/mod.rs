@@ -23,6 +23,8 @@
 
 //! AluVM instruction set architecture
 
+#[macro_use]
+mod macros;
 mod bytecode;
 mod exec;
 mod flags;
