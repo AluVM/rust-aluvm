@@ -315,7 +315,7 @@ impl Lib {
             "\x1B[0m",
         );
 
-        let mut cursor = Cursor::with(&self.code.bytes[..], &self.data, &self.libs);
+        let mut cursor = Cursor::with(&self.code, &self.data, &self.libs);
         let lib_hash = self.id();
         cursor.seek(entrypoint).ok()?;
 
