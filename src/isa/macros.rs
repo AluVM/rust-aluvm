@@ -118,12 +118,12 @@ macro_rules! aluasm_inner {
         $code.push($crate::instr!{ $op . $flag $( $arg [ $idx ]  ),+ });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
-    { $code:ident => $op:ident $arglit:literal, $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
-        $code.push($crate::instr!{ $op $arglit, $arg [ $idx ] });
+    { $code:ident => $op:ident $arglit:literal, $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arglit, $( $arg [ $idx ] ),+ });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
-    { $code:ident => $op:ident . $flag:ident $arglit:literal, $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
-        $code.push($crate::instr!{ $op . $flag $arglit, $arg [ $idx ] });
+    { $code:ident => $op:ident . $flag:ident $arglit:literal, $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op . $flag $arglit, $( $arg [ $idx ] ),+ });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
     { $code:ident => $op:ident $arglit1:literal, $arglit2:literal, $arg:ident [ $idx:literal ] ; $($tt:tt)* } => {
@@ -323,13 +323,13 @@ macro_rules! instr {
             (RegBlockAFR::A, RegBlockAFR::A) => Instr::Move(MoveOp::CnvA(
                 $crate::_reg_tya!(Reg, $src_reg),
                 $crate::_reg_idx!($src_idx),
-                $crate::_reg_tya!(Reg, $src_reg),
+                $crate::_reg_tya!(Reg, $dst_reg),
                 $crate::_reg_idx!($dst_idx),
             )),
             (RegBlockAFR::F, RegBlockAFR::F) => Instr::Move(MoveOp::CnvF(
                 $crate::_reg_tyf!(Reg, $src_reg),
                 $crate::_reg_idx!($src_idx),
-                $crate::_reg_tyf!(Reg, $src_reg),
+                $crate::_reg_tyf!(Reg, $dst_reg),
                 $crate::_reg_idx!($dst_idx),
             )),
             (_, _) => panic!("Conversion operation between unsupported register types"),
