@@ -515,7 +515,13 @@ impl Bytecode for MoveOp {
                 writer.write_u5(idx2)?;
                 writer.write_u3(reg)?;
             }
-            MoveOp::CpyA(sreg, sidx, dreg, didx) | MoveOp::CnvA(sreg, sidx, dreg, didx) => {
+            MoveOp::CpyA(sreg, sidx, dreg, didx) => {
+                writer.write_u3(sreg)?;
+                writer.write_u5(sidx)?;
+                writer.write_u3(dreg)?;
+                writer.write_u5(didx)?;
+            }
+            MoveOp::CnvA(sreg, sidx, dreg, didx) => {
                 writer.write_u3(sreg)?;
                 writer.write_u5(sidx)?;
                 writer.write_u3(dreg)?;
