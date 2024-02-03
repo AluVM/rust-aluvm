@@ -21,14 +21,14 @@ name = "aluvm-stl"
 required-features = ["stl"]
 
 [dependencies]
-amplify = { version = "4.5.0", default-features = false, features = ["apfloat", "derive", "hex"] }
+amplify = { version = "4.5.1", default-features = false, features = ["apfloat", "derive", "hex"] }
 paste = "1"
-strict_encoding = { version = "2.6.1", default-features = false, features = ["float", "derive"] }
+strict_encoding = { version = "2.6.2", default-features = false, features = ["float", "derive"] }
 strict_types = { version = "1.6.3", optional = true }
 sha2 = "0.10.8"
 ripemd = "0.1.3"
 baid58 = "0.4.4"
-secp256k1 = { version = "0.28.0", optional = true, features = ["global-context"] }
+secp256k1 = { version = "0.28.2", optional = true, features = ["global-context"] }
 curve25519-dalek = { version = "3.2", optional = true }
 half = "~2.2.0" # Required to maintain MSRV
 serde_crate = { package = "serde", version = "1", optional = true }
@@ -36,7 +36,7 @@ serde_crate = { package = "serde", version = "1", optional = true }
 [features]
 default = ["std"]
 all = ["stl", "std", "secp256k1", "curve25519", "serde"]
-stl = ["strict_types/base64", "std"]
+stl = ["strict_types/base85", "std"]
 std = ["amplify/std"]
 alloc = ["amplify/alloc"]
 curve25519 = ["curve25519-dalek"]
@@ -52,3 +52,7 @@ wasm-bindgen-test = "0.3"
 
 [package.metadata.docs.rs]
 features = [ "all" ]
+
+[patch.crates-io]
+strict_encoding = { git = "https://github.com/strict-types/strict-encoding", branch = "ident" }
+strict_types = { git = "https://github.com/strict-types/strict-types", branch = "vesper" }
