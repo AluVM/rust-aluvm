@@ -419,7 +419,7 @@ impl From<&Reg16> for Reg32 {
 }
 
 impl TryFrom<Reg32> for Reg16 {
-    type Error = OverflowError;
+    type Error = OverflowError<u8>;
 
     fn try_from(value: Reg32) -> Result<Self, Self::Error> {
         u4::try_from(value as u8).map(Reg16::from)
@@ -522,7 +522,7 @@ impl From<&Reg8> for Reg32 {
 }
 
 impl TryFrom<Reg32> for Reg8 {
-    type Error = OverflowError;
+    type Error = OverflowError<u8>;
 
     fn try_from(value: Reg32) -> Result<Self, Self::Error> {
         u3::try_from(value as u8).map(Reg8::from)
@@ -618,7 +618,7 @@ impl From<RegS> for Reg32 {
 }
 
 impl TryFrom<Reg32> for RegS {
-    type Error = OverflowError;
+    type Error = OverflowError<u8>;
 
     fn try_from(value: Reg32) -> Result<Self, Self::Error> {
         u5::try_from(value as u8).map(RegS::from)
