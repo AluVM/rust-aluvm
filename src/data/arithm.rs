@@ -22,7 +22,6 @@
 // limitations under the License.
 
 use core::cmp::Ordering;
-use core::convert::TryFrom;
 use core::ops::{Neg, Rem};
 
 use amplify::num::apfloat::{ieee, Float};
@@ -436,8 +435,8 @@ impl Rem for Number {
                 val1.rem(val2).into()
             }
             Layout::Integer(IntLayout { signed: false, .. }) if layout.bits() <= 128 => {
-                let val1 = i128::try_from(self).expect("integer layout is broken");
-                let val2 = i128::try_from(rhs).expect("integer layout is broken");
+                let val1 = i128::from(self);
+                let val2 = i128::from(rhs);
                 val1.rem(val2).into()
             }
             Layout::Integer(IntLayout { .. }) => {
