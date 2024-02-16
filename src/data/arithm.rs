@@ -3,11 +3,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2023 by
+// Written in 2021-2024 by
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
 // Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023 UBIDECO Institute. All rights reserved.
+// Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@
 // limitations under the License.
 
 use core::cmp::Ordering;
-use core::convert::TryFrom;
 use core::ops::{Neg, Rem};
 
 use amplify::num::apfloat::{ieee, Float};
@@ -436,8 +435,8 @@ impl Rem for Number {
                 val1.rem(val2).into()
             }
             Layout::Integer(IntLayout { signed: false, .. }) if layout.bits() <= 128 => {
-                let val1 = i128::try_from(self).expect("integer layout is broken");
-                let val2 = i128::try_from(rhs).expect("integer layout is broken");
+                let val1 = i128::from(self);
+                let val2 = i128::from(rhs);
                 val1.rem(val2).into()
             }
             Layout::Integer(IntLayout { .. }) => {

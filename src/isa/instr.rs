@@ -3,11 +3,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2023 by
+// Written in 2021-2024 by
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
 // Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023 UBIDECO Institute. All rights reserved.
+// Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -420,31 +420,36 @@ pub enum CmpOp {
 /// `wrap` flag is provided).
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum ArithmeticOp {
-    /// Adds values from two integer arithmetic registers and puts result into destination.
+    /// Adds values from two integer arithmetic registers and puts result into the first register.
     #[display("add.{0}  {1}{2},{1}{3}")]
     AddA(IntFlags, RegA, Reg32, Reg32),
 
-    /// Adds values from two float arithmetic registers and puts result into destination.
+    /// Adds values from two float arithmetic registers and puts result into the first register.
     #[display("add.{0}   {1}{2},{1}{3}")]
     AddF(RoundingFlag, RegF, Reg32, Reg32),
 
-    /// Subtracts values from two integer arithmetic registers and puts result into destination.
+    /// Subtracts values from two integer arithmetic registers and puts result into the first
+    /// register.
     #[display("sub.{0}  {1}{2},{1}{3}")]
     SubA(IntFlags, RegA, Reg32, Reg32),
 
-    /// Subtracts values from two float arithmetic registers and puts result into destination.
+    /// Subtracts values from two float arithmetic registers and puts result into the first
+    /// register.
     #[display("sub.{0}   {1}{2},{1}{3}")]
     SubF(RoundingFlag, RegF, Reg32, Reg32),
 
-    /// Multiplies values from two integer arithmetic registers and puts result into destination.
+    /// Multiplies values from two integer arithmetic registers and puts result into the first
+    /// register.
     #[display("mul.{0}  {1}{2},{1}{3}")]
     MulA(IntFlags, RegA, Reg32, Reg32),
 
-    /// Multiplies values from two float arithmetic registers and puts result into destination.
+    /// Multiplies values from two float arithmetic registers and puts result into the first
+    /// register.
     #[display("mul.{0}   {1}{2},{1}{3}")]
     MulF(RoundingFlag, RegF, Reg32, Reg32),
 
-    /// Divides values from two integer arithmetic registers and puts result into destination.
+    /// Divides values from two integer arithmetic registers and puts result into the first
+    /// register.
     ///
     /// Since the division operation may not result in overflow, the overflow flag is used to
     /// indicate rounding of the result:
@@ -456,14 +461,14 @@ pub enum ArithmeticOp {
     #[display("div.{0}  {1}{2},{1}{3}")]
     DivA(IntFlags, RegA, Reg32, Reg32),
 
-    /// Divides values from two float arithmetic registers and puts result into destination.
+    /// Divides values from two float arithmetic registers and puts result into the first register.
     #[display("div.{0}   {1}{2},{1}{3}")]
     DivF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Modulo division.
     ///
     /// Puts a reminder of the division of source register on destination register into the
-    /// destination.
+    /// the first register.
     #[display("rem     {0}{1},{2}{3}")]
     Rem(RegA, Reg32, RegA, Reg32),
 

@@ -3,11 +3,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2023 by
+// Written in 2021-2024 by
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
 // Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023 UBIDECO Institute. All rights reserved.
+// Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -419,7 +419,7 @@ impl From<&Reg16> for Reg32 {
 }
 
 impl TryFrom<Reg32> for Reg16 {
-    type Error = OverflowError;
+    type Error = OverflowError<u8>;
 
     fn try_from(value: Reg32) -> Result<Self, Self::Error> {
         u4::try_from(value as u8).map(Reg16::from)
@@ -522,7 +522,7 @@ impl From<&Reg8> for Reg32 {
 }
 
 impl TryFrom<Reg32> for Reg8 {
-    type Error = OverflowError;
+    type Error = OverflowError<u8>;
 
     fn try_from(value: Reg32) -> Result<Self, Self::Error> {
         u3::try_from(value as u8).map(Reg8::from)
@@ -618,7 +618,7 @@ impl From<RegS> for Reg32 {
 }
 
 impl TryFrom<Reg32> for RegS {
-    type Error = OverflowError;
+    type Error = OverflowError<u8>;
 
     fn try_from(value: Reg32) -> Result<Self, Self::Error> {
         u5::try_from(value as u8).map(RegS::from)

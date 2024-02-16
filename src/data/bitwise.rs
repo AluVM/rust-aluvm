@@ -3,11 +3,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2023 by
+// Written in 2021-2024 by
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
 // Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023 UBIDECO Institute. All rights reserved.
+// Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::convert::TryFrom;
 use core::ops::{BitAnd, BitOr, BitXor, Not, Shl, Shr};
 
 use amplify::num::{i1024, u1024};
@@ -81,7 +80,7 @@ impl Shl for Number {
     fn shl(self, rhs: Self) -> Self::Output {
         let layout = self.layout();
         assert!(layout.is_integer(), "bit shifting float number");
-        let rhs = u16::try_from(rhs).expect("attempt to bitshift lhs for more than 2^16 bits");
+        let rhs = u16::from(rhs);
         let mut n = match layout.is_signed_int() {
             true => {
                 Number::from(self.to_i1024_bytes().checked_shl(rhs as u32).unwrap_or(i1024::ZERO))
@@ -102,7 +101,7 @@ impl Shr for Number {
     fn shr(self, rhs: Self) -> Self::Output {
         let layout = self.layout();
         assert!(layout.is_integer(), "bit shifting float number");
-        let rhs = u16::try_from(rhs).expect("attempt to bitshift right for more than 2^16 bits");
+        let rhs = u16::from(rhs);
         let mut n = match layout.is_signed_int() {
             true => {
                 Number::from(self.to_i1024_bytes().checked_shr(rhs as u32).unwrap_or(i1024::ZERO))
@@ -123,9 +122,7 @@ impl Number {
         let bits = self.len() * 8;
         let lhs = self.into_unsigned();
         assert!(layout.is_integer(), "bit shifting float number");
-        let excess = u16::try_from(shift).map(|v| v % bits).expect(
-            "shift value in `scl` operation must always be from either `a8` or `a16` registry",
-        );
+        let excess = u16::from(shift) % bits;
         let residue = lhs >> Number::from(bits - excess);
         ((lhs << Number::from(excess)) | residue).reshaped(layout, true).expect("restoring layout")
     }
@@ -136,9 +133,7 @@ impl Number {
         let bits = self.len() * 8;
         let lhs = self.into_unsigned();
         assert!(layout.is_integer(), "bit shifting float number");
-        let excess = u16::try_from(shift).map(|v| v % bits).expect(
-            "shift value in `scl` operation must always be from either `a8` or `a16` registry",
-        );
+        let excess = u16::from(shift) % bits;
         let residue = lhs << Number::from(bits - excess);
         ((lhs >> Number::from(excess)) | residue).reshaped(layout, true).expect("restoring layout")
     }
