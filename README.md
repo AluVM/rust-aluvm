@@ -135,4 +135,4 @@ Check [the specification][AluVM] for the details.
 
 [AluVM]: https://github.com/AluVM/aluvm-spec
 [YouTube]: https://www.youtube.com/watch?v=brfWta7XXFQ
-[slides]: https://github.com/LNP-BP/presentations/blob/master/Presentation%20slides/Single-use-seals.pdf
+[slides]: https://github.com/LNP-BP/presentations/blob/master/Presentation%20slides/AluVM.pdf
