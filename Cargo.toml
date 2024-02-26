@@ -35,9 +35,10 @@ serde_crate = { package = "serde", version = "1", optional = true }
 
 [features]
 default = ["std"]
-all = ["stl", "std", "secp256k1", "curve25519", "serde"]
+all = ["stl", "std", "log", "secp256k1", "curve25519", "serde"]
 stl = ["strict_types/base85", "std"]
 std = ["amplify/std"]
+log = ["std"]
 alloc = ["amplify/alloc"]
 curve25519 = ["curve25519-dalek"]
 serde = ["serde_crate", "amplify/serde", "std"]
