@@ -21,8 +21,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::boxed::Box;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::string::ToString;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::vec::Vec;
 use core::fmt::{self, Debug, Formatter};
 

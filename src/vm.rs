@@ -23,6 +23,7 @@
 
 //! Alu virtual machine
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 
@@ -51,9 +52,7 @@ where
     /// Constructs new virtual machine instance.
     pub fn new() -> Self { Self { registers: Box::default(), phantom: Default::default() } }
 
-    /// Executes the program starting from the provided entry point (set with
-    /// [`Program::set_entrypoint`] and [`Program::with`], or initialized to 0 offset of the
-    /// first used library if [`Program::new`] was used).
+    /// Executes the program starting from the provided entry point.
     ///
     /// # Returns
     ///

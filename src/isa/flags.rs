@@ -23,7 +23,9 @@
 
 //! Flags used by operation codes
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::borrow::ToOwned;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::string::String;
 use core::fmt::{self, Display, Formatter, Write};
 use core::str::FromStr;

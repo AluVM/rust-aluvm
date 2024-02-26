@@ -21,13 +21,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::boxed::Box;
 use alloc::collections::BTreeSet;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::string::String;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl, Shr};
-use std::collections::HashSet;
 
 use sha2::Digest;
 
@@ -84,17 +86,17 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
     fn is_supported(id: &str) -> bool { Self::isa_ids().contains(id) }
 
     /// Lists all registers which are used by the instruction.
-    fn regs(&self) -> HashSet<Reg> {
+    fn regs(&self) -> BTreeSet<Reg> {
         let mut regs = self.src_regs();
         regs.extend(self.dst_regs());
         regs
     }
 
     /// List of registers which value is taken into the account by the instruction.
-    fn src_regs(&self) -> HashSet<Reg>;
+    fn src_regs(&self) -> BTreeSet<Reg>;
 
     /// List of registers which value may be changed by the instruction.
-    fn dst_regs(&self) -> HashSet<Reg>;
+    fn dst_regs(&self) -> BTreeSet<Reg>;
 
     /// Returns computational complexity of the instruction
     #[inline]
@@ -131,7 +133,7 @@ where
         set
     }
 
-    fn src_regs(&self) -> HashSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
             Instr::ControlFlow(instr) => instr.src_regs(),
             Instr::Put(instr) => instr.src_regs(),
@@ -147,11 +149,11 @@ where
             Instr::Curve25519(instr) => instr.src_regs(),
             Instr::ExtensionCodes(instr) => instr.src_regs(),
             Instr::ReservedInstruction(instr) => instr.src_regs(),
-            Instr::Nop => set![],
+            Instr::Nop => bset![],
         }
     }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
             Instr::ControlFlow(instr) => instr.dst_regs(),
             Instr::Put(instr) => instr.dst_regs(),
@@ -167,7 +169,7 @@ where
             Instr::Curve25519(instr) => instr.dst_regs(),
             Instr::ExtensionCodes(instr) => instr.dst_regs(),
             Instr::ReservedInstruction(instr) => instr.dst_regs(),
-            Instr::Nop => set![],
+            Instr::Nop => bset![],
         }
     }
 
@@ -199,9 +201,9 @@ impl InstructionSet for ControlFlowOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    fn src_regs(&self) -> HashSet<Reg> { set![] }
+    fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
 
-    fn dst_regs(&self) -> HashSet<Reg> { set![] }
+    fn dst_regs(&self) -> BTreeSet<Reg> { bset![] }
 
     #[inline]
     fn complexity(&self) -> u64 { 2 }
@@ -246,16 +248,16 @@ impl InstructionSet for PutOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    fn src_regs(&self) -> HashSet<Reg> { set![] }
+    fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
-            PutOp::ClrA(_, _) | PutOp::ClrF(_, _) | PutOp::ClrR(_, _) => set![],
-            PutOp::PutA(reg, reg32, _) => set![Reg::A(*reg, *reg32)],
-            PutOp::PutF(reg, reg32, _) => set![Reg::F(*reg, *reg32)],
-            PutOp::PutR(reg, reg32, _) => set![Reg::R(*reg, *reg32)],
-            PutOp::PutIfA(reg, reg32, _) => set![Reg::A(*reg, *reg32)],
-            PutOp::PutIfR(reg, reg32, _) => set![Reg::R(*reg, *reg32)],
+            PutOp::ClrA(_, _) | PutOp::ClrF(_, _) | PutOp::ClrR(_, _) => bset![],
+            PutOp::PutA(reg, reg32, _) => bset![Reg::A(*reg, *reg32)],
+            PutOp::PutF(reg, reg32, _) => bset![Reg::F(*reg, *reg32)],
+            PutOp::PutR(reg, reg32, _) => bset![Reg::R(*reg, *reg32)],
+            PutOp::PutIfA(reg, reg32, _) => bset![Reg::A(*reg, *reg32)],
+            PutOp::PutIfR(reg, reg32, _) => bset![Reg::R(*reg, *reg32)],
         }
     }
 
@@ -309,104 +311,104 @@ impl InstructionSet for MoveOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    fn src_regs(&self) -> HashSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
             MoveOp::MovA(reg, idx1, _idx2) => {
-                set![Reg::A(*reg, *idx1)]
+                bset![Reg::A(*reg, *idx1)]
             }
             MoveOp::DupA(reg, idx1, _idx2) => {
-                set![Reg::A(*reg, *idx1)]
+                bset![Reg::A(*reg, *idx1)]
             }
             MoveOp::SwpA(reg, idx1, idx2) => {
-                set![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
+                bset![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
             }
             MoveOp::MovF(reg, idx1, _idx2) => {
-                set![Reg::F(*reg, *idx1)]
+                bset![Reg::F(*reg, *idx1)]
             }
             MoveOp::DupF(reg, idx1, _idx2) => {
-                set![Reg::F(*reg, *idx1)]
+                bset![Reg::F(*reg, *idx1)]
             }
             MoveOp::SwpF(reg, idx1, idx2) => {
-                set![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
+                bset![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
             }
             MoveOp::MovR(reg, idx1, _idx2) => {
-                set![Reg::R(*reg, *idx1)]
+                bset![Reg::R(*reg, *idx1)]
             }
             MoveOp::DupR(reg, idx1, _idx2) => {
-                set![Reg::R(*reg, *idx1)]
+                bset![Reg::R(*reg, *idx1)]
             }
 
             MoveOp::CpyA(sreg, sidx, _dreg, _didx) => {
-                set![Reg::A(*sreg, *sidx)]
+                bset![Reg::A(*sreg, *sidx)]
             }
             MoveOp::CnvA(sreg, sidx, _dreg, _didx) => {
-                set![Reg::A(*sreg, *sidx)]
+                bset![Reg::A(*sreg, *sidx)]
             }
             MoveOp::CnvF(sreg, sidx, _dreg, _didx) => {
-                set![Reg::F(*sreg, *sidx)]
+                bset![Reg::F(*sreg, *sidx)]
             }
             MoveOp::CpyR(sreg, sidx, _dreg, _didx) => {
-                set![Reg::R(*sreg, *sidx)]
+                bset![Reg::R(*sreg, *sidx)]
             }
             MoveOp::SpyAR(sreg, sidx, dreg, didx) => {
-                set![Reg::A(*sreg, *sidx), Reg::R(*dreg, *didx)]
+                bset![Reg::A(*sreg, *sidx), Reg::R(*dreg, *didx)]
             }
             MoveOp::CnvAF(sreg, sidx, _dreg, _didx) => {
-                set![Reg::A(*sreg, *sidx)]
+                bset![Reg::A(*sreg, *sidx)]
             }
             MoveOp::CnvFA(sreg, sidx, _dreg, _didx) => {
-                set![Reg::F(*sreg, *sidx)]
+                bset![Reg::F(*sreg, *sidx)]
             }
         }
     }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
             MoveOp::MovA(reg, idx1, idx2) => {
-                set![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
+                bset![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
             }
             MoveOp::DupA(reg, _idx1, idx2) => {
-                set![Reg::A(*reg, *idx2)]
+                bset![Reg::A(*reg, *idx2)]
             }
             MoveOp::SwpA(reg, idx1, idx2) => {
-                set![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
+                bset![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
             }
             MoveOp::MovF(reg, idx1, idx2) => {
-                set![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
+                bset![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
             }
             MoveOp::DupF(reg, _idx1, idx2) => {
-                set![Reg::F(*reg, *idx2)]
+                bset![Reg::F(*reg, *idx2)]
             }
             MoveOp::SwpF(reg, idx1, idx2) => {
-                set![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
+                bset![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
             }
             MoveOp::MovR(reg, idx1, idx2) => {
-                set![Reg::R(*reg, *idx1), Reg::R(*reg, *idx2)]
+                bset![Reg::R(*reg, *idx1), Reg::R(*reg, *idx2)]
             }
             MoveOp::DupR(reg, _idx1, idx2) => {
-                set![Reg::R(*reg, *idx2)]
+                bset![Reg::R(*reg, *idx2)]
             }
 
             MoveOp::CpyA(_sreg, _sidx, dreg, didx) => {
-                set![Reg::A(*dreg, *didx)]
+                bset![Reg::A(*dreg, *didx)]
             }
             MoveOp::CnvA(_sreg, _sidx, dreg, didx) => {
-                set![Reg::A(*dreg, *didx)]
+                bset![Reg::A(*dreg, *didx)]
             }
             MoveOp::CnvF(_sreg, _sidx, dreg, didx) => {
-                set![Reg::F(*dreg, *didx)]
+                bset![Reg::F(*dreg, *didx)]
             }
             MoveOp::CpyR(_sreg, _sidx, dreg, didx) => {
-                set![Reg::R(*dreg, *didx)]
+                bset![Reg::R(*dreg, *didx)]
             }
             MoveOp::SpyAR(sreg, sidx, dreg, didx) => {
-                set![Reg::A(*sreg, *sidx), Reg::R(*dreg, *didx)]
+                bset![Reg::A(*sreg, *sidx), Reg::R(*dreg, *didx)]
             }
             MoveOp::CnvAF(_sreg, _sidx, dreg, didx) => {
-                set![Reg::F(*dreg, *didx)]
+                bset![Reg::F(*dreg, *didx)]
             }
             MoveOp::CnvFA(_sreg, _sidx, dreg, didx) => {
-                set![Reg::A(*dreg, *didx)]
+                bset![Reg::A(*dreg, *didx)]
             }
         }
     }
@@ -493,55 +495,55 @@ impl InstructionSet for CmpOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    fn src_regs(&self) -> HashSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
             CmpOp::GtA(_, reg, idx1, idx2) => {
-                set![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
+                bset![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
             }
             CmpOp::LtA(_, reg, idx1, idx2) => {
-                set![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
+                bset![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
             }
             CmpOp::GtF(_, reg, idx1, idx2) => {
-                set![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
+                bset![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
             }
             CmpOp::LtF(_, reg, idx1, idx2) => {
-                set![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
+                bset![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
             }
             CmpOp::GtR(reg, idx1, idx2) => {
-                set![Reg::R(*reg, *idx1), Reg::R(*reg, *idx2)]
+                bset![Reg::R(*reg, *idx1), Reg::R(*reg, *idx2)]
             }
             CmpOp::LtR(reg, idx1, idx2) => {
-                set![Reg::R(*reg, *idx1), Reg::R(*reg, *idx2)]
+                bset![Reg::R(*reg, *idx1), Reg::R(*reg, *idx2)]
             }
             CmpOp::EqA(_, reg, idx1, idx2) => {
-                set![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
+                bset![Reg::A(*reg, *idx1), Reg::A(*reg, *idx2)]
             }
             CmpOp::EqF(_, reg, idx1, idx2) => {
-                set![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
+                bset![Reg::F(*reg, *idx1), Reg::F(*reg, *idx2)]
             }
             CmpOp::EqR(_, reg, idx1, idx2) => {
-                set![Reg::R(*reg, *idx1), Reg::R(*reg, *idx2)]
+                bset![Reg::R(*reg, *idx1), Reg::R(*reg, *idx2)]
             }
 
             CmpOp::IfZA(reg, idx) | CmpOp::IfNA(reg, idx) => {
-                set![Reg::A(*reg, *idx)]
+                bset![Reg::A(*reg, *idx)]
             }
             CmpOp::IfZR(reg, idx) | CmpOp::IfNR(reg, idx) => {
-                set![Reg::R(*reg, *idx)]
+                bset![Reg::R(*reg, *idx)]
             }
             CmpOp::St(_, _, _) => {
-                set![]
+                bset![]
             }
-            CmpOp::StInv => set![],
+            CmpOp::StInv => bset![],
         }
     }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
             CmpOp::St(_, reg, idx) => {
-                set![Reg::A(*reg, (*idx).into())]
+                bset![Reg::A(*reg, (*idx).into())]
             }
-            _ => set![],
+            _ => bset![],
         }
     }
 
@@ -647,54 +649,54 @@ impl InstructionSet for ArithmeticOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    fn src_regs(&self) -> HashSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
             ArithmeticOp::Neg(reg, idx) | ArithmeticOp::Abs(reg, idx) => {
-                set![Reg::new(*reg, *idx)]
+                bset![Reg::new(*reg, *idx)]
             }
             ArithmeticOp::Stp(reg, idx, _) => {
-                set![Reg::A(*reg, *idx)]
+                bset![Reg::A(*reg, *idx)]
             }
             ArithmeticOp::AddA(_, reg, src, srcdst)
             | ArithmeticOp::SubA(_, reg, src, srcdst)
             | ArithmeticOp::MulA(_, reg, src, srcdst)
             | ArithmeticOp::DivA(_, reg, src, srcdst) => {
-                set![Reg::A(*reg, *src), Reg::A(*reg, *srcdst)]
+                bset![Reg::A(*reg, *src), Reg::A(*reg, *srcdst)]
             }
             ArithmeticOp::AddF(_, reg, src, srcdst)
             | ArithmeticOp::SubF(_, reg, src, srcdst)
             | ArithmeticOp::MulF(_, reg, src, srcdst)
             | ArithmeticOp::DivF(_, reg, src, srcdst) => {
-                set![Reg::F(*reg, *src), Reg::F(*reg, *srcdst)]
+                bset![Reg::F(*reg, *src), Reg::F(*reg, *srcdst)]
             }
             ArithmeticOp::Rem(reg1, src, reg2, srcdst) => {
-                set![Reg::A(*reg1, *src), Reg::A(*reg2, *srcdst)]
+                bset![Reg::A(*reg1, *src), Reg::A(*reg2, *srcdst)]
             }
         }
     }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
             ArithmeticOp::Neg(reg, idx) | ArithmeticOp::Abs(reg, idx) => {
-                set![Reg::new(*reg, *idx)]
+                bset![Reg::new(*reg, *idx)]
             }
             ArithmeticOp::Stp(reg, idx, _) => {
-                set![Reg::A(*reg, *idx)]
+                bset![Reg::A(*reg, *idx)]
             }
             ArithmeticOp::AddA(_, reg, _src, srcdst)
             | ArithmeticOp::SubA(_, reg, _src, srcdst)
             | ArithmeticOp::MulA(_, reg, _src, srcdst)
             | ArithmeticOp::DivA(_, reg, _src, srcdst) => {
-                set![Reg::A(*reg, *srcdst)]
+                bset![Reg::A(*reg, *srcdst)]
             }
             ArithmeticOp::AddF(_, reg, _src, srcdst)
             | ArithmeticOp::SubF(_, reg, _src, srcdst)
             | ArithmeticOp::MulF(_, reg, _src, srcdst)
             | ArithmeticOp::DivF(_, reg, _src, srcdst) => {
-                set![Reg::F(*reg, *srcdst)]
+                bset![Reg::F(*reg, *srcdst)]
             }
             ArithmeticOp::Rem(_reg1, _src, reg2, srcdst) => {
-                set![Reg::A(*reg2, *srcdst)]
+                bset![Reg::A(*reg2, *srcdst)]
             }
         }
     }
@@ -812,76 +814,76 @@ impl InstructionSet for BitwiseOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    fn src_regs(&self) -> HashSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
             BitwiseOp::And(reg, idx1, idx2, _idx3)
             | BitwiseOp::Or(reg, idx1, idx2, _idx3)
             | BitwiseOp::Xor(reg, idx1, idx2, _idx3) => {
-                set![Reg::new(*reg, *idx1), Reg::new(*reg, *idx2)]
+                bset![Reg::new(*reg, *idx1), Reg::new(*reg, *idx2)]
             }
             BitwiseOp::Not(reg, idx) => {
-                set![Reg::new(*reg, *idx)]
+                bset![Reg::new(*reg, *idx)]
             }
 
             BitwiseOp::Shl(a2, shift, reg, idx) => {
-                set![Reg::new(*a2, *shift), Reg::new(*reg, *idx)]
+                bset![Reg::new(*a2, *shift), Reg::new(*reg, *idx)]
             }
             BitwiseOp::ShrA(_, a2, shift, reg, idx) => {
-                set![Reg::new(*a2, *shift), Reg::A(*reg, *idx)]
+                bset![Reg::new(*a2, *shift), Reg::A(*reg, *idx)]
             }
             BitwiseOp::ShrR(a2, shift, reg, idx) => {
-                set![Reg::new(*a2, *shift), Reg::R(*reg, *idx)]
+                bset![Reg::new(*a2, *shift), Reg::R(*reg, *idx)]
             }
 
             BitwiseOp::Scl(a2, shift, reg, idx) => {
-                set![Reg::new(*a2, *shift), Reg::new(*reg, *idx)]
+                bset![Reg::new(*a2, *shift), Reg::new(*reg, *idx)]
             }
             BitwiseOp::Scr(a2, shift, reg, idx) => {
-                set![Reg::new(*a2, *shift), Reg::new(*reg, *idx)]
+                bset![Reg::new(*a2, *shift), Reg::new(*reg, *idx)]
             }
 
             BitwiseOp::RevA(reg, idx) => {
-                set![Reg::A(*reg, *idx)]
+                bset![Reg::A(*reg, *idx)]
             }
             BitwiseOp::RevR(reg, idx) => {
-                set![Reg::R(*reg, *idx)]
+                bset![Reg::R(*reg, *idx)]
             }
         }
     }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
             BitwiseOp::And(reg, _idx1, _idx2, idx3)
             | BitwiseOp::Or(reg, _idx1, _idx2, idx3)
             | BitwiseOp::Xor(reg, _idx1, _idx2, idx3) => {
-                set![Reg::new(*reg, *idx3)]
+                bset![Reg::new(*reg, *idx3)]
             }
             BitwiseOp::Not(reg, idx) => {
-                set![Reg::new(*reg, *idx)]
+                bset![Reg::new(*reg, *idx)]
             }
 
             BitwiseOp::Shl(_, _, reg, idx) => {
-                set![Reg::new(*reg, *idx)]
+                bset![Reg::new(*reg, *idx)]
             }
             BitwiseOp::ShrA(_, _, _, reg, idx) => {
-                set![Reg::A(*reg, *idx)]
+                bset![Reg::A(*reg, *idx)]
             }
             BitwiseOp::ShrR(_, _, reg, idx) => {
-                set![Reg::R(*reg, *idx)]
+                bset![Reg::R(*reg, *idx)]
             }
 
             BitwiseOp::Scl(_, _, reg, idx) => {
-                set![Reg::new(*reg, *idx)]
+                bset![Reg::new(*reg, *idx)]
             }
             BitwiseOp::Scr(_, _, reg, idx) => {
-                set![Reg::new(*reg, *idx)]
+                bset![Reg::new(*reg, *idx)]
             }
 
             BitwiseOp::RevA(reg, idx) => {
-                set![Reg::A(*reg, *idx)]
+                bset![Reg::A(*reg, *idx)]
             }
             BitwiseOp::RevR(reg, idx) => {
-                set![Reg::R(*reg, *idx)]
+                bset![Reg::R(*reg, *idx)]
             }
         }
     }
@@ -1043,19 +1045,19 @@ impl InstructionSet for BytesOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    fn src_regs(&self) -> HashSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
             BytesOp::Put(_reg, _, _) => {
-                set![]
+                bset![]
             }
             BytesOp::Swp(reg1, reg2) | BytesOp::Find(reg1, reg2) => {
-                set![Reg::S(*reg1), Reg::S(*reg2)]
+                bset![Reg::S(*reg1), Reg::S(*reg2)]
             }
             BytesOp::Mov(reg1, _reg2) | BytesOp::Rev(reg1, _reg2) => {
-                set![Reg::S(*reg1)]
+                bset![Reg::S(*reg1)]
             }
             BytesOp::Fill(reg, offset1, offset2, value, _) => {
-                set![
+                bset![
                     Reg::S(*reg),
                     Reg::A(RegA::A16, *offset1),
                     Reg::A(RegA::A16, *offset2),
@@ -1063,81 +1065,81 @@ impl InstructionSet for BytesOp {
                 ]
             }
             BytesOp::Len(src, _reg, _dst) => {
-                set![Reg::S(*src)]
+                bset![Reg::S(*src)]
             }
             BytesOp::Cnt(src, byte, _cnt) => {
-                set![Reg::S(*src), Reg::new(RegA::A8, *byte)]
+                bset![Reg::S(*src), Reg::new(RegA::A8, *byte)]
             }
             BytesOp::Eq(reg1, reg2) => {
-                set![Reg::S(*reg1), Reg::S(*reg2)]
+                bset![Reg::S(*reg1), Reg::S(*reg2)]
             }
             BytesOp::Con(reg1, reg2, no, _offset, _len) => {
-                set![Reg::S(*reg1), Reg::S(*reg2), Reg::A(RegA::A16, *no),]
+                bset![Reg::S(*reg1), Reg::S(*reg2), Reg::A(RegA::A16, *no),]
             }
             BytesOp::Extr(src, _dst, _index, offset) => {
-                set![Reg::S(*src), Reg::new(RegA::A16, *offset)]
+                bset![Reg::S(*src), Reg::new(RegA::A16, *offset)]
             }
             BytesOp::Inj(src1, src2, index, offset) => {
-                set![Reg::S(*src1), Reg::new(*src2, *index), Reg::new(RegA::A16, *offset)]
+                bset![Reg::S(*src1), Reg::new(*src2, *index), Reg::new(RegA::A16, *offset)]
             }
             BytesOp::Join(src1, src2, _dst) => {
-                set![Reg::S(*src1), Reg::S(*src2)]
+                bset![Reg::S(*src1), Reg::S(*src2)]
             }
             BytesOp::Splt(_flag, offset, src, _dst1, _dst2) => {
-                set![Reg::A(RegA::A16, *offset), Reg::S(*src)]
+                bset![Reg::A(RegA::A16, *offset), Reg::S(*src)]
             }
             BytesOp::Ins(_flag, offset, src, _dst) => {
-                set![Reg::A(RegA::A16, *offset), Reg::S(*src)]
+                bset![Reg::A(RegA::A16, *offset), Reg::S(*src)]
             }
             BytesOp::Del(_flag, reg1, offset1, reg2, offset2, _flag1, _flag2, src, _dst) => {
-                set![Reg::new(*reg1, *offset1), Reg::new(*reg2, *offset2), Reg::S(*src)]
+                bset![Reg::new(*reg1, *offset1), Reg::new(*reg2, *offset2), Reg::S(*src)]
             }
         }
     }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
             BytesOp::Put(reg, _, _) => {
-                set![Reg::S(*reg)]
+                bset![Reg::S(*reg)]
             }
             BytesOp::Swp(reg1, reg2) | BytesOp::Find(reg1, reg2) => {
-                set![Reg::S(*reg1), Reg::S(*reg2)]
+                bset![Reg::S(*reg1), Reg::S(*reg2)]
             }
             BytesOp::Mov(_reg1, reg2) | BytesOp::Rev(_reg1, reg2) => {
-                set![Reg::S(*reg2)]
+                bset![Reg::S(*reg2)]
             }
             BytesOp::Fill(reg, _offset1, _offset2, _value, _) => {
-                set![Reg::S(*reg)]
+                bset![Reg::S(*reg)]
             }
             BytesOp::Len(_src, reg, dst) => {
-                set![Reg::A(*reg, *dst)]
+                bset![Reg::A(*reg, *dst)]
             }
             BytesOp::Cnt(_src, _byte, cnt) => {
-                set![Reg::new(RegA::A16, *cnt)]
+                bset![Reg::new(RegA::A16, *cnt)]
             }
             BytesOp::Eq(_reg1, _reg2) => {
-                set![]
+                bset![]
             }
             BytesOp::Con(_reg1, _reg2, _no, offset, len) => {
-                set![Reg::A(RegA::A16, *offset), Reg::A(RegA::A16, *len)]
+                bset![Reg::A(RegA::A16, *offset), Reg::A(RegA::A16, *len)]
             }
             BytesOp::Extr(_src, dst, index, _offset) => {
-                set![Reg::new(*dst, *index)]
+                bset![Reg::new(*dst, *index)]
             }
             BytesOp::Inj(src1, _src2, _index, _offset) => {
-                set![Reg::S(*src1)]
+                bset![Reg::S(*src1)]
             }
             BytesOp::Join(_src1, _src2, dst) => {
-                set![Reg::S(*dst)]
+                bset![Reg::S(*dst)]
             }
             BytesOp::Splt(_flag, _offset, _src, dst1, dst2) => {
-                set![Reg::S(*dst1), Reg::S(*dst2)]
+                bset![Reg::S(*dst1), Reg::S(*dst2)]
             }
             BytesOp::Ins(_flag, _offset, _src, dst) => {
-                set![Reg::S(*dst)]
+                bset![Reg::S(*dst)]
             }
             BytesOp::Del(_flag, _reg1, _offset1, _reg2, _offset2, _flag1, _flag2, _src, dst) => {
-                set![Reg::S(*dst)]
+                bset![Reg::S(*dst)]
             }
         }
     }
@@ -1366,19 +1368,19 @@ impl InstructionSet for DigestOp {
         set
     }
 
-    fn src_regs(&self) -> HashSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
             DigestOp::Ripemd(src, _dst)
             | DigestOp::Sha256(src, _dst)
-            | DigestOp::Sha512(src, _dst) => set![Reg::S(*src)],
+            | DigestOp::Sha512(src, _dst) => bset![Reg::S(*src)],
         }
     }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
-            DigestOp::Ripemd(_src, dst) => set![Reg::new(RegR::R160, *dst)],
-            DigestOp::Sha256(_src, dst) => set![Reg::new(RegR::R256, *dst)],
-            DigestOp::Sha512(_src, dst) => set![Reg::new(RegR::R512, *dst)],
+            DigestOp::Ripemd(_src, dst) => bset![Reg::new(RegR::R160, *dst)],
+            DigestOp::Sha256(_src, dst) => bset![Reg::new(RegR::R256, *dst)],
+            DigestOp::Sha512(_src, dst) => bset![Reg::new(RegR::R512, *dst)],
         }
     }
 
@@ -1434,39 +1436,39 @@ impl InstructionSet for Secp256k1Op {
         set
     }
 
-    fn src_regs(&self) -> HashSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
             Secp256k1Op::Gen(src, _dst) => {
-                set![Reg::R(RegR::R256, *src)]
+                bset![Reg::R(RegR::R256, *src)]
             }
             Secp256k1Op::Mul(RegBlockAR::A, scal, src, _dst) => {
-                set![Reg::A(RegA::A256, *scal), Reg::R(RegR::R512, *src)]
+                bset![Reg::A(RegA::A256, *scal), Reg::R(RegR::R512, *src)]
             }
             Secp256k1Op::Mul(RegBlockAR::R, scal, src, _dst) => {
-                set![Reg::R(RegR::R256, *scal), Reg::R(RegR::R512, *src)]
+                bset![Reg::R(RegR::R256, *scal), Reg::R(RegR::R512, *src)]
             }
             Secp256k1Op::Add(src, srcdst) => {
-                set![Reg::R(RegR::R512, *src), Reg::new(RegR::R512, *srcdst)]
+                bset![Reg::R(RegR::R512, *src), Reg::new(RegR::R512, *srcdst)]
             }
             Secp256k1Op::Neg(src, _dst) => {
-                set![Reg::R(RegR::R512, *src)]
+                bset![Reg::R(RegR::R512, *src)]
             }
         }
     }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
             Secp256k1Op::Gen(_src, dst) => {
-                set![Reg::new(RegR::R512, *dst)]
+                bset![Reg::new(RegR::R512, *dst)]
             }
             Secp256k1Op::Mul(_, _, _src, dst) => {
-                set![Reg::R(RegR::R512, *dst)]
+                bset![Reg::R(RegR::R512, *dst)]
             }
             Secp256k1Op::Add(_src, srcdst) => {
-                set![Reg::new(RegR::R512, *srcdst)]
+                bset![Reg::new(RegR::R512, *srcdst)]
             }
             Secp256k1Op::Neg(_src, dst) => {
-                set![Reg::new(RegR::R512, *dst)]
+                bset![Reg::new(RegR::R512, *dst)]
             }
         }
     }
@@ -1581,39 +1583,39 @@ impl InstructionSet for Curve25519Op {
         set
     }
 
-    fn src_regs(&self) -> HashSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
             Curve25519Op::Gen(src, _dst) => {
-                set![Reg::R(RegR::R256, *src)]
+                bset![Reg::R(RegR::R256, *src)]
             }
             Curve25519Op::Mul(RegBlockAR::A, scal, src, _dst) => {
-                set![Reg::A(RegA::A256, *scal), Reg::R(RegR::R512, *src)]
+                bset![Reg::A(RegA::A256, *scal), Reg::R(RegR::R512, *src)]
             }
             Curve25519Op::Mul(RegBlockAR::R, scal, src, _dst) => {
-                set![Reg::R(RegR::R256, *scal), Reg::R(RegR::R512, *src)]
+                bset![Reg::R(RegR::R256, *scal), Reg::R(RegR::R512, *src)]
             }
             Curve25519Op::Add(src1, src2, _dst, _) => {
-                set![Reg::R(RegR::R512, *src1), Reg::new(RegR::R512, *src2)]
+                bset![Reg::R(RegR::R512, *src1), Reg::new(RegR::R512, *src2)]
             }
             Curve25519Op::Neg(src, _dst) => {
-                set![Reg::R(RegR::R512, *src)]
+                bset![Reg::R(RegR::R512, *src)]
             }
         }
     }
 
-    fn dst_regs(&self) -> HashSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
             Curve25519Op::Gen(_src, dst) => {
-                set![Reg::new(RegR::R512, *dst)]
+                bset![Reg::new(RegR::R512, *dst)]
             }
             Curve25519Op::Mul(_, _, _src, dst) => {
-                set![Reg::R(RegR::R512, *dst)]
+                bset![Reg::R(RegR::R512, *dst)]
             }
             Curve25519Op::Add(_src1, _src2, dst, _) => {
-                set![Reg::new(RegR::R512, *dst)]
+                bset![Reg::new(RegR::R512, *dst)]
             }
             Curve25519Op::Neg(_src, dst) => {
-                set![Reg::new(RegR::R512, *dst)]
+                bset![Reg::new(RegR::R512, *dst)]
             }
         }
     }
@@ -1638,9 +1640,9 @@ impl InstructionSet for ReservedOp {
     #[inline]
     fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
 
-    fn src_regs(&self) -> HashSet<Reg> { set![] }
+    fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
 
-    fn dst_regs(&self) -> HashSet<Reg> { set![] }
+    fn dst_regs(&self) -> BTreeSet<Reg> { bset![] }
 
     fn exec(&self, regs: &mut CoreRegs, site: LibSite, ctx: &()) -> ExecStep {
         ControlFlowOp::Fail.exec(regs, site, ctx)

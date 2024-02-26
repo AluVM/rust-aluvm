@@ -21,8 +21,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::borrow::ToOwned;
 use alloc::collections::{btree_map, BTreeMap};
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::string::String;
 use core::marker::PhantomData;
 
