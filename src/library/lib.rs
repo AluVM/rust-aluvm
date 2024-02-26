@@ -21,14 +21,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::string::{String, ToString};
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::convert::TryFrom;
 use core::fmt::{self, Display, Formatter};
 use core::hash::{Hash as RustHash, Hasher};
 use core::str::FromStr;
-use std::io;
 
 use amplify::{ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
@@ -249,7 +250,11 @@ impl Lib {
     }
 
     /// Disassembles library into a set of instructions and offsets and prints it to the writer.
-    pub fn print_disassemble<Isa>(&self, mut writer: impl io::Write) -> Result<(), io::Error>
+    #[cfg(feature = "std")]
+    pub fn print_disassemble<Isa>(
+        &self,
+        mut writer: impl std::io::Write,
+    ) -> Result<(), std::io::Error>
     where
         Isa: InstructionSet,
     {

@@ -23,9 +23,12 @@
 
 //! Data structures representing static library segments
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::borrow::ToOwned;
 use alloc::collections::{BTreeMap, BTreeSet};
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::string::String;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::vec::Vec;
 use core::fmt::{self, Display, Formatter};
 

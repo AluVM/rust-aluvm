@@ -24,7 +24,9 @@
 //! Module defining number layout (integer, signed/unsigned, float etc) and universal in-memory
 //! number representation.
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::format;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::string::{String, ToString};
 use core::fmt::{
     self, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, Write,
@@ -1495,8 +1497,6 @@ impl_number_int_conv!(u1024, 128, false);
 
 mod _float_impl {
     use amplify::num::apfloat::ieee::*;
-    use amplify::num::apfloat::Float;
-    use half::bf16;
 
     use super::*;
 
