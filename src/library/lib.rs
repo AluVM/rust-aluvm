@@ -304,7 +304,7 @@ impl Lib {
     where
         Isa: InstructionSet,
     {
-        #[cfg(all(debug_assertions, feature = "std"))]
+        #[cfg(feature = "log")]
         let (m, w, d, g, r, y, z) = (
             "\x1B[0;35m",
             "\x1B[1;1m",
@@ -325,7 +325,7 @@ impl Lib {
 
             let instr = Isa::decode(&mut cursor).ok()?;
 
-            #[cfg(all(debug_assertions, feature = "std"))]
+            #[cfg(feature = "log")]
             {
                 eprint!("{m}@{pos:06}:{z} {: <32}; ", instr.to_string());
                 for reg in instr.src_regs() {
@@ -336,7 +336,7 @@ impl Lib {
 
             let next = instr.exec(registers, LibSite::with(pos, lib_hash), context);
 
-            #[cfg(all(debug_assertions, feature = "std"))]
+            #[cfg(feature = "log")]
             {
                 eprint!("-> ");
                 for reg in instr.dst_regs() {
@@ -351,13 +351,13 @@ impl Lib {
             st0 = registers.st0;
 
             if !registers.acc_complexity(instr) {
-                #[cfg(all(debug_assertions, feature = "std"))]
+                #[cfg(feature = "log")]
                 eprintln!("complexity overflow");
                 return None;
             }
             match next {
                 ExecStep::Stop => {
-                    #[cfg(all(debug_assertions, feature = "std"))]
+                    #[cfg(feature = "log")]
                     {
                         let c = if registers.st0 { g } else { r };
                         eprintln!("execution stopped; {d}st0={z}{c}{}{z}", registers.st0);
@@ -365,17 +365,17 @@ impl Lib {
                     return None;
                 }
                 ExecStep::Next => {
-                    #[cfg(all(debug_assertions, feature = "std"))]
+                    #[cfg(feature = "log")]
                     eprintln!();
                     continue;
                 }
                 ExecStep::Jump(pos) => {
-                    #[cfg(all(debug_assertions, feature = "std"))]
+                    #[cfg(feature = "log")]
                     eprintln!("{}", pos);
                     cursor.seek(pos).ok()?;
                 }
                 ExecStep::Call(site) => {
-                    #[cfg(all(debug_assertions, feature = "std"))]
+                    #[cfg(feature = "log")]
                     eprintln!("{}", site);
                     return Some(site);
                 }
