@@ -93,7 +93,7 @@ where
     // 0b10_***_***
     ExtensionCodes(Extension),
 
-    /// Reserved instruction for fututre use in core `ALU` ISA.
+    /// Reserved instruction for future use in core `ALU` ISA.
     ///
     /// Currently equal to [`ControlFlowOp::Fail`].
     ReservedInstruction(ReservedOp),
