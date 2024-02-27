@@ -324,7 +324,9 @@ impl Lib {
         let lib_hash = self.id();
         cursor.seek(entrypoint).ok()?;
 
+        #[cfg(feature = "log")]
         let mut st0 = registers.st0;
+
         while !cursor.is_eof() {
             let pos = cursor.pos();
 
@@ -352,8 +354,9 @@ impl Lib {
                     let c = if registers.st0 { g } else { r };
                     eprint!(" {d}st0={z}{c}{}{z} ", registers.st0);
                 }
+
+                st0 = registers.st0;
             }
-            st0 = registers.st0;
 
             if !registers.acc_complexity(instr) {
                 #[cfg(feature = "log")]
