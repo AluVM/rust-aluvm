@@ -221,9 +221,8 @@ impl Display for ByteStr {
             let mut ctl = false;
             for c in s.chars() {
                 let v = c as u32;
-                if c.is_control() || v <= 0x21 || v >= 0x7F {
+                if (c.is_control() && v != 0x20) || v < 0x20 || v >= 0x7F {
                     if !ctl {
-                        f.write_str("\x1B[2;3m<\x1B[1m")?;
                         ctl = true;
                     }
                     if v <= 0xFF {
@@ -235,14 +234,10 @@ impl Display for ByteStr {
                     }
                 } else {
                     if ctl {
-                        f.write_str("\x1B[2m>\x1B[1;23m")?;
                         ctl = false;
                     }
                     f.write_char(c)?;
                 }
-            }
-            if ctl {
-                f.write_str("\x1B[2m>\x1B[1;23m")?;
             }
             f.write_str("\"")
         } else {
