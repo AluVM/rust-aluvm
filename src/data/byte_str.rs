@@ -282,6 +282,7 @@ mod _serde {
     use std::convert::TryFrom;
     use std::ops::Deref;
 
+    use amplify::hex::{FromHex, ToHex};
     use serde_crate::de::Error;
     use serde_crate::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -292,7 +293,11 @@ mod _serde {
         where
             S: Serializer,
         {
-            self.as_ref().serialize(serializer)
+            if serializer.is_human_readable() {
+                self.as_ref().to_hex().serialize(serializer)
+            } else {
+                self.as_ref().serialize(serializer)
+            }
         }
     }
 
@@ -301,7 +306,12 @@ mod _serde {
         where
             D: Deserializer<'de>,
         {
-            let vec = Vec::<u8>::deserialize(deserializer)?;
+            let vec = if deserializer.is_human_readable() {
+                let hex = String::deserialize(deserializer)?;
+                Vec::<u8>::from_hex(&hex).map_err(D::Error::custom)?
+            } else {
+                Vec::<u8>::deserialize(deserializer)?
+            };
             ByteStr::try_from(vec.deref())
                 .map_err(|_| D::Error::invalid_length(vec.len(), &"max u16::MAX bytes"))
         }
