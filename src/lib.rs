@@ -163,6 +163,8 @@ pub mod stl;
 mod vm;
 
 pub use isa::Isa;
+#[cfg(feature = "ascii-armor")]
+pub use library::LibArmorError;
 #[doc(hidden)]
 pub use paste::paste;
 pub use program::{Prog, ProgError, Program};
