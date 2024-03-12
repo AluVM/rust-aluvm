@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "aluvm"
-version = "0.11.0-beta.4"
+version = "0.11.0-beta.5"
 dependencies = [
  "amplify",
  "ascii-armor",
@@ -556,8 +556,9 @@ dependencies = [
 
 [[package]]
 name = "strict_types"
-version = "2.7.0-beta.1"
-source = "git+https://github.com/strict-types/strict-types?branch=armor#00741ba09189536d8cdaf048a7f17795393ee382"
+version = "2.7.0-beta.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78c32716de4b99b0e8fb0c114e99b6929613e8d7302999c6b8c77251783923ad"
 dependencies = [
  "amplify",
  "ascii-armor",
