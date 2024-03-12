@@ -210,9 +210,9 @@ mod _armor {
 
         fn to_ascii_armored_data(&self) -> Vec<u8> { self.serialize() }
 
-        fn with_headers_data(headers: Vec<ArmorHeader>, data: Vec<u8>) -> Result<Self, Self::Err> {
+        fn with_headers_data(_headers: Vec<ArmorHeader>, data: Vec<u8>) -> Result<Self, Self::Err> {
             // TODO: check id, dependencies and ISAE
-            let me = Self::deserialize(&data)?;
+            let me = Self::deserialize(data)?;
             Ok(me)
         }
     }
