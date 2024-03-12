@@ -7,6 +7,7 @@ name = "aluvm"
 version = "0.11.0-beta.4"
 dependencies = [
  "amplify",
+ "ascii-armor",
  "baid58",
  "curve25519-dalek",
  "getrandom 0.2.12",
@@ -102,6 +103,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d92bec98840b8f03a5ff5413de5293bfcd8bf96467cf5452609f939ec6f5de16"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "ascii-armor"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "743d90b41a39d6e3920eef64a70f6411097cbb47141606a45b2a96533ec7111c"
+dependencies = [
+ "amplify",
+ "baid58",
+ "base85",
+ "sha2",
+ "strict_encoding",
 ]
 
 [[package]]
@@ -543,12 +557,11 @@ dependencies = [
 [[package]]
 name = "strict_types"
 version = "2.7.0-beta.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d66de5cdf197b68e13fcac9fad7ed288f44052a319a3df3abbaba9c6e52f735b"
+source = "git+https://github.com/strict-types/strict-types?branch=armor#00741ba09189536d8cdaf048a7f17795393ee382"
 dependencies = [
  "amplify",
+ "ascii-armor",
  "baid58",
- "base85",
  "half",
  "indexmap",
  "sha2",

@@ -35,6 +35,8 @@ use amplify::{ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use sha2::{Digest, Sha256};
 
+#[cfg(feature = "ascii-armor")]
+pub use self::_armor::LibArmorError;
 use super::{Cursor, Read};
 use crate::data::ByteStr;
 use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet};
@@ -166,6 +168,54 @@ impl Ord for Lib {
 impl RustHash for Lib {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) { state.write(&self.id()[..]) }
+}
+
+#[cfg(feature = "ascii-armor")]
+mod _armor {
+    use armor::{ArmorHeader, ArmorParseError, AsciiArmor, ASCII_ARMOR_ID};
+
+    use super::*;
+    use crate::data::encoding::{Decode, DecodeError, Encode};
+
+    const ASCII_ARMOR_ISAE: &str = "ISA-Extensions";
+    const ASCII_ARMOR_DEPENDENCY: &str = "Dependency";
+
+    /// Errors while deserializing library from an ASCII Armor.
+    #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
+    #[display(inner)]
+    pub enum LibArmorError {
+        /// Armor parse error.
+        #[from]
+        Armor(ArmorParseError),
+
+        /// Library data deserialization error.
+        #[from]
+        Decode(DecodeError),
+    }
+
+    impl AsciiArmor for Lib {
+        type Err = LibArmorError;
+        const PLATE_TITLE: &'static str = "ALUVM LIB";
+
+        fn ascii_armored_headers(&self) -> Vec<ArmorHeader> {
+            let mut headers = vec![
+                ArmorHeader::new(ASCII_ARMOR_ID, self.id().to_string()),
+                ArmorHeader::new(ASCII_ARMOR_ISAE, self.isae.to_string()),
+            ];
+            for dep in &self.libs {
+                headers.push(ArmorHeader::new(ASCII_ARMOR_DEPENDENCY, dep.to_string()));
+            }
+            headers
+        }
+
+        fn to_ascii_armored_data(&self) -> Vec<u8> { self.serialize() }
+
+        fn with_headers_data(_headers: Vec<ArmorHeader>, data: Vec<u8>) -> Result<Self, Self::Err> {
+            // TODO: check id, dependencies and ISAE
+            let me = Self::deserialize(data)?;
+            Ok(me)
+        }
+    }
 }
 
 /// Errors while assembling library from the instruction set
