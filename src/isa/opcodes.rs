@@ -117,6 +117,7 @@ pub const INSTR_RESV_TO: u8 = 0b01_111_111;
 pub const INSTR_RIPEMD: u8 = 0b10_000_000;
 pub const INSTR_SHA256: u8 = 0b10_000_001;
 pub const INSTR_SHA512: u8 = 0b10_000_010;
+pub const INSTR_BLAKE3: u8 = 0b10_000_100;
 
 // ### Secp256k1 operations (SECP256K1)
 

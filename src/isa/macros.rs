@@ -842,6 +842,9 @@ macro_rules! instr {
     (sha2 s16[$idx1:literal],r256[$idx2:literal]) => {
         Instr::Digest(DigestOp::Sha256(RegS::from($idx1), $crate::_reg_idx16!($idx2)))
     };
+    (blake3 s16[$idx1:literal],r256[$idx2:literal]) => {
+        Instr::Digest(DigestOp::Blake3(RegS::from($idx1), $crate::_reg_idx16!($idx2)))
+    };
     (sha2 s16[$idx1:literal],r512[$idx2:literal]) => {
         Instr::Digest(DigestOp::Sha512(RegS::from($idx1), $crate::_reg_idx16!($idx2)))
     };

@@ -1299,6 +1299,7 @@ impl Bytecode for DigestOp {
             DigestOp::Ripemd(_, _) => INSTR_RIPEMD,
             DigestOp::Sha256(_, _) => INSTR_SHA256,
             DigestOp::Sha512(_, _) => INSTR_SHA512,
+            DigestOp::Blake3(_, _) => INSTR_BLAKE3,
         }
     }
 
@@ -1309,6 +1310,7 @@ impl Bytecode for DigestOp {
         match self {
             DigestOp::Ripemd(src, dst)
             | DigestOp::Sha256(src, dst)
+            | DigestOp::Blake3(src, dst)
             | DigestOp::Sha512(src, dst) => {
                 writer.write_u4(src)?;
                 writer.write_u4(dst)?;
@@ -1328,6 +1330,7 @@ impl Bytecode for DigestOp {
         Ok(match instr {
             INSTR_RIPEMD => Self::Ripemd(src, dst),
             INSTR_SHA256 => Self::Sha256(src, dst),
+            INSTR_BLAKE3 => Self::Blake3(src, dst),
             INSTR_SHA512 => Self::Sha512(src, dst),
             x => unreachable!("instruction {:#010b} classified as digest operation", x),
         })

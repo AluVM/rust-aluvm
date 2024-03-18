@@ -883,6 +883,16 @@ pub enum DigestOp {
         /** Index of string register */ RegS,
         /** Index of `r512` register to save result to */ Reg16,
     ),
+
+    /// Computes BLAKE3 hash value
+    ///
+    /// Sets `st0` to `false` and destination register to `None` if the source register does not
+    /// contain a value
+    #[display("Blake3    {0},r256{1}")]
+    Blake3(
+        /** Index of string register */ RegS,
+        /** Index of `r256` register to save result to */ Reg16,
+    ),
 }
 
 /// Operations on Secp256k1 elliptic curve
