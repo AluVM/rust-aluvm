@@ -1372,6 +1372,7 @@ impl InstructionSet for DigestOp {
         match self {
             DigestOp::Ripemd(src, _dst)
             | DigestOp::Sha256(src, _dst)
+            | DigestOp::Blake3(src, _dst)
             | DigestOp::Sha512(src, _dst) => bset![Reg::S(*src)],
         }
     }
@@ -1380,6 +1381,7 @@ impl InstructionSet for DigestOp {
         match self {
             DigestOp::Ripemd(_src, dst) => bset![Reg::new(RegR::R160, *dst)],
             DigestOp::Sha256(_src, dst) => bset![Reg::new(RegR::R256, *dst)],
+            DigestOp::Blake3(_src, dst) => bset![Reg::new(RegR::R256, *dst)],
             DigestOp::Sha512(_src, dst) => bset![Reg::new(RegR::R512, *dst)],
         }
     }
@@ -1405,6 +1407,12 @@ impl InstructionSet for DigestOp {
                 let s = regs.get_s(*src);
                 none = s.is_none();
                 let hash: Option<[u8; 32]> = s.map(|s| sha2::Sha256::digest(s.as_ref()).into());
+                regs.set_n(RegR::R256, dst, hash);
+            }
+            DigestOp::Blake3(src, dst) => {
+                let s = regs.get_s(*src);
+                none = s.is_none();
+                let hash: Option<[u8; 32]> = s.map(|s| blake3::hash(s.as_ref()).into());
                 regs.set_n(RegR::R256, dst, hash);
             }
             DigestOp::Sha512(src, dst) => {
