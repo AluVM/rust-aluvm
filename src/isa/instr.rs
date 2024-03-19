@@ -888,7 +888,7 @@ pub enum DigestOp {
     ///
     /// Sets `st0` to `false` and destination register to `None` if the source register does not
     /// contain a value
-    #[display("Blake3    {0},r256{1}")]
+    #[display("blake3  {0},r256{1}")]
     Blake3(
         /** Index of string register */ RegS,
         /** Index of `r256` register to save result to */ Reg16,
