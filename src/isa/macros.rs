@@ -27,8 +27,8 @@
 ///
 /// ```
 /// # use aluvm::aluasm;
-/// # use aluvm::{Prog, Vm};
-/// # use aluvm::library::Lib;
+/// # use aluvm::Vm;
+/// # use aluvm::library::{Lib, LibSite};
 /// # use aluvm::isa::Instr;
 ///
 /// let code = aluasm! {
@@ -46,9 +46,8 @@
 /// };
 ///
 /// let lib = Lib::assemble(&code).unwrap();
-/// let program = Prog::<Instr>::new(lib);
 /// let mut vm = Vm::<Instr>::new();
-/// match vm.run(&program, &()) {
+/// match vm.exec(LibSite::default(), |_| Some(&lib), &()) {
 ///     true => println!("success"),
 ///     false => println!("failure"),
 /// }

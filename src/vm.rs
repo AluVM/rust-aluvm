@@ -28,9 +28,8 @@ use alloc::boxed::Box;
 use core::marker::PhantomData;
 
 use crate::isa::{Instr, InstructionSet, ReservedOp};
-use crate::library::LibSite;
+use crate::library::{Lib, LibId, LibSite};
 use crate::reg::CoreRegs;
-use crate::Program;
 
 /// Alu virtual machine providing single-core execution environment
 #[derive(Debug, Default)]
@@ -57,24 +56,15 @@ where
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    pub fn run(&mut self, program: &impl Program<Isa = Isa>, context: &Isa::Context<'_>) -> bool {
-        self.call(program, program.entrypoint(), context)
-    }
-
-    /// Executes the program starting from the provided entry point.
-    ///
-    /// # Returns
-    ///
-    /// Value of the `st0` register at the end of the program execution.
-    pub fn call(
+    pub fn exec<'prog>(
         &mut self,
-        program: &impl Program<Isa = Isa>,
-        method: LibSite,
+        entry_point: LibSite,
+        lib_resolver: impl Fn(LibId) -> Option<&'prog Lib>,
         context: &Isa::Context<'_>,
     ) -> bool {
-        let mut call = Some(method);
+        let mut call = Some(entry_point);
         while let Some(ref mut site) = call {
-            if let Some(lib) = program.lib(site.lib) {
+            if let Some(lib) = lib_resolver(site.lib) {
                 call = lib.exec::<Isa>(site.pos, &mut self.registers, context);
             } else if let Some(pos) = site.pos.checked_add(1) {
                 site.pos = pos;

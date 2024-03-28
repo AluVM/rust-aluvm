@@ -156,7 +156,6 @@ pub mod data;
 #[macro_use]
 pub mod isa;
 pub mod library;
-mod program;
 pub mod reg;
 #[cfg(feature = "stl")]
 pub mod stl;
@@ -167,7 +166,6 @@ pub use isa::Isa;
 pub use library::LibArmorError;
 #[doc(hidden)]
 pub use paste::paste;
-pub use program::{Prog, ProgError, Program};
 pub use vm::Vm;
 
 /// Struct types library name.
