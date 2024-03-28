@@ -23,7 +23,7 @@
 
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::borrow::ToOwned;
-use alloc::collections::{btree_map, BTreeMap};
+use alloc::collections::BTreeMap;
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::string::String;
 use core::marker::PhantomData;
@@ -36,17 +36,6 @@ use crate::library::{Lib, LibId, LibSite};
 pub trait Program {
     /// Instruction set architecture used by the program.
     type Isa: InstructionSet;
-
-    /// Iterator type over libraries
-    type Iter<'a>: Iterator<Item = &'a Lib>
-    where
-        Self: 'a;
-
-    /// Returns number of libraries used by the program.
-    fn lib_count(&self) -> u16;
-
-    /// Returns an iterator over libraries used by the program.
-    fn libs(&self) -> Self::Iter<'_>;
 
     /// Returns library corresponding to the provided [`LibId`], if the library is known to the
     /// program.
@@ -144,7 +133,7 @@ where
     /// `true` if the library was already known and `false` otherwise.
     #[inline]
     pub fn add_lib(&mut self, lib: Lib) -> Result<bool, ProgError> {
-        if self.lib_count() >= LIBS_MAX_TOTAL.min(Self::RUNTIME_MAX_TOTAL_LIBS) {
+        if self.libs.len() >= LIBS_MAX_TOTAL.min(Self::RUNTIME_MAX_TOTAL_LIBS) as usize {
             return Err(ProgError::TooManyLibs);
         }
         for isa in &lib.isae {
@@ -165,11 +154,6 @@ where
     Isa: InstructionSet,
 {
     type Isa = Isa;
-    type Iter<'a> = btree_map::Values<'a, LibId, Lib> where Self: 'a;
-
-    fn lib_count(&self) -> u16 { self.libs.len() as u16 }
-
-    fn libs(&self) -> Self::Iter<'_> { self.libs.values() }
 
     fn lib(&self, id: LibId) -> Option<&Lib> { self.libs.get(&id) }
 
