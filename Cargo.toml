@@ -1,7 +1,7 @@
 [package]
 name = "aluvm"
 description = "Functional registry-based RISC virtual machine"
-version = "0.10.6"
+version = "0.10.7"
 authors = ["Dr Maxim Orlovsky <orlovsky@ubideco.org>"]
 repository = "https://github.com/aluvm/rust-aluvm"
 homepage = "https://aluvm.org"
@@ -51,4 +51,4 @@ getrandom = { version = "0.2", features = ["js"] }
 wasm-bindgen-test = "0.3"
 
 [package.metadata.docs.rs]
-features = [ "all" ]
+features = ["all"]
