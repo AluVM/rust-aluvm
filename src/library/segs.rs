@@ -25,7 +25,7 @@
 
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::borrow::ToOwned;
-use alloc::collections::{BTreeMap, BTreeSet};
+use alloc::collections::BTreeSet;
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::string::String;
 #[cfg(all(feature = "alloc", not(feature = "std")))]
@@ -195,14 +195,7 @@ pub struct LibSegOverflow;
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 // #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct LibSeg {
-    /// Set maintains unique library ids which may be iterated in lexicographic ordering
-    set: BTreeSet<LibId>,
-
-    /// Table matches lexicographic-based library index to the library id (i.e. this is reverse
-    /// index).
-    table: BTreeMap<u8, LibId>,
-}
+pub struct LibSeg(BTreeSet<LibId>);
 
 impl LibSeg {
     /// Returns iterator over unique libraries iterated in the deterministic (lexicographic) order
@@ -215,7 +208,7 @@ impl<'a> IntoIterator for &'a LibSeg {
     type IntoIter = ::alloc::collections::btree_set::Iter<'a, LibId>;
 
     #[inline]
-    fn into_iter(self) -> Self::IntoIter { self.set.iter() }
+    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
 impl LibSeg {
@@ -249,17 +242,16 @@ impl LibSeg {
         if set.len() > LIBS_SEGMENT_MAX_COUNT {
             return Err(LibSegOverflow);
         }
-        let table = set.iter().enumerate().map(|(index, id)| (index as u8, *id)).collect();
-        Ok(LibSeg { set, table })
+        Ok(LibSeg(set))
     }
 
     /// Returns number of libraries in the lib segment
     #[inline]
-    pub fn count(&self) -> u8 { self.set.len() as u8 }
+    pub fn count(&self) -> u8 { self.0.len() as u8 }
 
     /// Returns library id with a given index
     #[inline]
-    pub fn at(&self, index: u8) -> Option<LibId> { self.table.get(&index).copied() }
+    pub fn at(&self, index: u8) -> Option<LibId> { self.0.iter().nth(index as usize).copied() }
 
     /// Returns index of a library.
     ///
@@ -271,7 +263,7 @@ impl LibSeg {
     /// If the library is not present in program segment, returns `None`.
     #[inline]
     pub fn index(&self, lib: LibId) -> Option<u8> {
-        self.set.iter().position(|l| *l == lib).map(|i| i as u8)
+        self.0.iter().position(|l| *l == lib).map(|i| i as u8)
     }
 
     /// Adds library id to the library segment.
@@ -286,14 +278,12 @@ impl LibSeg {
     /// `true` if the library was already known and `false` otherwise.
     #[inline]
     pub fn add_lib(&mut self, id: LibId) -> Result<bool, LibSegOverflow> {
-        if self.set.len() >= LIBS_SEGMENT_MAX_COUNT {
+        if self.0.len() >= LIBS_SEGMENT_MAX_COUNT {
             Err(LibSegOverflow)
         } else if self.index(id).is_some() {
             Ok(true)
         } else {
-            self.set.insert(id);
-            let pos = self.index(id).expect("library inserted into a set is absent in the set");
-            self.table.insert(pos, id);
+            self.0.insert(id);
             Ok(false)
         }
     }
@@ -301,7 +291,7 @@ impl LibSeg {
 
 impl Display for LibSeg {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.set.iter().enumerate().try_for_each(|(line, lib)| {
+        self.0.iter().enumerate().try_for_each(|(line, lib)| {
             writeln!(
                 f,
                 "{:>2$}{}",
