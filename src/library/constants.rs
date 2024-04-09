@@ -25,13 +25,13 @@
 
 #![allow(missing_docs)]
 
-pub const CODE_SEGMENT_MAX_LEN: usize = 1 << 16;
+pub const CODE_SEGMENT_MAX_LEN: usize = 0xFFFF;
 
-pub const DATA_SEGMENT_MAX_LEN: usize = 1 << 16;
+pub const DATA_SEGMENT_MAX_LEN: usize = 0xFFFF;
 
 /// Maximum number of libraries that may be referenced (used by) any other library; i.e. limit for
 /// the number of records inside program segment.
-pub const LIBS_SEGMENT_MAX_COUNT: usize = 1 << 8;
+pub const LIBS_SEGMENT_MAX_COUNT: usize = 0xFF;
 
 /// Maximum total number of libraries which may be used by a single program; i.e. maximal number of
 /// nodes in a library dependency tree.

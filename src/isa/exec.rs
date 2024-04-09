@@ -1433,11 +1433,7 @@ impl InstructionSet for Secp256k1Op {
 
     #[cfg(feature = "secp256k1")]
     #[inline]
-    fn isa_ids() -> IsaSeg {
-        let mut set = IsaSeg::new();
-        set.insert(constants::ISA_ID_SECP256K);
-        set
-    }
+    fn isa_ids() -> IsaSeg { IsaSeg::with(constants::ISA_ID_SECP256K) }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -1580,11 +1576,7 @@ impl InstructionSet for Curve25519Op {
 
     #[cfg(feature = "curve25519")]
     #[inline]
-    fn isa_ids() -> IsaSeg {
-        let mut set = IsaSeg::new();
-        set.insert(constants::ISA_ID_ED25519);
-        set
-    }
+    fn isa_ids() -> IsaSeg { IsaSeg::with(constants::ISA_ID_ED25519) }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {

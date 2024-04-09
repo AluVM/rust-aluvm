@@ -34,6 +34,7 @@ use amplify::confinement::SmallBlob;
 use amplify::{confinement, ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use sha2::{Digest, Sha256};
+use strict_encoding::{StrictDeserialize, StrictSerialize};
 
 #[cfg(feature = "ascii-armor")]
 pub use self::_armor::LibArmorError;
@@ -137,6 +138,9 @@ pub struct Lib {
     pub libs: LibSeg,
 }
 
+impl StrictSerialize for Lib {}
+impl StrictDeserialize for Lib {}
+
 impl Display for Lib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "ISAE:   {}", &self.isae)?;
@@ -174,10 +178,11 @@ impl RustHash for Lib {
 
 #[cfg(feature = "ascii-armor")]
 mod _armor {
+    use amplify::confinement::{self, Confined, U24 as U24MAX};
     use armor::{ArmorHeader, ArmorParseError, AsciiArmor, ASCII_ARMOR_ID};
+    use strict_encoding::DeserializeError;
 
     use super::*;
-    use crate::data::encoding::{Decode, DecodeError, Encode};
 
     const ASCII_ARMOR_ISAE: &str = "ISA-Extensions";
     const ASCII_ARMOR_DEPENDENCY: &str = "Dependency";
@@ -190,9 +195,13 @@ mod _armor {
         #[from]
         Armor(ArmorParseError),
 
+        /// The provided data exceed maximum possible library size.
+        #[from(confinement::Error)]
+        TooLarge,
+
         /// Library data deserialization error.
         #[from]
-        Decode(DecodeError),
+        Decode(DeserializeError),
     }
 
     impl AsciiArmor for Lib {
@@ -210,11 +219,14 @@ mod _armor {
             headers
         }
 
-        fn to_ascii_armored_data(&self) -> Vec<u8> { self.serialize() }
+        fn to_ascii_armored_data(&self) -> Vec<u8> {
+            self.to_strict_serialized::<U24MAX>().expect("type guarantees").to_vec()
+        }
 
         fn with_headers_data(_headers: Vec<ArmorHeader>, data: Vec<u8>) -> Result<Self, Self::Err> {
             // TODO: check id, dependencies and ISAE
-            let me = Self::deserialize(data)?;
+            let data = Confined::try_from(data)?;
+            let me = Self::from_strict_serialized::<U24MAX>(data)?;
             Ok(me)
         }
     }

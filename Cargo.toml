@@ -43,7 +43,7 @@ std = ["amplify/std"]
 log = ["std"]
 alloc = ["amplify/alloc"]
 curve25519 = ["curve25519-dalek"]
-serde = ["serde_crate", "amplify/serde", "std"]
+serde = ["serde_crate", "amplify/serde", "std", "strict_encoding/serde"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"
