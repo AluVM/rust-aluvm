@@ -28,13 +28,11 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::string::FromUtf8Error;
 
-use amplify::{IoError, Wrapper};
+use amplify::{confinement, IoError, Wrapper};
 
 use crate::data::encoding::DecodeError::InvalidBool;
 use crate::data::{ByteStr, FloatLayout, IntLayout, Layout, MaybeNumber, Number, NumberLayout};
-use crate::library::{
-    IsaSeg, IsaSegError, Lib, LibId, LibSeg, LibSegOverflow, LibSite, SegmentError,
-};
+use crate::library::{IsaSegError, LibId, LibSite, SegmentError};
 
 /// Trait for encodable container data structures used by AluVM and runtime environments
 pub trait Encode {
@@ -126,7 +124,7 @@ pub enum DecodeError {
     /// Library segment construction error
     #[display(inner)]
     #[from]
-    LibSeg(LibSegOverflow),
+    LibSeg(confinement::Error),
 
     /// ISAE segment construction error
     #[display(inner)]
@@ -616,46 +614,6 @@ impl Decode for LibId {
     }
 }
 
-impl Encode for IsaSeg {
-    type Error = EncodeError;
-
-    fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
-        self.to_string().encode(writer)
-    }
-}
-
-impl Decode for IsaSeg {
-    type Error = DecodeError;
-
-    fn decode(reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        let s = String::decode(reader)?;
-        IsaSeg::with(s).map_err(DecodeError::from)
-    }
-}
-
-impl Encode for LibSeg {
-    type Error = EncodeError;
-
-    fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
-        MaxLenByte::new(self).encode(writer)
-    }
-}
-
-impl Decode for LibSeg {
-    type Error = DecodeError;
-
-    fn decode(reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        let seg: Vec<_> = MaxLenByte::decode(reader)?.release();
-        Ok(LibSeg::from_iter(seg)?)
-    }
-}
-
 impl Encode for LibSite {
     type Error = io::Error;
 
@@ -674,32 +632,5 @@ impl Decode for LibSite {
         let id = LibId::decode(&mut reader)?;
         let pos = u16::decode(&mut reader)?;
         Ok(LibSite::with(pos, id))
-    }
-}
-
-impl Encode for Lib {
-    type Error = EncodeError;
-
-    fn encode(&self, mut writer: impl Write) -> Result<usize, Self::Error> {
-        Ok(self.isae_segment().encode(&mut writer)?
-            + self.code.encode(&mut writer)?
-            + self.data.encode(&mut writer)?
-            + self.libs.encode(&mut writer)?)
-    }
-}
-
-impl Decode for Lib {
-    type Error = DecodeError;
-
-    fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        Ok(Lib::with(
-            String::decode(&mut reader)?.as_str(),
-            ByteStr::decode(&mut reader)?.to_vec(),
-            ByteStr::decode(&mut reader)?.to_vec(),
-            LibSeg::decode(&mut reader)?,
-        )?)
     }
 }

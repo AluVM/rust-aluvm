@@ -26,14 +26,15 @@ use alloc::string::{String, ToString};
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::vec::Vec;
 use core::cmp::Ordering;
-use core::convert::TryFrom;
 use core::fmt::{self, Display, Formatter};
 use core::hash::{Hash as RustHash, Hasher};
 use core::str::FromStr;
 
-use amplify::{ByteArray, Bytes32};
+use amplify::confinement::SmallBlob;
+use amplify::{confinement, ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use sha2::{Digest, Sha256};
+use strict_encoding::{StrictDeserialize, StrictSerialize};
 
 #[cfg(feature = "ascii-armor")]
 pub use self::_armor::LibArmorError;
@@ -41,7 +42,7 @@ use super::{Cursor, Read};
 use crate::data::ByteStr;
 use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet};
 use crate::library::segs::IsaSeg;
-use crate::library::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
+use crate::library::{CodeEofError, LibSeg, SegmentError};
 use crate::reg::CoreRegs;
 use crate::LIB_NAME_ALUVM;
 
@@ -122,24 +123,29 @@ impl LibId {
 
 /// AluVM executable code library
 #[derive(Clone, Debug, Default)]
-// #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
+#[derive(StrictType, StrictDecode)]
+#[cfg_attr(feature = "std", derive(StrictEncode))]
+#[strict_type(lib = LIB_NAME_ALUVM)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Lib {
     /// ISA segment
     pub isae: IsaSeg,
     /// Code segment
-    pub code: ByteStr,
+    pub code: SmallBlob,
     /// Data segment
-    pub data: ByteStr,
+    pub data: SmallBlob,
     /// Libs segment
     pub libs: LibSeg,
 }
 
+impl StrictSerialize for Lib {}
+impl StrictDeserialize for Lib {}
+
 impl Display for Lib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "ISAE:   {}", &self.isae)?;
-        write!(f, "CODE:\n{:#10}", self.code)?;
-        write!(f, "DATA:\n{:#10}", self.data)?;
+        write!(f, "CODE:\n{:#10}", ByteStr::with(self.code.as_ref()))?;
+        write!(f, "DATA:\n{:#10}", ByteStr::with(self.data.as_ref()))?;
         if self.libs.count() > 0 {
             write!(f, "LIBS:   {:8}", self.libs)
         } else {
@@ -172,10 +178,11 @@ impl RustHash for Lib {
 
 #[cfg(feature = "ascii-armor")]
 mod _armor {
+    use amplify::confinement::{self, Confined, U24 as U24MAX};
     use armor::{ArmorHeader, ArmorParseError, AsciiArmor, ASCII_ARMOR_ID};
+    use strict_encoding::DeserializeError;
 
     use super::*;
-    use crate::data::encoding::{Decode, DecodeError, Encode};
 
     const ASCII_ARMOR_ISAE: &str = "ISA-Extensions";
     const ASCII_ARMOR_DEPENDENCY: &str = "Dependency";
@@ -188,9 +195,13 @@ mod _armor {
         #[from]
         Armor(ArmorParseError),
 
+        /// The provided data exceed maximum possible library size.
+        #[from(confinement::Error)]
+        TooLarge,
+
         /// Library data deserialization error.
         #[from]
-        Decode(DecodeError),
+        Decode(DeserializeError),
     }
 
     impl AsciiArmor for Lib {
@@ -208,18 +219,21 @@ mod _armor {
             headers
         }
 
-        fn to_ascii_armored_data(&self) -> Vec<u8> { self.serialize() }
+        fn to_ascii_armored_data(&self) -> Vec<u8> {
+            self.to_strict_serialized::<U24MAX>().expect("type guarantees").to_vec()
+        }
 
         fn with_headers_data(_headers: Vec<ArmorHeader>, data: Vec<u8>) -> Result<Self, Self::Err> {
             // TODO: check id, dependencies and ISAE
-            let me = Self::deserialize(data)?;
+            let data = Confined::try_from(data)?;
+            let me = Self::from_strict_serialized::<U24MAX>(data)?;
             Ok(me)
         }
     }
 }
 
 /// Errors while assembling library from the instruction set
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(inner)]
 pub enum AssemblerError {
     /// Error assembling code and data segments
@@ -228,7 +242,7 @@ pub enum AssemblerError {
 
     /// Error assembling library segment
     #[from]
-    LibSegOverflow(LibSegOverflow),
+    LibSegOverflow(confinement::Error),
 }
 
 #[cfg(feature = "std")]
@@ -249,14 +263,14 @@ impl Lib {
         data: Vec<u8>,
         libs: LibSeg,
     ) -> Result<Lib, SegmentError> {
-        let isae = IsaSeg::from_iter(isa.split(' '))?;
+        let isae = IsaSeg::from_str(isa)?;
+        let len = bytecode.len();
         Ok(Self {
             isae,
             libs,
-            code: ByteStr::try_from(bytecode.as_slice())
-                .map_err(|_| SegmentError::CodeSegmentTooLarge(bytecode.len()))?,
-            data: ByteStr::try_from(data.as_slice())
-                .map_err(|_| SegmentError::DataSegmentTooLarge(bytecode.len()))?,
+            code: SmallBlob::try_from(bytecode)
+                .map_err(|_| SegmentError::CodeSegmentTooLarge(len))?,
+            data: SmallBlob::try_from(data).map_err(|_| SegmentError::DataSegmentTooLarge(len))?,
         })
     }
 
@@ -265,25 +279,18 @@ impl Lib {
     where
         Isa: InstructionSet,
     {
-        let call_sites = code.iter().filter_map(|instr| instr.call_site());
-        let libs_segment = LibSeg::with(call_sites)?;
+        let call_sites = code.iter().filter_map(|instr| instr.call_site()).map(|site| site.lib);
+        let libs_segment = LibSeg::try_from_iter(call_sites)?;
 
         let mut code_segment = ByteStr::default();
         let mut writer = Cursor::<_, ByteStr>::new(&mut code_segment.bytes[..], &libs_segment);
         for instr in code.iter() {
             instr.encode(&mut writer)?;
         }
-        let pos = writer.pos();
-        let data_segment = writer.into_data_segment();
-        code_segment.adjust_len(pos);
+        let data_segment = SmallBlob::from_collection_unsafe(writer.into_data_segment().to_vec());
+        let code_segment = SmallBlob::from_collection_unsafe(code_segment.to_vec());
 
-        Ok(Lib {
-            isae: IsaSeg::from_iter(Isa::isa_ids())
-                .expect("ISA instruction set contains incorrect ISAE ids"),
-            libs: libs_segment,
-            code: code_segment,
-            data: data_segment,
-        })
+        Ok(Lib { isae: Isa::isa_ids(), libs: libs_segment, code: code_segment, data: data_segment })
     }
 
     /// Disassembles library into a set of instructions

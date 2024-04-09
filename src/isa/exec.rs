@@ -39,7 +39,7 @@ use super::{
 };
 use crate::data::{ByteStr, MaybeNumber, Number, NumberLayout};
 use crate::isa::{ExtendFlag, FloatEqFlag, IntFlags, MergeFlag, NoneEqFlag, SignFlag};
-use crate::library::{constants, LibSite};
+use crate::library::{constants, IsaName, IsaSeg, LibSite};
 use crate::reg::{CoreRegs, NumericRegister, Reg, Reg32, RegA, RegA2, RegAR, RegBlockAR, RegR};
 
 /// Turing machine movement after instruction execution
@@ -67,13 +67,13 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
     ///
     /// Each id must be up to 8 bytes and consist of upper case latin alphanumeric characters,
     /// starting with non-number.
-    fn isa_ids() -> BTreeSet<&'static str>;
+    fn isa_ids() -> IsaSeg;
 
     /// ISA Extension IDs represented as a standard string (space-separated)
     ///
     /// Concatenated length of the ISA IDs joined via ' ' character must not exceed 128 bytes.
     #[inline]
-    fn isa_string() -> String { Self::isa_ids().into_iter().collect::<Vec<_>>().join(" ") }
+    fn isa_string() -> String { Self::isa_ids().to_string() }
 
     /// ISA Extension IDs encoded in a standard way (space-separated)
     ///
@@ -83,7 +83,7 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
 
     /// Checks whether provided ISA extension ID is supported by the current instruction set
     #[inline]
-    fn is_supported(id: &str) -> bool { Self::isa_ids().contains(id) }
+    fn is_supported(id: &IsaName) -> bool { Self::isa_ids().contains(id) }
 
     /// Lists all registers which are used by the instruction.
     fn regs(&self) -> BTreeSet<Reg> {
@@ -122,13 +122,12 @@ where
     type Context<'ctx> = Extension::Context<'ctx>;
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> {
-        let mut set = BTreeSet::new();
-        set.insert(constants::ISA_ID_ALU);
-        set.extend(DigestOp::isa_ids());
-        set.extend(Secp256k1Op::isa_ids());
-        set.extend(Curve25519Op::isa_ids());
-        set.extend(Extension::isa_ids());
+    fn isa_ids() -> IsaSeg {
+        let mut set = IsaSeg::with(constants::ISA_ID_ALU);
+        set.extend(DigestOp::isa_ids()).expect("hardcoded");
+        set.extend(Secp256k1Op::isa_ids()).expect("hardcoded");
+        set.extend(Curve25519Op::isa_ids()).expect("hardcoded");
+        set.extend(Extension::isa_ids()).expect("hardcoded");
         set
     }
 
@@ -218,7 +217,7 @@ impl InstructionSet for ControlFlowOp {
     type Context<'ctx> = ();
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
 
@@ -265,7 +264,7 @@ impl InstructionSet for PutOp {
     type Context<'ctx> = ();
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
 
@@ -328,7 +327,7 @@ impl InstructionSet for MoveOp {
     type Context<'ctx> = ();
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -514,7 +513,7 @@ impl InstructionSet for CmpOp {
     type Context<'ctx> = ();
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -670,7 +669,7 @@ impl InstructionSet for ArithmeticOp {
     type Context<'ctx> = ();
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -835,7 +834,7 @@ impl InstructionSet for BitwiseOp {
     type Context<'ctx> = ();
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -1068,7 +1067,7 @@ impl InstructionSet for BytesOp {
     type Context<'ctx> = ();
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -1387,11 +1386,7 @@ impl InstructionSet for DigestOp {
     type Context<'ctx> = ();
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> {
-        let mut set = BTreeSet::new();
-        set.insert(constants::ISA_ID_BPDIGEST);
-        set
-    }
+    fn isa_ids() -> IsaSeg { IsaSeg::with(constants::ISA_ID_BPDIGEST) }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -1459,15 +1454,11 @@ impl InstructionSet for Secp256k1Op {
 
     #[cfg(not(feature = "secp256k1"))]
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     #[cfg(feature = "secp256k1")]
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> {
-        let mut set = BTreeSet::new();
-        set.insert(constants::ISA_ID_SECP256K);
-        set
-    }
+    fn isa_ids() -> IsaSeg { IsaSeg::with(constants::ISA_ID_SECP256K) }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -1606,15 +1597,11 @@ impl InstructionSet for Curve25519Op {
 
     #[cfg(not(feature = "curve25519"))]
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     #[cfg(feature = "curve25519")]
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> {
-        let mut set = BTreeSet::new();
-        set.insert(constants::ISA_ID_ED25519);
-        set
-    }
+    fn isa_ids() -> IsaSeg { IsaSeg::with(constants::ISA_ID_ED25519) }
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -1671,7 +1658,7 @@ impl InstructionSet for ReservedOp {
     type Context<'ctx> = ();
 
     #[inline]
-    fn isa_ids() -> BTreeSet<&'static str> { BTreeSet::default() }
+    fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
     fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
 
