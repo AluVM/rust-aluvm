@@ -122,7 +122,9 @@ impl LibId {
 
 /// AluVM executable code library
 #[derive(Clone, Debug, Default)]
-// #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
+// #[derive(StrictType, StrictDecode)]
+// #[cfg_attr(feature = "std", derive(StrictEncode))]
+// #[strict_type(lib = LIB_NAME_ALUVM)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Lib {
     /// ISA segment
@@ -249,7 +251,7 @@ impl Lib {
         data: Vec<u8>,
         libs: LibSeg,
     ) -> Result<Lib, SegmentError> {
-        let isae = IsaSeg::from_iter(isa.split(' '))?;
+        let isae = IsaSeg::from_str(isa)?;
         Ok(Self {
             isae,
             libs,
@@ -277,13 +279,7 @@ impl Lib {
         let data_segment = writer.into_data_segment();
         code_segment.adjust_len(pos);
 
-        Ok(Lib {
-            isae: IsaSeg::from_iter(Isa::isa_ids())
-                .expect("ISA instruction set contains incorrect ISAE ids"),
-            libs: libs_segment,
-            code: code_segment,
-            data: data_segment,
-        })
+        Ok(Lib { isae: Isa::isa_ids(), libs: libs_segment, code: code_segment, data: data_segment })
     }
 
     /// Disassembles library into a set of instructions

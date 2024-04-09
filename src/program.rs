@@ -30,7 +30,7 @@ use core::marker::PhantomData;
 
 use crate::isa::InstructionSet;
 use crate::library::constants::LIBS_MAX_TOTAL;
-use crate::library::{Lib, LibId, LibSite};
+use crate::library::{IsaName, Lib, LibId, LibSite};
 
 /// Trait for a concrete program implementation provided by a runtime environment.
 pub trait Program {
@@ -62,7 +62,7 @@ pub trait Program {
 #[display(doc_comments)]
 pub enum ProgError {
     /// ISA id {0} is not supported by the selected instruction set
-    IsaNotSupported(String),
+    IsaNotSupported(IsaName),
 
     /// Attempt to add library when maximum possible number of libraries is already present in
     /// the VM
@@ -147,7 +147,7 @@ where
         if self.lib_count() >= LIBS_MAX_TOTAL.min(Self::RUNTIME_MAX_TOTAL_LIBS) {
             return Err(ProgError::TooManyLibs);
         }
-        for isa in &lib.isae {
+        for isa in lib.isae.iter() {
             if !Isa::is_supported(isa) {
                 return Err(ProgError::IsaNotSupported(isa.to_owned()));
             }

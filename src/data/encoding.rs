@@ -23,6 +23,7 @@
 
 //! Helper traits and default implementations for encoding elements of AliVM container types
 
+use core::str::FromStr;
 use std::io::{self, Read, Write};
 use std::iter::FromIterator;
 use std::marker::PhantomData;
@@ -632,7 +633,7 @@ impl Decode for IsaSeg {
         Self: Sized,
     {
         let s = String::decode(reader)?;
-        IsaSeg::with(s).map_err(DecodeError::from)
+        IsaSeg::from_str(&s).map_err(DecodeError::from)
     }
 }
 

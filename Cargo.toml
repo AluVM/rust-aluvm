@@ -55,3 +55,8 @@ wasm-bindgen-test = "0.3"
 
 [package.metadata.docs.rs]
 features = ["all"]
+
+[patch.crates-io]
+strict_encoding_derive = { git = "https://github.com/strict-types/strict-encoding", branch = "rstring" }
+strict_encoding = { git = "https://github.com/strict-types/strict-encoding", branch = "rstring" }
+strict_types = { git = "https://github.com/strict-types/strict-types", branch = "rstring" }

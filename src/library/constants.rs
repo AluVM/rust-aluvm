@@ -37,22 +37,11 @@ pub const LIBS_SEGMENT_MAX_COUNT: usize = 1 << 8;
 /// nodes in a library dependency tree.
 pub const LIBS_MAX_TOTAL: u16 = 1024;
 
-pub const ISAE_SEGMENT_MAX_LEN: usize = 0xFF;
-
-pub const ISAE_SEGMENT_MAX_COUNT: usize = 32;
+pub const ISAE_SEGMENT_MAX_COUNT: usize = 64;
 
 pub const ISA_ID_MIN_LEN: usize = 2;
 
 pub const ISA_ID_MAX_LEN: usize = 8;
-
-pub const ISA_ID_ALLOWED_CHARS: [char; 36] = [
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-    'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-];
-pub const ISA_ID_ALLOWED_FIRST_CHAR: [char; 26] = [
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-    'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-];
 
 pub const ISA_ID_ALU: &str = "ALU";
 pub const ISA_ID_BPDIGEST: &str = "BPDIGEST";
