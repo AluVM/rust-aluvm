@@ -43,7 +43,7 @@ use strict_encoding::{InvalidRString, RString};
 use crate::library::constants::{
     ISAE_SEGMENT_MAX_COUNT, ISA_ID_MAX_LEN, ISA_ID_MIN_LEN, LIBS_SEGMENT_MAX_COUNT,
 };
-use crate::library::{LibId, LibSite};
+use crate::library::LibId;
 use crate::LIB_NAME_ALUVM;
 
 /// Errors while processing binary-encoded segment data
@@ -132,6 +132,7 @@ impl IsaSeg {
     }
 
     /// Constructs ISA segment from an iterator over ISA extension names.
+    #[inline]
     pub fn try_from_iter(
         iter: impl IntoIterator<Item = IsaName>,
     ) -> Result<Self, confinement::Error> {
@@ -166,12 +167,6 @@ impl FromStr for IsaSeg {
     }
 }
 
-/// unable to add a library to the library segment: maximum number of libraries (2^16) exceeded
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default, Display)]
-#[cfg_attr(feature = "std", derive(Error))]
-#[display(doc_comments)]
-pub struct LibSegOverflow;
-
 /// Library segment data keeping collection of libraries which MAY be used in some program.
 /// Libraries are referenced in the bytecode using 16-bit position number in this index.
 ///
@@ -192,10 +187,18 @@ pub struct LibSegOverflow;
 /// The implementation MUST ensure that the size of the index never exceeds `u16::MAX`.
 ///
 /// [`LIBS_MAX_TOTAL`]: super::constants::LIBS_MAX_TOTAL
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-// #[cfg_attr(feature = "strict_encoding", derive(StrictEncode, StrictDecode))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct LibSeg(BTreeSet<LibId>);
+#[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default, From)]
+#[wrapper(Deref)]
+#[wrapper_mut(DerefMut)]
+#[derive(StrictType, StrictDecode)]
+#[cfg_attr(feature = "std", derive(StrictEncode))]
+#[strict_type(lib = LIB_NAME_ALUVM)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct LibSeg(Confined<BTreeSet<LibId>, 0, LIBS_SEGMENT_MAX_COUNT>);
 
 impl LibSeg {
     /// Returns iterator over unique libraries iterated in the deterministic (lexicographic) order
@@ -212,39 +215,6 @@ impl<'a> IntoIterator for &'a LibSeg {
 }
 
 impl LibSeg {
-    /// Constructs program segment from an iterator over call locations.
-    ///
-    /// Lib segment deterministically orders library ids according to their [`LibId`] `Ord`
-    /// implementation. This is not a requirement, but just a good practice for producing the same
-    /// code on different platforms.
-    ///
-    /// # Error
-    ///
-    /// Errors with [`LibSegOverflow`] if the number of unique library ids exceeds
-    /// [`LIBS_SEGMENT_MAX_COUNT`].
-    pub fn with(source: impl IntoIterator<Item = LibSite>) -> Result<Self, LibSegOverflow> {
-        LibSeg::from_iter(source.into_iter().map(|site| site.lib))
-    }
-
-    /// Constructs program segment from an iterator over lib ids.
-    ///
-    /// Lib segment deterministically orders library ids according to their [`LibId`] `Ord`
-    /// implementation. This is not a requirement, but just a good practice for producing the same
-    /// code on different platforms.
-    ///
-    /// # Error
-    ///
-    /// Errors with [`LibSegOverflow`] if the number of unique library ids exceeds
-    /// [`LIBS_SEGMENT_MAX_COUNT`].
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_iter(source: impl IntoIterator<Item = LibId>) -> Result<Self, LibSegOverflow> {
-        let set = source.into_iter().collect::<BTreeSet<LibId>>();
-        if set.len() > LIBS_SEGMENT_MAX_COUNT {
-            return Err(LibSegOverflow);
-        }
-        Ok(LibSeg(set))
-    }
-
     /// Returns number of libraries in the lib segment
     #[inline]
     pub fn count(&self) -> u8 { self.0.len() as u8 }
@@ -266,26 +236,12 @@ impl LibSeg {
         self.0.iter().position(|l| *l == lib).map(|i| i as u8)
     }
 
-    /// Adds library id to the library segment.
-    ///
-    /// # Errors
-    ///
-    /// Checks requirement that the total number of libraries must not exceed `LIBS_MAX_TOTAL` and
-    /// returns [`LibSegOverflow`] otherwise
-    ///
-    /// # Returns
-    ///
-    /// `true` if the library was already known and `false` otherwise.
+    /// Constructs libraries segment from an iterator over library ids.
     #[inline]
-    pub fn add_lib(&mut self, id: LibId) -> Result<bool, LibSegOverflow> {
-        if self.0.len() >= LIBS_SEGMENT_MAX_COUNT {
-            Err(LibSegOverflow)
-        } else if self.index(id).is_some() {
-            Ok(true)
-        } else {
-            self.0.insert(id);
-            Ok(false)
-        }
+    pub fn try_from_iter(
+        iter: impl IntoIterator<Item = LibId>,
+    ) -> Result<Self, confinement::Error> {
+        Confined::try_from_iter(iter).map(Self)
     }
 }
 

@@ -31,7 +31,7 @@ use core::fmt::{self, Display, Formatter};
 use core::hash::{Hash as RustHash, Hasher};
 use core::str::FromStr;
 
-use amplify::{ByteArray, Bytes32};
+use amplify::{confinement, ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use sha2::{Digest, Sha256};
 
@@ -41,7 +41,7 @@ use super::{Cursor, Read};
 use crate::data::ByteStr;
 use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet};
 use crate::library::segs::IsaSeg;
-use crate::library::{CodeEofError, LibSeg, LibSegOverflow, SegmentError};
+use crate::library::{CodeEofError, LibSeg, SegmentError};
 use crate::reg::CoreRegs;
 use crate::LIB_NAME_ALUVM;
 
@@ -221,7 +221,7 @@ mod _armor {
 }
 
 /// Errors while assembling library from the instruction set
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(inner)]
 pub enum AssemblerError {
     /// Error assembling code and data segments
@@ -230,7 +230,7 @@ pub enum AssemblerError {
 
     /// Error assembling library segment
     #[from]
-    LibSegOverflow(LibSegOverflow),
+    LibSegOverflow(confinement::Error),
 }
 
 #[cfg(feature = "std")]
@@ -267,8 +267,8 @@ impl Lib {
     where
         Isa: InstructionSet,
     {
-        let call_sites = code.iter().filter_map(|instr| instr.call_site());
-        let libs_segment = LibSeg::with(call_sites)?;
+        let call_sites = code.iter().filter_map(|instr| instr.call_site()).map(|site| site.lib);
+        let libs_segment = LibSeg::try_from_iter(call_sites)?;
 
         let mut code_segment = ByteStr::default();
         let mut writer = Cursor::<_, ByteStr>::new(&mut code_segment.bytes[..], &libs_segment);

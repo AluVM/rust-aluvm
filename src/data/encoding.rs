@@ -29,13 +29,11 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::string::FromUtf8Error;
 
-use amplify::{IoError, Wrapper};
+use amplify::{confinement, IoError, Wrapper};
 
 use crate::data::encoding::DecodeError::InvalidBool;
 use crate::data::{ByteStr, FloatLayout, IntLayout, Layout, MaybeNumber, Number, NumberLayout};
-use crate::library::{
-    IsaSeg, IsaSegError, Lib, LibId, LibSeg, LibSegOverflow, LibSite, SegmentError,
-};
+use crate::library::{IsaSeg, IsaSegError, Lib, LibId, LibSeg, LibSite, SegmentError};
 
 /// Trait for encodable container data structures used by AluVM and runtime environments
 pub trait Encode {
@@ -127,7 +125,7 @@ pub enum DecodeError {
     /// Library segment construction error
     #[display(inner)]
     #[from]
-    LibSeg(LibSegOverflow),
+    LibSeg(confinement::Error),
 
     /// ISAE segment construction error
     #[display(inner)]
@@ -653,7 +651,7 @@ impl Decode for LibSeg {
         Self: Sized,
     {
         let seg: Vec<_> = MaxLenByte::decode(reader)?.release();
-        Ok(LibSeg::from_iter(seg)?)
+        Ok(LibSeg::try_from_iter(seg)?)
     }
 }
 
