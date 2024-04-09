@@ -26,11 +26,11 @@ use alloc::string::{String, ToString};
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::vec::Vec;
 use core::cmp::Ordering;
-use core::convert::TryFrom;
 use core::fmt::{self, Display, Formatter};
 use core::hash::{Hash as RustHash, Hasher};
 use core::str::FromStr;
 
+use amplify::confinement::SmallBlob;
 use amplify::{confinement, ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use sha2::{Digest, Sha256};
@@ -122,17 +122,17 @@ impl LibId {
 
 /// AluVM executable code library
 #[derive(Clone, Debug, Default)]
-// #[derive(StrictType, StrictDecode)]
-// #[cfg_attr(feature = "std", derive(StrictEncode))]
-// #[strict_type(lib = LIB_NAME_ALUVM)]
+#[derive(StrictType, StrictDecode)]
+#[cfg_attr(feature = "std", derive(StrictEncode))]
+#[strict_type(lib = LIB_NAME_ALUVM)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Lib {
     /// ISA segment
     pub isae: IsaSeg,
     /// Code segment
-    pub code: ByteStr,
+    pub code: SmallBlob,
     /// Data segment
-    pub data: ByteStr,
+    pub data: SmallBlob,
     /// Libs segment
     pub libs: LibSeg,
 }
@@ -140,8 +140,8 @@ pub struct Lib {
 impl Display for Lib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "ISAE:   {}", &self.isae)?;
-        write!(f, "CODE:\n{:#10}", self.code)?;
-        write!(f, "DATA:\n{:#10}", self.data)?;
+        write!(f, "CODE:\n{:#10}", ByteStr::with(self.code.as_ref()))?;
+        write!(f, "DATA:\n{:#10}", ByteStr::with(self.data.as_ref()))?;
         if self.libs.count() > 0 {
             write!(f, "LIBS:   {:8}", self.libs)
         } else {
@@ -252,13 +252,13 @@ impl Lib {
         libs: LibSeg,
     ) -> Result<Lib, SegmentError> {
         let isae = IsaSeg::from_str(isa)?;
+        let len = bytecode.len();
         Ok(Self {
             isae,
             libs,
-            code: ByteStr::try_from(bytecode.as_slice())
-                .map_err(|_| SegmentError::CodeSegmentTooLarge(bytecode.len()))?,
-            data: ByteStr::try_from(data.as_slice())
-                .map_err(|_| SegmentError::DataSegmentTooLarge(bytecode.len()))?,
+            code: SmallBlob::try_from(bytecode)
+                .map_err(|_| SegmentError::CodeSegmentTooLarge(len))?,
+            data: SmallBlob::try_from(data).map_err(|_| SegmentError::DataSegmentTooLarge(len))?,
         })
     }
 
@@ -275,9 +275,8 @@ impl Lib {
         for instr in code.iter() {
             instr.encode(&mut writer)?;
         }
-        let pos = writer.pos();
-        let data_segment = writer.into_data_segment();
-        code_segment.adjust_len(pos);
+        let data_segment = SmallBlob::from_collection_unsafe(writer.into_data_segment().to_vec());
+        let code_segment = SmallBlob::from_collection_unsafe(code_segment.to_vec());
 
         Ok(Lib { isae: Isa::isa_ids(), libs: libs_segment, code: code_segment, data: data_segment })
     }
