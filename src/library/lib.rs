@@ -38,7 +38,7 @@ use strict_encoding::{StrictDeserialize, StrictSerialize};
 
 #[cfg(feature = "ascii-armor")]
 pub use self::_armor::LibArmorError;
-use super::{Cursor, Read};
+use super::{Cursor, Read, WriteError};
 use crate::data::ByteStr;
 use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet};
 use crate::library::segs::IsaSeg;
@@ -238,6 +238,7 @@ mod _armor {
 pub enum AssemblerError {
     /// Error assembling code and data segments
     #[from]
+    #[from(WriteError)]
     Bytecode(BytecodeError),
 
     /// Error assembling library segment
@@ -287,7 +288,9 @@ impl Lib {
         for instr in code.iter() {
             instr.encode(&mut writer)?;
         }
+        let pos = writer.pos();
         let data_segment = SmallBlob::from_collection_unsafe(writer.into_data_segment().to_vec());
+        code_segment.adjust_len(pos);
         let code_segment = SmallBlob::from_collection_unsafe(code_segment.to_vec());
 
         Ok(Lib { isae: Isa::isa_ids(), libs: libs_segment, code: code_segment, data: data_segment })
