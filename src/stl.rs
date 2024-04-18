@@ -23,21 +23,25 @@
 
 //! Strict types library generator methods.
 
+use core::convert::TryFrom;
+
 use strict_types::typelib::{CompileError, LibBuilder};
 use strict_types::TypeLib;
 
-use crate::library::LibSite;
+use crate::library::{Lib, LibSite};
 use crate::LIB_NAME_ALUVM;
 
 /// Strict type id for the library providing data types from this crate.
 pub const LIB_ID_ALUVM: &str =
-    "urn:ubideco:stl:DVtm25LRKU4TjbyZmVxPhvCmctZ6vKkPKqfpU2QsDNUo#exodus-axiom-tommy";
+    "urn:ubideco:stl:APYERRUMyWqLadwTv8tEFifHMPGpL3xGFSBxwaKYpmcV#square-mammal-uncle";
 
 fn _aluvm_stl() -> Result<TypeLib, CompileError> {
     LibBuilder::new(libname!(LIB_NAME_ALUVM), tiny_bset! {
+        strict_types::stl::std_stl().to_dependency(),
         strict_types::stl::strict_types_stl().to_dependency()
     })
     .transpile::<LibSite>()
+    .transpile::<Lib>()
     .compile()
 }
 

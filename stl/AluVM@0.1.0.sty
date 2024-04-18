@@ -1,5 +1,5 @@
 {-
-  Id: urn:ubideco:stl:DVtm25LRKU4TjbyZmVxPhvCmctZ6vKkPKqfpU2QsDNUo#exodus-axiom-tommy
+  Id: urn:ubideco:stl:APYERRUMyWqLadwTv8tEFifHMPGpL3xGFSBxwaKYpmcV#square-mammal-uncle
   Name: AluVM
   Version: 0.1.0
   Description: AluVM data type library
@@ -11,10 +11,27 @@
 @context
 typelib AluVM
 
--- no dependencies
+import Std#EcCNgrgLaygt3tCZNu2ZVEzMzSAZYEUeTNAVi5E81YWi#aspirin-mango-average
+  use AlphaCaps#digital-mirage-dream
+
+
+@mnemonic(spirit-example-carrot)
+data IsaName           : [Std.AlphaCaps#digital-mirage-dream ^ 2..0x8]
+
+@mnemonic(blonde-format-kansas)
+data IsaSeg            : {IsaName ^ ..0x40}
+
+@mnemonic(volcano-daniel-ticket)
+data Lib               : isae IsaSeg
+                       , code [Byte]
+                       , data [Byte]
+                       , libs LibSeg
 
 @mnemonic(rebel-factor-rodeo)
 data LibId             : [Byte ^ 32]
+
+@mnemonic(imitate-cargo-region)
+data LibSeg            : {LibId ^ ..0xff}
 
 @mnemonic(organic-escort-ceramic)
 data LibSite           : lib LibId, pos U16

@@ -43,7 +43,7 @@ std = ["amplify/std"]
 log = ["std"]
 alloc = ["amplify/alloc"]
 curve25519 = ["curve25519-dalek"]
-serde = ["serde_crate", "amplify/serde", "std"]
+serde = ["serde_crate", "amplify/serde", "std", "strict_encoding/serde"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"
@@ -55,3 +55,8 @@ wasm-bindgen-test = "0.3"
 
 [package.metadata.docs.rs]
 features = ["all"]
+
+[patch.crates-io]
+strict_encoding_derive = { git = "https://github.com/strict-types/strict-encoding", branch = "rstring" }
+strict_encoding = { git = "https://github.com/strict-types/strict-encoding", branch = "rstring" }
+strict_types = { git = "https://github.com/strict-types/strict-types", branch = "rstring" }
