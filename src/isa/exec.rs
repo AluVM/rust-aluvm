@@ -99,8 +99,7 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
     fn dst_regs(&self) -> BTreeSet<Reg>;
 
     /// Returns computational complexity of the instruction
-    #[inline]
-    fn complexity(&self) -> u64 { 1 }
+    fn complexity(&self) -> u64;
 
     /// Executes given instruction taking all registers as input and output.
     ///
@@ -169,6 +168,26 @@ where
             Instr::ExtensionCodes(instr) => instr.dst_regs(),
             Instr::ReservedInstruction(instr) => instr.dst_regs(),
             Instr::Nop => bset![],
+        }
+    }
+
+    fn complexity(&self) -> u64 {
+        match self {
+            Instr::ControlFlow(instr) => instr.complexity(),
+            Instr::Put(instr) => instr.complexity(),
+            Instr::Move(instr) => instr.complexity(),
+            Instr::Cmp(instr) => instr.complexity(),
+            Instr::Arithmetic(instr) => instr.complexity(),
+            Instr::Bitwise(instr) => instr.complexity(),
+            Instr::Bytes(instr) => instr.complexity(),
+            Instr::Digest(instr) => instr.complexity(),
+            #[cfg(feature = "secp256k1")]
+            Instr::Secp256k1(instr) => instr.complexity(),
+            #[cfg(feature = "curve25519")]
+            Instr::Curve25519(instr) => instr.complexity(),
+            Instr::ExtensionCodes(instr) => instr.complexity(),
+            Instr::ReservedInstruction(instr) => instr.complexity(),
+            Instr::Nop => 1,
         }
     }
 
@@ -412,6 +431,8 @@ impl InstructionSet for MoveOp {
         }
     }
 
+    fn complexity(&self) -> u64 { 1 }
+
     fn exec(&self, regs: &mut CoreRegs, _: LibSite, _: &()) -> ExecStep {
         match self {
             MoveOp::MovA(reg, idx1, idx2) => {
@@ -545,6 +566,8 @@ impl InstructionSet for CmpOp {
             _ => bset![],
         }
     }
+
+    fn complexity(&self) -> u64 { 1 }
 
     fn exec(&self, regs: &mut CoreRegs, _: LibSite, _: &()) -> ExecStep {
         match self {
@@ -886,6 +909,8 @@ impl InstructionSet for BitwiseOp {
             }
         }
     }
+
+    fn complexity(&self) -> u64 { 1 }
 
     fn exec(&self, regs: &mut CoreRegs, _site: LibSite, _: &()) -> ExecStep {
         fn shl(original: &[u8], shift: usize, n_bytes: usize) -> [u8; 1024] {
@@ -1638,6 +1663,8 @@ impl InstructionSet for ReservedOp {
     fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
 
     fn dst_regs(&self) -> BTreeSet<Reg> { bset![] }
+
+    fn complexity(&self) -> u64 { u64::MAX }
 
     fn exec(&self, regs: &mut CoreRegs, site: LibSite, ctx: &()) -> ExecStep {
         ControlFlowOp::Fail.exec(regs, site, ctx)
