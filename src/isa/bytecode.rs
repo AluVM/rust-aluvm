@@ -48,7 +48,7 @@ pub enum BytecodeError {
     Write(WriteError),
 
     /// put operation does not contain number (when it was deserialized, the data segment was
-    /// shorter then the number value offset to read)
+    /// shorter than the number value offset to read)
     PutNoNumber,
 }
 
