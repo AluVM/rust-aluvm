@@ -67,9 +67,6 @@ impl ::std::error::Error for BytecodeError {
 /// bound by u16), (3) it provides too many fails in situations when we can't
 /// fail because of `u16`-bounding and exclusive in-memory encoding handling.
 pub trait Bytecode {
-    /// Returns number of bytes which instruction and its argument occupies
-    fn byte_count(&self) -> u16;
-
     /// Returns range of instruction btecodes covered by a set of operations
     fn instr_range() -> RangeInclusive<u8>;
 
@@ -106,26 +103,6 @@ impl<Extension> Bytecode for Instr<Extension>
 where
     Extension: InstructionSet,
 {
-    fn byte_count(&self) -> u16 {
-        match self {
-            Instr::ControlFlow(instr) => instr.byte_count(),
-            Instr::Put(instr) => instr.byte_count(),
-            Instr::Move(instr) => instr.byte_count(),
-            Instr::Cmp(instr) => instr.byte_count(),
-            Instr::Arithmetic(instr) => instr.byte_count(),
-            Instr::Bitwise(instr) => instr.byte_count(),
-            Instr::Bytes(instr) => instr.byte_count(),
-            Instr::Digest(instr) => instr.byte_count(),
-            #[cfg(feature = "secp256k1")]
-            Instr::Secp256k1(instr) => instr.byte_count(),
-            #[cfg(feature = "curve25519")]
-            Instr::Curve25519(instr) => instr.byte_count(),
-            Instr::ExtensionCodes(instr) => instr.byte_count(),
-            Instr::ReservedInstruction(instr) => instr.byte_count(),
-            Instr::Nop => 1,
-        }
-    }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { 0..=u8::MAX }
 
@@ -235,17 +212,6 @@ where
 }
 
 impl Bytecode for ControlFlowOp {
-    fn byte_count(&self) -> u16 {
-        match self {
-            ControlFlowOp::Fail | ControlFlowOp::Succ => 1,
-            ControlFlowOp::Jmp(_) | ControlFlowOp::Jif(_) => 3,
-            ControlFlowOp::Routine(_) => 3,
-            ControlFlowOp::Call(_) => 4,
-            ControlFlowOp::Exec(_) => 4,
-            ControlFlowOp::Ret => 1,
-        }
-    }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_FAIL..=INSTR_RET }
 
@@ -308,17 +274,6 @@ impl Bytecode for ControlFlowOp {
 }
 
 impl Bytecode for PutOp {
-    fn byte_count(&self) -> u16 {
-        match self {
-            PutOp::ClrA(_, _) | PutOp::ClrF(_, _) | PutOp::ClrR(_, _) => 2,
-            PutOp::PutA(_, _, _)
-            | PutOp::PutIfA(_, _, _)
-            | PutOp::PutF(_, _, _)
-            | PutOp::PutR(_, _, _)
-            | PutOp::PutIfR(_, _, _) => 3,
-        }
-    }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_CLRA..=INSTR_PUTIFR }
 
@@ -437,9 +392,6 @@ impl Bytecode for PutOp {
 }
 
 impl Bytecode for MoveOp {
-    #[inline]
-    fn byte_count(&self) -> u16 { 3 }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_MOV..=INSTR_CFA }
 
@@ -604,23 +556,6 @@ impl Bytecode for MoveOp {
 }
 
 impl Bytecode for CmpOp {
-    fn byte_count(&self) -> u16 {
-        match self {
-            CmpOp::GtA(_, _, _, _)
-            | CmpOp::LtA(_, _, _, _)
-            | CmpOp::GtF(_, _, _, _)
-            | CmpOp::LtF(_, _, _, _)
-            | CmpOp::GtR(_, _, _)
-            | CmpOp::LtR(_, _, _)
-            | CmpOp::EqA(_, _, _, _)
-            | CmpOp::EqF(_, _, _, _)
-            | CmpOp::EqR(_, _, _, _) => 3,
-            CmpOp::IfZA(_, _) | CmpOp::IfZR(_, _) | CmpOp::IfNA(_, _) | CmpOp::IfNR(_, _) => 2,
-            CmpOp::St(_, _, _) => 2,
-            CmpOp::StInv => 1,
-        }
-    }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_LGT..=INSTR_STINV }
 
@@ -775,22 +710,6 @@ impl Bytecode for CmpOp {
 }
 
 impl Bytecode for ArithmeticOp {
-    fn byte_count(&self) -> u16 {
-        match self {
-            ArithmeticOp::AddA(_, _, _, _)
-            | ArithmeticOp::AddF(_, _, _, _)
-            | ArithmeticOp::SubA(_, _, _, _)
-            | ArithmeticOp::SubF(_, _, _, _)
-            | ArithmeticOp::MulA(_, _, _, _)
-            | ArithmeticOp::MulF(_, _, _, _)
-            | ArithmeticOp::DivA(_, _, _, _)
-            | ArithmeticOp::DivF(_, _, _, _)
-            | ArithmeticOp::Rem(_, _, _, _)
-            | ArithmeticOp::Stp(_, _, _) => 3,
-            ArithmeticOp::Neg(_, _) | ArithmeticOp::Abs(_, _) => 2,
-        }
-    }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_ADD..=INSTR_REM }
 
@@ -898,23 +817,6 @@ impl Bytecode for ArithmeticOp {
 }
 
 impl Bytecode for BitwiseOp {
-    fn byte_count(&self) -> u16 {
-        match self {
-            BitwiseOp::And(_, _, _, _) | BitwiseOp::Or(_, _, _, _) | BitwiseOp::Xor(_, _, _, _) => {
-                3
-            }
-            BitwiseOp::Not(_, _) => 2,
-
-            BitwiseOp::Shl(_, _, _, _)
-            | BitwiseOp::ShrA(_, _, _, _, _)
-            | BitwiseOp::ShrR(_, _, _, _)
-            | BitwiseOp::Scl(_, _, _, _)
-            | BitwiseOp::Scr(_, _, _, _) => 3,
-
-            BitwiseOp::RevA(_, _) | BitwiseOp::RevR(_, _) => 2,
-        }
-    }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_AND..=INSTR_REVR }
 
@@ -1071,24 +973,6 @@ impl Bytecode for BitwiseOp {
 }
 
 impl Bytecode for BytesOp {
-    fn byte_count(&self) -> u16 {
-        match self {
-            BytesOp::Put(_, _, _) => 6,
-            BytesOp::Mov(_, _) | BytesOp::Swp(_, _) => 2,
-            BytesOp::Fill(_, _, _, _, _) => 3,
-            BytesOp::Len(_, _, _) | BytesOp::Cnt(_, _, _) => 3,
-            BytesOp::Eq(_, _) => 2,
-            BytesOp::Con(_, _, _, _, _) => 4,
-            BytesOp::Find(_, _) => 2,
-            BytesOp::Extr(_, _, _, _) | BytesOp::Inj(_, _, _, _) => 3,
-            BytesOp::Join(_, _, _) => 3,
-            BytesOp::Splt(_, _, _, _, _) => 4,
-            BytesOp::Ins(_, _, _, _) => 3,
-            BytesOp::Del(_, _, _, _, _, _, _, _, _) => 4,
-            BytesOp::Rev(_, _) => 2,
-        }
-    }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_PUT..=INSTR_REV }
 
@@ -1289,9 +1173,6 @@ impl Bytecode for BytesOp {
 
 impl Bytecode for DigestOp {
     #[inline]
-    fn byte_count(&self) -> u16 { 3 }
-
-    #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_RIPEMD..=INSTR_SHA512 }
 
     fn instr_byte(&self) -> u8 {
@@ -1338,15 +1219,6 @@ impl Bytecode for DigestOp {
 }
 
 impl Bytecode for Secp256k1Op {
-    fn byte_count(&self) -> u16 {
-        match self {
-            Secp256k1Op::Gen(_, _) => 2,
-            Secp256k1Op::Mul(_, _, _, _) => 3,
-            Secp256k1Op::Add(_, _) => 2,
-            Secp256k1Op::Neg(_, _) => 2,
-        }
-    }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_SECP_GEN..=INSTR_SECP_NEG }
 
@@ -1406,15 +1278,6 @@ impl Bytecode for Secp256k1Op {
 }
 
 impl Bytecode for Curve25519Op {
-    fn byte_count(&self) -> u16 {
-        match self {
-            Curve25519Op::Gen(_, _) => 2,
-            Curve25519Op::Mul(_, _, _, _) => 3,
-            Curve25519Op::Add(_, _, _, _) => 3,
-            Curve25519Op::Neg(_, _) => 2,
-        }
-    }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_ED_GEN..=INSTR_ED_NEG }
 
@@ -1481,9 +1344,6 @@ impl Bytecode for Curve25519Op {
 }
 
 impl Bytecode for ReservedOp {
-    #[inline]
-    fn byte_count(&self) -> u16 { 1 }
-
     #[inline]
     fn instr_range() -> RangeInclusive<u8> { INSTR_RESV_FROM..=INSTR_ISAE_TO }
 
