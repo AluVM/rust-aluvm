@@ -121,6 +121,10 @@ macro_rules! aluasm_inner {
         $code.push($crate::instr!{ $op $arglit, $( $arg [ $idx ] ),+ });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
+    { $code:ident => $op:ident $arglit:ident, $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arglit, $( $arg [ $idx ] ),+ });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
     { $code:ident => $op:ident . $flag:ident $arglit:literal, $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op . $flag $arglit, $( $arg [ $idx ] ),+ });
         $crate::aluasm_inner! { $code => $( $tt )* }
