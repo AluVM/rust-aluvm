@@ -32,7 +32,7 @@ use core::str::FromStr;
 
 use amplify::confinement::SmallBlob;
 use amplify::{confinement, ByteArray, Bytes32};
-use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
+use baid58::{Baid58ParseError, Chunking, FromBaid58, ToBaid58, CHUNKING_32};
 use sha2::{Digest, Sha256};
 use strict_encoding::{StrictDeserialize, StrictSerialize};
 
@@ -67,7 +67,9 @@ pub struct LibId(
 
 impl ToBaid58<32> for LibId {
     const HRI: &'static str = "alu";
+    const CHUNKING: Option<Chunking> = CHUNKING_32;
     fn to_baid58_payload(&self) -> [u8; 32] { self.to_byte_array() }
+    fn to_baid58_string(&self) -> String { self.to_string() }
 }
 impl FromBaid58<32> for LibId {}
 
@@ -79,10 +81,13 @@ impl FromStr for LibId {
 }
 impl Display for LibId {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            f.write_str("urn:ubideco:alu:")?;
+        }
         if f.sign_minus() {
-            write!(f, "urn:ubideco:{::<}", self.to_baid58())
+            write!(f, "{:.2}", self.to_baid58())
         } else {
-            write!(f, "urn:ubideco:{::<#}", self.to_baid58())
+            write!(f, "{:#.2}", self.to_baid58())
         }
     }
 }
@@ -484,11 +489,13 @@ mod test {
         let id = LibId::with("FLOAT", b"", b"", &none!());
         assert_eq!(
             format!("{id}"),
-            "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#pinball-eternal-colombo"
+            "Grjjwm-eTsibiEe-YYtjokmc-8j4Jn1KW-L2SX8Nug-G6T5kZ#pinball-eternal-colombo"
         );
+        assert_eq!(format!("{id:-}"), "Grjjwm-eTsibiEe-YYtjokmc-8j4Jn1KW-L2SX8Nug-G6T5kZ");
         assert_eq!(
-            format!("{id:-}"),
-            "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ"
+            format!("{id:#}"),
+            "urn:ubideco:alu:Grjjwm-eTsibiEe-YYtjokmc-8j4Jn1KW-L2SX8Nug-G6T5kZ#\
+             pinball-eternal-colombo"
         );
     }
 

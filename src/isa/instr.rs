@@ -462,7 +462,8 @@ pub enum ArithmeticOp {
     #[display("div.{0}  {1}{2},{1}{3}")]
     DivA(IntFlags, RegA, Reg32, Reg32),
 
-    /// Divides values from two float arithmetic registers and puts result into the second register.
+    /// Divides values from two float arithmetic registers and puts result into the second
+    /// register.
     #[display("div.{0}   {1}{2},{1}{3}")]
     DivF(RoundingFlag, RegF, Reg32, Reg32),
 
