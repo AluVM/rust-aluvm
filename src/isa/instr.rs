@@ -115,10 +115,10 @@ pub enum ControlFlowOp {
     #[display("fail")]
     Fail,
 
-    /// Completes program execution writing `true` to `st0` (indicating program success). Does not
-    /// modify value of call stack registers.
-    #[display("succ")]
-    Succ,
+    /// Checks the value of `st0` register. If the value is `false`, stops execution of the
+    /// program. Otherwise, it is a no-operation.
+    #[display("test")]
+    Test,
 
     /// Unconditionally jumps to an offset. Increments `cy0`.
     #[display("jmp     {0:#06X}")]

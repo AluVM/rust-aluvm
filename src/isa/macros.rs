@@ -157,8 +157,8 @@ macro_rules! instr {
     (fail) => {
         Instr::ControlFlow(ControlFlowOp::Fail)
     };
-    (succ) => {
-        Instr::ControlFlow(ControlFlowOp::Succ)
+    (test) => {
+        Instr::ControlFlow(ControlFlowOp::Test)
     };
     (jmp $offset:literal) => {
         Instr::ControlFlow(ControlFlowOp::Jmp($offset))
