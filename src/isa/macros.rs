@@ -93,7 +93,7 @@ macro_rules! aluasm_inner {
         $code.push($crate::instr!{ $op });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
-    { $code:ident => $op:ident $arg:literal @ $lib:ident ; $($tt:tt)* } => {
+    { $code:ident => $op:ident $arg:literal @ $lib:literal ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op $arg @ $lib });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
@@ -182,28 +182,28 @@ macro_rules! instr {
     (routine $offset:ident) => {
         Instr::ControlFlow(ControlFlowOp::Reutine($offset))
     };
-    (call $offset:literal @ $lib:ident) => {
+    (call $offset:literal @ $lib:literal) => {
         Instr::ControlFlow(ControlFlowOp::Call(LibSite::with(
             $offset,
-            stringify!($lib).parse().expect("wrong library reference"),
+            $lib.parse().expect("wrong library reference"),
         )))
     };
     (call $offset:ident @ $lib:ident) => {
         Instr::ControlFlow(ControlFlowOp::Call(LibSite::with(
             $offset,
-            stringify!($lib).parse().expect("wrong library reference"),
+            $lib
         )))
     };
-    (exec $offset:literal @ $lib:ident) => {
+    (exec $offset:literal @ $lib:literal) => {
         Instr::ControlFlow(ControlFlowOp::Exec(LibSite::with(
             $offset,
-            stringify!($lib).parse().expect("wrong library reference"),
+            $lib.parse().expect("wrong library reference"),
         )))
     };
     (exec $offset:ident @ $lib:ident) => {
         Instr::ControlFlow(ControlFlowOp::Exec(LibSite::with(
             $offset,
-            stringify!($lib).parse().expect("wrong library reference"),
+            $lib
         )))
     };
     (ret) => {
