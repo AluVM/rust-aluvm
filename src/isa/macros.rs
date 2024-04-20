@@ -145,6 +145,10 @@ macro_rules! aluasm_inner {
         $code.push($crate::instr!{ $op $arg [ $idx ] , $arglit });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
+    { $code:ident => $op:ident $arg:ident [ $idx:literal ] , $arglit:ident ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arg [ $idx ] , $arglit });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
     { $code:ident => $op:ident . $flag:ident $arg:ident [ $idx:literal ], $arglit:expr ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op . $flag $arg [ $idx ], $arglit });
         $crate::aluasm_inner! { $code => $( $tt )* }
@@ -221,6 +225,9 @@ macro_rules! instr {
             $crate::_reg_idx16!($offset_idx),
         ))
     };
+    (put s16[$idx:literal], $val:ident) => {{
+        Instr::Bytes(BytesOp::Put(RegS::from($idx), Box::new(ByteStr::with(&$val)), false))
+    }};
     (put s16[$idx:literal], $val:literal) => {{
         Instr::Bytes(BytesOp::Put(RegS::from($idx), Box::new(ByteStr::with(&$val)), false))
     }};
@@ -281,9 +288,25 @@ macro_rules! instr {
         num.reshape(reg.layout());
         Instr::Put($crate::_reg_sfx!(PutOp, Put, $reg)(reg, $crate::_reg_idx!($idx), Box::new(num)))
     }};
+    (put $reg:ident[$idx:literal], $val:ident) => {{
+        let mut num = MaybeNumber::from($val);
+        let reg = $crate::_reg_ty!(Reg, $reg);
+        num.reshape(reg.layout());
+        Instr::Put($crate::_reg_sfx!(PutOp, Put, $reg)(reg, $crate::_reg_idx!($idx), Box::new(num)))
+    }};
     (putif $reg:ident[$idx:literal], $val:literal) => {{
         let s = stringify!($val);
         let mut num = s.parse::<MaybeNumber>().expect(&format!("invalid number literal `{}`", s));
+        let reg = $crate::_reg_ty!(Reg, $reg);
+        num.reshape(reg.layout());
+        Instr::Put($crate::_reg_sfx!(PutOp, PutIf, $reg)(
+            reg,
+            $crate::_reg_idx!($idx),
+            Box::new(num),
+        ))
+    }};
+    (putif $reg:ident[$idx:literal], $val:ident) => {{
+        let mut num = MaybeNumber::from($val);
         let reg = $crate::_reg_ty!(Reg, $reg);
         num.reshape(reg.layout());
         Instr::Put($crate::_reg_sfx!(PutOp, PutIf, $reg)(
