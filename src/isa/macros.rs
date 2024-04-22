@@ -71,7 +71,7 @@ macro_rules! aluasm_isa {
             MergeFlag, MoveOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag, NoneEqFlag
         };
         use ::aluvm::reg::{
-            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
+            Reg16, Reg32, Reg8, RegA, RegA2, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
             NumericRegister,
         };
         use ::aluvm::library::LibSite;
@@ -93,7 +93,11 @@ macro_rules! aluasm_inner {
         $code.push($crate::instr!{ $op });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
-    { $code:ident => $op:ident $arg:literal @ $lib:ident ; $($tt:tt)* } => {
+    { $code:ident => $op:ident $arg:literal @ $lib:literal ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arg @ $lib });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $arg:ident @ $lib:ident ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op $arg @ $lib });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
@@ -121,6 +125,10 @@ macro_rules! aluasm_inner {
         $code.push($crate::instr!{ $op $arglit, $( $arg [ $idx ] ),+ });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
+    { $code:ident => $op:ident $arglit:ident, $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arglit, $( $arg [ $idx ] ),+ });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
     { $code:ident => $op:ident . $flag:ident $arglit:literal, $( $arg:ident [ $idx:literal ] ),+ ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op . $flag $arglit, $( $arg [ $idx ] ),+ });
         $crate::aluasm_inner! { $code => $( $tt )* }
@@ -137,6 +145,10 @@ macro_rules! aluasm_inner {
         $code.push($crate::instr!{ $op $arg [ $idx ] , $arglit });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
+    { $code:ident => $op:ident $arg:ident [ $idx:literal ] , $arglit:ident ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arg [ $idx ] , $arglit });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
     { $code:ident => $op:ident . $flag:ident $arg:ident [ $idx:literal ], $arglit:expr ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op . $flag $arg [ $idx ], $arglit });
         $crate::aluasm_inner! { $code => $( $tt )* }
@@ -149,28 +161,49 @@ macro_rules! instr {
     (fail) => {
         Instr::ControlFlow(ControlFlowOp::Fail)
     };
-    (succ) => {
-        Instr::ControlFlow(ControlFlowOp::Succ)
+    (test) => {
+        Instr::ControlFlow(ControlFlowOp::Test)
     };
     (jmp $offset:literal) => {
+        Instr::ControlFlow(ControlFlowOp::Jmp($offset))
+    };
+    (jmp $offset:ident) => {
         Instr::ControlFlow(ControlFlowOp::Jmp($offset))
     };
     (jif $offset:literal) => {
         Instr::ControlFlow(ControlFlowOp::Jif($offset))
     };
+    (jif $offset:ident) => {
+        Instr::ControlFlow(ControlFlowOp::Jif($offset))
+    };
     (routine $offset:literal) => {
         Instr::ControlFlow(ControlFlowOp::Reutine($offset))
     };
-    (call $offset:literal @ $lib:ident) => {
+    (routine $offset:ident) => {
+        Instr::ControlFlow(ControlFlowOp::Reutine($offset))
+    };
+    (call $offset:literal @ $lib:literal) => {
         Instr::ControlFlow(ControlFlowOp::Call(LibSite::with(
             $offset,
-            stringify!($lib).parse().expect("wrong library reference"),
+            $lib.parse().expect("wrong library reference"),
         )))
     };
-    (exec $offset:literal @ $lib:ident) => {
+    (call $offset:ident @ $lib:ident) => {
+        Instr::ControlFlow(ControlFlowOp::Call(LibSite::with(
+            $offset,
+            $lib
+        )))
+    };
+    (exec $offset:literal @ $lib:literal) => {
         Instr::ControlFlow(ControlFlowOp::Exec(LibSite::with(
             $offset,
-            stringify!($lib).parse().expect("wrong library reference"),
+            $lib.parse().expect("wrong library reference"),
+        )))
+    };
+    (exec $offset:ident @ $lib:ident) => {
+        Instr::ControlFlow(ControlFlowOp::Exec(LibSite::with(
+            $offset,
+            $lib
         )))
     };
     (ret) => {
@@ -184,14 +217,25 @@ macro_rules! instr {
         ))
     };
 
-    (extr s16[$idx:literal], $regr:ident[$regr_idx:literal],a16[$offset_idx:literal]) => {
+    (extr s16[$idx:literal], $reg:ident[$reg_idx:literal], a16[$offset_idx:literal]) => {
         Instr::Bytes(BytesOp::Extr(
             RegS::from($idx),
-            $crate::_reg_ty!(Reg, $regr),
-            $crate::_reg_idx16!($regr_idx),
+            $crate::_reg_tyar!($reg),
+            $crate::_reg_idx16!($reg_idx),
             $crate::_reg_idx16!($offset_idx),
         ))
     };
+    (inj s16[$idx:literal], $reg:ident[$reg_idx:literal], a16[$offset_idx:literal]) => {
+        Instr::Bytes(BytesOp::Inj(
+            RegS::from($idx),
+            $crate::_reg_tyar!($reg),
+            $crate::_reg_idx16!($reg_idx),
+            $crate::_reg_idx16!($offset_idx),
+        ))
+    };
+    (put s16[$idx:literal], $val:ident) => {{
+        Instr::Bytes(BytesOp::Put(RegS::from($idx), Box::new(ByteStr::with(&$val)), false))
+    }};
     (put s16[$idx:literal], $val:literal) => {{
         Instr::Bytes(BytesOp::Put(RegS::from($idx), Box::new(ByteStr::with(&$val)), false))
     }};
@@ -252,9 +296,25 @@ macro_rules! instr {
         num.reshape(reg.layout());
         Instr::Put($crate::_reg_sfx!(PutOp, Put, $reg)(reg, $crate::_reg_idx!($idx), Box::new(num)))
     }};
+    (put $reg:ident[$idx:literal], $val:ident) => {{
+        let mut num = MaybeNumber::from($val);
+        let reg = $crate::_reg_ty!(Reg, $reg);
+        num.reshape(reg.layout());
+        Instr::Put($crate::_reg_sfx!(PutOp, Put, $reg)(reg, $crate::_reg_idx!($idx), Box::new(num)))
+    }};
     (putif $reg:ident[$idx:literal], $val:literal) => {{
         let s = stringify!($val);
         let mut num = s.parse::<MaybeNumber>().expect(&format!("invalid number literal `{}`", s));
+        let reg = $crate::_reg_ty!(Reg, $reg);
+        num.reshape(reg.layout());
+        Instr::Put($crate::_reg_sfx!(PutOp, PutIf, $reg)(
+            reg,
+            $crate::_reg_idx!($idx),
+            Box::new(num),
+        ))
+    }};
+    (putif $reg:ident[$idx:literal], $val:ident) => {{
+        let mut num = MaybeNumber::from($val);
         let reg = $crate::_reg_ty!(Reg, $reg);
         num.reshape(reg.layout());
         Instr::Put($crate::_reg_sfx!(PutOp, PutIf, $reg)(
@@ -1292,6 +1352,60 @@ macro_rules! _reg_tyr {
     };
     ($ident:ident, $other:ident) => {
         panic!("operation requires `R` register")
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_tyar {
+    (a8) => {
+        RegAR::A(RegA::A8)
+    };
+    (a16) => {
+        RegAR::A(RegA::A16)
+    };
+    (a32) => {
+        RegAR::A(RegA::A32)
+    };
+    (a64) => {
+        RegAR::A(RegA::A64)
+    };
+    (a128) => {
+        RegAR::A(RegA::A128)
+    };
+    (a256) => {
+        RegAR::A(RegA::A256)
+    };
+    (a512) => {
+        RegAR::A(RegA::A512)
+    };
+    (a1024) => {
+        RegAR::A(RegA::A1024)
+    };
+
+    (r128) => {
+        RegAR::R(RegR::R128)
+    };
+    (r160) => {
+        RegAR::R(RegR::R160)
+    };
+    (r256) => {
+        RegAR::R(RegR::R256)
+    };
+    (r512) => {
+        RegAR::R(RegR::R512)
+    };
+    (r1024) => {
+        RegAR::R(RegR::R1024)
+    };
+    (r2048) => {
+        RegAR::R(RegR::R2048)
+    };
+    (r4096) => {
+        RegAR::R(RegR::R4096)
+    };
+    (r8192) => {
+        RegAR::R(RegR::R8192)
     };
 }
 

@@ -26,7 +26,7 @@
 
 // Control-flow instructions
 pub const INSTR_FAIL: u8 = 0b00_000_000;
-pub const INSTR_SUCC: u8 = 0b00_000_001;
+pub const INSTR_TEST: u8 = 0b00_000_001;
 pub const INSTR_JMP: u8 = 0b00_000_010;
 pub const INSTR_JIF: u8 = 0b00_000_011;
 pub const INSTR_ROUTINE: u8 = 0b00_000_100;
