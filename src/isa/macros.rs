@@ -217,11 +217,19 @@ macro_rules! instr {
         ))
     };
 
-    (extr s16[$idx:literal], $regr:ident[$regr_idx:literal],a16[$offset_idx:literal]) => {
+    (extr s16[$idx:literal], $reg:ident[$reg_idx:literal], a16[$offset_idx:literal]) => {
         Instr::Bytes(BytesOp::Extr(
             RegS::from($idx),
-            $crate::_reg_ty!(Reg, $regr),
-            $crate::_reg_idx16!($regr_idx),
+            $crate::_reg_ty!(Reg, $reg),
+            $crate::_reg_idx16!($reg_idx),
+            $crate::_reg_idx16!($offset_idx),
+        ))
+    };
+    (inj s16[$idx:literal], $reg:ident[$reg_idx:literal], a16[$offset_idx:literal]) => {
+        Instr::Bytes(BytesOp::Inj(
+            RegS::from($idx),
+            $crate::_reg_ty!(Reg, $reg),
+            $crate::_reg_idx16!($reg_idx),
             $crate::_reg_idx16!($offset_idx),
         ))
     };
