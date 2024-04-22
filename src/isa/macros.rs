@@ -71,7 +71,7 @@ macro_rules! aluasm_isa {
             MergeFlag, MoveOp, PutOp, RoundingFlag, Secp256k1Op, SignFlag, NoneEqFlag
         };
         use ::aluvm::reg::{
-            Reg16, Reg32, Reg8, RegA, RegA2, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
+            Reg16, Reg32, Reg8, RegA, RegA2, RegAR, RegBlockAFR, RegBlockAR, RegF, RegR, RegS,
             NumericRegister,
         };
         use ::aluvm::library::LibSite;
@@ -220,7 +220,7 @@ macro_rules! instr {
     (extr s16[$idx:literal], $reg:ident[$reg_idx:literal], a16[$offset_idx:literal]) => {
         Instr::Bytes(BytesOp::Extr(
             RegS::from($idx),
-            $crate::_reg_ty!(Reg, $reg),
+            $crate::_reg_tyar!($reg),
             $crate::_reg_idx16!($reg_idx),
             $crate::_reg_idx16!($offset_idx),
         ))
@@ -228,7 +228,7 @@ macro_rules! instr {
     (inj s16[$idx:literal], $reg:ident[$reg_idx:literal], a16[$offset_idx:literal]) => {
         Instr::Bytes(BytesOp::Inj(
             RegS::from($idx),
-            $crate::_reg_ty!(Reg, $reg),
+            $crate::_reg_tyar!($reg),
             $crate::_reg_idx16!($reg_idx),
             $crate::_reg_idx16!($offset_idx),
         ))
@@ -1352,6 +1352,60 @@ macro_rules! _reg_tyr {
     };
     ($ident:ident, $other:ident) => {
         panic!("operation requires `R` register")
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _reg_tyar {
+    (a8) => {
+        RegAR::A(RegA::A8)
+    };
+    (a16) => {
+        RegAR::A(RegA::A16)
+    };
+    (a32) => {
+        RegAR::A(RegA::A32)
+    };
+    (a64) => {
+        RegAR::A(RegA::A64)
+    };
+    (a128) => {
+        RegAR::A(RegA::A128)
+    };
+    (a256) => {
+        RegAR::A(RegA::A256)
+    };
+    (a512) => {
+        RegAR::A(RegA::A512)
+    };
+    (a1024) => {
+        RegAR::A(RegA::A1024)
+    };
+
+    (r128) => {
+        RegAR::R(RegR::R128)
+    };
+    (r160) => {
+        RegAR::R(RegR::R160)
+    };
+    (r256) => {
+        RegAR::R(RegR::R256)
+    };
+    (r512) => {
+        RegAR::R(RegR::R512)
+    };
+    (r1024) => {
+        RegAR::R(RegR::R1024)
+    };
+    (r2048) => {
+        RegAR::R(RegR::R2048)
+    };
+    (r4096) => {
+        RegAR::R(RegR::R4096)
+    };
+    (r8192) => {
+        RegAR::R(RegR::R8192)
     };
 }
 

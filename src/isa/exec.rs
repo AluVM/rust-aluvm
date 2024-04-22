@@ -1320,7 +1320,7 @@ impl InstructionSet for BytesOp {
                     let offset = regs.a16[*offset as u8 as usize].filter(|e| *e < s_len)?;
                     let end = offset
                         .checked_add(dst.layout().bytes())
-                        .filter(|e| *e < s_len)
+                        .filter(|e| *e <= s_len)
                         .unwrap_or_else(|| {
                             regs.st0 = false;
                             s_len
