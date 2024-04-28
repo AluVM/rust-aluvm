@@ -22,7 +22,7 @@ required-features = ["stl"]
 
 [dependencies]
 amplify = { version = "4.6.0", default-features = false, features = ["apfloat", "derive", "hex"] }
-ascii-armor = { version = "0.4.0", optional = true }
+ascii-armor = { version = "0.6.0", optional = true }
 baid64 = "0.1.0"
 paste = "1"
 strict_encoding = { version = "2.7.0-beta.3", default-features = false, features = ["float", "derive"] }
@@ -57,4 +57,5 @@ wasm-bindgen-test = "0.3"
 features = ["all"]
 
 [patch.crates-io]
-ascii-armor = { git = "https://github.com/UBIDECO/ascii-armor" }
+strict_encoding = { git = "https://github.com/strict-types/strict-encoding", branch = "develop" }
+strict_types = { git = "https://github.com/strict-types/strict-types", branch = "develop" }

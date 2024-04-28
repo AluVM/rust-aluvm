@@ -33,7 +33,7 @@ use crate::LIB_NAME_ALUVM;
 
 /// Strict type id for the library providing data types from this crate.
 pub const LIB_ID_ALUVM: &str =
-    "urn:ubideco:stl:APYERRUMyWqLadwTv8tEFifHMPGpL3xGFSBxwaKYpmcV#square-mammal-uncle";
+    "stl:YnA1fyHl-46C2hsC-tZPxn60-w1jLk5Y-rDTjRmy-xo@5xjY#congo-archive-folio";
 
 fn _aluvm_stl() -> Result<TypeLib, CompileError> {
     LibBuilder::new(libname!(LIB_NAME_ALUVM), tiny_bset! {
