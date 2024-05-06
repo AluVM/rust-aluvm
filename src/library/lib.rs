@@ -32,7 +32,7 @@ use core::str::FromStr;
 
 use amplify::confinement::SmallBlob;
 use amplify::{confinement, ByteArray, Bytes32};
-use baid58::{Baid58ParseError, Chunking, FromBaid58, ToBaid58, CHUNKING_32};
+use baid64::{Baid64ParseError, DisplayBaid64, FromBaid64Str};
 use sha2::{Digest, Sha256};
 use strict_encoding::{StrictDeserialize, StrictSerialize};
 
@@ -65,31 +65,21 @@ pub struct LibId(
     Bytes32,
 );
 
-impl ToBaid58<32> for LibId {
+impl DisplayBaid64 for LibId {
     const HRI: &'static str = "alu";
-    const CHUNKING: Option<Chunking> = CHUNKING_32;
-    fn to_baid58_payload(&self) -> [u8; 32] { self.to_byte_array() }
-    fn to_baid58_string(&self) -> String { self.to_string() }
+    const CHUNKING: bool = true;
+    const PREFIX: bool = true;
+    const EMBED_CHECKSUM: bool = false;
+    const MNEMONIC: bool = true;
+    fn to_baid64_payload(&self) -> [u8; 32] { self.to_byte_array() }
 }
-impl FromBaid58<32> for LibId {}
-
+impl FromBaid64Str for LibId {}
 impl FromStr for LibId {
-    type Err = Baid58ParseError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_baid58_str(s.trim_start_matches("urn:ubideco:"))
-    }
+    type Err = Baid64ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> { Self::from_baid64_str(s) }
 }
 impl Display for LibId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        if f.alternate() {
-            f.write_str("urn:ubideco:alu:")?;
-        }
-        if f.sign_minus() {
-            write!(f, "{:.2}", self.to_baid58())
-        } else {
-            write!(f, "{:#.2}", self.to_baid58())
-        }
-    }
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { self.fmt_baid64(f) }
 }
 
 impl LibId {
@@ -489,38 +479,33 @@ mod test {
         let id = LibId::with("FLOAT", b"", b"", &none!());
         assert_eq!(
             format!("{id}"),
-            "Grjjwm-eTsibiEe-YYtjokmc-8j4Jn1KW-L2SX8Nug-G6T5kZ#pinball-eternal-colombo"
+            "alu:650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4#plasma-tunnel-mama"
         );
-        assert_eq!(format!("{id:-}"), "Grjjwm-eTsibiEe-YYtjokmc-8j4Jn1KW-L2SX8Nug-G6T5kZ");
         assert_eq!(
-            format!("{id:#}"),
-            "urn:ubideco:alu:Grjjwm-eTsibiEe-YYtjokmc-8j4Jn1KW-L2SX8Nug-G6T5kZ#\
-             pinball-eternal-colombo"
+            format!("{id:-}"),
+            "650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4#plasma-tunnel-mama"
         );
+        assert_eq!(format!("{id:#}"), "alu:650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4");
+        assert_eq!(format!("{id:-#}"), "650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4");
     }
 
     #[test]
     fn lib_id_from_str() {
         let id = LibId::with("FLOAT", b"", b"", &none!());
         assert_eq!(
-            Ok(id),
+            id,
             LibId::from_str(
-                "urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#\
-                 pinball-eternal-colombo"
+                "alu:650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4#plasma-tunnel-mama"
             )
+            .unwrap()
         );
+        assert_eq!(id, LibId::from_str("alu:650XHPmhWpXWR5RUz4B5jXjeDqcyrHXpdZxYaX9gfO4").unwrap());
         assert_eq!(
-            Ok(id),
-            LibId::from_str("urn:ubideco:alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ")
+            id,
+            LibId::from_str("alu:650XHPmhWpXWR5RUz4B5jXjeDqcyrHXpdZxYaX9gfO4#plasma-tunnel-mama")
+                .unwrap()
         );
-        assert_eq!(
-            Ok(id),
-            LibId::from_str(
-                "alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ#pinball-eternal-colombo"
-            )
-        );
-        assert_eq!(Ok(id), LibId::from_str("alu:GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ"));
 
-        assert_eq!(Ok(id), LibId::from_str("GrjjwmeTsibiEeYYtjokmc8j4Jn1KWL2SX8NugG6T5kZ"));
+        assert_eq!(id, LibId::from_str("650XHPmhWpXWR5RUz4B5jXjeDqcyrHXpdZxYaX9gfO4").unwrap());
     }
 }

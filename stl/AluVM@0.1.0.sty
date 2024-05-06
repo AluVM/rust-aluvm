@@ -1,5 +1,5 @@
 {-
-  Id: urn:ubideco:stl:APYERRUMyWqLadwTv8tEFifHMPGpL3xGFSBxwaKYpmcV#square-mammal-uncle
+  Id: stl:YnA1fyHl-46C2hsC-tZPxn60-w1jLk5Y-rDTjRmy-xo@5xjY#congo-archive-folio
   Name: AluVM
   Version: 0.1.0
   Description: AluVM data type library
@@ -11,29 +11,30 @@
 @context
 typelib AluVM
 
-import Std#EcCNgrgLaygt3tCZNu2ZVEzMzSAZYEUeTNAVi5E81YWi#aspirin-mango-average
-  use AlphaCaps#digital-mirage-dream
+import Std#ralph-blue-lucky
+  use AlphaCaps#picnic-soprano-aurora
+  use AlphaCapsNum#aladdin-zebra-marble
 
 
-@mnemonic(spirit-example-carrot)
-data IsaName           : [Std.AlphaCaps#digital-mirage-dream ^ 2..0x8]
+@mnemonic(taboo-olympic-cloud)
+data IsaName           : Std.AlphaCaps, [Std.AlphaCapsNum ^ 1..0x7]
 
-@mnemonic(blonde-format-kansas)
+@mnemonic(freedom-ship-canal)
 data IsaSeg            : {IsaName ^ ..0x40}
 
-@mnemonic(volcano-daniel-ticket)
+@mnemonic(bernard-igor-version)
 data Lib               : isae IsaSeg
                        , code [Byte]
                        , data [Byte]
                        , libs LibSeg
 
-@mnemonic(rebel-factor-rodeo)
+@mnemonic(germany-culture-olivia)
 data LibId             : [Byte ^ 32]
 
-@mnemonic(imitate-cargo-region)
+@mnemonic(gilbert-tomato-caesar)
 data LibSeg            : {LibId ^ ..0xff}
 
-@mnemonic(organic-escort-ceramic)
+@mnemonic(chance-agent-ivory)
 data LibSite           : lib LibId, pos U16
 
 
