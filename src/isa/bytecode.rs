@@ -218,7 +218,7 @@ impl Bytecode for ControlFlowOp {
     fn instr_byte(&self) -> u8 {
         match self {
             ControlFlowOp::Fail => INSTR_FAIL,
-            ControlFlowOp::Succ => INSTR_SUCC,
+            ControlFlowOp::Test => INSTR_TEST,
             ControlFlowOp::Jmp(_) => INSTR_JMP,
             ControlFlowOp::Jif(_) => INSTR_JIF,
             ControlFlowOp::Routine(_) => INSTR_ROUTINE,
@@ -242,7 +242,7 @@ impl Bytecode for ControlFlowOp {
     {
         match self {
             ControlFlowOp::Fail => {}
-            ControlFlowOp::Succ => {}
+            ControlFlowOp::Test => {}
             ControlFlowOp::Jmp(pos) | ControlFlowOp::Jif(pos) | ControlFlowOp::Routine(pos) => {
                 writer.write_u16(*pos)?
             }
@@ -261,7 +261,7 @@ impl Bytecode for ControlFlowOp {
     {
         Ok(match reader.read_u8()? {
             INSTR_FAIL => Self::Fail,
-            INSTR_SUCC => Self::Succ,
+            INSTR_TEST => Self::Test,
             INSTR_JMP => Self::Jmp(reader.read_u16()?),
             INSTR_JIF => Self::Jif(reader.read_u16()?),
             INSTR_ROUTINE => Self::Routine(reader.read_u16()?),
@@ -1043,8 +1043,8 @@ impl Bytecode for BytesOp {
                 writer.write_bool(false)?;
             }
             BytesOp::Extr(src, dst, index, offset) | BytesOp::Inj(src, dst, index, offset) => {
-                writer.write_u5(src)?;
-                writer.write_u3(dst)?;
+                writer.write_u4(src)?;
+                writer.write_u4(dst)?;
                 writer.write_u4(index)?;
                 writer.write_u4(offset)?;
             }
@@ -1126,14 +1126,14 @@ impl Bytecode for BytesOp {
                 op
             }
             INSTR_EXTR => Self::Extr(
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
+                reader.read_u4()?.into(),
+                reader.read_u4()?.into(),
                 reader.read_u4()?.into(),
                 reader.read_u4()?.into(),
             ),
             INSTR_INJ => Self::Inj(
-                reader.read_u5()?.into(),
-                reader.read_u3()?.into(),
+                reader.read_u4()?.into(),
+                reader.read_u4()?.into(),
                 reader.read_u4()?.into(),
                 reader.read_u4()?.into(),
             ),

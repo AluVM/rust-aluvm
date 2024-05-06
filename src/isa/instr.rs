@@ -115,10 +115,10 @@ pub enum ControlFlowOp {
     #[display("fail")]
     Fail,
 
-    /// Completes program execution writing `true` to `st0` (indicating program success). Does not
-    /// modify value of call stack registers.
-    #[display("succ")]
-    Succ,
+    /// Checks the value of `st0` register. If the value is `false`, stops execution of the
+    /// program. Otherwise, it is a no-operation.
+    #[display("test")]
+    Test,
 
     /// Unconditionally jumps to an offset. Increments `cy0`.
     #[display("jmp     {0:#06X}")]
@@ -421,35 +421,35 @@ pub enum CmpOp {
 /// `wrap` flag is provided).
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum ArithmeticOp {
-    /// Adds values from two integer arithmetic registers and puts result into the first register.
+    /// Adds values from two integer arithmetic registers and puts result into the second register.
     #[display("add.{0}  {1}{2},{1}{3}")]
     AddA(IntFlags, RegA, Reg32, Reg32),
 
-    /// Adds values from two float arithmetic registers and puts result into the first register.
+    /// Adds values from two float arithmetic registers and puts result into the second register.
     #[display("add.{0}   {1}{2},{1}{3}")]
     AddF(RoundingFlag, RegF, Reg32, Reg32),
 
-    /// Subtracts values from two integer arithmetic registers and puts result into the first
+    /// Subtracts values from two integer arithmetic registers and puts result into the second
     /// register.
     #[display("sub.{0}  {1}{2},{1}{3}")]
     SubA(IntFlags, RegA, Reg32, Reg32),
 
-    /// Subtracts values from two float arithmetic registers and puts result into the first
+    /// Subtracts values from two float arithmetic registers and puts result into the second
     /// register.
     #[display("sub.{0}   {1}{2},{1}{3}")]
     SubF(RoundingFlag, RegF, Reg32, Reg32),
 
-    /// Multiplies values from two integer arithmetic registers and puts result into the first
+    /// Multiplies values from two integer arithmetic registers and puts result into the second
     /// register.
     #[display("mul.{0}  {1}{2},{1}{3}")]
     MulA(IntFlags, RegA, Reg32, Reg32),
 
-    /// Multiplies values from two float arithmetic registers and puts result into the first
+    /// Multiplies values from two float arithmetic registers and puts result into the second
     /// register.
     #[display("mul.{0}   {1}{2},{1}{3}")]
     MulF(RoundingFlag, RegF, Reg32, Reg32),
 
-    /// Divides values from two integer arithmetic registers and puts result into the first
+    /// Divides values from two integer arithmetic registers and puts result into the second
     /// register.
     ///
     /// Since the division operation may not result in overflow, the overflow flag is used to
@@ -462,14 +462,15 @@ pub enum ArithmeticOp {
     #[display("div.{0}  {1}{2},{1}{3}")]
     DivA(IntFlags, RegA, Reg32, Reg32),
 
-    /// Divides values from two float arithmetic registers and puts result into the first register.
+    /// Divides values from two float arithmetic registers and puts result into the second
+    /// register.
     #[display("div.{0}   {1}{2},{1}{3}")]
     DivF(RoundingFlag, RegF, Reg32, Reg32),
 
     /// Modulo division.
     ///
     /// Puts a reminder of the division of source register on destination register into the
-    /// the first register.
+    /// second register.
     #[display("rem     {0}{1},{2}{3}")]
     Rem(RegA, Reg32, RegA, Reg32),
 
@@ -697,18 +698,18 @@ pub enum BytesOp {
     /// If the source string register - or offset register is uninitialized, sets destination to
     /// uninitialized state and `st0` to `false`.
     #[display("extr    {0},{1}{2},a16{3}")]
-    Extr(/** `s` register index */ RegS, RegR, Reg16, /** `a16` register with offset */ Reg16),
+    Extr(/** `s` register index */ RegS, RegAR, Reg16, /** `a16` register with offset */ Reg16),
 
     /// Inject general `R` register value at a given position to string register, replacing value
     /// of the corresponding bytes. If the insert offset is larger than the current length of the
     /// string, the length is extended and all bytes inbetween previous length and the new length
     /// are initialized with zeros. If the length of the inserted string plus insert offset exceeds
-    /// the maximum string register length (2^16 bytes), than the destination register is set to
+    /// the maximum string register length (2^16 bytes), then the destination register is set to
     /// `None` state and `st0` is set to `false`. Otherwise, `st0` value is not modified.
     #[display("inj     {0},{1}{2},{1}{3}")]
     Inj(
         /** `s` register index acting as the source and destination */ RegS,
-        RegR,
+        RegAR,
         Reg16,
         /** `a16` register with offset */ Reg16,
     ),
@@ -753,7 +754,7 @@ pub enum BytesOp {
     /// Rule on `st0` changes: if at least one of the destination registers is set to `None`, or
     /// `offset` value exceeds source string length, `st0` is set to `false`; otherwise its value
     /// is not modified
-    #[display("splt.{2}  {0},a16{1},{3},{4}")]
+    #[display("splt.{0}  {2},a16{1},{3},{4}")]
     Splt(
         SplitFlag,
         /** `a16` register index with offset value */ Reg32,
@@ -791,7 +792,7 @@ pub enum BytesOp {
     /// </pre>
     ///
     /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
-    #[display("ins.{3}   {0},{1},a16{2}")]
+    #[display("ins.{0}   {1},a16{2},{2}")]
     Ins(
         InsertFlag,
         /** `a16` register index with offset value for insert location */ Reg32,

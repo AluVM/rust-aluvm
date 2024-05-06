@@ -232,9 +232,12 @@ impl InstructionSet for ControlFlowOp {
                 regs.st0 = false;
                 ExecStep::Stop
             }
-            ControlFlowOp::Succ => {
-                regs.st0 = true;
-                ExecStep::Stop
+            ControlFlowOp::Test => {
+                if regs.st0 {
+                    ExecStep::Next
+                } else {
+                    ExecStep::Stop
+                }
             }
             ControlFlowOp::Jmp(offset) => {
                 regs.jmp().map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Stop)
@@ -1317,7 +1320,7 @@ impl InstructionSet for BytesOp {
                     let offset = regs.a16[*offset as u8 as usize].filter(|e| *e < s_len)?;
                     let end = offset
                         .checked_add(dst.layout().bytes())
-                        .filter(|e| *e < s_len)
+                        .filter(|e| *e <= s_len)
                         .unwrap_or_else(|| {
                             regs.st0 = false;
                             s_len
@@ -1775,7 +1778,9 @@ mod tests {
         assert_eq!(register.get_n(RegA::A16, Reg32::Reg1), MaybeNumber::none());
         assert_eq!(register.get_n(RegA::A16, Reg32::Reg2), MaybeNumber::none());
         assert!(!register.st0);
-        ControlFlowOp::Succ.exec(&mut register, lib_site, &());
+        CmpOp::StInv.exec(&mut register, lib_site, &());
+        assert!(register.st0);
+        ControlFlowOp::Test.exec(&mut register, lib_site, &());
 
         let s1 = [0u8; u16::MAX as usize];
         let s2 = [0u8; u16::MAX as usize];
@@ -1903,8 +1908,8 @@ mod tests {
             &(),
         );
         assert!(!register.st0);
-        ControlFlowOp::Succ.exec(&mut register, lib_site, &());
-        assert!(register.st0);
+        ControlFlowOp::Test.exec(&mut register, lib_site, &());
+        assert!(!register.st0);
         CmpOp::EqR(NoneEqFlag::NonEqual, RegR::R512, Reg32::Reg0, Reg32::Reg2).exec(
             &mut register,
             lib_site,
