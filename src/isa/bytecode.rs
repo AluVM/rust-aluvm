@@ -991,8 +991,8 @@ impl Bytecode for BytesOp {
             BytesOp::Inj(_, _, _, _) => INSTR_INJ,
             BytesOp::Join(_, _, _) => INSTR_JOIN,
             BytesOp::Splt(_, _, _, _, _) => INSTR_SPLT,
-            BytesOp::Ins(_, _, _, _) => INSTR_DEL,
-            BytesOp::Del(_, _, _, _, _, _, _, _, _) => INSTR_INS,
+            BytesOp::Ins(_, _, _, _) => INSTR_INS,
+            BytesOp::Del(_, _, _, _, _, _, _, _, _) => INSTR_DEL,
             BytesOp::Rev(_, _) => INSTR_REV,
         }
     }
