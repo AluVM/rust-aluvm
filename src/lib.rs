@@ -107,6 +107,7 @@
 //!   - one for signed/unsigned variant of the encoding
 //!   - one for checked or wrapped variant of exception handling
 //! * Float encoding has 4 variants of rounding, matching IEEE-754 options
+//!
 //! Thus, many arithmetic instructions have 8 variants, indicating the used encoding (unsigned,
 //! signed integer or float) and operation behavior in situation when resulting value does not fit
 //! into the register (overflow or wrap for integers and one of four rounding options for floats).
