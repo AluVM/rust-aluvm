@@ -47,7 +47,7 @@
 ///
 /// let lib = Lib::assemble(&code, Instr::<ReservedOp>::isa_ids()).unwrap();
 /// let mut vm = Vm::<Instr>::new();
-/// match vm.exec(LibSite::default(), |_| Some(&lib), &()) {
+/// match vm.exec::<()>(LibSite::default(), |_| Some(&lib), &()) {
 ///     true => println!("success"),
 ///     false => println!("failure"),
 /// }

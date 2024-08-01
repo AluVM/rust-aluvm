@@ -355,11 +355,11 @@ impl Lib {
     /// # Returns
     ///
     /// Location for the external code jump, if any
-    pub fn exec<Isa>(
+    pub fn exec<Isa, X>(
         &self,
         entrypoint: u16,
         registers: &mut CoreRegs,
-        context: &Isa::Context<'_>,
+        context: &Isa::Context<'_, X>,
     ) -> Option<LibSite>
     where
         Isa: InstructionSet,

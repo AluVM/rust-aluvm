@@ -56,16 +56,16 @@ where
     /// # Returns
     ///
     /// Value of the `st0` register at the end of the program execution.
-    pub fn exec<'prog>(
+    pub fn exec<'prog, X>(
         &mut self,
         entry_point: LibSite,
         lib_resolver: impl Fn(LibId) -> Option<&'prog Lib>,
-        context: &Isa::Context<'_>,
+        context: &Isa::Context<'_, X>,
     ) -> bool {
         let mut call = Some(entry_point);
         while let Some(ref mut site) = call {
             if let Some(lib) = lib_resolver(site.lib) {
-                call = lib.exec::<Isa>(site.pos, &mut self.registers, context);
+                call = lib.exec::<Isa, X>(site.pos, &mut self.registers, context);
             } else if let Some(pos) = site.pos.checked_add(1) {
                 site.pos = pos;
             } else {
