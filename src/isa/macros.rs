@@ -29,7 +29,7 @@
 /// # use aluvm::aluasm;
 /// # use aluvm::Vm;
 /// # use aluvm::library::{Lib, LibSite};
-/// # use aluvm::isa::Instr;
+/// # use aluvm::isa::{Instr, InstructionSet, ReservedOp};
 ///
 /// let code = aluasm! {
 ///         clr     r1024[5]                        ;
@@ -45,7 +45,7 @@
 ///         jmp     0                               ;
 /// };
 ///
-/// let lib = Lib::assemble(&code).unwrap();
+/// let lib = Lib::assemble(&code, Instr::<ReservedOp>::isa_ids()).unwrap();
 /// let mut vm = Vm::<Instr>::new();
 /// match vm.exec(LibSite::default(), |_| Some(&lib), &()) {
 ///     true => println!("success"),

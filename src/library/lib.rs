@@ -271,9 +271,9 @@ impl Lib {
     }
 
     /// Assembles library from the provided instructions by encoding them into bytecode
-    pub fn assemble<Isa>(code: &[Isa]) -> Result<Lib, AssemblerError>
+    pub fn assemble<Instr>(code: &[Instr], isae: IsaSeg) -> Result<Lib, AssemblerError>
     where
-        Isa: InstructionSet,
+        Instr: Bytecode,
     {
         let call_sites = code.iter().filter_map(|instr| instr.call_site()).map(|site| site.lib);
         let libs_segment = LibSeg::try_from_iter(call_sites)?;
@@ -288,13 +288,13 @@ impl Lib {
         code_segment.adjust_len(pos);
         let code_segment = SmallBlob::from_collection_unsafe(code_segment.to_vec());
 
-        Ok(Lib { isae: Isa::isa_ids(), libs: libs_segment, code: code_segment, data: data_segment })
+        Ok(Lib { isae, libs: libs_segment, code: code_segment, data: data_segment })
     }
 
     /// Disassembles library into a set of instructions
     pub fn disassemble<Isa>(&self) -> Result<Vec<Isa>, CodeEofError>
     where
-        Isa: InstructionSet,
+        Isa: Bytecode,
     {
         let mut code = Vec::new();
         let mut reader = Cursor::with(&self.code, &self.data, &self.libs);
