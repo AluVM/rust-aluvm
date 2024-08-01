@@ -111,8 +111,12 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
     /// # Returns
     ///
     /// Returns whether further execution should be stopped.
-    // TODO: Take the instruction by reference
-    fn exec(&self, regs: &mut CoreRegs, site: LibSite, context: &Self::Context<'_>) -> ExecStep;
+    fn exec<'ctx>(
+        &self,
+        regs: &mut CoreRegs,
+        site: LibSite,
+        context: &Self::Context<'ctx>,
+    ) -> ExecStep;
 }
 
 impl<Extension> InstructionSet for Instr<Extension>
