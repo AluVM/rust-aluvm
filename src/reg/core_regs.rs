@@ -406,11 +406,7 @@ impl CoreRegs {
     /// Returns `false` if the register is initialized and the value is not `None`.
     pub fn set_s_if(&mut self, index: impl Into<RegS>, value: Option<impl Into<ByteStr>>) -> bool {
         let index = index.into();
-        if self.get_s(index).is_none() {
-            self.set_s(index, value)
-        } else {
-            value.is_none()
-        }
+        if self.get_s(index).is_none() { self.set_s(index, value) } else { value.is_none() }
     }
 
     /// Executes provided operation (as callback function) if and only if all the provided registers

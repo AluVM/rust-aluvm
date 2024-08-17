@@ -394,7 +394,10 @@ impl Number {
                 } else if !self.is_positive() ^ sign.into() {
                     let mut one = Number::from(1u8);
                     one.reshape(layout);
-                    (!self).int_add(one, IntFlags { signed: true, wrap: true })
+                    (!self).int_add(one, IntFlags {
+                        signed: true,
+                        wrap: true,
+                    })
                 } else {
                     Some(self)
                 }
@@ -456,11 +459,7 @@ impl Neg for Number {
 impl Number {
     /// Returns the absolute value of the number
     pub fn abs(self) -> Option<Number> {
-        if self.is_positive() {
-            Some(self)
-        } else {
-            self.applying_sign(false)
-        }
+        if self.is_positive() { Some(self) } else { self.applying_sign(false) }
     }
 }
 
@@ -491,26 +490,92 @@ mod tests {
         let x = Number::from(1);
         let y = Number::from(2);
         let z = Number::from(3);
-        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), Some(z));
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
         let x = Number::from(255u8);
         let y = Number::from(1u8);
         let z = Number::from(0u8);
-        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), None);
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), Some(z));
-        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: true }), Some(z));
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            None
+        );
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: false,
+                wrap: true
+            }),
+            Some(z)
+        );
         let x = Number::from(1i8);
         let y = Number::from(-1i8);
         let z = Number::from(0i8);
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), Some(z));
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
-        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), None);
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: true,
+                wrap: true
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            None
+        );
         let x = Number::from(-2i8);
         let y = Number::from(-1i8);
         let z = Number::from(-3i8);
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: false }), Some(z));
-        assert_eq!(x.int_add(y, IntFlags { signed: true, wrap: true }), Some(z));
-        assert_eq!(x.int_add(y, IntFlags { signed: false, wrap: false }), None);
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: true,
+                wrap: true
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_add(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            None
+        );
     }
 
     #[test]
@@ -518,26 +583,80 @@ mod tests {
         let x = Number::from(3u8);
         let y = Number::from(2u8);
         let z = Number::from(1u8);
-        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: false }), Some(z));
-        assert_eq!(x.int_sub(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(
+            x.int_sub(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_sub(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
         let x = Number::from(0i8);
         let y = Number::from(42i8);
         let z = Number::from(-42i8);
-        assert_eq!(x.int_sub(y, IntFlags { signed: true, wrap: false }), Some(z));
-        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: false }), None);
+        assert_eq!(
+            x.int_sub(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_sub(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            None
+        );
         let x = Number::from(6000);
         let y = Number::from(5000);
         let z = Number::from(1000);
-        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: false }), Some(z));
+        assert_eq!(
+            x.int_sub(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            Some(z)
+        );
         let x = Number::from(-10i8);
         let y = Number::from(-4i8);
         let z = Number::from(-6i8);
         let w = Number::from(6u8);
-        assert_eq!(x.int_sub(y, IntFlags { signed: true, wrap: false }), Some(z));
-        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: false }), None);
+        assert_eq!(
+            x.int_sub(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_sub(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            None
+        );
         // 246 - 252
-        assert_eq!(x.int_sub(y, IntFlags { signed: false, wrap: true }), None);
-        assert_eq!(y.int_sub(x, IntFlags { signed: false, wrap: true }), Some(w));
+        assert_eq!(
+            x.int_sub(y, IntFlags {
+                signed: false,
+                wrap: true
+            }),
+            None
+        );
+        assert_eq!(
+            y.int_sub(x, IntFlags {
+                signed: false,
+                wrap: true
+            }),
+            Some(w)
+        );
     }
 
     #[test]
@@ -545,21 +664,57 @@ mod tests {
         let x = Number::from(2);
         let y = Number::from(3);
         let z = Number::from(6);
-        assert_eq!(x.int_mul(y, IntFlags { signed: false, wrap: false }), Some(z));
+        assert_eq!(
+            x.int_mul(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            Some(z)
+        );
         let x = Number::from(128u8);
         let y = Number::from(2u8);
         let z = Number::from(0u8);
-        assert_eq!(x.int_mul(y, IntFlags { signed: false, wrap: false }), None);
-        assert_eq!(x.int_mul(y, IntFlags { signed: false, wrap: true }), Some(z));
+        assert_eq!(
+            x.int_mul(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            None
+        );
+        assert_eq!(
+            x.int_mul(y, IntFlags {
+                signed: false,
+                wrap: true
+            }),
+            Some(z)
+        );
         let x = Number::from(4);
         let y = Number::from(0);
         let z = Number::from(0);
-        assert_eq!(x.int_mul(y, IntFlags { signed: true, wrap: false }), Some(z));
+        assert_eq!(
+            x.int_mul(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
         let x = Number::from(-2);
         let y = Number::from(-5);
         let z = Number::from(10);
-        assert_eq!(x.int_mul(y, IntFlags { signed: true, wrap: false }), Some(z));
-        assert_eq!(x.int_mul(y, IntFlags { signed: true, wrap: true }), Some(z));
+        assert_eq!(
+            x.int_mul(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_mul(y, IntFlags {
+                signed: true,
+                wrap: true
+            }),
+            Some(z)
+        );
     }
 
     #[test]
@@ -567,28 +722,88 @@ mod tests {
         let x = Number::from(6);
         let y = Number::from(3);
         let z = Number::from(2);
-        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: false }), Some(z));
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            Some(z)
+        );
         let x = Number::from(7);
         let y = Number::from(2);
         let z = Number::from(3);
-        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: false }), Some(z));
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            Some(z)
+        );
         let x = Number::from(4u8);
         let y = Number::from(0u8);
-        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: false }), None);
-        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: true }), None);
-        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: false }), None);
-        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: true }), None);
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: false,
+                wrap: false
+            }),
+            None
+        );
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: false,
+                wrap: true
+            }),
+            None
+        );
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            None
+        );
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: true,
+                wrap: true
+            }),
+            None
+        );
         let x = Number::from(-7i8);
         let y = Number::from(4i8);
         let z = Number::from(-1i8);
         let w = Number::from(-2i8);
-        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: false }), Some(z));
-        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: true }), Some(w));
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            Some(z)
+        );
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: true,
+                wrap: true
+            }),
+            Some(w)
+        );
         let x = Number::from(-128i8);
         let y = Number::from(-1i8);
         let z = Number::from(0i8);
-        assert_eq!(x.int_div(y, IntFlags { signed: true, wrap: false }), None);
-        assert_eq!(x.int_div(y, IntFlags { signed: false, wrap: true }), Some(z));
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: true,
+                wrap: false
+            }),
+            None
+        );
+        assert_eq!(
+            x.int_div(y, IntFlags {
+                signed: false,
+                wrap: true
+            }),
+            Some(z)
+        );
     }
 
     #[test]

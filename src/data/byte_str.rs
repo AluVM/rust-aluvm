@@ -45,7 +45,12 @@ pub struct ByteStr {
 }
 
 impl Default for ByteStr {
-    fn default() -> ByteStr { ByteStr { len: 0, bytes: Box::new([0u8; u16::MAX as usize]) } }
+    fn default() -> ByteStr {
+        ByteStr {
+            len: 0,
+            bytes: Box::new([0u8; u16::MAX as usize]),
+        }
+    }
 }
 
 impl AsRef<[u8]> for ByteStr {
@@ -86,7 +91,10 @@ impl From<&TinyBlob> for ByteStr {
         let len = blob.len_u8() as u16;
         let mut bytes = [0u8; u16::MAX as usize];
         bytes[0..(len as usize)].copy_from_slice(blob.as_slice());
-        ByteStr { len, bytes: Box::new(bytes) }
+        ByteStr {
+            len,
+            bytes: Box::new(bytes),
+        }
     }
 }
 
@@ -95,7 +103,10 @@ impl From<&SmallBlob> for ByteStr {
         let len = blob.len_u16();
         let mut bytes = [0u8; u16::MAX as usize];
         bytes[0..(len as usize)].copy_from_slice(blob.as_slice());
-        ByteStr { len, bytes: Box::new(bytes) }
+        ByteStr {
+            len,
+            bytes: Box::new(bytes),
+        }
     }
 }
 
@@ -113,11 +124,17 @@ impl TryFrom<&[u8]> for ByteStr {
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         let len = slice.len();
         if len > u16::MAX as usize {
-            return Err(OverflowError { max: u16::MAX as usize + 1, value: len });
+            return Err(OverflowError {
+                max: u16::MAX as usize + 1,
+                value: len,
+            });
         }
         let mut bytes = [0u8; u16::MAX as usize];
         bytes[0..len].copy_from_slice(slice.as_ref());
-        Ok(ByteStr { len: len as u16, bytes: Box::new(bytes) })
+        Ok(ByteStr {
+            len: len as u16,
+            bytes: Box::new(bytes),
+        })
     }
 }
 
@@ -290,9 +307,7 @@ mod _serde {
 
     impl Serialize for ByteStr {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
+        where S: Serializer {
             if serializer.is_human_readable() {
                 self.as_ref().to_hex().serialize(serializer)
             } else {
@@ -303,9 +318,7 @@ mod _serde {
 
     impl<'de> Deserialize<'de> for ByteStr {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
+        where D: Deserializer<'de> {
             let vec = if deserializer.is_human_readable() {
                 let hex = String::deserialize(deserializer)?;
                 Vec::<u8>::from_hex(&hex).map_err(D::Error::custom)?

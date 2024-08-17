@@ -260,11 +260,21 @@ impl IntLayout {
 
     /// Returns signed integer layout
     #[inline]
-    pub const fn signed(bytes: u16) -> IntLayout { Self { signed: true, bytes } }
+    pub const fn signed(bytes: u16) -> IntLayout {
+        Self {
+            signed: true,
+            bytes,
+        }
+    }
 
     /// Returns unsigned integer layout
     #[inline]
-    pub const fn unsigned(bytes: u16) -> IntLayout { Self { signed: false, bytes } }
+    pub const fn unsigned(bytes: u16) -> IntLayout {
+        Self {
+            signed: false,
+            bytes,
+        }
+    }
 
     /// Converts unsigned integer layout into signed
     #[inline]
@@ -495,13 +505,19 @@ impl MaybeNumber {
     /// Creates zero value with a given layout
     #[inline]
     pub const fn zero(layout: Layout) -> MaybeNumber {
-        Self::some(Number { layout, bytes: [0u8; 1024] })
+        Self::some(Number {
+            layout,
+            bytes: [0u8; 1024],
+        })
     }
 
     /// Creates one value with a given layout
     #[inline]
     pub const fn one(layout: Layout) -> MaybeNumber {
-        let mut n = Number { layout, bytes: [0u8; 1024] };
+        let mut n = Number {
+            layout,
+            bytes: [0u8; 1024],
+        };
         n.bytes[0] = 1;
         Self::some(n)
     }
@@ -630,7 +646,10 @@ impl Hash for Number {
 
 impl Default for Number {
     fn default() -> Number {
-        Number { layout: Layout::Integer(IntLayout::unsigned(1)), bytes: [0u8; 1024] }
+        Number {
+            layout: Layout::Integer(IntLayout::unsigned(1)),
+            bytes: [0u8; 1024],
+        }
     }
 }
 
@@ -788,12 +807,20 @@ impl Number {
 
     /// Creates zero value with a given layout
     #[inline]
-    pub const fn zero(layout: Layout) -> Number { Number { layout, bytes: [0u8; 1024] } }
+    pub const fn zero(layout: Layout) -> Number {
+        Number {
+            layout,
+            bytes: [0u8; 1024],
+        }
+    }
 
     /// Creates one value with a given layout
     #[inline]
     pub const fn one(layout: Layout) -> Number {
-        let mut n = Number { layout, bytes: [0u8; 1024] };
+        let mut n = Number {
+            layout,
+            bytes: [0u8; 1024],
+        };
         n.bytes[0] = 1;
         n
     }
@@ -801,7 +828,10 @@ impl Number {
     /// Creates value with the specified bit masked
     #[inline]
     pub fn masked_bit(bit_no: u16, layout: Layout) -> Number {
-        let mut zero = Number { layout, bytes: [0u8; 1024] };
+        let mut zero = Number {
+            layout,
+            bytes: [0u8; 1024],
+        };
         zero.bytes[(bit_no / 8) as usize] = 1 << (bit_no % 8);
         zero
     }
@@ -828,7 +858,10 @@ impl Number {
         let len = slice.as_ref().len();
         let mut bytes = [0u8; 1024];
         bytes[0..len].copy_from_slice(slice.as_ref());
-        Number { layout: Layout::unsigned(len as u16), bytes }
+        Number {
+            layout: Layout::unsigned(len as u16),
+            bytes,
+        }
     }
 
     /// Constructs value from hex string
@@ -843,7 +876,10 @@ impl Number {
         let mut bytes = [0u8; 1024];
         let hex = Vec::<u8>::from_hex(s)?;
         bytes[0..len].copy_from_slice(&hex);
-        Ok(Number { layout: Layout::unsigned(hex.len() as u16), bytes })
+        Ok(Number {
+            layout: Layout::unsigned(hex.len() as u16),
+            bytes,
+        })
     }
 
     /// Serializes value in hexadecimal format to a string
@@ -995,8 +1031,14 @@ impl Number {
         match (self.layout, to) {
             (from, to) if from == to => true,
             (
-                Layout::Integer(IntLayout { signed: true, bytes: b_from }),
-                Layout::Integer(IntLayout { signed: true, bytes: b_to }),
+                Layout::Integer(IntLayout {
+                    signed: true,
+                    bytes: b_from,
+                }),
+                Layout::Integer(IntLayout {
+                    signed: true,
+                    bytes: b_to,
+                }),
             ) if !self.is_positive() && b_from < b_to => {
                 self.layout = to;
                 for i in b_from..b_to {
@@ -1165,15 +1207,18 @@ impl Display for Number {
             Layout::Integer(IntLayout { signed: false, .. }) if self.min_bit_len() < 16 * 8 => {
                 write!(f, "0x{:X}", self)
             }
-            Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 16 => {
-                Display::fmt(&i128::from(self), f)
-            }
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 16 => {
-                Display::fmt(&u128::from(self), f)
-            }
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 32 => {
-                Display::fmt(&u256::from(self), f)
-            }
+            Layout::Integer(IntLayout {
+                signed: true,
+                bytes,
+            }) if bytes <= 16 => Display::fmt(&i128::from(self), f),
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes,
+            }) if bytes <= 16 => Display::fmt(&u128::from(self), f),
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes,
+            }) if bytes <= 32 => Display::fmt(&u256::from(self), f),
             Layout::Integer(IntLayout { signed: false, .. }) if self.min_bit_len() < 512 => {
                 Display::fmt(&u512::from(self), f)
             }
@@ -1200,14 +1245,19 @@ impl LowerHex for Number {
         use amplify::hex::ToHex;
 
         match self.layout {
-            Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 16 => {
-                LowerHex::fmt(&i128::from(self), f)
-            }
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 16 => {
-                LowerHex::fmt(&u128::from(self), f)
-            }
+            Layout::Integer(IntLayout {
+                signed: true,
+                bytes,
+            }) if bytes <= 16 => LowerHex::fmt(&i128::from(self), f),
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes,
+            }) if bytes <= 16 => LowerHex::fmt(&u128::from(self), f),
             // TODO(#16) Use LowerHex implementation once it will be done in amplify::num
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 32 => {
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes,
+            }) if bytes < 32 => {
                 #[cfg(feature = "std")]
                 {
                     f.write_str(u256::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
@@ -1217,7 +1267,10 @@ impl LowerHex for Number {
                     f.write_str("<hex display requires std library>")
                 }
             }
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes < 32 => {
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes,
+            }) if bytes < 32 => {
                 #[cfg(feature = "std")]
                 {
                     f.write_str(u512::from(self).to_be_bytes().to_hex().trim_start_matches('0'))
@@ -1266,12 +1319,14 @@ impl UpperHex for Number {
 impl Octal for Number {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.layout {
-            Layout::Integer(IntLayout { signed: true, bytes }) if bytes <= 16 => {
-                Octal::fmt(&i128::from(self), f)
-            }
-            Layout::Integer(IntLayout { signed: false, bytes }) if bytes <= 16 => {
-                Octal::fmt(&u128::from(self), f)
-            }
+            Layout::Integer(IntLayout {
+                signed: true,
+                bytes,
+            }) if bytes <= 16 => Octal::fmt(&i128::from(self), f),
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes,
+            }) if bytes <= 16 => Octal::fmt(&u128::from(self), f),
             // TODO(#16) Use LowerHex implementation once it will be done in amplify::num
             // TODO(#16) Use LowerHex implementation once it will be done in `half` crate
             /* TODO(#16) Use LowerHex implementation once it will be done in `rustc_apfloat`
@@ -1347,7 +1402,10 @@ macro_rules! impl_number_bytes_conv {
             fn from(val: [u8; $len]) -> Number {
                 let mut bytes = [0u8; 1024];
                 bytes[0..$len].copy_from_slice(&val[..]);
-                Number { layout: Layout::unsigned($len), bytes }
+                Number {
+                    layout: Layout::unsigned($len),
+                    bytes,
+                }
             }
         }
 
@@ -1398,9 +1456,15 @@ macro_rules! impl_number_int_conv {
                 let le = val.to_le_bytes();
                 bytes[0..le.len()].copy_from_slice(&le[..]);
                 if $signed {
-                    Number { layout: Layout::signed(le.len() as u16), bytes }
+                    Number {
+                        layout: Layout::signed(le.len() as u16),
+                        bytes,
+                    }
                 } else {
-                    Number { layout: Layout::unsigned(le.len() as u16), bytes }
+                    Number {
+                        layout: Layout::unsigned(le.len() as u16),
+                        bytes,
+                    }
                 }
             }
         }
@@ -1458,7 +1522,10 @@ macro_rules! impl_number_float_conv {
                 let mut bytes = [0u8; 1024];
                 let le = val.to_bits().to_le_bytes();
                 bytes[0..le.len()].copy_from_slice(&le[..]);
-                MaybeNumber::some(Number { layout: Layout::float(FloatLayout::$layout), bytes })
+                MaybeNumber::some(Number {
+                    layout: Layout::float(FloatLayout::$layout),
+                    bytes,
+                })
             }
         }
     };
@@ -1630,21 +1697,51 @@ mod tests {
 
     #[test]
     fn reshape_test() {
-        let mut x =
-            Number::with([1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
-        let y = Number::with([1u8, 0u8], Layout::Integer(IntLayout { signed: false, bytes: 2 }))
-            .unwrap();
-        assert!(x.reshape(Layout::Integer(IntLayout { signed: false, bytes: 2 })));
+        let mut x = Number::with(
+            [1u8],
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes: 1,
+            }),
+        )
+        .unwrap();
+        let y = Number::with(
+            [1u8, 0u8],
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes: 2,
+            }),
+        )
+        .unwrap();
+        assert!(x.reshape(Layout::Integer(IntLayout {
+            signed: false,
+            bytes: 2
+        })));
         assert_eq!(x, y);
     }
 
     #[test]
     fn reshape_with_same_layout_test() {
-        let mut x =
-            Number::with([1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
-        let y =
-            Number::with([1u8], Layout::Integer(IntLayout { signed: false, bytes: 1 })).unwrap();
-        assert!(x.reshape(Layout::Integer(IntLayout { signed: false, bytes: 1 })));
+        let mut x = Number::with(
+            [1u8],
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes: 1,
+            }),
+        )
+        .unwrap();
+        let y = Number::with(
+            [1u8],
+            Layout::Integer(IntLayout {
+                signed: false,
+                bytes: 1,
+            }),
+        )
+        .unwrap();
+        assert!(x.reshape(Layout::Integer(IntLayout {
+            signed: false,
+            bytes: 1
+        })));
         assert_eq!(x, y);
     }
 
@@ -1653,10 +1750,22 @@ mod tests {
         let mut x = Number::from(-24i8);
         let y = Number::from(-24i16);
         let z = Number::from(-24i128);
-        assert_eq!(x.layout, Layout::Integer(IntLayout { signed: true, bytes: 1 }));
-        assert!(x.reshape(Layout::Integer(IntLayout { signed: true, bytes: 2 })));
+        assert_eq!(
+            x.layout,
+            Layout::Integer(IntLayout {
+                signed: true,
+                bytes: 1
+            })
+        );
+        assert!(x.reshape(Layout::Integer(IntLayout {
+            signed: true,
+            bytes: 2
+        })));
         assert_eq!(x, y);
-        assert!(x.reshape(Layout::Integer(IntLayout { signed: true, bytes: 16 })));
+        assert!(x.reshape(Layout::Integer(IntLayout {
+            signed: true,
+            bytes: 16
+        })));
         assert_eq!(x, z);
     }
 

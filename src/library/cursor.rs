@@ -96,7 +96,13 @@ where
     /// segment
     #[inline]
     pub fn new(bytecode: T, libs: &'a LibSeg) -> Cursor<'a, T, D> {
-        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, data: D::default(), libs }
+        Cursor {
+            bytecode,
+            byte_pos: 0,
+            bit_pos: u3::MIN,
+            data: D::default(),
+            libs,
+        }
     }
 }
 
@@ -116,7 +122,13 @@ where
     pub fn with(bytecode: T, data: D, libs: &'a LibSeg) -> Cursor<'a, T, D> {
         assert!(bytecode.as_ref().len() <= CODE_SEGMENT_MAX_LEN);
         assert!(data.as_ref().len() <= DATA_SEGMENT_MAX_LEN);
-        Cursor { bytecode, byte_pos: 0, bit_pos: u3::MIN, data, libs }
+        Cursor {
+            bytecode,
+            byte_pos: 0,
+            bit_pos: u3::MIN,
+            data,
+            libs,
+        }
     }
 
     /// Returns the current offset of the cursor

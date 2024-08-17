@@ -400,11 +400,7 @@ impl Display for IntFlags {
         } else {
             f.write_char('u')?;
         }
-        if self.wrap {
-            f.write_char('w')
-        } else {
-            f.write_char('c')
-        }
+        if self.wrap { f.write_char('w') } else { f.write_char('c') }
     }
 }
 
@@ -420,17 +416,17 @@ impl FromStr for IntFlags {
                     "integer serialization",
                     's',
                     'u',
-                ))
+                ));
             }
             (false, false) => {
-                return Err(ParseFlagError::RequiredFlagAbsent("integer serialization"))
+                return Err(ParseFlagError::RequiredFlagAbsent("integer serialization"));
             }
         };
         let wrap = match (s.contains('w'), s.contains('c')) {
             (true, false) => true,
             (false, true) => false,
             (true, true) => {
-                return Err(ParseFlagError::MutuallyExclusiveFlags("overflow", 'w', 'c'))
+                return Err(ParseFlagError::MutuallyExclusiveFlags("overflow", 'w', 'c'));
             }
             (false, false) => return Err(ParseFlagError::RequiredFlagAbsent("overflow")),
         };
@@ -449,7 +445,10 @@ impl IntFlags {
     /// Constructs integer arithmetic flags from `u2` value (used in bytecode serialization)
     pub fn from_u2(val: u2) -> Self {
         let val = val.to_u8();
-        IntFlags { signed: val & 0x01 == 1, wrap: val & 0x02 >> 1 == 1 }
+        IntFlags {
+            signed: val & 0x01 == 1,
+            wrap: val & 0x02 >> 1 == 1,
+        }
     }
 
     /// Returns `u2` representation of integer arithmetic flags (used in bytecode serialization).
@@ -457,19 +456,39 @@ impl IntFlags {
 
     /// Constructs variant for unsigned checked operation flags
     #[inline]
-    pub fn unsigned_checked() -> Self { IntFlags { signed: false, wrap: false } }
+    pub fn unsigned_checked() -> Self {
+        IntFlags {
+            signed: false,
+            wrap: false,
+        }
+    }
 
     /// Constructs variant for signed checked operation flags
     #[inline]
-    pub fn signed_checked() -> Self { IntFlags { signed: true, wrap: false } }
+    pub fn signed_checked() -> Self {
+        IntFlags {
+            signed: true,
+            wrap: false,
+        }
+    }
 
     /// Constructs variant for unsigned wrapped operation flags
     #[inline]
-    pub fn unsigned_wrapped() -> Self { IntFlags { signed: false, wrap: true } }
+    pub fn unsigned_wrapped() -> Self {
+        IntFlags {
+            signed: false,
+            wrap: true,
+        }
+    }
 
     /// Constructs variant for signed wrapped operation flags
     #[inline]
-    pub fn signed_wrapped() -> Self { IntFlags { signed: true, wrap: true } }
+    pub fn signed_wrapped() -> Self {
+        IntFlags {
+            signed: true,
+            wrap: true,
+        }
+    }
 }
 
 impl From<u2> for IntFlags {

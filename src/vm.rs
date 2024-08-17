@@ -34,8 +34,7 @@ use crate::reg::CoreRegs;
 /// Alu virtual machine providing single-core execution environment
 #[derive(Debug, Default)]
 pub struct Vm<Isa = Instr<ReservedOp>>
-where
-    Isa: InstructionSet,
+where Isa: InstructionSet
 {
     /// A set of registers
     pub registers: Box<CoreRegs>,
@@ -45,11 +44,15 @@ where
 
 /// Runtime for program execution.
 impl<Isa> Vm<Isa>
-where
-    Isa: InstructionSet,
+where Isa: InstructionSet
 {
     /// Constructs new virtual machine instance.
-    pub fn new() -> Self { Self { registers: Box::default(), phantom: Default::default() } }
+    pub fn new() -> Self {
+        Self {
+            registers: Box::default(),
+            phantom: Default::default(),
+        }
+    }
 
     /// Executes the program starting from the provided entry point.
     ///

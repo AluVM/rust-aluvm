@@ -58,15 +58,12 @@ pub trait Decode {
 
     /// Decodes data structure from a reader
     fn decode(reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized;
+    where Self: Sized;
 
     /// Deserializes data structure from given byte slice
     #[inline]
     fn deserialize(from: impl AsRef<[u8]>) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         Self::decode(from.as_ref())
     }
 }
@@ -155,8 +152,7 @@ impl<I, A> MaxLenWord<I, A> {
 }
 
 impl<T> Encode for &T
-where
-    T: Encode,
+where T: Encode
 {
     type Error = T::Error;
 
@@ -178,9 +174,7 @@ impl Decode for bool {
 
     #[inline]
     fn decode(reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         match u8::decode(reader)? {
             0 => Ok(false),
             1 => Ok(true),
@@ -204,9 +198,7 @@ impl Decode for u8 {
 
     #[inline]
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let mut byte = [0u8; 1];
         reader.read_exact(&mut byte)?;
         Ok(byte[0])
@@ -228,9 +220,7 @@ impl Decode for u16 {
 
     #[inline]
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let mut word = [0u8; 2];
         reader.read_exact(&mut word)?;
         Ok(u16::from_le_bytes(word))
@@ -255,9 +245,7 @@ impl Decode for String {
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let len = u8::decode(&mut reader)?;
         let mut s = vec![0u8; len as usize];
         reader.read_exact(&mut s)?;
@@ -270,11 +258,7 @@ impl Encode for Option<String> {
 
     #[inline]
     fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
-        if let Some(s) = self {
-            s.encode(writer)
-        } else {
-            Ok(0u8.encode(writer)?)
-        }
+        if let Some(s) = self { s.encode(writer) } else { Ok(0u8.encode(writer)?) }
     }
 }
 
@@ -282,9 +266,7 @@ impl Decode for Option<String> {
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let len = u8::decode(&mut reader)?;
         if len == 0 {
             return Ok(None);
@@ -328,9 +310,7 @@ where
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let len = u8::decode(&mut reader)?;
         let mut vec = vec![];
         for _ in 0..len {
@@ -373,9 +353,7 @@ where
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let len = u16::decode(&mut reader)?;
         let mut vec = vec![];
         for _ in 0..len {
@@ -409,9 +387,7 @@ where
 
     #[inline]
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         Ok((A::decode(&mut reader)?, B::decode(&mut reader)?))
     }
 }
@@ -431,9 +407,7 @@ impl Decode for ByteStr {
     type Error = io::Error;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let len = u16::decode(&mut reader)?;
         let mut vec = vec![0u8; len as usize];
         reader.read_exact(&mut vec)?;
@@ -446,11 +420,7 @@ impl Encode for Option<ByteStr> {
 
     #[inline]
     fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
-        if let Some(s) = self {
-            s.encode(writer)
-        } else {
-            Ok(0u8.encode(writer)?)
-        }
+        if let Some(s) = self { s.encode(writer) } else { Ok(0u8.encode(writer)?) }
     }
 }
 
@@ -458,9 +428,7 @@ impl Decode for Option<ByteStr> {
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let len = u8::decode(&mut reader)?;
         if len == 0 {
             return Ok(None);
@@ -488,9 +456,7 @@ impl Decode for Number {
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let layout = Layout::decode(&mut reader)?;
         let mut vec = vec![0u8; layout.bytes() as usize];
         reader.read_exact(&mut vec)?;
@@ -513,9 +479,7 @@ impl Decode for MaybeNumber {
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         match u8::decode(&mut reader)? {
             0 => Ok(MaybeNumber::none()),
             1 => Ok(Number::decode(reader)?.into()),
@@ -537,10 +501,11 @@ impl Decode for IntLayout {
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        Ok(IntLayout { signed: bool::decode(&mut reader)?, bytes: u16::decode(&mut reader)? })
+    where Self: Sized {
+        Ok(IntLayout {
+            signed: bool::decode(&mut reader)?,
+            bytes: u16::decode(&mut reader)?,
+        })
     }
 }
 
@@ -557,9 +522,7 @@ impl Decode for FloatLayout {
     type Error = DecodeError;
 
     fn decode(reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let val = u8::decode(reader)?;
         FloatLayout::with(val).ok_or(DecodeError::FloatLayout(val))
     }
@@ -581,11 +544,13 @@ impl Decode for Layout {
     type Error = DecodeError;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         Ok(match u8::decode(&mut reader)? {
-            i if i <= 1 => IntLayout { signed: i == 1, bytes: u16::decode(reader)? }.into(),
+            i if i <= 1 => IntLayout {
+                signed: i == 1,
+                bytes: u16::decode(reader)?,
+            }
+            .into(),
             float => FloatLayout::with(float).ok_or(DecodeError::FloatLayout(float))?.into(),
         })
     }
@@ -605,9 +570,7 @@ impl Decode for LibId {
     type Error = io::Error;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let mut slice = [0u8; 32];
         reader.read_exact(&mut slice)?;
         Ok(LibId::from_inner(slice.into()))
@@ -626,9 +589,7 @@ impl Decode for LibSite {
     type Error = io::Error;
 
     fn decode(mut reader: impl Read) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
+    where Self: Sized {
         let id = LibId::decode(&mut reader)?;
         let pos = u16::decode(&mut reader)?;
         Ok(LibSite::with(pos, id))

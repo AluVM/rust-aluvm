@@ -116,8 +116,7 @@ pub trait InstructionSet: Bytecode + core::fmt::Display + core::fmt::Debug {
 }
 
 impl<Extension> InstructionSet for Instr<Extension>
-where
-    Extension: InstructionSet,
+where Extension: InstructionSet
 {
     type Context<'ctx> = Extension::Context<'ctx>;
 
@@ -652,9 +651,12 @@ impl InstructionSet for CmpOp {
                 let st = Number::from(regs.st0 as u8);
                 let res = match (*regs.get_n(reg, idx), merge_flag) {
                     (None, _) | (_, MergeFlag::Set) => st,
-                    (Some(val), MergeFlag::Add) => {
-                        val.int_add(st, IntFlags { signed: false, wrap: false }).unwrap_or(val)
-                    }
+                    (Some(val), MergeFlag::Add) => val
+                        .int_add(st, IntFlags {
+                            signed: false,
+                            wrap: false,
+                        })
+                        .unwrap_or(val),
                     (Some(val), MergeFlag::And) => val & st,
                     (Some(val), MergeFlag::Or) => val | st,
                 };
@@ -813,14 +815,20 @@ impl InstructionSet for ArithmeticOp {
                             n.reshape(val.layout()),
                             "reshape target byte length is always greater"
                         );
-                        val.int_sub(n, IntFlags { signed: false, wrap: false })
+                        val.int_sub(n, IntFlags {
+                            signed: false,
+                            wrap: false,
+                        })
                     } else {
                         let mut n = Number::from(*step);
                         debug_assert!(
                             n.reshape(val.layout()),
                             "reshape target byte length is always greater"
                         );
-                        val.int_add(n, IntFlags { signed: false, wrap: false })
+                        val.int_add(n, IntFlags {
+                            signed: false,
+                            wrap: false,
+                        })
                     }
                 }),
             ),
