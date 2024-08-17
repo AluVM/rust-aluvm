@@ -27,9 +27,7 @@
 use alloc::boxed::Box;
 use alloc::collections::BTreeSet;
 #[cfg(all(feature = "alloc", not(feature = "std")))]
-use alloc::string::String;
-#[cfg(all(feature = "alloc", not(feature = "std")))]
-use alloc::vec::Vec;
+use alloc::string::{String, ToString};
 use core::cmp::Ordering;
 use core::ops::{BitAnd, BitOr, BitXor, Neg, Rem, Shl, Shr};
 
@@ -148,7 +146,7 @@ where Extension: InstructionSet
             Instr::Curve25519(instr) => instr.src_regs(),
             Instr::ExtensionCodes(instr) => instr.src_regs(),
             Instr::ReservedInstruction(instr) => instr.src_regs(),
-            Instr::Nop => bset![],
+            Instr::Nop => BTreeSet::new(),
         }
     }
 
@@ -168,7 +166,7 @@ where Extension: InstructionSet
             Instr::Curve25519(instr) => instr.dst_regs(),
             Instr::ExtensionCodes(instr) => instr.dst_regs(),
             Instr::ReservedInstruction(instr) => instr.dst_regs(),
-            Instr::Nop => bset![],
+            Instr::Nop => BTreeSet::new(),
         }
     }
 
@@ -220,9 +218,9 @@ impl InstructionSet for ControlFlowOp {
     #[inline]
     fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
-    fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
+    fn src_regs(&self) -> BTreeSet<Reg> { BTreeSet::new() }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> { bset![] }
+    fn dst_regs(&self) -> BTreeSet<Reg> { BTreeSet::new() }
 
     #[inline]
     fn complexity(&self) -> u64 { 2 }
@@ -270,11 +268,11 @@ impl InstructionSet for PutOp {
     #[inline]
     fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
-    fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
+    fn src_regs(&self) -> BTreeSet<Reg> { BTreeSet::new() }
 
     fn dst_regs(&self) -> BTreeSet<Reg> {
         match self {
-            PutOp::ClrA(_, _) | PutOp::ClrF(_, _) | PutOp::ClrR(_, _) => bset![],
+            PutOp::ClrA(_, _) | PutOp::ClrF(_, _) | PutOp::ClrR(_, _) => BTreeSet::new(),
             PutOp::PutA(reg, reg32, _) => bset![Reg::A(*reg, *reg32)],
             PutOp::PutF(reg, reg32, _) => bset![Reg::F(*reg, *reg32)],
             PutOp::PutR(reg, reg32, _) => bset![Reg::R(*reg, *reg32)],
@@ -555,10 +553,8 @@ impl InstructionSet for CmpOp {
             CmpOp::IfZR(reg, idx) | CmpOp::IfNR(reg, idx) => {
                 bset![Reg::R(*reg, *idx)]
             }
-            CmpOp::St(_, _, _) => {
-                bset![]
-            }
-            CmpOp::StInv => bset![],
+            CmpOp::St(_, _, _) => BTreeSet::new(),
+            CmpOp::StInv => BTreeSet::new(),
         }
     }
 
@@ -567,7 +563,7 @@ impl InstructionSet for CmpOp {
             CmpOp::St(_, reg, idx) => {
                 bset![Reg::A(*reg, (*idx).into())]
             }
-            _ => bset![],
+            _ => BTreeSet::new(),
         }
     }
 
@@ -1084,9 +1080,7 @@ impl InstructionSet for BytesOp {
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
-            BytesOp::Put(_reg, _, _) => {
-                bset![]
-            }
+            BytesOp::Put(_reg, _, _) => BTreeSet::new(),
             BytesOp::Swp(reg1, reg2) | BytesOp::Find(reg1, reg2) => {
                 bset![Reg::S(*reg1), Reg::S(*reg2)]
             }
@@ -1154,9 +1148,7 @@ impl InstructionSet for BytesOp {
             BytesOp::Cnt(_src, _byte, cnt) => {
                 bset![Reg::new(RegA::A16, *cnt)]
             }
-            BytesOp::Eq(_reg1, _reg2) => {
-                bset![]
-            }
+            BytesOp::Eq(_reg1, _reg2) => BTreeSet::new(),
             BytesOp::Con(_reg1, _reg2, _no, offset, len) => {
                 bset![Reg::A(RegA::A16, *offset), Reg::A(RegA::A16, *len)]
             }
@@ -1673,9 +1665,9 @@ impl InstructionSet for ReservedOp {
     #[inline]
     fn isa_ids() -> IsaSeg { IsaSeg::default() }
 
-    fn src_regs(&self) -> BTreeSet<Reg> { bset![] }
+    fn src_regs(&self) -> BTreeSet<Reg> { BTreeSet::new() }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> { bset![] }
+    fn dst_regs(&self) -> BTreeSet<Reg> { BTreeSet::new() }
 
     fn complexity(&self) -> u64 { u64::MAX }
 

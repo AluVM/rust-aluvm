@@ -36,13 +36,16 @@ use amplify::confinement::SmallBlob;
 use amplify::{confinement, ByteArray, Bytes32};
 use baid64::{Baid64ParseError, DisplayBaid64, FromBaid64Str};
 use sha2::{Digest, Sha256};
+#[cfg(feature = "std")]
 use strict_encoding::{StrictDeserialize, StrictSerialize};
 
 #[cfg(feature = "ascii-armor")]
 pub use self::_armor::LibArmorError;
 use super::{Cursor, Read, WriteError};
 use crate::data::ByteStr;
-use crate::isa::{Bytecode, BytecodeError, ExecStep, Instr, InstructionSet};
+#[cfg(feature = "std")]
+use crate::isa::{Bytecode, Instr};
+use crate::isa::{BytecodeError, ExecStep, InstructionSet};
 use crate::library::segs::IsaSeg;
 use crate::library::{CodeEofError, LibSeg, SegmentError};
 use crate::reg::CoreRegs;
@@ -135,7 +138,9 @@ pub struct Lib {
     pub libs: LibSeg,
 }
 
+#[cfg(feature = "std")]
 impl StrictSerialize for Lib {}
+#[cfg(feature = "std")]
 impl StrictDeserialize for Lib {}
 
 impl Display for Lib {

@@ -27,15 +27,13 @@
 
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::borrow::ToOwned;
-use alloc::collections::BTreeSet;
+use alloc::collections::{btree_set, BTreeSet};
 #[cfg(all(feature = "alloc", not(feature = "std")))]
-use alloc::string::String;
+use alloc::string::{String, ToString};
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::vec::Vec;
 use core::fmt::{self, Debug, Display, Formatter};
 use core::str::FromStr;
-use std::collections::btree_set;
-use std::convert::TryFrom;
 
 use amplify::confinement;
 use amplify::confinement::Confined;
