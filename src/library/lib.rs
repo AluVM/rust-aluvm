@@ -282,9 +282,9 @@ impl Lib {
             instr.encode(&mut writer)?;
         }
         let pos = writer.pos();
-        let data_segment = SmallBlob::from_collection_unsafe(writer.into_data_segment().to_vec());
+        let data_segment = SmallBlob::from_checked(writer.into_data_segment().to_vec());
         code_segment.adjust_len(pos);
-        let code_segment = SmallBlob::from_collection_unsafe(code_segment.to_vec());
+        let code_segment = SmallBlob::from_checked(code_segment.to_vec());
 
         Ok(Lib {
             isae: Isa::isa_ids(),
