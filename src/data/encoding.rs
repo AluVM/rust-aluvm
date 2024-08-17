@@ -7,7 +7,9 @@
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
 // Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
+// Copyright (C) 2023-2024 UBIDECO Labs,
+//     Institute for Distributed and Cognitive Computing, Switzerland.
+//     All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
