@@ -34,9 +34,11 @@ jobs:
       fail-fast: false
       matrix:
         feature:
+          - log
           - ascii-armor
           - secp256k1
           - curve25519
+          - serde
           - stl
     steps:
       - uses: actions/checkout@v4
