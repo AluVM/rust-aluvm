@@ -628,9 +628,9 @@ pub enum BytesOp {
     /// arguments, the end offset is the greatest one. If any of the offsets exceeds the length of
     /// the string in the destination register, operation behaviour is defined by the provided
     /// boolean flag:
-    /// - if the flag is `true`, the string length is extended to the largest of the offsets and all
-    ///   bytes between previous string length and start offset are filled with zeros, setting `st0`
-    ///   value to `false`;
+    /// - if the flag is `true`, the string length is extended to the largest of the offsets and
+    ///   all bytes between previous string length and start offset are filled with zeros, setting
+    ///   `st0` value to `false`;
     /// - if the flag is `false`, the destination register is set to `None` and `st0` is set to
     ///   `false`.
     ///

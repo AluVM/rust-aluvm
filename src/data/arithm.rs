@@ -461,7 +461,11 @@ impl Neg for Number {
 impl Number {
     /// Returns the absolute value of the number
     pub fn abs(self) -> Option<Number> {
-        if self.is_positive() { Some(self) } else { self.applying_sign(false) }
+        if self.is_positive() {
+            Some(self)
+        } else {
+            self.applying_sign(false)
+        }
     }
 }
 

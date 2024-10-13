@@ -402,7 +402,11 @@ impl Display for IntFlags {
         } else {
             f.write_char('u')?;
         }
-        if self.wrap { f.write_char('w') } else { f.write_char('c') }
+        if self.wrap {
+            f.write_char('w')
+        } else {
+            f.write_char('c')
+        }
     }
 }
 
