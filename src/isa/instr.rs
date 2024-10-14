@@ -250,7 +250,7 @@ pub enum MoveOp {
     SwpF(RegF, Reg32, Reg32),
 
     /// Move operation: moves value of one of the general non-arithmetic registers into another
-    /// general non- arithmetic register of the same bit size, clearing its previous value and
+    /// general non-arithmetic register of the same bit size, clearing its previous value and
     /// setting the source to `None`.
     #[display("mov     {0}{1},{0}{2}")]
     MovR(RegR, Reg32, Reg32),
@@ -280,7 +280,7 @@ pub enum MoveOp {
     /// Conversion operation: converts value from one of the float arithmetic registers to a
     /// destination register according to floating encoding rules. If the value does not fit
     /// destination bit dimension, truncates the most significant non-sign bits until they fit,
-    /// setting `st0` value to `false`. Otherwise sets `st0` to `true`.
+    /// setting `st0` value to `false`. Otherwise, sets `st0` to `true`.
     #[display("cnv     {0}{1},{2}{3}")]
     CnvF(RegF, Reg32, RegF, Reg32),
 
@@ -291,7 +291,7 @@ pub enum MoveOp {
     #[display("cpy     {0}{1},{2}{3}")]
     CpyR(RegR, Reg32, RegR, Reg32),
 
-    /// Swap-copy operation: swaps value one of the integer arithmetic registers with a value of an
+    /// Swap-copy operation: swaps value one of the integer arithmetic registers with a value of a
     /// general non-arithmetic register. If any of the values do not fit destination bit
     /// dimensions, truncates the most significant bits until they fit, setting `st0` value to
     /// `false`. Otherwise, extends most significant bits with zeros and sets `st0` to `true`.
@@ -301,7 +301,7 @@ pub enum MoveOp {
     /// Conversion operation: converts value of an integer arithmetic register to a float register
     /// according to floating encoding rules. If the value does not fit destination bit dimension,
     /// truncates the most significant non-sign bits until they fit, setting `st0` value to
-    /// `false`. Otherwise sets `st0` to `true`.
+    /// `false`. Otherwise, sets `st0` to `true`.
     ///
     /// NB: operation always treats integers as signed integers.
     #[display("cnv     {0}{1},{2}{3}")]
@@ -310,7 +310,7 @@ pub enum MoveOp {
     /// Conversion operation: converts value of a float arithmetic register to an integer register
     /// according to floating encoding rules. If the value does not fit destination bit dimension,
     /// truncates the most significant non-sign bits until they fit, setting `st0` value to
-    /// `false`. Otherwise sets `st0` to `true`.
+    /// `false`. Otherwise, sets `st0` to `true`.
     ///
     /// NB: operation always treats integers as signed integers.
     #[display("cnv     {0}{1},{2}{3}")]
@@ -565,7 +565,7 @@ pub enum BitwiseOp {
         /** Source & destination register */ Reg32,
     ),
 
-    /// Right bit shift, cycling the shifted values (least significant bit becomes nost
+    /// Right bit shift, cycling the shifted values (the least significant bit becomes the most
     /// significant), putting the result into the first source register. Does not modify `st0`
     /// value.
     ///
@@ -579,11 +579,11 @@ pub enum BitwiseOp {
         /** Source & destination register */ Reg32,
     ),
 
-    /// Reverses bit order in the integer arithmetic register. Does not modify `st0` value.
+    /// Reverses bits order in the integer arithmetic register. Does not modify `st0` value.
     #[display("rev     {0}{1}")]
     RevA(RegA, Reg32),
 
-    /// Reverses bit order in the generic non-arithmetic register. Does not modify `st0` value.
+    /// Reverses bits order in the generic non-arithmetic register. Does not modify `st0` value.
     #[display("rev     {0}{1}")]
     RevR(RegR, Reg32),
 }
@@ -716,7 +716,7 @@ pub enum BytesOp {
     ),
 
     /// Join bytestrings from two registers into destination, overwriting its value. If the length
-    /// of the joined string exceeds the maximum string register length (2^16 bytes), than the
+    /// of the joined string exceeds the maximum string register length (2^16 bytes), then the
     /// destination register is set to `None` state and `st0` is set to `false`. Otherwise,
     /// `st0` value is not modified.
     #[display("join    {0},{1},{2}")]
@@ -724,7 +724,7 @@ pub enum BytesOp {
 
     /// Split bytestring at a given offset taken from `a16` register into two destination strings,
     /// overwriting their value. If offset exceeds the length of the string in the register,
-    /// than the behaviour is determined by the [`SplitFlag`] value.
+    /// then the behaviour is determined by the [`SplitFlag`] value.
     ///
     /// <pre>
     /// +--------------------
