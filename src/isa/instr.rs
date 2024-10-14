@@ -26,10 +26,7 @@
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::boxed::Box;
 
-use super::{
-    DeleteFlag, FloatEqFlag, InsertFlag, InstructionSet, IntFlags, MergeFlag, RoundingFlag,
-    SignFlag, SplitFlag,
-};
+use super::{FloatEqFlag, InstructionSet, IntFlags, MergeFlag, RoundingFlag, SignFlag};
 use crate::data::{ByteStr, MaybeNumber, Step};
 use crate::isa::{ExtendFlag, NoneEqFlag};
 use crate::library::LibSite;
@@ -673,45 +670,61 @@ pub enum BytesOp {
     #[display("eq      {0},{1}")]
     Eq(RegS, RegS),
 
-    /// Compute offset and length of the `n`th fragment shared between two strings ("conjoint
-    /// fragment"), putting it to the destination `a16` registers. If strings have no conjoint
-    /// fragment sets destination to `None`.
-    #[display("con     {0},{1},a16{2},a16{3},a16{4}")]
-    Con(
-        /** First source string register */ RegS,
-        /** Second source string register */ RegS,
-        /** Index of the conjoint fragment to match */ Reg32,
-        /** `a16` register index to save the offset of the conjoint fragment */ Reg32,
-        /** `a16` register index to save the length of the conjoint fragment */ Reg32,
-    ),
-
     /// Count number of occurrences of one string within another putting result to `a16[0]`,
     ///
     /// If the first or the second string is `None`, sets `st0` to `false` and `a16[0]` to `None`.
     #[display("find    a16[0],{0},{1}")]
     Find(/** `s` register with string */ RegS, /** `s` register with matching fragment */ RegS),
 
-    /// Extract byte string slice into general `r` register. The length of the extracted string is
-    /// equal to the bit dimension of the destination register. If the bit size of the destination
-    /// plus the initial offset exceeds string length the rest of the destination register bits is
-    /// filled with zeros and `st0` is set to `false`. Otherwise, `st0` value is not modified.
+    /// Extract byte string slice into general `A` register. The length of the extracted string is
+    /// equal to the bit dimension of the destination register. If the bit size of
+    /// the destination plus the initial offset exceeds string length the rest of the
+    /// destination register bits is filled with zeros and `st0` is set to `false`. Otherwise,
+    /// `st0` value is not modified.
     ///
     /// If the source string register - or offset register is uninitialized, sets destination to
     /// uninitialized state and `st0` to `false`.
     #[display("extr    {0},{1}{2},a16{3}")]
-    Extr(/** `s` register index */ RegS, RegAR, Reg16, /** `a16` register with offset */ Reg16),
+    ExtA(/** `s` register index */ RegS, RegA, Reg32, /** `a16` register with offset */ Reg16),
+
+    /// Inject general `A` register value at a given position to string register, replacing value
+    /// of the corresponding bytes. If the insert offset is larger than the current
+    /// length of the string, the length is extended and all bytes inbetween previous length
+    /// and the new length are initialized with zeros. If the length of the inserted string
+    /// plus insert offset exceeds the maximum string register length (2^16 bytes), then the
+    /// destination register is set to `None` state and `st0` is set to `false`. Otherwise,
+    /// `st0` value is not modified.
+    #[display("inj     {0},{1}{2},{1}{3}")]
+    InjA(
+        /** `s` register index acting as the source and destination */ RegS,
+        RegA,
+        Reg32,
+        /** `a16` register with offset */ Reg16,
+    ),
+
+    /// Extract byte string slice into general `R` register. The length of the extracted string is
+    /// equal to the bit dimension of the destination register. If the bit size of
+    /// the destination plus the initial offset exceeds string length the rest of the
+    /// destination register bits is filled with zeros and `st0` is set to `false`. Otherwise,
+    /// `st0` value is not modified.
+    ///
+    /// If the source string register - or offset register is uninitialized, sets destination to
+    /// uninitialized state and `st0` to `false`.
+    #[display("extr    {0},{1}{2},a16{3}")]
+    ExtR(/** `s` register index */ RegS, RegR, Reg32, /** `a16` register with offset */ Reg16),
 
     /// Inject general `R` register value at a given position to string register, replacing value
-    /// of the corresponding bytes. If the insert offset is larger than the current length of the
-    /// string, the length is extended and all bytes inbetween previous length and the new length
-    /// are initialized with zeros. If the length of the inserted string plus insert offset exceeds
-    /// the maximum string register length (2^16 bytes), then the destination register is set to
-    /// `None` state and `st0` is set to `false`. Otherwise, `st0` value is not modified.
+    /// of the corresponding bytes. If the insert offset is larger than the current
+    /// length of the string, the length is extended and all bytes inbetween previous length
+    /// and the new length are initialized with zeros. If the length of the inserted string
+    /// plus insert offset exceeds the maximum string register length (2^16 bytes), then the
+    /// destination register is set to `None` state and `st0` is set to `false`. Otherwise,
+    /// `st0` value is not modified.
     #[display("inj     {0},{1}{2},{1}{3}")]
-    Inj(
+    InjR(
         /** `s` register index acting as the source and destination */ RegS,
-        RegAR,
-        Reg16,
+        RegR,
+        Reg32,
         /** `a16` register with offset */ Reg16,
     ),
 
@@ -724,125 +737,19 @@ pub enum BytesOp {
 
     /// Split bytestring at a given offset taken from `a16` register into two destination strings,
     /// overwriting their value. If offset exceeds the length of the string in the register,
-    /// then the behaviour is determined by the [`SplitFlag`] value.
-    ///
-    /// <pre>
-    /// +--------------------
-    /// |       | ....
-    /// +--------------------
-    ///         ^       ^
-    ///         |       +-- Split offset (`offset`)
-    ///         +-- Source string length (`src_len`)
-    ///
-    /// `offset == 0`:
-    ///   (1) first, second <- None; `st0` <- false
-    ///   (2) first <- None, second <- `src_len > 0` ? src : None; `st0` <- false
-    ///   (3) first <- None, second <- `src_len > 0` ? src : zero-len; `st0` <- false
-    ///   (4) first <- zero-len, second <- `src_len > 0` ? src : zero-len
-    /// `offset > 0 && offset > src_len`: `st0` always set to false
-    ///   (1) first, second <- None
-    ///   (5) first <- short, second <- None
-    ///   (6) first <- short, second <- zero-len
-    ///   (7) first <- zero-ext, second <- None
-    ///   (8) first <- zero-ext, second <- zero-len
-    /// `offset = src_len`:
-    ///   (1) first, second <- None; `st0` <- false
-    ///   (5,7) first <- ok, second <- None; `st0` <- false
-    ///   (6,8) first <- ok, second <- zero-len
-    /// `offset < src_len`: operation succeeds anyway, `st0` value is not changed
-    /// </pre>
-    ///
-    /// Rule on `st0` changes: if at least one of the destination registers is set to `None`, or
-    /// `offset` value exceeds source string length, `st0` is set to `false`; otherwise its value
-    /// is not modified
-    #[display("splt.{0}  {2},a16{1},{3},{4}")]
+    /// `st0` is set to `false`; otherwise its value is not modified
+    #[display("splt    {2},a16{1},{3},{4}")]
     Splt(
-        SplitFlag,
-        /** `a16` register index with offset value */ Reg32,
+        /** `a16` register index with offset value */ Reg16,
         /** Source */ RegS,
         /** Destination 1 */ RegS,
         /** Destination 2 */ RegS,
     ),
 
-    /// Insert value from one of bytestring register at a given index of other bytestring register,
-    /// shifting string bytes. If the destination register does not fit the length of the new
-    /// string, or the offset exceeds the length of destination string operation behaviour is
-    /// defined by the provided [`InsertFlag`].
-    ///
-    /// <pre>
-    /// +--------------------
-    /// |       | ....
-    /// +--------------------
-    ///         ^       ^
-    ///         |       +-- Insert offset (`offset`)
-    ///         +-- Destination string length (`dst_len`)
-    ///
-    /// `offset < dst_len && src_len + dst_len > 2^16`:
-    ///   (6) Set destination to `None`
-    ///   (7) Cut destination string part exceeding `2^16`
-    ///   (8) Reduce `src_len` such that it will fit the destination
-    /// `offset > dst_len && src_len + dst_len + offset <= 2^16`:
-    ///   (1) Set destination to `None`
-    ///   (2) Fill destination from `dst_let` to `offset` with zeros
-    ///   (3) Use `src_len` instead of `offset`
-    /// `offset > dst_len && src_len + dst_len + offset > 2^16`:
-    ///   (4) Set destination to `None`
-    ///   (5) Fill destination from `dst_let` to `offset` with zeros and cut source string part
-    ///       exceeding `2^16`
-    ///   (6-8) Use `src_len` instead of `offset` and use flag value from the first section
-    /// </pre>
-    ///
-    /// In all of these cases `st0` is set to `false`. Otherwise, `st0` value is not modified.
-    #[display("ins.{0}   {1},a16{2},{2}")]
-    Ins(
-        InsertFlag,
-        /** `a16` register index with offset value for insert location */ Reg32,
-        /** Source register */ RegS,
-        /** Destination register */ RegS,
-    ),
-
-    /// Delete bytes in a given range, shifting the remaining bytes leftward. The start offset is
-    /// the least offset from one of the `a16` register provided in `offset` arguments, the end
-    /// offset is the greatest one. If any of the offsets exceeds the length of the string in
-    /// the destination register, operation behaviour is defined by the provided [`DeleteFlag`]
-    /// argument.
-    ///
-    /// <pre>
-    /// +----------------------------------
-    /// |                   | ....
-    /// +----------------------------------
-    ///     ^               ^       ^  
-    ///     |               |       +-- End offset (`offset_end`)
-    ///     |               +-- Source string length (`src_len`)
-    ///     +-- Start offset (`offset_start`)
-    ///
-    /// `offset_start > src_len`:
-    ///   (1) set destination to `None`
-    ///   (2) set destination to zero-length string
-    /// `offset_end > src_len && offset_start <= src_len`:
-    ///   (1) set destination to `None`
-    ///   (3) set destination to the fragment of the string `offset_start..src_len`
-    ///   (4) set destination to the fragment of the string `offset_start..src_len` and extend
-    ///       its length up to `offset_end - offset_start` with trailing zeros.
-    /// </pre>
-    ///
-    /// `flag1` and `flag2` arguments indicate whether `st0` should be set to `false` if
-    /// `offset_start > src_len` and `offset_end > src_len && offset_start <= src_len`.
-    /// In all other cases, `st0` value is not modified.
-    #[display("del.{0}   {7},{8},{1}{2},{3}{4},{5},{6}")]
-    Del(
-        DeleteFlag,
-        RegA2,
-        /** `a8` or `a16` register index with a first offset for delete location */ Reg32,
-        RegA2,
-        /** `a8` or `a16` register index with a second offset for delete location */ Reg32,
-        /** `flag1` indicating `st0` value set to false if `offset_start > src_len` */ bool,
-        /** `flag2` indicating `st0` value set to false if
-         * `offset_end > src_len && offset_start <= src_len` */
-        bool,
-        /** Source `s` register */ RegS,
-        /** Destination `s` register */ RegS,
-    ),
+    /// Cuts length of a bytestring to a given value from `a16` register. If the string is shorter
+    /// than the specified length, `st0` is set to `false`; otherwise its value is not modified
+    #[display("cut     {1},a16{0}")]
+    Cut(/** `a16` register index with offset value */ Reg16, /** Source and destination */ RegS),
 
     /// Revert byte order of the string.
     ///

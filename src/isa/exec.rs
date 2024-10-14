@@ -1104,9 +1104,6 @@ impl InstructionSet for BytesOp {
             BytesOp::Eq(reg1, reg2) => {
                 bset![Reg::S(*reg1), Reg::S(*reg2)]
             }
-            BytesOp::Con(reg1, reg2, no, _offset, _len) => {
-                bset![Reg::S(*reg1), Reg::S(*reg2), Reg::A(RegA::A16, *no),]
-            }
             BytesOp::Extr(src, _dst, _index, offset) => {
                 bset![Reg::S(*src), Reg::new(RegA::A16, *offset)]
             }
@@ -1118,12 +1115,6 @@ impl InstructionSet for BytesOp {
             }
             BytesOp::Splt(_flag, offset, src, _dst1, _dst2) => {
                 bset![Reg::A(RegA::A16, *offset), Reg::S(*src)]
-            }
-            BytesOp::Ins(_flag, offset, src, _dst) => {
-                bset![Reg::A(RegA::A16, *offset), Reg::S(*src)]
-            }
-            BytesOp::Del(_flag, reg1, offset1, reg2, offset2, _flag1, _flag2, src, _dst) => {
-                bset![Reg::new(*reg1, *offset1), Reg::new(*reg2, *offset2), Reg::S(*src)]
             }
         }
     }
@@ -1149,9 +1140,6 @@ impl InstructionSet for BytesOp {
                 bset![Reg::new(RegA::A16, *cnt)]
             }
             BytesOp::Eq(_reg1, _reg2) => BTreeSet::new(),
-            BytesOp::Con(_reg1, _reg2, _no, offset, len) => {
-                bset![Reg::A(RegA::A16, *offset), Reg::A(RegA::A16, *len)]
-            }
             BytesOp::Extr(_src, dst, index, _offset) => {
                 bset![Reg::new(*dst, *index)]
             }
@@ -1163,12 +1151,6 @@ impl InstructionSet for BytesOp {
             }
             BytesOp::Splt(_flag, _offset, _src, dst1, dst2) => {
                 bset![Reg::S(*dst1), Reg::S(*dst2)]
-            }
-            BytesOp::Ins(_flag, _offset, _src, dst) => {
-                bset![Reg::S(*dst)]
-            }
-            BytesOp::Del(_flag, _reg1, _offset1, _reg2, _offset2, _flag1, _flag2, _src, dst) => {
-                bset![Reg::S(*dst)]
             }
         }
     }
@@ -1285,37 +1267,6 @@ impl InstructionSet for BytesOp {
                     regs.s16[reg2.as_usize()] = None;
                 })
             }
-            BytesOp::Con(reg1, reg2, n, offset_dst, len_dst) => {
-                let mut f = || -> Option<()> {
-                    let (s1, s2) = (regs.get_s(*reg1)?, regs.get_s(*reg2)?);
-                    let (r1, r2) = (s1.as_ref(), s2.as_ref());
-                    let n = regs.a16[*n as u8 as usize]?;
-                    let size = ::core::cmp::min(s1.len(), s2.len());
-                    let mut elems = (0..)
-                        .zip(r1.iter().zip(r2).map(|(c1, c2)| c1 == c2))
-                        .take(size as usize)
-                        .skip_while(|(_, c)| !*c);
-                    for _ in 0..n {
-                        while let Some((_, false)) = elems.next() {}
-                        while let Some((_, true)) = elems.next() {}
-                    }
-                    let begin = elems.next();
-                    let end = elems.skip_while(|(_, c)| *c).next();
-                    let (offset, len) = match (begin, end) {
-                        (Some((b, _)), Some((e, _))) => (b, e - b),
-                        (Some((b, _)), None) => (b, size - b),
-                        _ => return None,
-                    };
-                    regs.set_n(RegA::A16, offset_dst, offset);
-                    regs.set_n(RegA::A16, len_dst, len);
-                    Some(())
-                };
-                f().unwrap_or_else(|| {
-                    regs.st0 = false;
-                    regs.set_n(RegA::A16, offset_dst, MaybeNumber::none());
-                    regs.set_n(RegA::A16, len_dst, MaybeNumber::none());
-                })
-            }
             BytesOp::Extr(src, dst, index, offset) => {
                 let mut f = || -> Option<()> {
                     let s_len = regs.get_s(*src)?.len();
@@ -1374,12 +1325,6 @@ impl InstructionSet for BytesOp {
                 })
             }
             BytesOp::Splt(flag, offset, src, dst1, dst2) => {
-                todo!("#(6) complete bytestring opcode implementation")
-            }
-            BytesOp::Ins(flag, offset, src, dst) => {
-                todo!("#(6) complete bytestring opcode implementation")
-            }
-            BytesOp::Del(flag, reg1, offset1, reg2, offset2, flag1, flag2, src, dst) => {
                 todo!("#(6) complete bytestring opcode implementation")
             }
         }
