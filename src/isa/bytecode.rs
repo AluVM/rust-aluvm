@@ -693,10 +693,10 @@ impl Bytecode for ArithmeticOp {
 
     fn instr_byte(&self) -> u8 {
         match self {
-            ArithmeticOp::AddF(_, _, _, _) | ArithmeticOp::AddA(_, _, _, _) => INSTR_ADD,
-            ArithmeticOp::SubF(_, _, _, _) | ArithmeticOp::SubA(_, _, _, _) => INSTR_SUB,
-            ArithmeticOp::MulF(_, _, _, _) | ArithmeticOp::MulA(_, _, _, _) => INSTR_MUL,
-            ArithmeticOp::DivF(_, _, _, _) | ArithmeticOp::DivA(_, _, _, _) => INSTR_DIV,
+            ArithmeticOp::AddF(_, _, _, _) | ArithmeticOp::Add(_, _, _, _) => INSTR_ADD,
+            ArithmeticOp::SubF(_, _, _, _) | ArithmeticOp::Sub(_, _, _, _) => INSTR_SUB,
+            ArithmeticOp::MulF(_, _, _, _) | ArithmeticOp::Mul(_, _, _, _) => INSTR_MUL,
+            ArithmeticOp::DivF(_, _, _, _) | ArithmeticOp::Div(_, _, _, _) => INSTR_DIV,
             ArithmeticOp::Rem(_, _, _, _) => INSTR_REM,
             ArithmeticOp::Stp(_, _, _) => INSTR_STP,
             ArithmeticOp::Neg(_, _) => INSTR_NEG,
@@ -716,10 +716,10 @@ impl Bytecode for ArithmeticOp {
                 writer.write_u5(idx)?;
                 writer.write_i8(step.as_i8())?;
             }
-            ArithmeticOp::AddA(flags, reg, src1, src2)
-            | ArithmeticOp::SubA(flags, reg, src1, src2)
-            | ArithmeticOp::MulA(flags, reg, src1, src2)
-            | ArithmeticOp::DivA(flags, reg, src1, src2) => {
+            ArithmeticOp::Add(flags, reg, src1, src2)
+            | ArithmeticOp::Sub(flags, reg, src1, src2)
+            | ArithmeticOp::Mul(flags, reg, src1, src2)
+            | ArithmeticOp::Div(flags, reg, src1, src2) => {
                 writer.write_u1(u1::with(0b0))?;
                 writer.write_u2(flags)?;
                 writer.write_u5(src1)?;
@@ -757,10 +757,10 @@ impl Bytecode for ArithmeticOp {
             let src2 = reader.read_u5()?.into();
             let reg = reader.read_u3()?;
             match (code, instr) {
-                (0b0, INSTR_ADD) => Self::AddA(flags.into(), reg.into(), src1, src2),
-                (0b0, INSTR_SUB) => Self::SubA(flags.into(), reg.into(), src1, src2),
-                (0b0, INSTR_MUL) => Self::MulA(flags.into(), reg.into(), src1, src2),
-                (0b0, INSTR_DIV) => Self::DivA(flags.into(), reg.into(), src1, src2),
+                (0b0, INSTR_ADD) => Self::Add(flags.into(), reg.into(), src1, src2),
+                (0b0, INSTR_SUB) => Self::Sub(flags.into(), reg.into(), src1, src2),
+                (0b0, INSTR_MUL) => Self::Mul(flags.into(), reg.into(), src1, src2),
+                (0b0, INSTR_DIV) => Self::Div(flags.into(), reg.into(), src1, src2),
                 (0b1, INSTR_ADD) => Self::AddF(flags.into(), reg.into(), src1, src2),
                 (0b1, INSTR_SUB) => Self::SubF(flags.into(), reg.into(), src1, src2),
                 (0b1, INSTR_MUL) => Self::MulF(flags.into(), reg.into(), src1, src2),

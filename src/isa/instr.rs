@@ -26,11 +26,14 @@
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 use alloc::boxed::Box;
 
-use super::{FloatEqFlag, InstructionSet, IntFlags, MergeFlag, RoundingFlag, SignFlag};
+#[cfg(feature = "float")]
+use super::{FloatEqFlag, RoundingFlag, RegF, RegAF};
+
+use super::{ InstructionSet, IntFlags, MergeFlag, SignFlag};
 use crate::data::{ByteStr, MaybeNumber, Step};
 use crate::isa::{ExtendFlag, NoneEqFlag};
 use crate::library::LibSite;
-use crate::reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAF, RegAR, RegBlockAR, RegF, RegR, RegS};
+use crate::reg::{Reg16, Reg32, Reg8, RegA, RegA2, RegAR, RegBlockAR, RegR, RegS};
 
 /// Reserved instruction, which equal to [`ControlFlowOp::Fail`].
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Default)]
@@ -155,10 +158,6 @@ pub enum PutOp {
     #[display("clr     {0}{1}")]
     ClrA(RegA, Reg32),
 
-    /// Cleans a value of `F` register (sets it to undefined state)
-    #[display("clr     {0}{1}")]
-    ClrF(RegF, Reg32),
-
     /// Cleans a value of `R` register (sets it to undefined state)
     #[display("clr     {0}{1}")]
     ClrR(RegR, Reg32),
@@ -171,15 +170,6 @@ pub enum PutOp {
     ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
     #[display("put     {0}{1},{2}")]
     PutA(RegA, Reg32, Box<MaybeNumber>),
-
-    /// Unconditionally assigns a value to `F` register
-    ///
-    /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
-    ///     this instruction is assembled and the data are not present in the data segment (their
-    ///     offset + length exceeds data segment size) the operation will set destination register
-    ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
-    #[display("put     {0}{1},{2}")]
-    PutF(RegF, Reg32, Box<MaybeNumber>),
 
     /// Unconditionally assigns a value to `R` register
     ///
@@ -231,21 +221,6 @@ pub enum MoveOp {
     #[display("swp     {0}{1},{0}{2}")]
     SwpA(RegA, Reg32, Reg32),
 
-    /// Move operation: moves value of one of the float arithmetic registers into another float
-    /// arithmetic register of the same bit size, clearing its previous value and setting the
-    /// source to `None`.
-    #[display("mov     {0}{1},{0}{2}")]
-    MovF(RegF, Reg32, Reg32),
-
-    /// Duplicate operation: duplicates value of one of the float arithmetic registers into
-    /// another float arithmetic register of the same bit size, clearing its previous value.
-    #[display("dup     {0}{1},{0}{2}")]
-    DupF(RegF, Reg32, Reg32),
-
-    /// Swap operation: swaps value of two float arithmetic registers of the same bit size.
-    #[display("swp     {0}{1},{0}{2}")]
-    SwpF(RegF, Reg32, Reg32),
-
     /// Move operation: moves value of one of the general non-arithmetic registers into another
     /// general non-arithmetic register of the same bit size, clearing its previous value and
     /// setting the source to `None`.
@@ -274,13 +249,6 @@ pub enum MoveOp {
     #[display("cnv     {0}{1},{2}{3}")]
     CnvA(RegA, Reg32, RegA, Reg32),
 
-    /// Conversion operation: converts value from one of the float arithmetic registers to a
-    /// destination register according to floating encoding rules. If the value does not fit
-    /// destination bit dimension, truncates the most significant non-sign bits until they fit,
-    /// setting `st0` value to `false`. Otherwise, sets `st0` to `true`.
-    #[display("cnv     {0}{1},{2}{3}")]
-    CnvF(RegF, Reg32, RegF, Reg32),
-
     /// Copy operation: copies value from one of the general non-arithmetic registers to a
     /// destination register. If the value does not fit destination bit dimension,
     /// truncates the most significant bits until they fit, setting `st0` value to `false`.
@@ -294,24 +262,6 @@ pub enum MoveOp {
     /// `false`. Otherwise, extends most significant bits with zeros and sets `st0` to `true`.
     #[display("spy     {0}{1},{2}{3}")]
     SpyAR(RegA, Reg32, RegR, Reg32),
-
-    /// Conversion operation: converts value of an integer arithmetic register to a float register
-    /// according to floating encoding rules. If the value does not fit destination bit dimension,
-    /// truncates the most significant non-sign bits until they fit, setting `st0` value to
-    /// `false`. Otherwise, sets `st0` to `true`.
-    ///
-    /// NB: operation always treats integers as signed integers.
-    #[display("cnv     {0}{1},{2}{3}")]
-    CnvAF(RegA, Reg32, RegF, Reg32),
-
-    /// Conversion operation: converts value of a float arithmetic register to an integer register
-    /// according to floating encoding rules. If the value does not fit destination bit dimension,
-    /// truncates the most significant non-sign bits until they fit, setting `st0` value to
-    /// `false`. Otherwise, sets `st0` to `true`.
-    ///
-    /// NB: operation always treats integers as signed integers.
-    #[display("cnv     {0}{1},{2}{3}")]
-    CnvFA(RegF, Reg32, RegA, Reg32),
 }
 
 /// Instructions comparing register values
@@ -328,18 +278,6 @@ pub enum CmpOp {
     /// is set to `None`, sets `st0` to `false`.
     #[display("lt.{0}    {1}{2},{1}{3}")]
     LtA(SignFlag, RegA, Reg32, Reg32),
-
-    /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
-    /// parameter is greater (and not equal) than the second one. If at least one of the registers
-    /// is set to `None`, sets `st0` to `false`.
-    #[display("gt.{0}    {1}{2},{1}{3}")]
-    GtF(FloatEqFlag, RegF, Reg32, Reg32),
-
-    /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
-    /// parameter is lesser (and not equal) than the second one. If at least one of the registers
-    /// is set to `None`, sets `st0` to `false`.
-    #[display("lt.{0}    {1}{2},{1}{3}")]
-    LtF(FloatEqFlag, RegF, Reg32, Reg32),
 
     // ----
     /// Compares value of two general non-arithmetic registers setting `st0` to `true` if the first
@@ -364,11 +302,6 @@ pub enum CmpOp {
         Reg32,
         Reg32,
     ),
-
-    /// Checks equality of value in two float arithmetic (`F`) registers putting result into `st0`.
-    /// If both registers are `None`, the `st0` is set to `false`.
-    #[display("eq.{0}    {1}{2},{1}{3}")]
-    EqF(FloatEqFlag, RegF, Reg32, Reg32),
 
     /// Checks equality of value in two non-arithmetic (`R`) registers putting result into `st0`.
     /// None-equality flag specifies value for `st0` for the cases when both of the registers
@@ -421,31 +354,17 @@ pub enum CmpOp {
 pub enum ArithmeticOp {
     /// Adds values from two integer arithmetic registers and puts result into the second register.
     #[display("add.{0}  {1}{2},{1}{3}")]
-    AddA(IntFlags, RegA, Reg32, Reg32),
-
-    /// Adds values from two float arithmetic registers and puts result into the second register.
-    #[display("add.{0}   {1}{2},{1}{3}")]
-    AddF(RoundingFlag, RegF, Reg32, Reg32),
+    Add(IntFlags, RegA, Reg32, Reg32),
 
     /// Subtracts the second register value from the first one and puts result into the second
     /// register.
     #[display("sub.{0}  {1}{2},{1}{3}")]
-    SubA(IntFlags, RegA, Reg32, Reg32),
-
-    /// Subtracts the second register value from the first one and puts result into the second
-    /// register.
-    #[display("sub.{0}   {1}{2},{1}{3}")]
-    SubF(RoundingFlag, RegF, Reg32, Reg32),
+    Sub(IntFlags, RegA, Reg32, Reg32),
 
     /// Multiplies values from two integer arithmetic registers and puts result into the second
     /// register.
     #[display("mul.{0}  {1}{2},{1}{3}")]
-    MulA(IntFlags, RegA, Reg32, Reg32),
-
-    /// Multiplies values from two float arithmetic registers and puts result into the second
-    /// register.
-    #[display("mul.{0}   {1}{2},{1}{3}")]
-    MulF(RoundingFlag, RegF, Reg32, Reg32),
+    Mul(IntFlags, RegA, Reg32, Reg32),
 
     /// Divides the first register value by the second one and puts result into the second
     /// register.
@@ -458,12 +377,7 @@ pub enum ArithmeticOp {
     ///
     /// NB: Impossible arithmetic operation 0/0 always sets destination to `None`.
     #[display("div.{0}  {1}{2},{1}{3}")]
-    DivA(IntFlags, RegA, Reg32, Reg32),
-
-    /// Divides the first register value by the second one and puts result into the second
-    /// register.
-    #[display("div.{0}   {1}{2},{1}{3}")]
-    DivF(RoundingFlag, RegF, Reg32, Reg32),
+    Div(IntFlags, RegA, Reg32, Reg32),
 
     /// Modulo division.
     ///
@@ -485,6 +399,111 @@ pub enum ArithmeticOp {
     /// Replaces the register value with its absolute value
     #[display("abs     {0}{1}")]
     Abs(RegAF, Reg16),
+}
+
+/// Floating-number operations
+#[cfg(feature = "float")]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+pub enum FloatOp {
+    /// Cleans a value of `F` register (sets it to undefined state)
+    #[display("clr     {0}{1}")]
+    ClrF(RegF, Reg32),
+
+    /// Unconditionally assigns a value to `F` register
+    ///
+    /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
+    ///     this instruction is assembled and the data are not present in the data segment (their
+    ///     offset + length exceeds data segment size) the operation will set destination register
+    ///     into undefined state and `st0` to `false`. Otherwise, `st0` value is not affected.
+    #[display("put     {0}{1},{2}")]
+    PutF(RegF, Reg32, Box<MaybeNumber>),
+
+    /// Conditionally assigns a value to `F` register if the register is in uninitialized state.
+    /// If the register is initialized and the value is not `None` sets `st0` to `false`.
+    ///
+    /// NB: Bytecode does not contain the value (it is contained in the data segment), thus when
+    ///     this instruction is assembled and the data are not present in the data segment (their
+    ///     offset + length exceeds data segment size) _and_ the destination register is
+    ///     initialized, the operation will set destination register into undefined state and `st0`
+    ///     to `false`. Otherwise, `st0` value is changed according to the general operation rules.
+    #[display("putif   {0}{1},{2}")]
+    PutIfF(RegF, Reg32, Box<MaybeNumber>),
+
+    /// Move operation: moves value of one of the float arithmetic registers into another float
+    /// arithmetic register of the same bit size, clearing its previous value and setting the
+    /// source to `None`.
+    #[display("mov     {0}{1},{0}{2}")]
+    MovF(RegF, Reg32, Reg32),
+
+    /// Duplicate operation: duplicates value of one of the float arithmetic registers into
+    /// another float arithmetic register of the same bit size, clearing its previous value.
+    #[display("dup     {0}{1},{0}{2}")]
+    DupF(RegF, Reg32, Reg32),
+
+    /// Swap operation: swaps value of two float arithmetic registers of the same bit size.
+    #[display("swp     {0}{1},{0}{2}")]
+    SwpF(RegF, Reg32, Reg32),
+
+    /// Conversion operation: converts value from one of the float arithmetic registers to a
+    /// destination register according to floating encoding rules. If the value does not fit
+    /// destination bit dimension, truncates the most significant non-sign bits until they fit,
+    /// setting `st0` value to `false`. Otherwise, sets `st0` to `true`.
+    #[display("cnv     {0}{1},{2}{3}")]
+    CnvF(RegF, Reg32, RegF, Reg32),
+
+    /// Conversion operation: converts value of an integer arithmetic register to a float register
+    /// according to floating encoding rules. If the value does not fit destination bit dimension,
+    /// truncates the most significant non-sign bits until they fit, setting `st0` value to
+    /// `false`. Otherwise, sets `st0` to `true`.
+    ///
+    /// NB: operation always treats integers as signed integers.
+    #[display("cnv     {0}{1},{2}{3}")]
+    CnvAF(RegA, Reg32, RegF, Reg32),
+
+    /// Conversion operation: converts value of a float arithmetic register to an integer register
+    /// according to floating encoding rules. If the value does not fit destination bit dimension,
+    /// truncates the most significant non-sign bits until they fit, setting `st0` value to
+    /// `false`. Otherwise, sets `st0` to `true`.
+    ///
+    /// NB: operation always treats integers as signed integers.
+    #[display("cnv     {0}{1},{2}{3}")]
+    CnvFA(RegF, Reg32, RegA, Reg32),
+
+    /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
+    /// parameter is greater (and not equal) than the second one. If at least one of the registers
+    /// is set to `None`, sets `st0` to `false`.
+    #[display("gt.{0}    {1}{2},{1}{3}")]
+    GtF(FloatEqFlag, RegF, Reg32, Reg32),
+
+    /// Compares value of two float arithmetic registers setting `st0` to `true` if the first
+    /// parameter is lesser (and not equal) than the second one. If at least one of the registers
+    /// is set to `None`, sets `st0` to `false`.
+    #[display("lt.{0}    {1}{2},{1}{3}")]
+    LtF(FloatEqFlag, RegF, Reg32, Reg32),
+
+    /// Checks equality of value in two float arithmetic (`F`) registers putting result into `st0`.
+    /// If both registers are `None`, the `st0` is set to `false`.
+    #[display("eq.{0}    {1}{2},{1}{3}")]
+    EqF(FloatEqFlag, RegF, Reg32, Reg32),
+
+    /// Adds values from two float arithmetic registers and puts result into the second register.
+    #[display("add.{0}   {1}{2},{1}{3}")]
+    AddF(RoundingFlag, RegF, Reg32, Reg32),
+
+    /// Subtracts the second register value from the first one and puts result into the second
+    /// register.
+    #[display("sub.{0}   {1}{2},{1}{3}")]
+    SubF(RoundingFlag, RegF, Reg32, Reg32),
+
+    /// Multiplies values from two float arithmetic registers and puts result into the second
+    /// register.
+    #[display("mul.{0}   {1}{2},{1}{3}")]
+    MulF(RoundingFlag, RegF, Reg32, Reg32),
+
+    /// Divides the first register value by the second one and puts result into the second
+    /// register.
+    #[display("div.{0}   {1}{2},{1}{3}")]
+    DivF(RoundingFlag, RegF, Reg32, Reg32),
 }
 
 /// Bit operations & boolean algebra instructions

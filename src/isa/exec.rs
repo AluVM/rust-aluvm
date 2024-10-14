@@ -682,10 +682,10 @@ impl InstructionSet for ArithmeticOp {
             ArithmeticOp::Stp(reg, idx, _) => {
                 bset![Reg::A(*reg, *idx)]
             }
-            ArithmeticOp::AddA(_, reg, src, srcdst)
-            | ArithmeticOp::SubA(_, reg, src, srcdst)
-            | ArithmeticOp::MulA(_, reg, src, srcdst)
-            | ArithmeticOp::DivA(_, reg, src, srcdst) => {
+            ArithmeticOp::Add(_, reg, src, srcdst)
+            | ArithmeticOp::Sub(_, reg, src, srcdst)
+            | ArithmeticOp::Mul(_, reg, src, srcdst)
+            | ArithmeticOp::Div(_, reg, src, srcdst) => {
                 bset![Reg::A(*reg, *src), Reg::A(*reg, *srcdst)]
             }
             ArithmeticOp::AddF(_, reg, src, srcdst)
@@ -708,10 +708,10 @@ impl InstructionSet for ArithmeticOp {
             ArithmeticOp::Stp(reg, idx, _) => {
                 bset![Reg::A(*reg, *idx)]
             }
-            ArithmeticOp::AddA(_, reg, _src, srcdst)
-            | ArithmeticOp::SubA(_, reg, _src, srcdst)
-            | ArithmeticOp::MulA(_, reg, _src, srcdst)
-            | ArithmeticOp::DivA(_, reg, _src, srcdst) => {
+            ArithmeticOp::Add(_, reg, _src, srcdst)
+            | ArithmeticOp::Sub(_, reg, _src, srcdst)
+            | ArithmeticOp::Mul(_, reg, _src, srcdst)
+            | ArithmeticOp::Div(_, reg, _src, srcdst) => {
                 bset![Reg::A(*reg, *srcdst)]
             }
             ArithmeticOp::AddF(_, reg, _src, srcdst)
@@ -734,10 +734,10 @@ impl InstructionSet for ArithmeticOp {
             | ArithmeticOp::MulF(_, _, _, _)
             | ArithmeticOp::DivF(_, _, _, _) => 10,
 
-            ArithmeticOp::AddA(_, _, _, _)
-            | ArithmeticOp::SubA(_, _, _, _)
-            | ArithmeticOp::MulA(_, _, _, _)
-            | ArithmeticOp::DivA(_, _, _, _)
+            ArithmeticOp::Add(_, _, _, _)
+            | ArithmeticOp::Sub(_, _, _, _)
+            | ArithmeticOp::Mul(_, _, _, _)
+            | ArithmeticOp::Div(_, _, _, _)
             | ArithmeticOp::Rem(_, _, _, _)
             | ArithmeticOp::Stp(_, _, _)
             | ArithmeticOp::Neg(_, _)
@@ -750,7 +750,7 @@ impl InstructionSet for ArithmeticOp {
             ArithmeticOp::Abs(reg, idx) => {
                 regs.set_n(reg, idx, regs.get_n(reg, idx).and_then(Number::abs))
             }
-            ArithmeticOp::AddA(flags, reg, src, srcdst) => {
+            ArithmeticOp::Add(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_add(val2, *flags));
@@ -762,7 +762,7 @@ impl InstructionSet for ArithmeticOp {
                     .and_then(|(val1, val2)| val1.float_add(val2, *flags).into());
                 regs.set_n(reg, srcdst, res)
             }
-            ArithmeticOp::SubA(flags, reg, src, srcdst) => {
+            ArithmeticOp::Sub(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_sub(val2, *flags));
@@ -774,7 +774,7 @@ impl InstructionSet for ArithmeticOp {
                     .and_then(|(val1, val2)| val1.float_sub(val2, *flags).into());
                 regs.set_n(reg, srcdst, res)
             }
-            ArithmeticOp::MulA(flags, reg, src, srcdst) => {
+            ArithmeticOp::Mul(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_mul(val2, *flags));
@@ -786,7 +786,7 @@ impl InstructionSet for ArithmeticOp {
                     .and_then(|(val1, val2)| val1.float_mul(val2, *flags).into());
                 regs.set_n(reg, srcdst, res)
             }
-            ArithmeticOp::DivA(flags, reg, src, srcdst) => {
+            ArithmeticOp::Div(flags, reg, src, srcdst) => {
                 let res = regs
                     .get_n2(reg, src, reg, srcdst)
                     .and_then(|(val1, val2)| val1.int_div(val2, *flags));

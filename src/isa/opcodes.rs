@@ -38,27 +38,29 @@ pub const INSTR_RET: u8 = 0b00_000_111;
 
 // Instructions setting register values
 pub const INSTR_CLRA: u8 = 0b00_001_000;
-pub const INSTR_CLRF: u8 = 0b00_001_001;
 pub const INSTR_CLRR: u8 = 0b00_001_010;
 pub const INSTR_PUTA: u8 = 0b00_001_011;
-pub const INSTR_PUTF: u8 = 0b00_001_100;
 pub const INSTR_PUTR: u8 = 0b00_001_101;
 pub const INSTR_PUTIFA: u8 = 0b00_001_110;
 pub const INSTR_PUTIFR: u8 = 0b00_001_111;
+
+pub const INSTR_CLRF: u8 = 0b00_001_001;
+pub const INSTR_PUTF: u8 = 0b00_001_100;
 
 // Instructions moving and swapping register values
 pub const INSTR_MOV: u8 = 0b00_010_000;
 pub const INSTR_CPA: u8 = 0b00_010_001;
 pub const INSTR_CNA: u8 = 0b00_010_010;
-pub const INSTR_CNF: u8 = 0b00_010_011;
 pub const INSTR_CPR: u8 = 0b00_010_100;
 pub const INSTR_SPY: u8 = 0b00_010_101;
+
+pub const INSTR_CNF: u8 = 0b00_010_011;
 pub const INSTR_CAF: u8 = 0b00_010_110;
 pub const INSTR_CFA: u8 = 0b00_010_111;
 
 // Instructions comparing register values
-pub const INSTR_LGT: u8 = 0b00_011_000;
-pub const INSTR_CMP: u8 = 0b00_011_001;
+pub const INSTR_LGT: u8 = 0b00_011_000; // !
+pub const INSTR_CMP: u8 = 0b00_011_001; // !
 pub const INSTR_IFZA: u8 = 0b00_011_010;
 pub const INSTR_IFZR: u8 = 0b00_011_011;
 pub const INSTR_IFNA: u8 = 0b00_011_100;
@@ -67,10 +69,10 @@ pub const INSTR_ST: u8 = 0b00_011_110;
 pub const INSTR_STINV: u8 = 0b00_011_111;
 
 // Arithmetic instructions
-pub const INSTR_ADD: u8 = 0b00_100_000;
-pub const INSTR_SUB: u8 = 0b00_100_001;
-pub const INSTR_MUL: u8 = 0b00_100_010;
-pub const INSTR_DIV: u8 = 0b00_100_011;
+pub const INSTR_ADD: u8 = 0b00_100_000; // !
+pub const INSTR_SUB: u8 = 0b00_100_001; // !
+pub const INSTR_MUL: u8 = 0b00_100_010; // !
+pub const INSTR_DIV: u8 = 0b00_100_011; // !
 pub const INSTR_STP: u8 = 0b00_100_100;
 pub const INSTR_NEG: u8 = 0b00_100_101;
 pub const INSTR_ABS: u8 = 0b00_100_110;
