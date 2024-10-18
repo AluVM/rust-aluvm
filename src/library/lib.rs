@@ -385,7 +385,12 @@ impl Lib {
 
         let mut cursor = Cursor::with(&self.code, &self.data, &self.libs);
         let lib_hash = self.id();
-        cursor.seek(entrypoint).ok()?;
+        if cursor.seek(entrypoint).is_err() {
+            registers.st0 = false;
+            #[cfg(feature = "log")]
+            eprintln!("jump to non-existing offset; halting, {d}st0{z} is set to {r}false{z}");
+            return None;
+        }
 
         #[cfg(feature = "log")]
         let mut st0 = registers.st0;
@@ -439,7 +444,7 @@ impl Lib {
                     registers.st0 = false;
                     assert_eq!(registers.st0, false);
                     #[cfg(feature = "log")]
-                    eprintln!("execution stopped; {d}st0={z}{r}{}{z}", registers.st0);
+                    eprintln!("halting, {d}st0{z} is set to {r}false{z}");
                     return None;
                 }
                 ExecStep::Next => {
@@ -450,7 +455,14 @@ impl Lib {
                 ExecStep::Jump(pos) => {
                     #[cfg(feature = "log")]
                     eprintln!("{}", pos);
-                    cursor.seek(pos).ok()?;
+                    if cursor.seek(pos).is_err() {
+                        registers.st0 = false;
+                        #[cfg(feature = "log")]
+                        eprintln!(
+                            "jump to non-existing offset; halting, {d}st0{z} is set to {r}false{z}"
+                        );
+                        return None;
+                    }
                 }
                 ExecStep::Call(site) => {
                     #[cfg(feature = "log")]
