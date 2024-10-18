@@ -23,6 +23,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::isa::ControlFlowOp;
+
 /// Macro compiler for AluVM assembler.
 ///
 /// # Example
@@ -179,10 +181,10 @@ macro_rules! instr {
         Instr::ControlFlow(ControlFlowOp::Jif($offset))
     };
     (routine $offset:literal) => {
-        Instr::ControlFlow(ControlFlowOp::Reutine($offset))
+        Instr::ControlFlow(ControlFlowOp::Routine($offset))
     };
     (routine $offset:ident) => {
-        Instr::ControlFlow(ControlFlowOp::Reutine($offset))
+        Instr::ControlFlow(ControlFlowOp::Routine($offset))
     };
     (call $offset:literal @ $lib:literal) => {
         Instr::ControlFlow(ControlFlowOp::Call(LibSite::with(
