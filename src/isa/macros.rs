@@ -23,8 +23,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::isa::ControlFlowOp;
-
 /// Macro compiler for AluVM assembler.
 ///
 /// # Example
@@ -95,6 +93,10 @@ macro_rules! aluasm_inner {
     { $code:ident => } => { };
     { $code:ident => $op:ident ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
+    { $code:ident => $op:ident $arg:literal @ $lib:ident ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $arg @ $lib });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
     { $code:ident => $op:ident $arg:literal @ $lib:literal ; $($tt:tt)* } => {
@@ -186,10 +188,22 @@ macro_rules! instr {
     (routine $offset:ident) => {
         Instr::ControlFlow(ControlFlowOp::Routine($offset))
     };
+    (call $offset:literal @ $lib:ident) => {
+        Instr::ControlFlow(ControlFlowOp::Call(LibSite::with(
+            $offset,
+            $lib
+        )))
+    };
     (call $offset:literal @ $lib:literal) => {
         Instr::ControlFlow(ControlFlowOp::Call(LibSite::with(
             $offset,
             $lib.parse().expect("wrong library reference"),
+        )))
+    };
+    (exec $offset:literal @ $lib:ident) => {
+        Instr::ControlFlow(ControlFlowOp::Exec(LibSite::with(
+            $offset,
+            $lib
         )))
     };
     (call $offset:ident @ $lib:ident) => {
