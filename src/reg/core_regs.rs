@@ -211,6 +211,17 @@ impl CoreRegs {
         }
     }
 
+    /// Get value from `a8` register.
+    pub fn a8(&self, idx: impl Into<Reg32>) -> Option<u8> { self.a8[idx.into().to_usize()] }
+    /// Get value from `a16` register.
+    pub fn a16(&self, idx: impl Into<Reg32>) -> Option<u16> { self.a16[idx.into().to_usize()] }
+    /// Get value from `a32` register.
+    pub fn a32(&self, idx: impl Into<Reg32>) -> Option<u32> { self.a32[idx.into().to_usize()] }
+    /// Get value from `a64` register.
+    pub fn a64(&self, idx: impl Into<Reg32>) -> Option<u64> { self.a64[idx.into().to_usize()] }
+    /// Get value from `a128` register.
+    pub fn a128(&self, idx: impl Into<Reg32>) -> Option<u128> { self.a128[idx.into().to_usize()] }
+
     /// Extracts value for any type of registers
     pub fn get(&self, reg: impl Into<Reg>) -> RegValue {
         match reg.into() {
