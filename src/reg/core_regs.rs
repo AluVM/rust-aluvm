@@ -222,6 +222,63 @@ impl CoreRegs {
     /// Get value from `a128` register.
     pub fn a128(&self, idx: impl Into<Reg32>) -> Option<u128> { self.a128[idx.into().to_usize()] }
 
+    /// Sets `a8` register to a given value. Returns previous register value.
+    pub fn set_a8(&mut self, idx: impl Into<Reg32>, val: u8) -> Option<u8> {
+        self.a8[idx.into().to_usize()].replace(val)
+    }
+    /// Sets `a16` register to a given value. Returns previous register value.
+    pub fn set_a16(&mut self, idx: impl Into<Reg32>, val: u16) -> Option<u16> {
+        self.a16[idx.into().to_usize()].replace(val)
+    }
+    /// Sets `a32` register to a given value. Returns previous register value.
+    pub fn set_a32(&mut self, idx: impl Into<Reg32>, val: u32) -> Option<u32> {
+        self.a32[idx.into().to_usize()].replace(val)
+    }
+    /// Sets `a64` register to a given value. Returns previous register value.
+    pub fn set_a64(&mut self, idx: impl Into<Reg32>, val: u64) -> Option<u64> {
+        self.a64[idx.into().to_usize()].replace(val)
+    }
+    /// Sets `a128` register to a given value. Returns previous register value.
+    pub fn set_a128(&mut self, idx: impl Into<Reg32>, val: u128) -> Option<u128> {
+        self.a128[idx.into().to_usize()].replace(val)
+    }
+
+    /// Clears `a8` register (sets its value to `None`). Returns previous register value.
+    pub fn clr_a8(&mut self, idx: impl Into<Reg32>) -> Option<u8> {
+        self.a8[idx.into().to_usize()].take()
+    }
+    /// Clears `a16` register (sets its value to `None`). Returns previous register value.
+    pub fn clr_a16(&mut self, idx: impl Into<Reg32>) -> Option<u16> {
+        self.a16[idx.into().to_usize()].take()
+    }
+    /// Clears `a32` register (sets its value to `None`). Returns previous register value.
+    pub fn clr_a32(&mut self, idx: impl Into<Reg32>) -> Option<u32> {
+        self.a32[idx.into().to_usize()].take()
+    }
+    /// Clears `a64` register (sets its value to `None`). Returns previous register value.
+    pub fn clr_a64(&mut self, idx: impl Into<Reg32>) -> Option<u64> {
+        self.a64[idx.into().to_usize()].take()
+    }
+    /// Clears `a128` register (sets its value to `None`). Returns previous register value.
+    pub fn clr_a128(&mut self, idx: impl Into<Reg32>) -> Option<u128> {
+        self.a128[idx.into().to_usize()].take()
+    }
+
+    /// Gets `s16` register value.
+    pub fn s16(&self, idx: impl Into<RegS>) -> Option<&ByteStr> {
+        self.s16[idx.into().as_usize()].as_ref()
+    }
+
+    /// Sets `s16` register to a given value. Returns previous register value.
+    pub fn set_s16(&mut self, idx: impl Into<RegS>, val: impl Into<ByteStr>) -> Option<ByteStr> {
+        self.s16[idx.into().as_usize()].replace(val.into())
+    }
+
+    /// Clears `s16` register (sets to `None`). Returns previous register value.
+    pub fn clr_s16(&mut self, idx: impl Into<RegS>) -> Option<ByteStr> {
+        self.s16[idx.into().as_usize()].take()
+    }
+
     /// Extracts value for any type of registers
     pub fn get(&self, reg: impl Into<Reg>) -> RegValue {
         match reg.into() {
