@@ -435,6 +435,13 @@ impl Lib {
                     }
                     return None;
                 }
+                ExecStep::Fail => {
+                    registers.st0 = false;
+                    assert_eq!(registers.st0, false);
+                    #[cfg(feature = "log")]
+                    eprintln!("execution stopped; {d}st0={z}{r}{}{z}", registers.st0);
+                    return None;
+                }
                 ExecStep::Next => {
                     #[cfg(feature = "log")]
                     eprintln!();

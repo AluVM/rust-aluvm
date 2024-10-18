@@ -48,6 +48,9 @@ pub enum ExecStep {
     /// Stop program execution
     Stop,
 
+    /// Stop and fail program execution
+    Fail,
+
     /// Move to the next instruction
     Next,
 
@@ -227,37 +230,34 @@ impl InstructionSet for ControlFlowOp {
 
     fn exec(&self, regs: &mut CoreRegs, site: LibSite, _: &()) -> ExecStep {
         match self {
-            ControlFlowOp::Fail => {
-                regs.st0 = false;
-                ExecStep::Stop
-            }
+            ControlFlowOp::Fail => ExecStep::Fail,
             ControlFlowOp::Test => {
                 if regs.st0 {
                     ExecStep::Next
                 } else {
-                    ExecStep::Stop
+                    ExecStep::Fail
                 }
             }
             ControlFlowOp::Jmp(offset) => {
-                regs.jmp().map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Stop)
+                regs.jmp().map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Fail)
             }
             ControlFlowOp::Jif(offset) => {
                 if regs.st0 {
-                    regs.jmp().map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Stop)
+                    regs.jmp().map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Fail)
                 } else {
                     ExecStep::Next
                 }
             }
             ControlFlowOp::Routine(offset) => {
-                regs.call(site).map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Stop)
+                regs.call(site).map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Fail)
             }
             ControlFlowOp::Call(site) => {
-                regs.call(*site).map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Stop)
+                regs.call(*site).map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Fail)
             }
             ControlFlowOp::Exec(site) => {
-                regs.jmp().map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Stop)
+                regs.jmp().map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Fail)
             }
-            ControlFlowOp::Ret => regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop),
+            ControlFlowOp::Ret => regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Fail),
         }
     }
 }
