@@ -260,7 +260,11 @@ impl Encode for Option<String> {
 
     #[inline]
     fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
-        if let Some(s) = self { s.encode(writer) } else { Ok(0u8.encode(writer)?) }
+        if let Some(s) = self {
+            s.encode(writer)
+        } else {
+            Ok(0u8.encode(writer)?)
+        }
     }
 }
 
@@ -422,7 +426,11 @@ impl Encode for Option<ByteStr> {
 
     #[inline]
     fn encode(&self, writer: impl Write) -> Result<usize, Self::Error> {
-        if let Some(s) = self { s.encode(writer) } else { Ok(0u8.encode(writer)?) }
+        if let Some(s) = self {
+            s.encode(writer)
+        } else {
+            Ok(0u8.encode(writer)?)
+        }
     }
 }
 
