@@ -1418,7 +1418,7 @@ impl InstructionSet for DigestOp {
         let none;
         match self {
             DigestOp::Ripemd(src, dst) => {
-                let s = regs.get_s(*src);
+                let s = regs.s16(*src);
                 none = s.is_none();
                 let hash = s.map(|s| {
                     let mut hash: [u8; 20] = ripemd::Ripemd160::digest(s.as_ref()).into();
@@ -1429,19 +1429,19 @@ impl InstructionSet for DigestOp {
                 regs.set_n(RegR::R160, dst, hash);
             }
             DigestOp::Sha256(src, dst) => {
-                let s = regs.get_s(*src);
+                let s = regs.s16(*src);
                 none = s.is_none();
                 let hash: Option<[u8; 32]> = s.map(|s| sha2::Sha256::digest(s.as_ref()).into());
                 regs.set_n(RegR::R256, dst, hash);
             }
             DigestOp::Blake3(src, dst) => {
-                let s = regs.get_s(*src);
+                let s = regs.s16(*src);
                 none = s.is_none();
                 let hash: Option<[u8; 32]> = s.map(|s| blake3::hash(s.as_ref()).into());
                 regs.set_n(RegR::R256, dst, hash);
             }
             DigestOp::Sha512(src, dst) => {
-                let s = regs.get_s(*src);
+                let s = regs.s16(*src);
                 none = s.is_none();
                 let hash: Option<[u8; 64]> = s.map(|s| sha2::Sha512::digest(s.as_ref()).into());
                 regs.set_n(RegR::R512, dst, hash);

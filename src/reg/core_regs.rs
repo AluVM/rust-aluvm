@@ -285,7 +285,7 @@ impl CoreRegs {
             Reg::A(reg, index) => self.get_n(reg, index).into(),
             Reg::F(reg, index) => self.get_n(reg, index).into(),
             Reg::R(reg, index) => self.get_n(reg, index).into(),
-            Reg::S(reg) => self.get_s(reg).cloned().into(),
+            Reg::S(reg) => self.s16(reg).cloned().into(),
         }
     }
 
@@ -366,6 +366,7 @@ impl CoreRegs {
 
     /// Returns value from one of `S`-registers
     #[inline]
+    #[deprecated(since = "0.11.0-beta.9", note = "use `s16` method")]
     pub fn get_s(&self, index: impl Into<RegS>) -> Option<&ByteStr> {
         self.s16[index.into().as_usize()].as_ref()
     }
@@ -391,7 +392,7 @@ impl CoreRegs {
         idx1: impl Into<RegS>,
         idx2: impl Into<RegS>,
     ) -> Option<(&ByteStr, &ByteStr)> {
-        self.get_s(idx1).and_then(|val1| self.get_s(idx2).map(|val2| (val1, val2)))
+        self.s16(idx1).and_then(|val1| self.s16(idx2).map(|val2| (val1, val2)))
     }
 
     /// Assigns the provided value to the register bit-wise. Silently discards most significant bits
@@ -464,6 +465,7 @@ impl CoreRegs {
     /// Assigns the provided value to the string register.
     ///
     /// Returns `true` if the value was not `None`.
+    #[deprecated(since = "0.11.0-beta.9", note = "use `set_s16` method")]
     pub fn set_s(&mut self, index: impl Into<RegS>, value: Option<impl Into<ByteStr>>) -> bool {
         let reg = &mut self.s16[index.into().as_usize()];
         let was_set = reg.is_some();
@@ -474,9 +476,11 @@ impl CoreRegs {
     /// Assigns the provided value to the string register if the register is not initialized.
     ///
     /// Returns `false` if the register is initialized and the value is not `None`.
+    #[deprecated(since = "0.11.0-beta.9")]
     pub fn set_s_if(&mut self, index: impl Into<RegS>, value: Option<impl Into<ByteStr>>) -> bool {
         let index = index.into();
-        if self.get_s(index).is_none() {
+        if self.s16(index).is_none() {
+            #[allow(deprecated)]
             self.set_s(index, value)
         } else {
             value.is_none()
@@ -484,7 +488,7 @@ impl CoreRegs {
     }
 
     /// Executes provided operation (as callback function) if and only if all the provided registers
-    /// contain a value (initialized). Otherwise, sets destination to `None` and does not calls the
+    /// contain a value (initialized). Otherwise, sets destination to `None` and does not call the
     /// callback.
     #[inline]
     #[allow(clippy::too_many_arguments)]
@@ -900,7 +904,7 @@ mod test {
         }
 
         for idx in 0u8..16 {
-            regs.set_s(u4::with(idx), Some(ByteStr::with(format!("string index {idx}"))));
+            regs.set_s16(u4::with(idx), ByteStr::with(format!("string index {idx}")));
         }
 
         eprintln!("{regs:#?}");
