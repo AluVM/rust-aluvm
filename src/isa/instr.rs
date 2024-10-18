@@ -411,7 +411,7 @@ pub enum CmpOp {
     St(MergeFlag, RegA, Reg8),
 
     /// Inverses value in `st0` register
-    #[display("inv      st0")]
+    #[display("inv     st0")]
     StInv,
 }
 

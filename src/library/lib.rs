@@ -324,7 +324,7 @@ impl Lib {
         let mut reader = Cursor::with(&self.code, &self.data, &self.libs);
         while !reader.is_eof() {
             let pos = reader.offset().0 as usize;
-            write!(writer, "offset_0x{pos:04X}: ")?;
+            write!(writer, "@x{pos:06X}: ")?;
             match Instr::<Isa>::decode(&mut reader) {
                 Ok(instr) => writeln!(writer, "{instr}")?,
                 Err(_) => writeln!(writer, "\n{}", ByteStr::with(&self.code.as_ref()[pos..]))?,
@@ -384,7 +384,10 @@ impl Lib {
         );
 
         let mut cursor = Cursor::with(&self.code, &self.data, &self.libs);
-        let lib_hash = self.id();
+        let lib_id = self.id();
+        #[cfg(feature = "log")]
+        let lib_mnemonic = lib_id.to_baid64_mnemonic();
+        let lib_ref = lib_mnemonic.split_at(5).0;
         if cursor.seek(entrypoint).is_err() {
             registers.st0 = false;
             #[cfg(feature = "log")]
@@ -402,14 +405,14 @@ impl Lib {
 
             #[cfg(feature = "log")]
             {
-                eprint!("{m}@{pos:06}:{z} {: <32}; ", instr.to_string());
+                eprint!("{m}{}@x{pos:06X}:{z} {: <32}; ", lib_ref, instr.to_string());
                 for reg in instr.src_regs() {
                     let val = registers.get(reg);
                     eprint!("{d}{reg}={z}{w}{val}{z} ");
                 }
             }
 
-            let next = instr.exec(registers, LibSite::with(pos, lib_hash), context);
+            let next = instr.exec(registers, LibSite::with(pos, lib_id), context);
 
             #[cfg(feature = "log")]
             {
