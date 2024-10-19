@@ -257,7 +257,7 @@ impl InstructionSet for ControlFlowOp {
             ControlFlowOp::Exec(site) => {
                 regs.jmp().map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Fail)
             }
-            ControlFlowOp::Ret => regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Fail),
+            ControlFlowOp::Ret => regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop),
         }
     }
 }
