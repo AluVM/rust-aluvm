@@ -48,6 +48,9 @@ pub enum ExecStep {
     /// Stop program execution
     Stop,
 
+    /// Stop and fail program execution
+    Fail,
+
     /// Move to the next instruction
     Next,
 
@@ -227,35 +230,32 @@ impl InstructionSet for ControlFlowOp {
 
     fn exec(&self, regs: &mut CoreRegs, site: LibSite, _: &()) -> ExecStep {
         match self {
-            ControlFlowOp::Fail => {
-                regs.st0 = false;
-                ExecStep::Stop
-            }
+            ControlFlowOp::Fail => ExecStep::Fail,
             ControlFlowOp::Test => {
                 if regs.st0 {
                     ExecStep::Next
                 } else {
-                    ExecStep::Stop
+                    ExecStep::Fail
                 }
             }
             ControlFlowOp::Jmp(offset) => {
-                regs.jmp().map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Stop)
+                regs.jmp().map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Fail)
             }
             ControlFlowOp::Jif(offset) => {
                 if regs.st0 {
-                    regs.jmp().map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Stop)
+                    regs.jmp().map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Fail)
                 } else {
                     ExecStep::Next
                 }
             }
             ControlFlowOp::Routine(offset) => {
-                regs.call(site).map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Stop)
+                regs.call(site).map(|_| ExecStep::Jump(*offset)).unwrap_or(ExecStep::Fail)
             }
             ControlFlowOp::Call(site) => {
-                regs.call(*site).map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Stop)
+                regs.call(*site).map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Fail)
             }
             ControlFlowOp::Exec(site) => {
-                regs.jmp().map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Stop)
+                regs.jmp().map(|_| ExecStep::Call(*site)).unwrap_or(ExecStep::Fail)
             }
             ControlFlowOp::Ret => regs.ret().map(ExecStep::Call).unwrap_or(ExecStep::Stop),
         }
@@ -1418,7 +1418,7 @@ impl InstructionSet for DigestOp {
         let none;
         match self {
             DigestOp::Ripemd(src, dst) => {
-                let s = regs.get_s(*src);
+                let s = regs.s16(*src);
                 none = s.is_none();
                 let hash = s.map(|s| {
                     let mut hash: [u8; 20] = ripemd::Ripemd160::digest(s.as_ref()).into();
@@ -1429,19 +1429,19 @@ impl InstructionSet for DigestOp {
                 regs.set_n(RegR::R160, dst, hash);
             }
             DigestOp::Sha256(src, dst) => {
-                let s = regs.get_s(*src);
+                let s = regs.s16(*src);
                 none = s.is_none();
                 let hash: Option<[u8; 32]> = s.map(|s| sha2::Sha256::digest(s.as_ref()).into());
                 regs.set_n(RegR::R256, dst, hash);
             }
             DigestOp::Blake3(src, dst) => {
-                let s = regs.get_s(*src);
+                let s = regs.s16(*src);
                 none = s.is_none();
                 let hash: Option<[u8; 32]> = s.map(|s| blake3::hash(s.as_ref()).into());
                 regs.set_n(RegR::R256, dst, hash);
             }
             DigestOp::Sha512(src, dst) => {
-                let s = regs.get_s(*src);
+                let s = regs.s16(*src);
                 none = s.is_none();
                 let hash: Option<[u8; 64]> = s.map(|s| sha2::Sha512::digest(s.as_ref()).into());
                 regs.set_n(RegR::R512, dst, hash);
