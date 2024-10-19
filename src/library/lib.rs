@@ -385,9 +385,12 @@ impl Lib {
 
         let mut cursor = Cursor::with(&self.code, &self.data, &self.libs);
         let lib_id = self.id();
+
         #[cfg(feature = "log")]
         let lib_mnemonic = lib_id.to_baid64_mnemonic();
+        #[cfg(feature = "log")]
         let lib_ref = lib_mnemonic.split_at(5).0;
+
         if cursor.seek(entrypoint).is_err() {
             registers.st0 = false;
             #[cfg(feature = "log")]
