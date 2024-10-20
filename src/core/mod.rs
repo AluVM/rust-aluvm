@@ -22,12 +22,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod lib;
-#[cfg(feature = "armor")]
-pub mod armor;
-mod assembler;
-mod marshaller;
-mod exec;
+//! AluVM registers system
 
-pub use lib::{Lib, LibId, LibSite, LibsSeg};
-pub use marshaller::{MarshallError, Marshaller};
+mod core;
+mod alu64;
+mod regs;
+
+pub use self::alu64::{IdxA, Reg, RegA, A};
+pub use self::core::{AluCore, CoreConfig, Site, Status, CALL_STACK_SIZE_MAX};
+pub(self) use self::regs::Idx32;

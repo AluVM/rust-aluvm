@@ -6,9 +6,8 @@
 // Written in 2021-2024 by
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
+// Copyright (C) 2021-2024 UBIDECO Labs,
+//     Laboratories for Distributed and Cognitive Computing, Switzerland.
 //     All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,43 +40,5 @@ pub enum RegInstr {
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
 #[display(inner)]
 pub enum ArithmInstr {
-    Placeholder,
-}
-
-/// Sign-aware arithmetic instructions.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
-#[display(inner)]
-pub enum SignedInstr {
-    Placeholder,
-}
-
-/// Bit-manipulation and boolean arithmetic instructions.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
-#[display(inner)]
-pub enum BitInstr {
-    Placeholder,
-}
-
-#[cfg(feature = "float")]
-/// Floating-point arithmetic instructions.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
-#[display(inner)]
-pub enum FloatInstr {
-    Placeholder,
-}
-
-#[cfg(feature = "array")]
-/// Array register (`r`) instructions.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
-#[display(inner)]
-pub enum ArrayInstr {
-    Placeholder,
-}
-
-#[cfg(feature = "str")]
-/// Bytestring register (`s`) instructions.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
-#[display(inner)]
-pub enum StrInstr {
     Placeholder,
 }

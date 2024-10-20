@@ -6,9 +6,8 @@
 // Written in 2021-2024 by
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
+// Copyright (C) 2021-2024 UBIDECO Labs,
+//     Laboratories for Distributed and Cognitive Computing, Switzerland.
 //     All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,21 +24,19 @@
 
 //! Alu virtual machine
 
-#[cfg(all(feature = "alloc", not(feature = "std")))]
-use alloc::boxed::Box;
 use core::marker::PhantomData;
 
-use crate::isa::{Instr, ReservedInstr};
-use crate::library::{InstructionSet, Lib, LibId, LibSite};
-use crate::reg::CoreRegs;
+use crate::core::{AluCore, CoreConfig, Status};
+use crate::isa::{Bytecode, Instr, Instruction, InstructionSet, ReservedInstr};
+use crate::library::{Lib, LibId, LibSite};
 
 /// Alu virtual machine providing single-core execution environment
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Vm<Isa = Instr<ReservedInstr>>
 where Isa: InstructionSet
 {
     /// A set of registers
-    pub registers: Box<CoreRegs>,
+    pub registers: AluCore<LibId>,
 
     phantom: PhantomData<Isa>,
 }
@@ -48,10 +45,18 @@ where Isa: InstructionSet
 impl<Isa> Vm<Isa>
 where Isa: InstructionSet
 {
-    /// Constructs new virtual machine instance.
+    /// Constructs new virtual machine instance with default core configuration.
     pub fn new() -> Self {
         Self {
-            registers: Box::default(),
+            registers: AluCore::new(),
+            phantom: Default::default(),
+        }
+    }
+
+    /// Constructs new virtual machine instance with default core configuration.
+    pub fn with(config: CoreConfig) -> Self {
+        Self {
+            registers: AluCore::with(config),
             phantom: Default::default(),
         }
     }
@@ -65,18 +70,21 @@ where Isa: InstructionSet
         &mut self,
         entry_point: LibSite,
         lib_resolver: impl Fn(LibId) -> Option<&'prog Lib>,
-        context: &Isa::Context<'_>,
-    ) -> bool {
+        context: &<Isa::Instr as Instruction>::Context<'_>,
+    ) -> Status
+    where
+        Isa::Instr: Bytecode<LibId>,
+    {
         let mut call = Some(entry_point);
         while let Some(ref mut site) = call {
-            if let Some(lib) = lib_resolver(site.lib) {
-                call = lib.exec::<Isa>(site.pos, &mut self.registers, context);
-            } else if let Some(pos) = site.pos.checked_add(1) {
-                site.pos = pos;
+            if let Some(lib) = lib_resolver(site.lib_id) {
+                call = lib.exec::<Isa::Instr>(site.offset, &mut self.registers, context);
+            } else if let Some(pos) = site.offset.checked_add(1) {
+                site.offset = pos;
             } else {
                 call = None;
             };
         }
-        self.registers.st0
+        self.registers.ck()
     }
 }
