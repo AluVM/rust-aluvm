@@ -23,93 +23,137 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! AluVM instruction set architecture
+//! AluVM instruction set architecture.
 
-#[macro_use]
-mod macros;
+mod alu;
 mod bytecode;
 mod exec;
-mod flags;
-mod instr;
-pub mod opcodes;
 
-pub use bytecode::{Bytecode, BytecodeError};
-pub use exec::{ExecStep, InstructionSet};
-pub use flags::{
-    DeleteFlag, ExtendFlag, Flag, FloatEqFlag, InsertFlag, IntFlags, MergeFlag, NoneEqFlag,
-    ParseFlagError, RoundingFlag, SignFlag, SplitFlag,
-};
-pub use instr::{
-    ArithmeticOp, BitwiseOp, BytesOp, CmpOp, ControlFlowOp, Curve25519Op, DigestOp, Instr, MoveOp,
-    PutOp, ReservedOp, Secp256k1Op,
-};
+use alu::{ArithmInstr, BitInstr, CtrlInstr, RegInstr, SignedInstr};
+
+use crate::library::InstructionSet;
 
 /// List of standardised ISA extensions.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[non_exhaustive]
 #[derive(Default)]
 pub enum Isa {
-    /// Core ISA instruction set
-    #[display("ALU")]
+    /// Core 64-bit ISA instruction set.
+    #[display("ALU64")]
     #[default]
-    Alu,
+    Alu64,
 
-    /// Floating-point operations
-    #[display("FLOAT")]
-    Float,
+    /// 1024-bit arithmetics and boolean logic.
+    #[display("ALU1024")]
+    Alu1024,
 
-    /// Bitcoin-specific cryptographic hash functions
-    #[display("BPDIGEST")]
-    BpDigest,
+    /// Array operations with general registers.
+    #[display("ARRAY")]
+    Array,
 
-    /// Operations on Secp256k1 curve
-    #[display("SECP256")]
-    Secp256k1,
-
-    /// Operations on Curve25519
-    #[display("ED25519")]
-    Curve25519,
-
-    /// ALU runtime extensions
-    #[display("ALURE")]
-    AluRe,
-
-    /// Bitcoin protocol-specific instructions
-    #[display("BP")]
-    Bp,
-
-    /// RGB-specific instructions
-    #[display("RGB")]
-    Rgb,
-
-    /// Lightning network protocol-specific instructions
-    #[display("LNP")]
-    Lnp,
-
-    /// Instructions for SIMD
+    /// Instructions for SIMD.
     #[display("SIMD")]
     Simd,
 
-    /// Instructions for biologically-inspired cognitive architectures
+    /// Floating-point operations.
+    #[display("FLOAT")]
+    Float,
+
+    /// SHA hash functions.
+    #[display("SHA")]
+    Sha,
+
+    /// Operations on Secp256k1 curve.
+    #[display("SECP256")]
+    Secp256k1,
+
+    /// Operations on Curve25519.
+    #[display("ED25519")]
+    Curve25519,
+
+    /// ALU runtime extensions.
+    #[display("ALURE")]
+    AluRe,
+
+    /// Bitcoin protocol-specific instructions.
+    #[display("BP")]
+    Bp,
+
+    /// RGB-specific instructions.
+    #[display("RGB")]
+    Rgb,
+
+    /// Lightning network protocol-specific instructions.
+    #[display("LNP")]
+    Lnp,
+
+    /// Instructions for biologically-inspired cognitive architectures.
     #[display("REBICA")]
     Rebica,
 }
 
 impl Isa {
-    /// Enumerates all ISA extension variants
-    pub const fn all() -> [Isa; 11] {
+    /// Enumerates all ISA extension variants.
+    pub const fn all() -> [Isa; 13] {
         [
-            Isa::Alu,
+            Isa::Alu64,
+            Isa::Alu1024,
             Isa::Float,
-            Isa::BpDigest,
+            Isa::Array,
+            Isa::Simd,
+            Isa::Sha,
             Isa::Secp256k1,
             Isa::Curve25519,
             Isa::AluRe,
             Isa::Bp,
             Isa::Rgb,
             Isa::Lnp,
-            Isa::Simd,
             Isa::Rebica,
         ]
     }
+}
+
+/// Reserved instruction, which equal to [`ControlFlowOp::Fail`].
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Default)]
+#[display("rsrv    {0:#04X}")]
+pub struct ReservedInstr(/** Reserved instruction op code value */ pub(super) u8);
+
+/// Complete AluVM ISA.
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
+#[display(inner)]
+pub enum Instr<Extension = ReservedInstr>
+where Extension: InstructionSet
+{
+    /// Control flow instructions.
+    Ctrl(CtrlInstr),
+
+    /// Register manipulation instructions.
+    Reg(RegInstr),
+
+    /// Arithmetic instructions for natural numbers.
+    An(ArithmInstr),
+
+    /// Sign-aware arithmetic instructions.
+    Az(SignedInstr),
+
+    /// Bit-manipulation and boolean arithmetic instructions.
+    Bit(BitInstr),
+
+    /// Floating-point arithmetic instructions.
+    #[cfg(feature = "float")]
+    Float(alu::FloatInstr),
+
+    /// Array register (`r`) instructions.
+    #[cfg(feature = "array")]
+    Array(alu::ArrayInstr),
+
+    /// Bytestring register (`s`) instructions.
+    #[cfg(feature = "str")]
+    Str(alu::StrInstr),
+
+    /// Reserved instruction for future use in core `ALU` ISA.
+    Reserved(ReservedInstr),
+
+    /// Other ISA extensions.
+    Ext(Extension),
 }

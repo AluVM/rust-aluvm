@@ -43,12 +43,8 @@ use strict_encoding::{StrictDeserialize, StrictSerialize};
 pub use self::_armor::LibArmorError;
 use super::{Cursor, Read, WriteError};
 use crate::data::ByteStr;
-#[cfg(feature = "std")]
-use crate::isa::{Bytecode, Instr};
-use crate::isa::{BytecodeError, ExecStep, InstructionSet};
 use crate::library::segs::IsaSeg;
-use crate::library::{CodeEofError, LibSeg, SegmentError};
-use crate::reg::CoreRegs;
+use crate::library::{BytecodeError, CodeEofError, InstructionSet, LibSeg, SegmentError};
 use crate::LIB_NAME_ALUVM;
 
 pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:aluvm:lib:v01#230304";
@@ -325,7 +321,7 @@ impl Lib {
         while !reader.is_eof() {
             let pos = reader.offset().0 as usize;
             write!(writer, "@x{pos:06X}: ")?;
-            match Instr::<Isa>::decode(&mut reader) {
+            match Isa::decode(&mut reader) {
                 Ok(instr) => writeln!(writer, "{instr}")?,
                 Err(_) => writeln!(writer, "\n{}", ByteStr::with(&self.code.as_ref()[pos..]))?,
             }
@@ -357,129 +353,6 @@ impl Lib {
     /// Returns reference to libraries segment
     #[inline]
     pub fn libs_segment(&self) -> &LibSeg { &self.libs }
-
-    /// Executes library code starting at entrypoint
-    ///
-    /// # Returns
-    ///
-    /// Location for the external code jump, if any
-    pub fn exec<Isa>(
-        &self,
-        entrypoint: u16,
-        registers: &mut CoreRegs,
-        context: &Isa::Context<'_>,
-    ) -> Option<LibSite>
-    where
-        Isa: InstructionSet,
-    {
-        #[cfg(feature = "log")]
-        let (m, w, d, g, r, y, z) = (
-            "\x1B[0;35m",
-            "\x1B[1;1m",
-            "\x1B[0;37;2m",
-            "\x1B[0;32m",
-            "\x1B[0;31m",
-            "\x1B[0;33m",
-            "\x1B[0m",
-        );
-
-        let mut cursor = Cursor::with(&self.code, &self.data, &self.libs);
-        let lib_id = self.id();
-
-        #[cfg(feature = "log")]
-        let lib_mnemonic = lib_id.to_baid64_mnemonic();
-        #[cfg(feature = "log")]
-        let lib_ref = lib_mnemonic.split_at(5).0;
-
-        if cursor.seek(entrypoint).is_err() {
-            registers.st0 = false;
-            #[cfg(feature = "log")]
-            eprintln!("jump to non-existing offset; halting, {d}st0{z} is set to {r}false{z}");
-            return None;
-        }
-
-        #[cfg(feature = "log")]
-        let mut st0 = registers.st0;
-
-        while !cursor.is_eof() {
-            let pos = cursor.pos();
-
-            let instr = Isa::decode(&mut cursor).ok()?;
-
-            #[cfg(feature = "log")]
-            {
-                eprint!("{m}{}@x{pos:06X}:{z} {: <32}; ", lib_ref, instr.to_string());
-                for reg in instr.src_regs() {
-                    let val = registers.get(reg);
-                    eprint!("{d}{reg}={z}{w}{val}{z} ");
-                }
-            }
-
-            let next = instr.exec(registers, LibSite::with(pos, lib_id), context);
-
-            #[cfg(feature = "log")]
-            {
-                eprint!("-> ");
-                for reg in instr.dst_regs() {
-                    let val = registers.get(reg);
-                    eprint!("{g}{reg}={y}{val}{z} ");
-                }
-                if st0 != registers.st0 {
-                    let c = if registers.st0 { g } else { r };
-                    eprint!(" {d}st0={z}{c}{}{z} ", registers.st0);
-                }
-
-                st0 = registers.st0;
-            }
-
-            if !registers.acc_complexity(instr) {
-                #[cfg(feature = "log")]
-                eprintln!("complexity overflow");
-                return None;
-            }
-            match next {
-                ExecStep::Stop => {
-                    #[cfg(feature = "log")]
-                    {
-                        let c = if registers.st0 { g } else { r };
-                        eprintln!("execution stopped; {d}st0={z}{c}{}{z}", registers.st0);
-                    }
-                    return None;
-                }
-                ExecStep::Fail => {
-                    registers.st0 = false;
-                    assert_eq!(registers.st0, false);
-                    #[cfg(feature = "log")]
-                    eprintln!("halting, {d}st0{z} is set to {r}false{z}");
-                    return None;
-                }
-                ExecStep::Next => {
-                    #[cfg(feature = "log")]
-                    eprintln!();
-                    continue;
-                }
-                ExecStep::Jump(pos) => {
-                    #[cfg(feature = "log")]
-                    eprintln!("{}", pos);
-                    if cursor.seek(pos).is_err() {
-                        registers.st0 = false;
-                        #[cfg(feature = "log")]
-                        eprintln!(
-                            "jump to non-existing offset; halting, {d}st0{z} is set to {r}false{z}"
-                        );
-                        return None;
-                    }
-                }
-                ExecStep::Call(site) => {
-                    #[cfg(feature = "log")]
-                    eprintln!("{}", site);
-                    return Some(site);
-                }
-            }
-        }
-
-        None
-    }
 }
 
 /// Location within a library

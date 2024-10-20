@@ -29,9 +29,8 @@ use core::ops::{Neg, Rem};
 use amplify::num::apfloat::{ieee, Float};
 use half::bf16;
 
-use super::{FloatLayout, IntLayout, Layout, Number, NumberLayout};
+use super::{FloatLayout, IntFlags, IntLayout, Layout, Number, NumberLayout, RoundingFlag};
 use crate::data::MaybeNumber;
-use crate::isa::{IntFlags, RoundingFlag};
 
 impl PartialEq for Number {
     #[inline]

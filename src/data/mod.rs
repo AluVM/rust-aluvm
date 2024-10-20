@@ -31,8 +31,10 @@ mod byte_str;
 #[cfg(feature = "std")]
 pub mod encoding;
 mod number;
+mod flags;
 
 pub use byte_str::ByteStr;
+pub use flags::{IntFlags, RoundingFlag};
 pub use number::{
     FloatLayout, IntLayout, Layout, LiteralParseError, MaybeNumber, Number, NumberLayout, Step,
 };

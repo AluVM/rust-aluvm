@@ -30,16 +30,19 @@ mod families;
 mod indexes;
 
 pub use core_regs::{CoreRegs, CALL_STACK_SIZE};
-pub use families::{
-    NumericRegister, RegA, RegA2, RegAF, RegAFR, RegAR, RegAll, RegBlock, RegBlockAFR, RegBlockAR,
-    RegF, RegR,
-};
+pub use families::{NumericRegister, RegA, RegF, RegR};
 pub use indexes::{Reg16, Reg32, Reg8, RegS};
 
-/// Trait marking all types representing register family, specific register or register index
-pub trait Register: Default {
-    /// Text description of the register family
+/// Trait marking all types representing register family, specific register or register index.
+pub trait Register: Copy {
+    /// Text description of the register family.
     fn description() -> &'static str;
+
+    /// Size of the register value in bits.
+    fn bits(self) -> u32 { self.bytes() as u32 * 8 }
+
+    /// Size of the register value in bytes.
+    fn bytes(self) -> u16;
 }
 
 /// Superset of all registers accessible via instructions. The superset includes `A`, `F`, `R` and
@@ -65,41 +68,24 @@ pub enum Reg {
 }
 
 impl Reg {
-    /// Construct register information
-    pub fn new(reg: impl Into<RegAFR>, index: impl Into<Reg32>) -> Self {
-        let index = index.into();
-        match reg.into() {
-            RegAFR::A(reg) => Reg::A(reg, index),
-            RegAFR::F(reg) => Reg::F(reg, index),
-            RegAFR::R(reg) => Reg::R(reg, index),
-        }
-    }
-
-    /// Returns family ([`RegBlock`]) of the register
-    pub fn family(self) -> RegBlock {
-        match self {
-            Reg::A(_, _) => RegBlock::A,
-            Reg::F(_, _) => RegBlock::F,
-            Reg::R(_, _) => RegBlock::R,
-            Reg::S(_) => RegBlock::S,
-        }
-    }
-
-    /// Returns specific register ([`RegAll`]) of the register
-    pub fn register(self) -> RegAll {
-        match self {
-            Reg::A(reg, _) => RegAll::A(reg),
-            Reg::F(reg, _) => RegAll::F(reg),
-            Reg::R(reg, _) => RegAll::R(reg),
-            Reg::S(_) => RegAll::S,
-        }
-    }
-
     /// Returns register index
     pub fn index(self) -> Reg32 {
         match self {
             Reg::A(_, index) | Reg::F(_, index) | Reg::R(_, index) => index,
             Reg::S(index) => index.into(),
+        }
+    }
+}
+
+impl Register for Reg {
+    fn description() -> &'static str { "all registers" }
+
+    fn bytes(self) -> u16 {
+        match self {
+            Reg::A(a, _) => a.bytes(),
+            Reg::F(f, _) => f.bytes(),
+            Reg::R(r, _) => r.bytes(),
+            Reg::S(s) => s.bytes(),
         }
     }
 }

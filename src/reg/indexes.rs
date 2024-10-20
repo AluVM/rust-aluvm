@@ -28,7 +28,7 @@ use core::convert::TryFrom;
 use amplify::num::error::OverflowError;
 use amplify::num::{u3, u4, u5};
 
-use crate::reg::{RegAll, Register};
+use crate::reg::Register;
 
 /// All possible register indexes for `a` and `r` register sets
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -207,11 +207,6 @@ impl Reg32 {
     pub fn to_usize(self) -> usize { self as u8 as usize }
 }
 
-impl Register for Reg32 {
-    #[inline]
-    fn description() -> &'static str { "5-bit register index" }
-}
-
 impl From<&Reg32> for u5 {
     #[inline]
     fn from(reg32: &Reg32) -> Self { u5::with(*reg32 as u8) }
@@ -371,11 +366,6 @@ impl Reg16 {
     ];
 }
 
-impl Register for Reg16 {
-    #[inline]
-    fn description() -> &'static str { "4-bit register index" }
-}
-
 impl From<&Reg16> for u4 {
     #[inline]
     fn from(reg16: &Reg16) -> Self { u4::with(*reg16 as u8) }
@@ -482,11 +472,6 @@ impl Reg8 {
     ];
 }
 
-impl Register for Reg8 {
-    #[inline]
-    fn description() -> &'static str { "3-bit register index" }
-}
-
 impl From<&Reg8> for u3 {
     #[inline]
     fn from(reg8: &Reg8) -> Self { u3::with(*reg8 as u8) }
@@ -553,6 +538,8 @@ impl RegS {
 impl Register for RegS {
     #[inline]
     fn description() -> &'static str { "4-bit S register index" }
+
+    fn bytes(self) -> u16 { u16::MAX }
 }
 
 impl Default for RegS {
@@ -624,17 +611,5 @@ impl TryFrom<Reg32> for RegS {
 
     fn try_from(value: Reg32) -> Result<Self, Self::Error> {
         u5::try_from(value as u8).map(RegS::from)
-    }
-}
-
-impl TryFrom<RegAll> for RegS {
-    type Error = ();
-
-    #[inline]
-    fn try_from(value: RegAll) -> Result<Self, Self::Error> {
-        match value {
-            RegAll::S => Ok(RegS(u4::with(0))),
-            _ => Err(()),
-        }
     }
 }

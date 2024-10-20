@@ -36,10 +36,9 @@ use amplify::num::apfloat::{ieee, Float};
 use amplify::num::{u1024, u256, u512};
 use half::bf16;
 
-use super::{Reg, Reg32, RegA, RegAFR, RegF, RegR, RegS};
+use super::{Reg, Reg32, RegA, RegF, RegR, RegS};
 use crate::data::{ByteStr, MaybeNumber, Number, RegValue};
-use crate::isa::InstructionSet;
-use crate::library::LibSite;
+use crate::library::{InstructionSet, LibSite};
 
 /// Maximal size of call stack.
 ///
@@ -171,7 +170,8 @@ impl CoreRegs {
     #[inline]
     pub fn new() -> CoreRegs { CoreRegs::default() }
 
-    pub(crate) fn jmp(&mut self) -> Result<(), ()> {
+    /// Increases `cy0` value.
+    pub fn cy0_inc(&mut self) -> Result<(), ()> {
         self.cy0
             .checked_add(1)
             .map(|cy| self.cy0 = cy)
@@ -181,7 +181,8 @@ impl CoreRegs {
             .map(|_| ())
     }
 
-    pub(crate) fn call(&mut self, site: LibSite) -> Result<(), ()> {
+    /// Pushes external library call to call stack registers; updates flag registers accordingly.
+    pub fn cs_push(&mut self, site: LibSite) -> Result<(), ()> {
         self.cy0
             .checked_add(1)
             .map(|cy| self.cy0 = cy)
@@ -201,7 +202,8 @@ impl CoreRegs {
             })
     }
 
-    pub(crate) fn ret(&mut self) -> Option<LibSite> {
+    /// Pops call information from the stack registers.
+    pub fn cs_pop(&mut self) -> Option<LibSite> {
         if self.cp0 == 0 {
             None
         } else {
@@ -282,26 +284,8 @@ impl CoreRegs {
     /// Extracts value for any type of registers
     pub fn get(&self, reg: impl Into<Reg>) -> RegValue {
         match reg.into() {
-            Reg::A(reg, index) => self.get_n(reg, index).into(),
-            Reg::F(reg, index) => self.get_n(reg, index).into(),
-            Reg::R(reg, index) => self.get_n(reg, index).into(),
-            Reg::S(reg) => self.s16(reg).cloned().into(),
-        }
-    }
-
-    /// Iterates over values from registers
-    pub fn get_list<'a>(
-        &'a self,
-        reg: impl IntoIterator<Item = impl Into<Reg>> + 'a,
-    ) -> impl Iterator<Item = RegValue> + 'a {
-        reg.into_iter().map(move |reg| self.get(reg))
-    }
-
-    /// Retrieves numeric register value
-    pub fn get_n(&self, reg: impl Into<RegAFR>, index: impl Into<Reg32>) -> MaybeNumber {
-        let index = index.into() as usize;
-        match reg.into() {
-            RegAFR::A(a) => {
+            Reg::A(a, index) => {
+                let index = index.to_usize();
                 let n = match a {
                     RegA::A8 => self.a8[index].map(Number::from),
                     RegA::A16 => self.a16[index].map(Number::from),
@@ -312,10 +296,11 @@ impl CoreRegs {
                     RegA::A512 => self.a512[index].map(Number::from),
                     RegA::A1024 => self.a1024[index].map(Number::from),
                 };
-                n.into()
+                RegValue::Number(n.into())
             }
 
-            RegAFR::R(r) => {
+            Reg::R(r, index) => {
+                let index = index.to_usize();
                 let n = match r {
                     RegR::R128 => self.r128[index].map(Number::from),
                     RegR::R160 => self.r160[index].map(Number::from),
@@ -326,10 +311,11 @@ impl CoreRegs {
                     RegR::R4096 => self.r4096[index].map(Number::from),
                     RegR::R8192 => self.r8192[index].map(Number::from),
                 };
-                n.into()
+                RegValue::Number(n.into())
             }
 
-            RegAFR::F(f) => {
+            Reg::F(f, index) => {
+                let index = index.to_usize();
                 let n = match f {
                     RegF::F16B => self.f16b[index].map(MaybeNumber::from),
                     RegF::F16 => self.f16[index].map(MaybeNumber::from),
@@ -340,8 +326,10 @@ impl CoreRegs {
                     RegF::F256 => self.f256[index].map(MaybeNumber::from),
                     RegF::F512 => self.f512[index].map(MaybeNumber::from),
                 };
-                n.unwrap_or_else(MaybeNumber::none)
+                RegValue::Number(n.unwrap_or_else(MaybeNumber::none))
             }
+
+            Reg::S(reg) => self.s16(reg).cloned().into(),
         }
     }
 
@@ -371,19 +359,6 @@ impl CoreRegs {
         self.s16[index.into().as_usize()].as_ref()
     }
 
-    /// Returns value from two registers only if both of them contain a value; otherwise returns
-    /// `None`.
-    #[inline]
-    pub fn get_n2(
-        &self,
-        reg1: impl Into<RegAFR>,
-        idx1: impl Into<Reg32>,
-        reg2: impl Into<RegAFR>,
-        idx2: impl Into<Reg32>,
-    ) -> Option<(Number, Number)> {
-        self.get_n(reg1, idx1).and_then(|val1| self.get_n(reg2, idx2).map(|val2| (val1, val2)))
-    }
-
     /// Returns value from two string (`S`) registers only if both of them contain a value;
     /// otherwise returns `None`.
     #[inline]
@@ -393,120 +368,6 @@ impl CoreRegs {
         idx2: impl Into<RegS>,
     ) -> Option<(&ByteStr, &ByteStr)> {
         self.s16(idx1).and_then(|val1| self.s16(idx2).map(|val2| (val1, val2)))
-    }
-
-    /// Assigns the provided value to the register bit-wise. Silently discards most significant bits
-    /// until the value fits register bit size.
-    ///
-    /// Returns `true` if the value was not `None`
-    pub fn set_n(
-        &mut self,
-        reg: impl Into<RegAFR>,
-        index: impl Into<Reg32>,
-        value: impl Into<MaybeNumber>,
-    ) -> bool {
-        let index = index.into() as usize;
-        let value: Option<Number> = value.into().into();
-        match reg.into() {
-            RegAFR::A(a) => match a {
-                RegA::A8 => self.a8[index] = value.map(Number::into),
-                RegA::A16 => self.a16[index] = value.map(Number::into),
-                RegA::A32 => self.a32[index] = value.map(Number::into),
-                RegA::A64 => self.a64[index] = value.map(Number::into),
-                RegA::A128 => self.a128[index] = value.map(Number::into),
-                RegA::A256 => self.a256[index] = value.map(Number::into),
-                RegA::A512 => self.a512[index] = value.map(Number::into),
-                RegA::A1024 => self.a1024[index] = value.map(Number::into),
-            },
-            RegAFR::R(r) => match r {
-                RegR::R128 => self.r128[index] = value.map(Number::into),
-                RegR::R160 => self.r160[index] = value.map(Number::into),
-                RegR::R256 => self.r256[index] = value.map(Number::into),
-                RegR::R512 => self.r512[index] = value.map(Number::into),
-                RegR::R1024 => self.r1024[index] = value.map(Number::into),
-                RegR::R2048 => self.r2048[index] = value.map(Number::into),
-                RegR::R4096 => self.r4096[index] = value.map(Number::into),
-                RegR::R8192 => self.r8192[index] = value.map(Number::into),
-            },
-            RegAFR::F(f) => match f {
-                RegF::F16B => self.f16b[index] = value.map(Number::into),
-                RegF::F16 => self.f16[index] = value.map(Number::into),
-                RegF::F32 => self.f32[index] = value.map(Number::into),
-                RegF::F64 => self.f64[index] = value.map(Number::into),
-                RegF::F80 => self.f80[index] = value.map(Number::into),
-                RegF::F128 => self.f128[index] = value.map(Number::into),
-                RegF::F256 => self.f256[index] = value.map(Number::into),
-                RegF::F512 => self.f512[index] = value.map(Number::into),
-            },
-        }
-        value.is_some()
-    }
-
-    /// Assigns the provided value to the register bit-wise if the register is not initialized.
-    /// Silently discards most significant bits until the value fits register bit size.
-    ///
-    /// Returns `false` if the register is initialized and the value is not `None`.
-    #[inline]
-    pub fn set_n_if(
-        &mut self,
-        reg: impl Into<RegAFR>,
-        index: impl Into<Reg32>,
-        value: impl Into<MaybeNumber>,
-    ) -> bool {
-        let reg = reg.into();
-        let index = index.into();
-        if self.get_n(reg, index).is_none() {
-            self.set_n(reg, index, value)
-        } else {
-            value.into().is_none()
-        }
-    }
-
-    /// Assigns the provided value to the string register.
-    ///
-    /// Returns `true` if the value was not `None`.
-    #[deprecated(since = "0.11.0-beta.9", note = "use `set_s16` method")]
-    pub fn set_s(&mut self, index: impl Into<RegS>, value: Option<impl Into<ByteStr>>) -> bool {
-        let reg = &mut self.s16[index.into().as_usize()];
-        let was_set = reg.is_some();
-        *reg = value.map(|v| v.into());
-        was_set
-    }
-
-    /// Assigns the provided value to the string register if the register is not initialized.
-    ///
-    /// Returns `false` if the register is initialized and the value is not `None`.
-    #[deprecated(since = "0.11.0-beta.9")]
-    pub fn set_s_if(&mut self, index: impl Into<RegS>, value: Option<impl Into<ByteStr>>) -> bool {
-        let index = index.into();
-        if self.s16(index).is_none() {
-            #[allow(deprecated)]
-            self.set_s(index, value)
-        } else {
-            value.is_none()
-        }
-    }
-
-    /// Executes provided operation (as callback function) if and only if all the provided registers
-    /// contain a value (initialized). Otherwise, sets destination to `None` and does not call the
-    /// callback.
-    #[inline]
-    #[allow(clippy::too_many_arguments)]
-    pub fn op(
-        &mut self,
-        reg1: impl Into<RegAFR>,
-        src1: impl Into<Reg32>,
-        reg2: impl Into<RegAFR>,
-        src2: impl Into<Reg32>,
-        reg3: impl Into<RegAFR>,
-        dst: impl Into<Reg32>,
-        op: fn(Number, Number) -> Number,
-    ) {
-        let reg_val = match (*self.get_n(reg1.into(), src1), *self.get_n(reg2.into(), src2)) {
-            (None, None) | (None, Some(_)) | (Some(_), None) => MaybeNumber::none(),
-            (Some(val1), Some(val2)) => op(val1, val2).into(),
-        };
-        self.set_n(reg3.into(), dst, reg_val);
     }
 
     /// Accumulates complexity of the instruction into `ca0`.
@@ -871,42 +732,5 @@ impl Debug for CoreRegs {
             }
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use amplify::num::u4;
-
-    use super::*;
-
-    // Checks that we do not overflow the stack if using all registers
-    #[test]
-    fn init_all() {
-        let mut regs = CoreRegs::new();
-
-        for reg in RegA::ALL {
-            for idx in Reg32::ALL {
-                regs.set_n(reg, idx, u8::from(idx));
-            }
-        }
-
-        for reg in RegF::ALL {
-            for idx in Reg32::ALL {
-                regs.set_n(reg, idx, u8::from(idx));
-            }
-        }
-
-        for reg in RegR::ALL {
-            for idx in Reg32::ALL {
-                regs.set_n(reg, idx, u8::from(idx));
-            }
-        }
-
-        for idx in 0u8..16 {
-            regs.set_s16(u4::with(idx), ByteStr::with(format!("string index {idx}")));
-        }
-
-        eprintln!("{regs:#?}");
     }
 }

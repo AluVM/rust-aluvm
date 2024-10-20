@@ -29,13 +29,13 @@
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 
-use crate::isa::{Instr, InstructionSet, ReservedOp};
-use crate::library::{Lib, LibId, LibSite};
+use crate::isa::{Instr, ReservedInstr};
+use crate::library::{InstructionSet, Lib, LibId, LibSite};
 use crate::reg::CoreRegs;
 
 /// Alu virtual machine providing single-core execution environment
 #[derive(Clone, Debug, Default)]
-pub struct Vm<Isa = Instr<ReservedOp>>
+pub struct Vm<Isa = Instr<ReservedInstr>>
 where Isa: InstructionSet
 {
     /// A set of registers

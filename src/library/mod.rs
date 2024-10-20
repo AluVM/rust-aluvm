@@ -30,10 +30,12 @@ mod cursor;
 mod lib;
 mod rw;
 mod segs;
+mod exec;
 
 pub use cursor::Cursor;
+pub use exec::{ExecStep, InstructionSet};
 #[cfg(feature = "ascii-armor")]
 pub use lib::LibArmorError;
 pub use lib::{AssemblerError, Lib, LibId, LibSite};
-pub use rw::{CodeEofError, Read, Write, WriteError};
+pub use rw::{Bytecode, BytecodeError, CodeEofError, Read, Write, WriteError};
 pub use segs::{IsaName, IsaSeg, IsaSegError, LibSeg, SegmentError};

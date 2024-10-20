@@ -23,11 +23,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use core::ops::RangeInclusive;
+
 use amplify::num::{u1, u2, u24, u3, u4, u5, u6, u7};
 
-use super::LibId;
+use super::{LibId, LibSite};
 use crate::data::Number;
-use crate::isa::{Instr, InstructionSet};
 use crate::reg::NumericRegister;
 
 // I had an idea of putting Read/Write functionality into `amplify` crate,
@@ -159,10 +160,64 @@ pub trait Write: private::Sealed {
     fn write_data(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), WriteError>;
     /// Writes number representation into data segment
     fn write_number(&mut self, reg: impl NumericRegister, value: Number) -> Result<(), WriteError>;
-    /// In-place instruction editing
-    fn edit<F, E, S>(&mut self, pos: u16, editor: F) -> Result<(), E>
+}
+
+/// Errors encoding instructions
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[display(doc_comments)]
+pub enum BytecodeError {
+    /// Write error
+    #[display(inner)]
+    #[from]
+    Write(WriteError),
+
+    /// put operation does not contain number (when it was deserialized, the data segment was
+    /// shorter than the number value offset to read)
+    PutNoNumber,
+}
+
+#[cfg(feature = "std")]
+impl ::std::error::Error for BytecodeError {
+    fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
+        match self {
+            BytecodeError::Write(err) => Some(err),
+            BytecodeError::PutNoNumber => None,
+        }
+    }
+}
+
+/// Non-failiable byte encoding for the instruction set. We can't use `io` since
+/// (1) we are no_std, (2) it operates data with unlimited length (while we are
+/// bound by u16), (3) it provides too many fails in situations when we can't
+/// fail because of `u16`-bounding and exclusive in-memory encoding handling.
+pub trait Bytecode {
+    /// Returns range of instruction btecodes covered by a set of operations
+    fn instr_range() -> RangeInclusive<u8>;
+
+    /// Returns byte representing instruction code (without its arguments)
+    fn instr_byte(&self) -> u8;
+
+    /// If the instruction call or references any external library, returns the call site in that
+    /// library.
+    ///
+    /// This is used by jump and subroutine call instructions.
+    #[inline]
+    fn call_site(&self) -> Option<LibSite> { None }
+
+    /// Writes the instruction as bytecode
+    fn encode<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    where W: Write {
+        writer.write_u8(self.instr_byte())?;
+        self.encode_args(writer)
+    }
+
+    /// Writes instruction arguments as bytecode, omitting instruction code byte
+    fn encode_args<W>(&self, writer: &mut W) -> Result<(), BytecodeError>
+    where W: Write;
+
+    /// Reads the instruction from bytecode
+    fn decode<R>(reader: &mut R) -> Result<Self, CodeEofError>
     where
-        F: FnOnce(&mut Instr<S>) -> Result<(), E>,
-        E: From<CodeEofError>,
-        S: InstructionSet;
+        Self: Sized,
+        R: Read;
 }

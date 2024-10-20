@@ -160,9 +160,10 @@ pub mod data;
 pub mod isa;
 pub mod library;
 pub mod reg;
+mod vm;
+
 #[cfg(feature = "stl")]
 pub mod stl;
-mod vm;
 
 pub use isa::Isa;
 #[cfg(feature = "ascii-armor")]
