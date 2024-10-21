@@ -56,29 +56,29 @@ impl<Id: SiteId> Bytecode<Id> for FieldInstr {
     where W: BytecodeWrite<Id> {
         match *self {
             FieldInstr::IncMod { src_dst, val } => {
-                writer.write_u8(src_dst.to_u8())?;
-                writer.write_u8(val)?;
+                writer.write_byte(src_dst.to_u8())?;
+                writer.write_byte(val)?;
             }
             FieldInstr::DecMod { src_dst, val } => {
-                writer.write_u8(src_dst.to_u8())?;
-                writer.write_u8(val)?;
+                writer.write_byte(src_dst.to_u8())?;
+                writer.write_byte(val)?;
             }
             FieldInstr::NegMod { src_dst } => {
-                writer.write_u8(src_dst.to_u8())?;
+                writer.write_byte(src_dst.to_u8())?;
             }
             FieldInstr::AddMod { reg, dst, src1, src2 } => {
-                writer.write_u1(u1::ZERO)?;
-                writer.write_u3(reg.to_u3())?;
-                writer.write_u4(dst.to_u4())?;
-                writer.write_u4(src1.to_u4())?;
-                writer.write_u4(src2.to_u4())?;
+                writer.write_1bit(u1::ZERO)?;
+                writer.write_3bits(reg.to_u3())?;
+                writer.write_4bits(dst.to_u4())?;
+                writer.write_4bits(src1.to_u4())?;
+                writer.write_4bits(src2.to_u4())?;
             }
             FieldInstr::MulMod { reg, dst, src1, src2 } => {
-                writer.write_u1(u1::ONE)?;
-                writer.write_u3(reg.to_u3())?;
-                writer.write_u4(dst.to_u4())?;
-                writer.write_u4(src1.to_u4())?;
-                writer.write_u4(src2.to_u4())?;
+                writer.write_1bit(u1::ONE)?;
+                writer.write_3bits(reg.to_u3())?;
+                writer.write_4bits(dst.to_u4())?;
+                writer.write_4bits(src1.to_u4())?;
+                writer.write_4bits(src2.to_u4())?;
             }
         }
         Ok(())
@@ -91,25 +91,25 @@ impl<Id: SiteId> Bytecode<Id> for FieldInstr {
     {
         Ok(match opcode - Self::START {
             Self::INC_MOD => {
-                let src_dst = RegA::from(reader.read_u8()?);
-                let val = reader.read_u8()?;
+                let src_dst = RegA::from(reader.read_byte()?);
+                let val = reader.read_byte()?;
                 FieldInstr::IncMod { src_dst, val }
             }
             Self::DEC_MOD => {
-                let src_dst = RegA::from(reader.read_u8()?);
-                let val = reader.read_u8()?;
+                let src_dst = RegA::from(reader.read_byte()?);
+                let val = reader.read_byte()?;
                 FieldInstr::IncMod { src_dst, val }
             }
             Self::NEG_MOD => {
-                let src_dst = RegA::from(reader.read_u8()?);
+                let src_dst = RegA::from(reader.read_byte()?);
                 FieldInstr::NegMod { src_dst }
             }
             Self::ADD_MUL => {
-                let subop = reader.read_u1()?;
-                let reg = A::from(reader.read_u3()?);
-                let dst = IdxAl::from(reader.read_u4()?);
-                let src1 = IdxAl::from(reader.read_u4()?);
-                let src2 = IdxAl::from(reader.read_u4()?);
+                let subop = reader.read_1bit()?;
+                let reg = A::from(reader.read_3bits()?);
+                let dst = IdxAl::from(reader.read_4bits()?);
+                let src1 = IdxAl::from(reader.read_4bits()?);
+                let src2 = IdxAl::from(reader.read_4bits()?);
                 match subop {
                     u1::ZERO => FieldInstr::AddMod { reg, dst, src1, src2 },
                     u1::ONE => FieldInstr::MulMod { reg, dst, src1, src2 },

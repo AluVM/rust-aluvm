@@ -106,9 +106,9 @@ impl<Id: SiteId> Instruction<Id> for ReservedInstr {
 impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Reg> { todo!() }
+    fn src_regs(&self) -> BTreeSet<Reg> { none!() }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> { todo!() }
+    fn dst_regs(&self) -> BTreeSet<Reg> { none!() }
 
     fn op_data_bytes(&self) -> u16 { todo!() }
 

@@ -50,7 +50,7 @@ pub trait Bytecode<Id: SiteId> {
     /// Write an instruction as bytecode.
     fn encode_instr<W>(&self, writer: &mut W) -> Result<(), W::Error>
     where W: BytecodeWrite<Id> {
-        writer.write_u8(self.opcode_byte())?;
+        writer.write_byte(self.opcode_byte())?;
         self.encode_operands(writer)?;
         writer.check_aligned();
         Ok(())
@@ -66,7 +66,7 @@ pub trait Bytecode<Id: SiteId> {
         Self: Sized,
         R: BytecodeRead<Id>,
     {
-        let opcode = reader.read_u8()?;
+        let opcode = reader.read_byte()?;
         let instr = Self::decode_operands(reader, opcode)?;
         reader.check_aligned();
         Ok(instr)
@@ -85,7 +85,7 @@ pub trait Bytecode<Id: SiteId> {
 pub struct CodeEofError;
 
 /// Reader from a bytecode for instruction deserialization.
-pub trait BytecodeRead<Id> {
+pub trait BytecodeRead<Id: SiteId> {
     /// Return current byte offset of the cursor. Does not account for bits.
     /// If the position is exactly at EOF, returns `None`.
     fn pos(&self) -> u16;
@@ -102,38 +102,38 @@ pub trait BytecodeRead<Id> {
     fn peek_byte(&self) -> Result<u8, CodeEofError>;
 
     fn read_reg_a(&mut self) -> Result<RegA, CodeEofError> {
-        let a = A::from(self.read_u3()?);
-        let idx = IdxA::from(self.read_u5()?);
+        let a = A::from(self.read_3bits()?);
+        let idx = IdxA::from(self.read_5bits()?);
         Ok(RegA::with(a, idx))
     }
     fn read_pair_a(&mut self) -> Result<(A, IdxA, IdxA), CodeEofError> {
-        let a = A::from(self.read_u3()?);
-        let idx1 = IdxA::from(self.read_u5()?);
-        let idx2 = IdxA::from(self.read_u5()?);
+        let a = A::from(self.read_3bits()?);
+        let idx1 = IdxA::from(self.read_5bits()?);
+        let idx2 = IdxA::from(self.read_5bits()?);
         Ok((a, idx1, idx2))
     }
 
     /// Read single bit as a bool value.
-    fn read_bool(&mut self) -> Result<bool, CodeEofError> { Ok(self.read_u1()? == u1::ONE) }
+    fn read_bool(&mut self) -> Result<bool, CodeEofError> { Ok(self.read_1bit()? == u1::ONE) }
     /// Read single bit.
-    fn read_u1(&mut self) -> Result<u1, CodeEofError>;
+    fn read_1bit(&mut self) -> Result<u1, CodeEofError>;
     /// Read two bits.
-    fn read_u2(&mut self) -> Result<u2, CodeEofError>;
+    fn read_2bits(&mut self) -> Result<u2, CodeEofError>;
     /// Read three bits.
-    fn read_u3(&mut self) -> Result<u3, CodeEofError>;
+    fn read_3bits(&mut self) -> Result<u3, CodeEofError>;
     /// Read four bits.
-    fn read_u4(&mut self) -> Result<u4, CodeEofError>;
+    fn read_4bits(&mut self) -> Result<u4, CodeEofError>;
     /// Read five bits.
-    fn read_u5(&mut self) -> Result<u5, CodeEofError>;
+    fn read_5bits(&mut self) -> Result<u5, CodeEofError>;
     /// Read six bits.
-    fn read_u6(&mut self) -> Result<u6, CodeEofError>;
+    fn read_6bits(&mut self) -> Result<u6, CodeEofError>;
     /// Read seven bits.
-    fn read_u7(&mut self) -> Result<u7, CodeEofError>;
+    fn read_7bits(&mut self) -> Result<u7, CodeEofError>;
 
-    /// Read unsigned 8-bit integer.
-    fn read_u8(&mut self) -> Result<u8, CodeEofError>;
-    /// Read unsigned 16-bit integer.
-    fn read_u16(&mut self) -> Result<u16, CodeEofError>;
+    /// Read byte.
+    fn read_byte(&mut self) -> Result<u8, CodeEofError>;
+    /// Read word.
+    fn read_word(&mut self) -> Result<u16, CodeEofError>;
 
     /// Read fixed number of bytes and convert it into a result type.
     ///
@@ -164,36 +164,36 @@ pub trait BytecodeRead<Id> {
 }
 
 /// Writer converting instructions into a bytecode.
-pub trait BytecodeWrite<Id> {
+pub trait BytecodeWrite<Id: SiteId> {
     type Error: Error;
 
     /// Write a single bit from a bool value.
     fn write_bool(&mut self, data: bool) -> Result<(), Self::Error> {
-        self.write_u1(if data { u1::ONE } else { u1::ZERO })
+        self.write_1bit(if data { u1::ONE } else { u1::ZERO })
     }
 
     /// Write a single bit.
-    fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), Self::Error>;
+    fn write_1bit(&mut self, data: impl Into<u1>) -> Result<(), Self::Error>;
     /// Write two bits.
-    fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), Self::Error>;
+    fn write_2bits(&mut self, data: impl Into<u2>) -> Result<(), Self::Error>;
     /// Write three bits.
-    fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), Self::Error>;
+    fn write_3bits(&mut self, data: impl Into<u3>) -> Result<(), Self::Error>;
     /// Write four bits.
-    fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), Self::Error>;
+    fn write_4bits(&mut self, data: impl Into<u4>) -> Result<(), Self::Error>;
     /// Write five bits.
-    fn write_u5(&mut self, data: impl Into<u5>) -> Result<(), Self::Error>;
+    fn write_5bits(&mut self, data: impl Into<u5>) -> Result<(), Self::Error>;
     /// Write six bits.
-    fn write_u6(&mut self, data: impl Into<u6>) -> Result<(), Self::Error>;
+    fn write_6bits(&mut self, data: impl Into<u6>) -> Result<(), Self::Error>;
     /// Write seven bits.
-    fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), Self::Error>;
+    fn write_7bits(&mut self, data: impl Into<u7>) -> Result<(), Self::Error>;
 
-    /// Write unsigned 8-bit integer.
-    fn write_u8(&mut self, data: u8) -> Result<(), Self::Error>;
-    /// Write unsigned 16-bit integer.
-    fn write_u16(&mut self, data: u16) -> Result<(), Self::Error>;
+    /// Write byte.
+    fn write_byte(&mut self, data: u8) -> Result<(), Self::Error>;
+    /// Write word.
+    fn write_word(&mut self, data: u16) -> Result<(), Self::Error>;
 
     /// Write data representable as a fixed-length byte array.
-    fn write_fixed<N, const LEN: usize>(&mut self, data: [u8; LEN]) -> Result<(), Self::Error>;
+    fn write_fixed<const LEN: usize>(&mut self, data: [u8; LEN]) -> Result<(), Self::Error>;
 
     /// Write variable-length byte string.
     fn write_bytes(&mut self, data: &[u8]) -> Result<(), Self::Error>;

@@ -272,53 +272,53 @@ where
 
     fn read_bool(&mut self) -> Result<bool, CodeEofError> { Ok(self.read(u5::with(1))? == 0x01) }
 
-    fn read_u1(&mut self) -> Result<u1, CodeEofError> {
+    fn read_1bit(&mut self) -> Result<u1, CodeEofError> {
         let res = self.read(u5::with(1))? as u8;
         Ok(res.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u2(&mut self) -> Result<u2, CodeEofError> {
+    fn read_2bits(&mut self) -> Result<u2, CodeEofError> {
         let res = self.read(u5::with(2))? as u8;
         Ok(res.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u3(&mut self) -> Result<u3, CodeEofError> {
+    fn read_3bits(&mut self) -> Result<u3, CodeEofError> {
         let res = self.read(u5::with(3))? as u8;
         Ok(res.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u4(&mut self) -> Result<u4, CodeEofError> {
+    fn read_4bits(&mut self) -> Result<u4, CodeEofError> {
         let res = self.read(u5::with(4))? as u8;
         Ok(res.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u5(&mut self) -> Result<u5, CodeEofError> {
+    fn read_5bits(&mut self) -> Result<u5, CodeEofError> {
         let res = self.read(u5::with(5))? as u8;
         Ok(res.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u6(&mut self) -> Result<u6, CodeEofError> {
+    fn read_6bits(&mut self) -> Result<u6, CodeEofError> {
         let res = self.read(u5::with(6))? as u8;
         Ok(res.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u7(&mut self) -> Result<u7, CodeEofError> {
+    fn read_7bits(&mut self) -> Result<u7, CodeEofError> {
         let res = self.read(u5::with(7))? as u8;
         Ok(res.try_into().expect("bit extractor failure"))
     }
 
-    fn read_u8(&mut self) -> Result<u8, CodeEofError> {
+    fn read_byte(&mut self) -> Result<u8, CodeEofError> {
         let res = self.read(u5::with(8))? as u8;
         Ok(res)
     }
 
-    fn read_u16(&mut self) -> Result<u16, CodeEofError> {
+    fn read_word(&mut self) -> Result<u16, CodeEofError> {
         let res = self.read(u5::with(16))? as u16;
         Ok(res)
     }
 
     fn read_fixed<N, const LEN: usize>(&mut self, f: impl FnOnce([u8; LEN]) -> N) -> Result<N, CodeEofError> {
-        let pos = self.read_u16()? as usize;
+        let pos = self.read_word()? as usize;
         let end = pos + LEN;
         if end >= self.data.as_ref().len() {
             return Err(CodeEofError);
@@ -329,8 +329,8 @@ where
     }
 
     fn read_bytes(&mut self) -> Result<(SmallBlob, bool), CodeEofError> {
-        let pos = self.read_u16()? as usize;
-        let end = pos + self.read_u16()? as usize;
+        let pos = self.read_word()? as usize;
+        let end = pos + self.read_word()? as usize;
         let ck = end >= self.data.as_ref().len();
         let data = &self.data.as_ref()[pos.min(0xFF)..end.min(0xFF)];
         Ok((SmallBlob::from_slice_checked(data), ck))
@@ -338,7 +338,7 @@ where
 
     fn read_ref(&mut self) -> Result<LibId, CodeEofError>
     where LibId: Sized {
-        let pos = self.read_u8()? as usize;
+        let pos = self.read_byte()? as usize;
         Ok(self.libs.iter().nth(pos).copied().unwrap_or_default())
     }
 
@@ -353,57 +353,57 @@ where
 {
     type Error = MarshallError;
 
-    fn write_u1(&mut self, data: impl Into<u1>) -> Result<(), MarshallError> {
+    fn write_1bit(&mut self, data: impl Into<u1>) -> Result<(), MarshallError> {
         self.write(data.into().into_u8() as u32, u5::with(1))
             .map_err(MarshallError::from)
     }
 
-    fn write_u2(&mut self, data: impl Into<u2>) -> Result<(), MarshallError> {
+    fn write_2bits(&mut self, data: impl Into<u2>) -> Result<(), MarshallError> {
         self.write(data.into().to_u8() as u32, u5::with(2))
             .map_err(MarshallError::from)
     }
 
-    fn write_u3(&mut self, data: impl Into<u3>) -> Result<(), MarshallError> {
+    fn write_3bits(&mut self, data: impl Into<u3>) -> Result<(), MarshallError> {
         self.write(data.into().to_u8() as u32, u5::with(3))
             .map_err(MarshallError::from)
     }
 
-    fn write_u4(&mut self, data: impl Into<u4>) -> Result<(), MarshallError> {
+    fn write_4bits(&mut self, data: impl Into<u4>) -> Result<(), MarshallError> {
         self.write(data.into().to_u8() as u32, u5::with(4))
             .map_err(MarshallError::from)
     }
 
-    fn write_u5(&mut self, data: impl Into<u5>) -> Result<(), MarshallError> {
+    fn write_5bits(&mut self, data: impl Into<u5>) -> Result<(), MarshallError> {
         self.write(data.into().to_u8() as u32, u5::with(5))
             .map_err(MarshallError::from)
     }
 
-    fn write_u6(&mut self, data: impl Into<u6>) -> Result<(), MarshallError> {
+    fn write_6bits(&mut self, data: impl Into<u6>) -> Result<(), MarshallError> {
         self.write(data.into().to_u8() as u32, u5::with(6))
             .map_err(MarshallError::from)
     }
 
-    fn write_u7(&mut self, data: impl Into<u7>) -> Result<(), MarshallError> {
+    fn write_7bits(&mut self, data: impl Into<u7>) -> Result<(), MarshallError> {
         self.write(data.into().to_u8() as u32, u5::with(7))
             .map_err(MarshallError::from)
     }
 
-    fn write_u8(&mut self, data: u8) -> Result<(), MarshallError> {
+    fn write_byte(&mut self, data: u8) -> Result<(), MarshallError> {
         self.write(data as u32, u5::with(8))
             .map_err(MarshallError::from)
     }
 
-    fn write_u16(&mut self, data: u16) -> Result<(), MarshallError> {
+    fn write_word(&mut self, data: u16) -> Result<(), MarshallError> {
         self.write(data as u32, u5::with(16))
             .map_err(MarshallError::from)
     }
 
-    fn write_fixed<N, const LEN: usize>(&mut self, data: [u8; LEN]) -> Result<(), Self::Error> {
+    fn write_fixed<const LEN: usize>(&mut self, data: [u8; LEN]) -> Result<(), Self::Error> {
         if LEN >= u16::MAX as usize {
             return Err(MarshallError::DataExceedsLimit(LEN));
         }
         let offset = self.write_unique(&data)?;
-        self.write_u16(offset)
+        self.write_word(offset)
     }
 
     fn write_bytes(&mut self, data: &[u8]) -> Result<(), Self::Error> {
@@ -412,8 +412,8 @@ where
             return Err(MarshallError::DataExceedsLimit(len));
         }
         let offset = self.write_unique(&data)?;
-        self.write_u16(offset)?;
-        self.write_u16(len as u16)
+        self.write_word(offset)?;
+        self.write_word(len as u16)
     }
 
     fn write_ref(&mut self, id: LibId) -> Result<(), Self::Error> {
@@ -422,7 +422,7 @@ where
             .iter()
             .position(|lib| *lib == id)
             .ok_or(MarshallError::LibAbsent(id))?;
-        self.write_u8(pos as u8)
+        self.write_byte(pos as u8)
     }
 
     fn check_aligned(&self) { debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are written") }
@@ -436,19 +436,19 @@ mod tests {
     fn read() {
         let libseg = LibsSeg::default();
         let mut marshaller = Marshaller::with([0b01010111, 0b00001001], [], &libseg);
-        assert_eq!(marshaller.read_u2().unwrap().to_u8(), 0b00000011);
-        assert_eq!(marshaller.read_u2().unwrap().to_u8(), 0b00000001);
-        assert_eq!(marshaller.read_u8().unwrap(), 0b10010101);
+        assert_eq!(marshaller.read_2bits().unwrap().to_u8(), 0b00000011);
+        assert_eq!(marshaller.read_2bits().unwrap().to_u8(), 0b00000001);
+        assert_eq!(marshaller.read_byte().unwrap(), 0b10010101);
 
         let mut marshaller = Marshaller::with([0b01010111, 0b00001001], [], &libseg);
-        assert_eq!(marshaller.read_u2().unwrap().to_u8(), 0b00000011);
-        assert_eq!(marshaller.read_u3().unwrap().to_u8(), 0b00000101);
-        assert_eq!(marshaller.read_u8().unwrap(), 0b01001010);
+        assert_eq!(marshaller.read_2bits().unwrap().to_u8(), 0b00000011);
+        assert_eq!(marshaller.read_3bits().unwrap().to_u8(), 0b00000101);
+        assert_eq!(marshaller.read_byte().unwrap(), 0b01001010);
 
         let mut marshaller = Marshaller::with([0b01110111, 0b00001111], [], &libseg);
-        assert_eq!(marshaller.read_u8().unwrap(), 0b01110111);
-        assert_eq!(marshaller.read_u3().unwrap().to_u8(), 0b00000111);
-        assert_eq!(marshaller.read_u5().unwrap().to_u8(), 0b00000001);
+        assert_eq!(marshaller.read_byte().unwrap(), 0b01110111);
+        assert_eq!(marshaller.read_3bits().unwrap().to_u8(), 0b00000111);
+        assert_eq!(marshaller.read_5bits().unwrap().to_u8(), 0b00000001);
 
         let bytes = 0b11101011_11110000_01110111;
         let mut marshaller = Marshaller::with(u32::to_le_bytes(bytes), [], &libseg);
@@ -459,9 +459,9 @@ mod tests {
     fn read_eof() {
         let libseg = LibsSeg::default();
         let mut marshaller = Marshaller::with([0b01010111], [], &libseg);
-        assert_eq!(marshaller.read_u2().unwrap().to_u8(), 0b00000011);
-        assert_eq!(marshaller.read_u2().unwrap().to_u8(), 0b00000001);
-        assert!(marshaller.read_u8().is_err());
+        assert_eq!(marshaller.read_2bits().unwrap().to_u8(), 0b00000011);
+        assert_eq!(marshaller.read_2bits().unwrap().to_u8(), 0b00000001);
+        assert!(marshaller.read_byte().is_err());
     }
 
     #[test]
@@ -469,26 +469,26 @@ mod tests {
         let libseg = LibsSeg::default();
         let mut code = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         let mut marshaller = Marshaller::with(&mut code, [], &libseg);
-        marshaller.write_u2(u2::with(0b00000011)).unwrap();
-        marshaller.write_u3(u3::with(0b00000101)).unwrap();
-        marshaller.write_u7(u7::with(0b01011111)).unwrap();
-        marshaller.write_u8(0b11100111).unwrap();
+        marshaller.write_2bits(u2::with(0b00000011)).unwrap();
+        marshaller.write_3bits(u3::with(0b00000101)).unwrap();
+        marshaller.write_7bits(u7::with(0b01011111)).unwrap();
+        marshaller.write_byte(0b11100111).unwrap();
         marshaller.write_bool(true).unwrap();
-        marshaller.write_u3(u3::with(0b00000110)).unwrap();
+        marshaller.write_3bits(u3::with(0b00000110)).unwrap();
         let two_bytes = 0b11110000_10101010u16;
-        marshaller.write_u16(two_bytes).unwrap();
+        marshaller.write_word(two_bytes).unwrap();
         let number = 255u8;
         marshaller.write_fixed(255u8.to_le_bytes()).unwrap();
 
         let data = marshaller.data;
         let mut marshaller = Marshaller::with(code, data, &libseg);
-        assert_eq!(marshaller.read_u2().unwrap().to_u8(), 0b00000011);
-        assert_eq!(marshaller.read_u3().unwrap().to_u8(), 0b00000101);
-        assert_eq!(marshaller.read_u7().unwrap().to_u8(), 0b01011111);
-        assert_eq!(marshaller.read_u8().unwrap(), 0b11100111);
+        assert_eq!(marshaller.read_2bits().unwrap().to_u8(), 0b00000011);
+        assert_eq!(marshaller.read_3bits().unwrap().to_u8(), 0b00000101);
+        assert_eq!(marshaller.read_7bits().unwrap().to_u8(), 0b01011111);
+        assert_eq!(marshaller.read_byte().unwrap(), 0b11100111);
         assert!(marshaller.read_bool().unwrap());
-        assert_eq!(marshaller.read_u3().unwrap().to_u8(), 0b00000110);
-        assert_eq!(marshaller.read_u16().unwrap(), two_bytes);
+        assert_eq!(marshaller.read_3bits().unwrap().to_u8(), 0b00000110);
+        assert_eq!(marshaller.read_word().unwrap(), two_bytes);
         assert_eq!(marshaller.read_fixed(u8::from_le_bytes).unwrap(), number);
     }
 
@@ -506,9 +506,9 @@ mod tests {
         let libseg = LibsSeg::default();
         let mut code = [0, 0];
         let mut marshaller = Marshaller::with(&mut code, [], &libseg);
-        marshaller.write_u2(u2::with(0b00000011)).unwrap();
-        marshaller.write_u3(u3::with(0b00000101)).unwrap();
-        marshaller.write_u7(u7::with(0b01011111)).unwrap();
-        assert!(marshaller.write_u8(0b11100111).is_err());
+        marshaller.write_2bits(u2::with(0b00000011)).unwrap();
+        marshaller.write_3bits(u3::with(0b00000101)).unwrap();
+        marshaller.write_7bits(u7::with(0b01011111)).unwrap();
+        assert!(marshaller.write_byte(0b11100111).is_err());
     }
 }

@@ -24,19 +24,34 @@
 
 use core::ops::RangeInclusive;
 
-use super::{CtrlInstr, RegInstr};
-use crate::core::SiteId;
+use super::{CtrlInstr, MaybeU128, RegInstr};
+use crate::core::{SiteId, A};
 use crate::isa::bytecode::CodeEofError;
 use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, Instr, InstructionSet, ReservedInstr};
+use crate::Site;
 
-impl<Id: SiteId, Ext: InstructionSet<Id>> Bytecode<Id> for Instr<Id, Ext> {
+impl<Id: SiteId, Ext: InstructionSet<Id> + Bytecode<Id>> Bytecode<Id> for Instr<Id, Ext> {
     fn op_range() -> RangeInclusive<u8> { todo!() }
 
-    fn opcode_byte(&self) -> u8 { todo!() }
+    fn opcode_byte(&self) -> u8 {
+        match self {
+            Instr::Ctrl(instr) => instr.opcode_byte(),
+            Instr::Reg(instr) => Bytecode::<Id>::opcode_byte(instr),
+            Instr::GFqA(instr) => Bytecode::<Id>::opcode_byte(instr),
+            Instr::Reserved(instr) => Bytecode::<Id>::opcode_byte(instr),
+            Instr::Ext(instr) => instr.opcode_byte(),
+        }
+    }
 
     fn encode_operands<W>(&self, writer: &mut W) -> Result<(), W::Error>
     where W: BytecodeWrite<Id> {
-        todo!()
+        match self {
+            Instr::Ctrl(instr) => instr.encode_operands(writer),
+            Instr::Reg(instr) => instr.encode_operands(writer),
+            Instr::GFqA(instr) => instr.encode_operands(writer),
+            Instr::Reserved(instr) => instr.encode_operands(writer),
+            Instr::Ext(instr) => instr.encode_operands(writer),
+        }
     }
 
     fn decode_operands<R>(reader: &mut R, opcode: u8) -> Result<Self, CodeEofError>
@@ -74,7 +89,28 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
 
     fn encode_operands<W>(&self, writer: &mut W) -> Result<(), W::Error>
     where W: BytecodeWrite<Id> {
-        todo!()
+        match *self {
+            CtrlInstr::Nop
+            | CtrlInstr::Chk
+            | CtrlInstr::FailCk
+            | CtrlInstr::RsetCk
+            | CtrlInstr::NotCo
+            | CtrlInstr::Ret
+            | CtrlInstr::Stop => {}
+
+            CtrlInstr::Jmp { pos } | CtrlInstr::JifCo { pos } | CtrlInstr::JifCk { pos } | CtrlInstr::Fn { pos } => {
+                writer.write_fixed(pos.to_le_bytes())?
+            }
+            CtrlInstr::Shift { shift } | CtrlInstr::ShIfCo { shift } | CtrlInstr::ShIfCk { shift } => {
+                writer.write_byte(shift.to_le_bytes()[0])?
+            }
+            CtrlInstr::Call { site } | CtrlInstr::Exec { site } => {
+                let site = Site::new(site.prog_id, site.offset);
+                writer.write_ref(site.prog_id)?;
+                writer.write_word(site.offset)?;
+            }
+        }
+        Ok(())
     }
 
     fn decode_operands<R>(reader: &mut R, opcode: u8) -> Result<Self, CodeEofError>
@@ -93,7 +129,40 @@ impl<Id: SiteId> Bytecode<Id> for RegInstr {
 
     fn encode_operands<W>(&self, writer: &mut W) -> Result<(), W::Error>
     where W: BytecodeWrite<Id> {
-        todo!()
+        match *self {
+            RegInstr::Clr { dst } => {
+                writer.write_byte(dst.to_u8())?;
+            }
+            RegInstr::Put { dst, val } | RegInstr::Pif { dst, val } => {
+                writer.write_byte(dst.to_u8())?;
+                let MaybeU128::U128(val) = val else {
+                    panic!("an attempt to serialize program with missed data");
+                };
+                match dst.a() {
+                    A::A8 => writer.write_byte(val as u8)?,
+                    A::A16 => writer.write_word(val as u16)?,
+                    A::A32 => writer.write_fixed(val.to_le_bytes())?,
+                    A::A64 => writer.write_fixed(val.to_le_bytes())?,
+                    A::A128 => writer.write_fixed(val.to_le_bytes())?,
+                }
+            }
+            RegInstr::Test { src } => {
+                writer.write_byte(src.to_u8())?;
+            }
+            RegInstr::Cpy { dst, src } => {
+                writer.write_byte(dst.to_u8())?;
+                writer.write_byte(src.to_u8())?;
+            }
+            RegInstr::Swp { src_dst1, src_dst2 } => {
+                writer.write_byte(src_dst1.to_u8())?;
+                writer.write_byte(src_dst2.to_u8())?;
+            }
+            RegInstr::Eq { src1, src2 } => {
+                writer.write_byte(src1.to_u8())?;
+                writer.write_byte(src2.to_u8())?;
+            }
+        }
+        Ok(())
     }
 
     fn decode_operands<R>(reader: &mut R, opcode: u8) -> Result<Self, CodeEofError>
