@@ -22,17 +22,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! AluVM instruction set architecture.
+use std::ops::RangeInclusive;
 
-mod instr;
-mod bytecode;
-mod arch;
+use super::FieldInstr;
+use crate::core::SiteId;
+use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
 
-mod alu;
-mod gfa;
+impl<Id: SiteId> Bytecode<Id> for FieldInstr {
+    fn op_range() -> RangeInclusive<u8> { todo!() }
 
-pub use alu::{CtrlInstr, RegInstr};
-pub use arch::{Instr, InstructionSet, IsaId, ReservedInstr, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
-pub use bytecode::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
-pub use gfa::{FieldInstr, Zp};
-pub use instr::{ExecStep, Instruction};
+    fn opcode_byte(&self) -> u8 { todo!() }
+
+    fn encode_operands<W>(&self, writer: &mut W) -> Result<(), W::Error>
+    where W: BytecodeWrite<Id> {
+        todo!()
+    }
+
+    fn decode_operands<R>(reader: &mut R, opcode: u8) -> Result<Self, CodeEofError>
+    where
+        Self: Sized,
+        R: BytecodeRead<Id>,
+    {
+        todo!()
+    }
+}

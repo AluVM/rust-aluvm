@@ -23,6 +23,7 @@
 // limitations under the License.
 
 use core::fmt::{self, Debug, Display, Formatter};
+use core::str::FromStr;
 
 //#[cfg(feature = "str")]
 //use crate::util::ByteStr;
@@ -46,31 +47,34 @@ impl Status {
     pub fn is_ok(self) -> bool { self == Status::Ok }
 }
 
+pub trait SiteId: Copy + Ord + Debug + Display + FromStr {}
+
 /// Location inside the instruction sequence which can be executed by the core.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct Site<Id> {
+pub struct Site<Id: SiteId> {
     pub prog_id: Id,
     pub offset: u16,
 }
 
-impl<Id> Site<Id> {
+impl<Id: SiteId> Site<Id> {
     #[inline]
     pub fn new(prog_id: Id, offset: u16) -> Self { Self { prog_id, offset } }
 }
 
-impl<Id: Display> Display for Site<Id> {
+impl<Id: SiteId> Display for Site<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { write!(f, "{}:{:04X}.h", self.prog_id, self.offset) }
 }
 
 /// Registers of a single CPU/VM core.
 #[derive(Clone)]
-pub struct AluCore<Id> {
+pub struct AluCore<Id: SiteId> {
     // ============================================================================================
     // Arithmetic integer registers (ALU64 ISA).
     pub(super) a8: [Option<u8>; 32],
     pub(super) a16: [Option<u16>; 32],
     pub(super) a32: [Option<u32>; 32],
     pub(super) a64: [Option<u64>; 32],
+    pub(super) a128: [Option<u128>; 32],
 
     // ============================================================================================
     // Arithmetic integer registers (A1024 ISA extension).
@@ -139,7 +143,7 @@ pub struct AluCore<Id> {
     cf: Status,
 
     /// Test register, which acts as boolean test result (also a carry flag).
-    pub(super) ct: bool,
+    pub(super) co: bool,
 
     /// Counts number of jumps (possible cycles). The number of jumps is limited by 2^16 per
     /// script.
@@ -197,7 +201,7 @@ impl Default for CoreConfig {
     }
 }
 
-impl<Id> AluCore<Id> {
+impl<Id: SiteId> AluCore<Id> {
     /// Initializes registers. Sets `st0` to `true`, counters to zero, call stack to empty and the
     /// rest of registers to `None` value.
     ///
@@ -212,13 +216,14 @@ impl<Id> AluCore<Id> {
             a16: Default::default(),
             a32: Default::default(),
             a64: Default::default(),
+            a128: Default::default(),
 
             //#[cfg(feature = "str")]
             //b: Default::default(),
             ch: config.halt,
             ck: Status::Ok,
             cf: Status::Ok,
-            ct: false,
+            co: false,
             cy: 0,
             ca: 0,
             cl: config.complexity_lim,
@@ -229,15 +234,15 @@ impl<Id> AluCore<Id> {
 }
 
 /// Microcode for flag registers.
-impl<Id> AluCore<Id> {
+impl<Id: SiteId> AluCore<Id> {
     /// Return whether check register `ck` was set to a failed state for at least once.
     pub fn had_failed(&self) -> bool { self.cf == Status::Fail }
 
     /// Return complexity limit value.
-    pub fn cl(&self) -> Option<u64> { return self.cl }
+    pub fn cl(&self) -> Option<u64> { return self.cl; }
 }
 
-impl<Id: Display> Debug for AluCore<Id> {
+impl<Id: SiteId> Debug for AluCore<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let (sect, reg, val, reset) =
             if f.alternate() { ("\x1B[0;4;1m", "\x1B[0;1m", "\x1B[0;32m", "\x1B[0m") } else { ("", "", "", "") };
@@ -246,7 +251,7 @@ impl<Id: Display> Debug for AluCore<Id> {
         write!(f, "{reg}ch{reset} {val}{}, ", self.ch)?;
         write!(f, "{reg}ck{reset} {val}{}, ", self.ck)?;
         write!(f, "{reg}cf{reset} {val}{}, ", self.cf)?;
-        write!(f, "{reg}ct{reset} {val}{}, ", self.ct)?;
+        write!(f, "{reg}ct{reset} {val}{}, ", self.co)?;
         write!(f, "{reg}cy{reset} {val}{}, ", self.cy)?;
         write!(f, "{reg}ca{reset} {val}{}, ", self.ca)?;
         let cl = self

@@ -29,6 +29,7 @@ use strict_encoding::stl::AlphaCapsNum;
 use strict_encoding::RString;
 
 use super::{CtrlInstr, FieldInstr, Instruction, RegInstr};
+use crate::core::SiteId;
 use crate::stl::LIB_NAME_ALUVM;
 
 pub const ISA_ID_MAX_LEN: usize = 16;
@@ -57,20 +58,20 @@ impl From<&'static str> for IsaId {
     fn from(id: &'static str) -> Self { Self(RString::from(id)) }
 }
 
-pub trait InstructionSet: Debug + Display {
+pub trait InstructionSet<Id: SiteId>: Debug + Display {
     const ISA: &'static str;
     const ISA_EXT: &'static [&'static str];
     const HAS_EXT: bool;
-    type Ext: InstructionSet;
-    type Instr: Instruction;
+    type Ext: InstructionSet<Id>;
+    type Instr: Instruction<Id>;
 
     fn isa_id() -> IsaId { IsaId::from(Self::ISA) }
 
     fn isa_ext() -> TinyOrdSet<IsaId> {
         let iter = Self::ISA_EXT.into_iter().copied().map(IsaId::from);
         if Self::HAS_EXT {
-            if Self::ISA != <Self::Ext as InstructionSet>::ISA {
-                panic!("extension base ISA {} is not {}", <Self::Ext as InstructionSet>::ISA, Self::ISA);
+            if Self::ISA != <Self::Ext as InstructionSet<Id>>::ISA {
+                panic!("extension base ISA {} is not {}", <Self::Ext as InstructionSet<Id>>::ISA, Self::ISA);
             }
             TinyOrdSet::from_iter_checked(iter.chain(Self::Ext::isa_ext()))
         } else {
@@ -87,9 +88,9 @@ pub struct ReservedInstr(/** Reserved instruction op code value */ pub(super) u8
 /// Complete AluVM ISA.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
 #[display(inner)]
-pub enum Instr<Ext: InstructionSet = ReservedInstr> {
+pub enum Instr<Id: SiteId, Ext: InstructionSet<Id> = ReservedInstr> {
     /// Control flow instructions.
-    Ctrl(CtrlInstr),
+    Ctrl(CtrlInstr<Id>),
 
     /// Register manipulation instructions.
     Reg(RegInstr),
@@ -106,7 +107,7 @@ pub enum Instr<Ext: InstructionSet = ReservedInstr> {
     Ext(Ext),
 }
 
-impl InstructionSet for ReservedInstr {
+impl<Id: SiteId> InstructionSet<Id> for ReservedInstr {
     const ISA: &'static str = ISA_ALU64;
     const ISA_EXT: &'static [&'static str] = &[];
     const HAS_EXT: bool = false;
@@ -114,7 +115,7 @@ impl InstructionSet for ReservedInstr {
     type Instr = Self;
 }
 
-impl<Ext: InstructionSet> InstructionSet for Instr<Ext> {
+impl<Id: SiteId, Ext: InstructionSet<Id>> InstructionSet<Id> for Instr<Id, Ext> {
     const ISA: &'static str = ISA_ALU64;
     const ISA_EXT: &'static [&'static str] = &[ISA_AN];
     const HAS_EXT: bool = true;

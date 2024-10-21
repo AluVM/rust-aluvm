@@ -24,11 +24,12 @@
 
 use core::ops::RangeInclusive;
 
-use super::{CtrlInstr, FieldInstr, RegInstr};
+use super::{CtrlInstr, RegInstr};
+use crate::core::SiteId;
 use crate::isa::bytecode::CodeEofError;
 use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, Instr, InstructionSet, ReservedInstr};
 
-impl<Id, Ext: InstructionSet> Bytecode<Id> for Instr<Ext> {
+impl<Id: SiteId, Ext: InstructionSet<Id>> Bytecode<Id> for Instr<Id, Ext> {
     fn op_range() -> RangeInclusive<u8> { todo!() }
 
     fn opcode_byte(&self) -> u8 { todo!() }
@@ -47,7 +48,7 @@ impl<Id, Ext: InstructionSet> Bytecode<Id> for Instr<Ext> {
     }
 }
 
-impl<Id> Bytecode<Id> for ReservedInstr {
+impl<Id: SiteId> Bytecode<Id> for ReservedInstr {
     fn op_range() -> RangeInclusive<u8> { todo!() }
 
     fn opcode_byte(&self) -> u8 { todo!() }
@@ -66,7 +67,7 @@ impl<Id> Bytecode<Id> for ReservedInstr {
     }
 }
 
-impl<Id> Bytecode<Id> for CtrlInstr {
+impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
     fn op_range() -> RangeInclusive<u8> { todo!() }
 
     fn opcode_byte(&self) -> u8 { todo!() }
@@ -85,26 +86,7 @@ impl<Id> Bytecode<Id> for CtrlInstr {
     }
 }
 
-impl<Id> Bytecode<Id> for RegInstr {
-    fn op_range() -> RangeInclusive<u8> { todo!() }
-
-    fn opcode_byte(&self) -> u8 { todo!() }
-
-    fn encode_operands<W>(&self, writer: &mut W) -> Result<(), W::Error>
-    where W: BytecodeWrite<Id> {
-        todo!()
-    }
-
-    fn decode_operands<R>(reader: &mut R, opcode: u8) -> Result<Self, CodeEofError>
-    where
-        Self: Sized,
-        R: BytecodeRead<Id>,
-    {
-        todo!()
-    }
-}
-
-impl<Id> Bytecode<Id> for FieldInstr {
+impl<Id: SiteId> Bytecode<Id> for RegInstr {
     fn op_range() -> RangeInclusive<u8> { todo!() }
 
     fn opcode_byte(&self) -> u8 { todo!() }

@@ -22,17 +22,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! AluVM instruction set architecture.
+//! ALU64 instruction set architecture.
 
-mod instr;
 mod bytecode;
-mod arch;
+mod instr;
+mod exec;
 
-mod alu;
-mod gfa;
-
-pub use alu::{CtrlInstr, RegInstr};
-pub use arch::{Instr, InstructionSet, IsaId, ReservedInstr, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
-pub use bytecode::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
-pub use gfa::{FieldInstr, Zp};
-pub use instr::{ExecStep, Instruction};
+pub use instr::{CtrlInstr, RegInstr};

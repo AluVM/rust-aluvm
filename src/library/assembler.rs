@@ -44,7 +44,7 @@ impl Lib {
     /// Assembles library from the provided instructions by encoding them into bytecode.
     pub fn assemble<Isa>(code: &[Isa::Instr]) -> Result<Lib, AssemblerError>
     where
-        Isa: InstructionSet,
+        Isa: InstructionSet<LibId>,
         Isa::Instr: Bytecode<LibId>,
     {
         let call_sites = code.iter().filter_map(|instr| instr.external_ref());
@@ -68,7 +68,7 @@ impl Lib {
     /// Disassembles library into a set of instructions.
     pub fn disassemble<Isa>(&self) -> Result<Vec<Isa::Instr>, CodeEofError>
     where
-        Isa: InstructionSet,
+        Isa: InstructionSet<LibId>,
         Isa::Instr: Bytecode<LibId>,
     {
         let mut code = Vec::new();
@@ -82,7 +82,7 @@ impl Lib {
     /// Disassembles library into a set of instructions and offsets and prints it to the writer.
     pub fn print_disassemble<Isa>(&self, mut writer: impl std::io::Write) -> Result<(), std::io::Error>
     where
-        Isa: InstructionSet,
+        Isa: InstructionSet<LibId>,
         Isa::Instr: Bytecode<LibId>,
     {
         let mut reader = Marshaller::with(&self.code, &self.data, &self.libs);

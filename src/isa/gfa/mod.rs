@@ -22,10 +22,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! ALU64 instruction set architecture.
+//! Galois field arithmetic ISA
 
-mod bytecode;
 mod instr;
+mod bytecode;
 mod exec;
 
-pub use instr::{CtrlInstr, FieldInstr, RegInstr};
+pub use instr::{FieldInstr, Zp};

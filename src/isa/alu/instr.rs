@@ -22,84 +22,104 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use amplify::num::u2;
-
-use crate::core::IdxA;
-use crate::regs::{RegA, A};
+use crate::core::SiteId;
+use crate::regs::A;
+use crate::Site;
 
 /// Control flow instructions.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
 #[display(inner)]
-pub enum CtrlInstr {
+pub enum CtrlInstr<Id: SiteId> {
     /// Not an operation.
+    #[display("nop")]
     Nop,
 
     /// Test ck value, terminates if in failed state.
+    #[display("chk")]
     Chk,
 
-    /// Invert `ct` register.
-    NotCk,
+    /// Invert `co` register.
+    #[display("not     co")]
+    NotCo,
 
     /// Set `ck` register to a failed state.
-    Fail,
+    #[display("put     ck, fail")]
+    FailCk,
 
     /// Reset `ck` register.
-    Rset,
+    #[display("put     ck, ok")]
+    OkCk,
 
     /// Jump to location (unconditionally).
-    Jmp,
+    #[display("jmp     {pos:04x}.h")]
+    Jmp { pos: u16 },
 
-    /// Jump to location if `ct` is true.
-    Jif,
+    /// Jump to location if `co` is true.
+    #[display("jif     co, {pos:04x}.h")]
+    JifCo { pos: u16 },
 
     /// Jump to location if `ck` is in a failed state.
-    JiFail,
+    #[display("jif     ck, {pos:04x}.h")]
+    JifCk { pos: u16 },
 
     /// Relative jump.
-    Sh,
+    #[display("jmp     {pos:+03x}.h")]
+    Shift { pos: i8 },
 
-    /// Relative jump if `ct` is true.
-    ShIf,
+    /// Relative jump if `co` is true.
+    #[display("jif     co, {pos:+03x}.h")]
+    ShIfCo { pos: i8 },
 
     /// Relative jump if `ck` is in a failed state.
-    ShIfail,
+    #[display("jif     ck, {pos:+03x}.h")]
+    ShIfCk { pos: i8 },
 
     /// External jump.
-    Exec,
+    #[display("jmp     {site}")]
+    Exec { site: Site<Id> },
 
     /// Subroutine call.
-    Fn,
+    #[display("call    {pos:04x}.h")]
+    Fn { pos: u16 },
 
     /// External subroutine call.
-    Call,
+    #[display("call    {site}")]
+    Call { site: Site<Id> },
 
     /// Return from a subroutine or finish program.
+    #[display("ret")]
     Ret,
 
     /// Stop the program.
+    #[display("stop")]
     Stop,
 }
 
 /// Register manipulation instructions.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
 #[display(inner)]
 pub enum RegInstr {
     /// Clear register (sets to an undefined state).
+    #[display("clr     {dst}")]
     Clr { dst: A },
 
     /// Put a constant value to a register,
+    #[display("put     {dst}, {val:x}.h")]
     Put { dst: A, val: u64 },
 
     /// Put a constant value to a register if it doesn't contain data,
+    #[display("pif     {dst}, {val:x}.h")]
     Pif { dst: A, val: u64 },
 
     /// Test whether a register is set.
+    #[display("test    {src}")]
     Test { src: A },
 
     /// Copy source to destination.
     ///
     /// If `src` and `dst` have a different bit dimension, the value is extended with zeros (as
     /// unsigned little-endian integer).
+    #[display("cpy     {dst}, {src}")]
     Cpy { dst: A, src: A },
 
     /// Swap values of two registers.
@@ -107,67 +127,13 @@ pub enum RegInstr {
     /// If the registers have a different bit dimension, the value of the smaller-sized register is
     /// extended with zeros (as unsigned little-endian integer) and the value of larger-sized
     /// register is divided by the modulo (the most significant bits get dropped).
+    #[display("swp     {src_dst1}, {src_dst2}")]
     Swp { src_dst1: A, src_dst2: A },
 
     /// Check whether value of two registers is equal.
     ///
     /// If the registers have a different bit dimension, performs unsigned integer comparison using
     /// little-endian encoding.
+    #[display("eq      {src1}, {src2}")]
     Eq { src1: A, src2: A },
-}
-
-/// Arithmetic instructions for finite fields.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
-#[display(inner)]
-#[non_exhaustive]
-pub enum FieldInstr {
-    /// Increment register value using finite-field (modulo) arithmetics of the `order`.
-    IncMod {
-        /// Destination register.
-        dst: RegA,
-        /// Value to add.
-        val: u2,
-        /// Order of the finite field.
-        // 2-bit smaller than complete no of bytes.
-        order: u64,
-    },
-
-    /// Decrement register value using finite-field (modulo) arithmetics of the `order`.
-    DecMod {
-        /// Destination register.
-        dst: RegA,
-        /// Value to add.
-        val: u2,
-        /// Order of the finite field.
-        // 2-bit smaller than complete no of bytes.
-        order: u64,
-    },
-
-    /// Add `src` value to `src_dst` value using finite-field (modulo) arithmetics of the `order`.
-    AddMod {
-        src_dst: RegA,
-        src: IdxA,
-        /// Order of the finite field.
-        // 2-bit smaller than complete no of bytes.
-        order: u64,
-    },
-
-    /// Negate value using finite-field arithmetics.
-    NegMod {
-        dst: RegA,
-        src: IdxA,
-        /// Order of the finite field.
-        // 2-bit smaller than complete no of bytes.
-        order: u64,
-    },
-
-    /// Multiply `src` value to `src_dst` value using finite-field (modulo) arithmetics of the
-    /// `order`.
-    MulMod {
-        src_dst: RegA,
-        src: IdxA,
-        /// Order of the finite field.
-        // 2-bit smaller than complete no of bytes.
-        order: u64,
-    },
 }

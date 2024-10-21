@@ -24,7 +24,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::core::{AluCore, Reg, Site};
+use crate::core::{AluCore, Reg, Site, SiteId};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -33,10 +33,13 @@ pub enum ExecStep<Site> {
     Stop,
 
     /// Stop and fail program execution
-    Fail,
+    StopFail,
 
     /// Move to the next instruction
     Next,
+
+    /// Move to the next instruction and set `ck` to `Fail`.
+    NextFail,
 
     /// Jump to the offset from the origin
     Jump(u16),
@@ -46,7 +49,7 @@ pub enum ExecStep<Site> {
 }
 
 /// Trait for instructions
-pub trait Instruction: core::fmt::Display + core::fmt::Debug {
+pub trait Instruction<Id: SiteId>: core::fmt::Display + core::fmt::Debug {
     /// Context: external data which are accessible to the ISA.
     type Context<'ctx>;
 
@@ -96,5 +99,5 @@ pub trait Instruction: core::fmt::Display + core::fmt::Debug {
     /// # Returns
     ///
     /// Returns whether further execution should be stopped.
-    fn exec<Id>(&self, regs: &mut AluCore<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>>;
+    fn exec(&self, core: &mut AluCore<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>>;
 }

@@ -28,7 +28,7 @@ use core::iter;
 
 use amplify::num::{u3, u5};
 
-use super::{AluCore, Idx32, Status};
+use super::{AluCore, Idx32, SiteId, Status};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 pub enum A {
@@ -40,6 +40,8 @@ pub enum A {
     A32,
     #[display("A64")]
     A64,
+    #[display("A128")]
+    A128,
 }
 
 impl From<u3> for A {
@@ -49,8 +51,9 @@ impl From<u3> for A {
             1 => A::A16,
             2 => A::A32,
             3 => A::A64,
+            4 => A::A128,
             _ => panic!(
-                "A registers above A64 are not supported under the current architecture. Consider using architecture \
+                "A registers above A128 are not supported under the current architecture. Consider using architecture \
                  extension."
             ),
         }
@@ -67,6 +70,8 @@ pub enum RegA {
     A32(IdxA),
     #[display("A64{0}")]
     A64(IdxA),
+    #[display("A128{0}")]
+    A128(IdxA),
 }
 
 impl RegA {
@@ -76,6 +81,7 @@ impl RegA {
             A::A16 => Self::A16(idx),
             A::A32 => Self::A32(idx),
             A::A64 => Self::A64(idx),
+            A::A128 => Self::A128(idx),
         }
     }
 
@@ -85,6 +91,17 @@ impl RegA {
             RegA::A16(_) => 16,
             RegA::A32(_) => 32,
             RegA::A64(_) => 64,
+            RegA::A128(_) => 128,
+        }
+    }
+
+    pub fn a(self) -> A {
+        match self {
+            RegA::A8(_) => A::A8,
+            RegA::A16(_) => A::A16,
+            RegA::A32(_) => A::A32,
+            RegA::A64(_) => A::A64,
+            RegA::A128(_) => A::A128,
         }
     }
 }
@@ -123,11 +140,20 @@ impl IdxA {
 }
 
 /// Microcode for flag registers.
-impl<Id> AluCore<Id> {
-    /// Returns whether check register `ck` was set to a failed state for at least once.
+impl<Id: SiteId> AluCore<Id> {
+    /// Read overflow/carry flag.
+    pub fn co(&self) -> bool { self.co }
+
+    /// Set overflow/carry flag to a value.
+    pub fn set_co(&mut self, co: bool) { self.co = co }
+
+    /// Return whether check register `ck` was set to a failed state for at least once.
     pub fn ck(&self) -> Status { self.ck }
 
-    /// Resets `ck` register.
+    /// Set `ck` register to a failed state.
+    pub fn fail_ck(&mut self) { self.ck = Status::Fail }
+
+    /// Reset `ck` register.
     pub fn reset_ck(&mut self) { self.ck = Status::Ok }
 
     /// Accumulate complexity value.
@@ -142,15 +168,36 @@ impl<Id> AluCore<Id> {
 }
 
 /// Microcode for arithmetic registers.
-impl<Id> AluCore<Id> {
-    pub fn get(&self, reg: Reg) -> Option<u64> {
+impl<Id: SiteId> AluCore<Id> {
+    pub fn get(&self, reg: Reg) -> Option<u128> {
         match reg {
             Reg::A(a) => match a {
-                RegA::A8(idx) => self.a8[idx.pos()].map(u64::from),
-                RegA::A16(idx) => self.a16[idx.pos()].map(u64::from),
-                RegA::A32(idx) => self.a32[idx.pos()].map(u64::from),
-                RegA::A64(idx) => self.a64[idx.pos()],
+                RegA::A8(idx) => self.a8[idx.pos()].map(u128::from),
+                RegA::A16(idx) => self.a16[idx.pos()].map(u128::from),
+                RegA::A32(idx) => self.a32[idx.pos()].map(u128::from),
+                RegA::A64(idx) => self.a64[idx.pos()].map(u128::from),
+                RegA::A128(idx) => self.a128[idx.pos()],
             },
+        }
+    }
+
+    pub fn a(&self, reg: RegA) -> Option<u128> {
+        match reg {
+            RegA::A8(idx) => self.a8(idx).map(u128::from),
+            RegA::A16(idx) => self.a16(idx).map(u128::from),
+            RegA::A32(idx) => self.a32(idx).map(u128::from),
+            RegA::A64(idx) => self.a64(idx).map(u128::from),
+            RegA::A128(idx) => self.a128(idx),
+        }
+    }
+
+    pub fn set_a(&mut self, reg: RegA, val: u128) -> bool {
+        match reg {
+            RegA::A8(idx) => self.set_a8(idx, val as u8),
+            RegA::A16(idx) => self.set_a16(idx, val as u16),
+            RegA::A32(idx) => self.set_a32(idx, val as u32),
+            RegA::A64(idx) => self.set_a64(idx, val as u64),
+            RegA::A128(idx) => self.set_a128(idx, val),
         }
     }
 
@@ -158,52 +205,63 @@ impl<Id> AluCore<Id> {
     pub fn a16(&self, idx: IdxA) -> Option<u16> { self.a16[idx.pos()] }
     pub fn a32(&self, idx: IdxA) -> Option<u32> { self.a32[idx.pos()] }
     pub fn a64(&self, idx: IdxA) -> Option<u64> { self.a64[idx.pos()] }
+    pub fn a128(&self, idx: IdxA) -> Option<u128> { self.a128[idx.pos()] }
 
     pub fn clr_a8(&mut self, idx: IdxA) -> bool { self.take_a8(idx).is_some() }
     pub fn clr_a16(&mut self, idx: IdxA) -> bool { self.take_a16(idx).is_some() }
     pub fn clr_a32(&mut self, idx: IdxA) -> bool { self.take_a32(idx).is_some() }
     pub fn clr_a64(&mut self, idx: IdxA) -> bool { self.take_a64(idx).is_some() }
+    pub fn clr_a128(&mut self, idx: IdxA) -> bool { self.take_a128(idx).is_some() }
 
     pub fn take_a8(&mut self, idx: IdxA) -> Option<u8> { self.a8[idx.pos()].take() }
     pub fn take_a16(&mut self, idx: IdxA) -> Option<u16> { self.a16[idx.pos()].take() }
     pub fn take_a32(&mut self, idx: IdxA) -> Option<u32> { self.a32[idx.pos()].take() }
     pub fn take_a64(&mut self, idx: IdxA) -> Option<u64> { self.a64[idx.pos()].take() }
+    pub fn take_a128(&mut self, idx: IdxA) -> Option<u128> { self.a128[idx.pos()].take() }
 
     pub fn set_a8(&mut self, idx: IdxA, val: u8) -> bool { self.a8[idx.pos()].replace(val).is_some() }
     pub fn set_a16(&mut self, idx: IdxA, val: u16) -> bool { self.a16[idx.pos()].replace(val).is_some() }
     pub fn set_a32(&mut self, idx: IdxA, val: u32) -> bool { self.a32[idx.pos()].replace(val).is_some() }
     pub fn set_a64(&mut self, idx: IdxA, val: u64) -> bool { self.a64[idx.pos()].replace(val).is_some() }
+    pub fn set_a128(&mut self, idx: IdxA, val: u128) -> bool { self.a128[idx.pos()].replace(val).is_some() }
 
     pub fn swp_a8(&mut self, idx: IdxA, val: u8) -> Option<u8> { self.a8[idx.pos()].replace(val) }
     pub fn swp_a16(&mut self, idx: IdxA, val: u16) -> Option<u16> { self.a16[idx.pos()].replace(val) }
     pub fn swp_a32(&mut self, idx: IdxA, val: u32) -> Option<u32> { self.a32[idx.pos()].replace(val) }
     pub fn swp_a64(&mut self, idx: IdxA, val: u64) -> Option<u64> { self.a64[idx.pos()].replace(val) }
+    pub fn swp_a128(&mut self, idx: IdxA, val: u128) -> Option<u128> { self.a128[idx.pos()].replace(val) }
 
-    pub fn a_values(&self) -> impl Iterator<Item = (RegA, u64)> + '_ {
+    pub fn a_values(&self) -> impl Iterator<Item = (RegA, u128)> + '_ {
         iter::empty()
             .chain(
                 self.a8
                     .iter()
                     .enumerate()
-                    .filter_map(|(i, v)| v.map(|v| (RegA::A8(IdxA::from_expected(i)), v as u64))),
+                    .filter_map(|(i, v)| v.map(|v| (RegA::A8(IdxA::from_expected(i)), v as u128))),
             )
             .chain(
                 self.a16
                     .iter()
                     .enumerate()
-                    .filter_map(|(i, v)| v.map(|v| (RegA::A8(IdxA::from_expected(i)), v as u64))),
+                    .filter_map(|(i, v)| v.map(|v| (RegA::A16(IdxA::from_expected(i)), v as u128))),
             )
             .chain(
                 self.a32
                     .iter()
                     .enumerate()
-                    .filter_map(|(i, v)| v.map(|v| (RegA::A8(IdxA::from_expected(i)), v as u64))),
+                    .filter_map(|(i, v)| v.map(|v| (RegA::A32(IdxA::from_expected(i)), v as u128))),
             )
             .chain(
                 self.a64
                     .iter()
                     .enumerate()
-                    .filter_map(|(i, v)| v.map(|v| (RegA::A8(IdxA::from_expected(i)), v))),
+                    .filter_map(|(i, v)| v.map(|v| (RegA::A64(IdxA::from_expected(i)), v as u128))),
+            )
+            .chain(
+                self.a128
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, v)| v.map(|v| (RegA::A128(IdxA::from_expected(i)), v))),
             )
     }
 }

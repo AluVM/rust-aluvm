@@ -29,14 +29,14 @@ use core::ops::RangeInclusive;
 use amplify::confinement::SmallBlob;
 use amplify::num::{u1, u2, u3, u4, u5, u6, u7};
 
-use crate::core::{IdxA, RegA, A};
+use crate::core::{IdxA, RegA, SiteId, A};
 
 /// Non-failing byte encoding for the instruction set.
 ///
 /// We can't use `io` since (1) we are no_std, (2) it operates data with unlimited length (while we
 /// are bound by u16), (3) it provides too many fails in situations when we can't fail because of
 /// `u16`-bounding and exclusive in-memory encoding handling.
-pub trait Bytecode<Id> {
+pub trait Bytecode<Id: SiteId> {
     /// Returns range of instruction bytecodes covered by a set of operations.
     fn op_range() -> RangeInclusive<u8>;
 

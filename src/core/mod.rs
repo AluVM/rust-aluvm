@@ -25,9 +25,9 @@
 //! AluVM registers system
 
 mod core;
-mod alu64;
+mod microcode;
 mod regs;
 
-pub use self::alu64::{IdxA, Reg, RegA, A};
-pub use self::core::{AluCore, CoreConfig, Site, Status, CALL_STACK_SIZE_MAX};
+pub use self::core::{AluCore, CoreConfig, Site, SiteId, Status, CALL_STACK_SIZE_MAX};
+pub use self::microcode::{IdxA, Reg, RegA, A};
 pub(self) use self::regs::Idx32;

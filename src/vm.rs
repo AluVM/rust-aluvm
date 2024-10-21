@@ -32,8 +32,8 @@ use crate::library::{Lib, LibId, LibSite};
 
 /// Alu virtual machine providing single-core execution environment
 #[derive(Clone, Debug)]
-pub struct Vm<Isa = Instr<ReservedInstr>>
-where Isa: InstructionSet
+pub struct Vm<Isa = Instr<LibId, ReservedInstr>>
+where Isa: InstructionSet<LibId>
 {
     /// A set of registers
     pub registers: AluCore<LibId>,
@@ -43,7 +43,7 @@ where Isa: InstructionSet
 
 /// Runtime for program execution.
 impl<Isa> Vm<Isa>
-where Isa: InstructionSet
+where Isa: InstructionSet<LibId>
 {
     /// Constructs new virtual machine instance with default core configuration.
     pub fn new() -> Self {
@@ -70,7 +70,7 @@ where Isa: InstructionSet
         &mut self,
         entry_point: LibSite,
         lib_resolver: impl Fn(LibId) -> Option<&'prog Lib>,
-        context: &<Isa::Instr as Instruction>::Context<'_>,
+        context: &<Isa::Instr as Instruction<LibId>>::Context<'_>,
     ) -> Status
     where
         Isa::Instr: Bytecode<LibId>,

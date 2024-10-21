@@ -32,6 +32,7 @@ use baid64::{Baid64ParseError, DisplayBaid64, FromBaid64Str};
 use commit_verify::{CommitId, CommitmentId, Digest, Sha256};
 use strict_encoding::{StrictDeserialize, StrictSerialize};
 
+use crate::core::SiteId;
 use crate::stl::LIB_NAME_ALUVM;
 use crate::{IsaId, Site};
 
@@ -48,6 +49,8 @@ pub struct LibId(
     #[from([u8; 32])]
     Bytes32,
 );
+
+impl SiteId for LibId {}
 
 impl CommitmentId for LibId {
     const TAG: &'static str = LIB_ID_TAG;
