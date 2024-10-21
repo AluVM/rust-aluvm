@@ -22,9 +22,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use core::fmt::{Debug, Display};
 use std::collections::BTreeSet;
 
-use crate::core::{AluCore, Reg, Site, SiteId};
+use crate::core::{Core, Reg, Site, SiteId};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -49,7 +50,7 @@ pub enum ExecStep<Site> {
 }
 
 /// Trait for instructions
-pub trait Instruction<Id: SiteId>: core::fmt::Display + core::fmt::Debug {
+pub trait Instruction<Id: SiteId>: Display + Debug {
     /// Context: external data which are accessible to the ISA.
     type Context<'ctx>;
 
@@ -66,28 +67,34 @@ pub trait Instruction<Id: SiteId>: core::fmt::Display + core::fmt::Debug {
     /// List of registers which value may be changed by the instruction.
     fn dst_regs(&self) -> BTreeSet<Reg>;
 
+    /// The number of bytes in the source registers.
+    fn src_reg_bytes(&self) -> u16 { self.src_regs().into_iter().map(Reg::bytes).sum() }
+
+    /// The number of bytes in the destination registers.
+    fn dst_reg_bytes(&self) -> u16 { self.dst_regs().into_iter().map(Reg::bytes).sum() }
+
     /// The size of the data coming as an instruction operands (i.e. except data coming from
     /// registers or read from outside the instruction operands).
-    fn op_data_size(&self) -> u16;
+    fn op_data_bytes(&self) -> u16;
 
     /// The size of the data read by the instruction from outside the registers (except data coming
     /// as a parameter).
-    fn ext_data_size(&self) -> u16;
+    fn ext_data_bytes(&self) -> u16;
+
+    fn base_complexity(&self) -> u64 {
+        (self.op_data_bytes() as u64 // 1k of complexity units per input bit
+            + self.src_reg_bytes() as u64 * 10 // 10k of complexity units per input bit
+            + self.dst_reg_bytes() as u64 * 10 // 10k of complexity units per output bit
+            + self.ext_data_bytes() as u64 * 100) // x10 complexity units per byte of external
+                                                 // memory
+            * 8 // per bit
+            * 1000 // by default use large unit
+    }
 
     /// Returns computational complexity of the instruction.
     ///
     /// Computational complexity is the number of "CPU ticks" required to process the instruction.
-    fn complexity(&self) -> u64 {
-        // By default, give the upper estimate
-        self.op_data_size() as u64 * 8_000 // 1k of complexity units per input bit
-        + self.src_regs()
-            .iter()
-            .chain(&self.dst_regs())
-            .map(|reg| reg.bytes() as u64)
-            .sum::<u64>()
-            * 80_000 // 10k of complexity units per input and output bit
-        + self.ext_data_size() as u64 * 800_000 // x10 complexity units per byte of external memory
-    }
+    fn complexity(&self) -> u64 { self.base_complexity() }
 
     /// Executes given instruction taking all registers as input and output.
     ///
@@ -99,5 +106,5 @@ pub trait Instruction<Id: SiteId>: core::fmt::Display + core::fmt::Debug {
     /// # Returns
     ///
     /// Returns whether further execution should be stopped.
-    fn exec(&self, core: &mut AluCore<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>>;
+    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>>;
 }

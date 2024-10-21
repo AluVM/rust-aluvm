@@ -134,6 +134,10 @@
 //!
 //! [AluVM]: https://github.com/AluVM/aluvm-spec
 
+// TODO: Extend the list of features not compatible with zk-aluvm as they appear.
+#[cfg(all(feature = "zk-aluvm", any(feature = "A64", feature = "STR")))]
+compile_error!("zk-AluVM is incompatible with any ISA extensions other then GFA");
+
 #[macro_use]
 extern crate amplify;
 #[macro_use]
@@ -164,4 +168,4 @@ pub use library::{Lib, LibId, LibSite};
 pub use paste::paste;
 pub use vm::Vm;
 
-pub use self::core::{AluCore, Site, CALL_STACK_SIZE_MAX};
+pub use self::core::{Core, Site, CALL_STACK_SIZE_MAX};

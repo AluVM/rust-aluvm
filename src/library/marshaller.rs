@@ -341,7 +341,10 @@ where
         let pos = self.read_u8()? as usize;
         Ok(self.libs.iter().nth(pos).copied().unwrap_or_default())
     }
+
+    fn check_aligned(&self) { debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are read") }
 }
+
 impl<'a, C, D> BytecodeWrite<LibId> for Marshaller<'a, C, D>
 where
     C: AsRef<[u8]> + AsMut<[u8]>,
@@ -421,6 +424,8 @@ where
             .ok_or(MarshallError::LibAbsent(id))?;
         self.write_u8(pos as u8)
     }
+
+    fn check_aligned(&self) { debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are written") }
 }
 
 #[cfg(test)]

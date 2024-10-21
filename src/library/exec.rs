@@ -26,7 +26,7 @@ use baid64::DisplayBaid64;
 
 use super::{Lib, Marshaller};
 use crate::isa::{Bytecode, BytecodeRead, ExecStep, Instruction};
-use crate::{AluCore, LibId, LibSite, Site};
+use crate::{Core, LibId, LibSite, Site};
 
 impl Lib {
     /// Execute library code starting at entrypoint.
@@ -37,7 +37,7 @@ impl Lib {
     pub fn exec<Instr>(
         &self,
         entrypoint: u16,
-        registers: &mut AluCore<LibId>,
+        registers: &mut Core<LibId>,
         context: &Instr::Context<'_>,
     ) -> Option<LibSite>
     where

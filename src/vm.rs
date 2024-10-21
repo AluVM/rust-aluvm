@@ -26,7 +26,7 @@
 
 use core::marker::PhantomData;
 
-use crate::core::{AluCore, CoreConfig, Status};
+use crate::core::{Core, CoreConfig, Status};
 use crate::isa::{Bytecode, Instr, Instruction, InstructionSet, ReservedInstr};
 use crate::library::{Lib, LibId, LibSite};
 
@@ -36,7 +36,7 @@ pub struct Vm<Isa = Instr<LibId, ReservedInstr>>
 where Isa: InstructionSet<LibId>
 {
     /// A set of registers
-    pub registers: AluCore<LibId>,
+    pub registers: Core<LibId>,
 
     phantom: PhantomData<Isa>,
 }
@@ -48,7 +48,7 @@ where Isa: InstructionSet<LibId>
     /// Constructs new virtual machine instance with default core configuration.
     pub fn new() -> Self {
         Self {
-            registers: AluCore::new(),
+            registers: Core::new(),
             phantom: Default::default(),
         }
     }
@@ -56,7 +56,7 @@ where Isa: InstructionSet<LibId>
     /// Constructs new virtual machine instance with default core configuration.
     pub fn with(config: CoreConfig) -> Self {
         Self {
-            registers: AluCore::with(config),
+            registers: Core::with(config),
             phantom: Default::default(),
         }
     }

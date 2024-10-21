@@ -25,7 +25,7 @@
 use std::collections::BTreeSet;
 
 use super::{CtrlInstr, RegInstr};
-use crate::core::{AluCore, Reg, Site, SiteId};
+use crate::core::{Core, Reg, Site, SiteId};
 use crate::isa::{ExecStep, Instr, Instruction, InstructionSet, ReservedInstr};
 
 impl<Id: SiteId, Ext: InstructionSet<Id>> Instruction<Id> for Instr<Id, Ext> {
@@ -35,13 +35,11 @@ impl<Id: SiteId, Ext: InstructionSet<Id>> Instruction<Id> for Instr<Id, Ext> {
 
     fn dst_regs(&self) -> BTreeSet<Reg> { todo!() }
 
-    fn op_data_size(&self) -> u16 { todo!() }
+    fn op_data_bytes(&self) -> u16 { todo!() }
 
-    fn ext_data_size(&self) -> u16 { todo!() }
+    fn ext_data_bytes(&self) -> u16 { todo!() }
 
-    fn exec(&self, core: &mut AluCore<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
-        todo!()
-    }
+    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> { todo!() }
 }
 
 impl<Id: SiteId> Instruction<Id> for ReservedInstr {
@@ -51,13 +49,11 @@ impl<Id: SiteId> Instruction<Id> for ReservedInstr {
 
     fn dst_regs(&self) -> BTreeSet<Reg> { todo!() }
 
-    fn op_data_size(&self) -> u16 { todo!() }
+    fn op_data_bytes(&self) -> u16 { todo!() }
 
-    fn ext_data_size(&self) -> u16 { todo!() }
+    fn ext_data_bytes(&self) -> u16 { todo!() }
 
-    fn exec(&self, core: &mut AluCore<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
-        todo!()
-    }
+    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> { todo!() }
 }
 
 impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
@@ -67,13 +63,11 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
 
     fn dst_regs(&self) -> BTreeSet<Reg> { todo!() }
 
-    fn op_data_size(&self) -> u16 { todo!() }
+    fn op_data_bytes(&self) -> u16 { todo!() }
 
-    fn ext_data_size(&self) -> u16 { todo!() }
+    fn ext_data_bytes(&self) -> u16 { todo!() }
 
-    fn exec(&self, core: &mut AluCore<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
-        todo!()
-    }
+    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> { todo!() }
 }
 
 impl<Id: SiteId> Instruction<Id> for RegInstr {
@@ -83,11 +77,9 @@ impl<Id: SiteId> Instruction<Id> for RegInstr {
 
     fn dst_regs(&self) -> BTreeSet<Reg> { todo!() }
 
-    fn op_data_size(&self) -> u16 { todo!() }
+    fn op_data_bytes(&self) -> u16 { todo!() }
 
-    fn ext_data_size(&self) -> u16 { todo!() }
+    fn ext_data_bytes(&self) -> u16 { todo!() }
 
-    fn exec(&self, core: &mut AluCore<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
-        todo!()
-    }
+    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> { todo!() }
 }

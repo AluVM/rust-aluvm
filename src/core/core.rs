@@ -22,52 +22,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::fmt::{self, Debug, Display, Formatter};
-use core::str::FromStr;
+use core::fmt::{self, Debug, Formatter};
 
-//#[cfg(feature = "str")]
-//use crate::util::ByteStr;
+use super::{Site, SiteId, Status};
+#[cfg(feature = "GFA")]
+use crate::core::gfa::Zp;
 
 /// Maximal size of call stack.
 ///
 /// Equals to 0xFFFF (i.e. maximum limited by `cy` and `cp` bit size).
 pub const CALL_STACK_SIZE_MAX: u16 = 0xFF;
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
-#[repr(i8)]
-pub enum Status {
-    #[display("ok")]
-    Ok = 0,
-
-    #[display("fail")]
-    Fail = -1,
-}
-
-impl Status {
-    pub fn is_ok(self) -> bool { self == Status::Ok }
-}
-
-pub trait SiteId: Copy + Ord + Debug + Display + FromStr {}
-
-/// Location inside the instruction sequence which can be executed by the core.
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct Site<Id: SiteId> {
-    pub prog_id: Id,
-    pub offset: u16,
-}
-
-impl<Id: SiteId> Site<Id> {
-    #[inline]
-    pub fn new(prog_id: Id, offset: u16) -> Self { Self { prog_id, offset } }
-}
-
-impl<Id: SiteId> Display for Site<Id> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { write!(f, "{}:{:04X}.h", self.prog_id, self.offset) }
-}
-
 /// Registers of a single CPU/VM core.
 #[derive(Clone)]
-pub struct AluCore<Id: SiteId> {
+pub struct Core<Id: SiteId> {
+    #[cfg(feature = "GFA")]
+    /// Finite field order.
+    pub(super) zp: Zp,
+
     // ============================================================================================
     // Arithmetic integer registers (ALU64 ISA).
     pub(super) a8: [Option<u8>; 32],
@@ -121,8 +93,8 @@ pub struct AluCore<Id: SiteId> {
     ///
     /// # See also
     ///
-    /// - [`AluCore::ck`] register
-    /// - [`AluCore::cf`] register
+    /// - [`Core::ck`] register
+    /// - [`Core::cf`] register
     ch: bool,
 
     /// Check register, which is set on any failure (accessing register in `None` state, zero
@@ -130,16 +102,16 @@ pub struct AluCore<Id: SiteId> {
     ///
     /// # See also
     ///
-    /// - [`AluCore::ch`] register
-    /// - [`AluCore::cf`] register
+    /// - [`Core::ch`] register
+    /// - [`Core::cf`] register
     pub(super) ck: Status,
 
     /// Failure register, which is set on the first time `ck` is set, and can't be reset.
     ///
     /// # See also
     ///
-    /// - [`AluCore::ch`] register
-    /// - [`AluCore::ck`] register
+    /// - [`Core::ch`] register
+    /// - [`Core::ck`] register
     cf: Status,
 
     /// Test register, which acts as boolean test result (also a carry flag).
@@ -156,13 +128,13 @@ pub struct AluCore<Id: SiteId> {
     ///
     /// # See also
     ///
-    /// - [`AluCore::cy`] register
-    /// - [`AluCore::cl`] register
+    /// - [`Core::cy`] register
+    /// - [`Core::cl`] register
     pub(super) ca: u64,
 
     /// Complexity limit.
     ///
-    /// If this register has a value set, once [`AluCore::ca`] will reach this value the VM will
+    /// If this register has a value set, once [`Core::ca`] will reach this value the VM will
     /// stop program execution setting `ck` to `false`.
     cl: Option<u64>,
 
@@ -171,47 +143,64 @@ pub struct AluCore<Id: SiteId> {
     /// # See also
     ///
     /// - [`CALL_STACK_SIZE_MAX`] constant
-    /// - [`AluCore::cp`] register
+    /// - [`Core::cp`] register
     pub(super) cs: Vec<Site<Id>>,
 
     /// Defines "top" of the call stack.
     pub(super) cp: u16,
 }
 
-/// Configuration for [`AluCore`] initialization.
+/// Configuration for [`Core`] initialization.
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct CoreConfig {
-    /// Initial value for the [`AluCore::ch`] flag.
+    /// Initial value for the [`Core::ch`] flag.
     pub halt: bool,
-    /// Initial value for the [`AluCore::cl`] flag.
+    /// Initial value for the [`Core::cl`] flag.
     pub complexity_lim: Option<u64>,
-    /// Size of the call stack in the [`AluCore::cs`] register.
+    /// Size of the call stack in the [`Core::cs`] register.
     pub call_stack_size: u16,
+    #[cfg(feature = "GFA")]
+    /// Order of the finite field for modulo arithmetics.
+    pub field_order: Zp,
 }
 
 impl Default for CoreConfig {
-    /// Sets [`CoreConfig::halt`] to `true`, [`CoreConfig::complexity_lim`] to `None` and
-    /// [`CoreConfig::call_stack_size`] to [`CALL_STACK_SIZE_MAX`].
+    /// Sets
+    /// - [`CoreConfig::halt`] to `true`,
+    /// - [`CoreConfig::complexity_lim`] to `None`
+    /// - [`CoreConfig::call_stack_size`] to [`CALL_STACK_SIZE_MAX`],
+    /// - [`CoreConfig::field_order`] to [`Zp::F1137119`] (if `GFA` feature is set).
+    ///
+    /// # See also
+    ///
+    /// - [`CoreConfig::halt`]
+    /// - [`CoreConfig::complexity_lim`]
+    /// - [`CoreConfig::call_stack_size`]
+    /// - [`CoreConfig::field_order`]
     fn default() -> Self {
         CoreConfig {
             halt: true,
             complexity_lim: None,
             call_stack_size: CALL_STACK_SIZE_MAX,
+            #[cfg(feature = "GFA")]
+            field_order: Zp::F1137119,
         }
     }
 }
 
-impl<Id: SiteId> AluCore<Id> {
+impl<Id: SiteId> Core<Id> {
     /// Initializes registers. Sets `st0` to `true`, counters to zero, call stack to empty and the
     /// rest of registers to `None` value.
     ///
-    /// An alias for [`AluCore::with`]`(RegConfig::default())`.
+    /// An alias for [`AluCore::with`]`(`[`CoreConfig::default()`]`)`.
     #[inline]
-    pub fn new() -> Self { AluCore::with(default!()) }
+    pub fn new() -> Self { Core::with(default!()) }
 
     /// Initializes registers using a configuration object [`CoreConfig`].
     pub fn with(config: CoreConfig) -> Self {
-        AluCore {
+        Core {
+            #[cfg(feature = "GFA")]
+            zp: config.field_order,
             a8: Default::default(),
             a16: Default::default(),
             a32: Default::default(),
@@ -234,7 +223,7 @@ impl<Id: SiteId> AluCore<Id> {
 }
 
 /// Microcode for flag registers.
-impl<Id: SiteId> AluCore<Id> {
+impl<Id: SiteId> Core<Id> {
     /// Return whether check register `ck` was set to a failed state for at least once.
     pub fn had_failed(&self) -> bool { self.cf == Status::Fail }
 
@@ -242,7 +231,7 @@ impl<Id: SiteId> AluCore<Id> {
     pub fn cl(&self) -> Option<u64> { return self.cl; }
 }
 
-impl<Id: SiteId> Debug for AluCore<Id> {
+impl<Id: SiteId> Debug for Core<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let (sect, reg, val, reset) =
             if f.alternate() { ("\x1B[0;4;1m", "\x1B[0;1m", "\x1B[0;32m", "\x1B[0m") } else { ("", "", "", "") };

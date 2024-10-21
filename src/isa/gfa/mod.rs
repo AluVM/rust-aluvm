@@ -28,4 +28,4 @@ mod instr;
 mod bytecode;
 mod exec;
 
-pub use instr::{FieldInstr, Zp};
+pub use instr::FieldInstr;

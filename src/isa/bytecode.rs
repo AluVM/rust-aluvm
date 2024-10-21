@@ -51,7 +51,9 @@ pub trait Bytecode<Id: SiteId> {
     fn encode_instr<W>(&self, writer: &mut W) -> Result<(), W::Error>
     where W: BytecodeWrite<Id> {
         writer.write_u8(self.opcode_byte())?;
-        self.encode_operands(writer)
+        self.encode_operands(writer)?;
+        writer.check_aligned();
+        Ok(())
     }
 
     /// Writes an instruction operands as bytecode, omitting opcode byte.
@@ -65,7 +67,9 @@ pub trait Bytecode<Id: SiteId> {
         R: BytecodeRead<Id>,
     {
         let opcode = reader.read_u8()?;
-        Self::decode_operands(reader, opcode)
+        let instr = Self::decode_operands(reader, opcode)?;
+        reader.check_aligned();
+        Ok(instr)
     }
 
     /// Reads an instruction operands from bytecode, provided the opcode byte.
@@ -150,6 +154,13 @@ pub trait BytecodeRead<Id> {
     /// Read external reference id.
     fn read_ref(&mut self) -> Result<Id, CodeEofError>
     where Id: Sized;
+
+    /// Check if the current cursor position is aligned to the next byte.
+    ///
+    /// # Panics
+    ///
+    /// If the position is not aligned, panics.
+    fn check_aligned(&self);
 }
 
 /// Writer converting instructions into a bytecode.
@@ -189,4 +200,11 @@ pub trait BytecodeWrite<Id> {
 
     /// Write external reference id.
     fn write_ref(&mut self, id: Id) -> Result<(), Self::Error>;
+
+    /// Check if the current cursor position is aligned to the next byte.
+    ///
+    /// # Panics
+    ///
+    /// If the position is not aligned, panics.
+    fn check_aligned(&self);
 }

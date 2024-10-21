@@ -27,20 +27,14 @@ use std::collections::BTreeSet;
 use super::FieldInstr;
 use crate::core::{Reg, RegA, SiteId};
 use crate::isa::{ExecStep, Instruction};
-use crate::{AluCore, Site};
+use crate::{Core, Site};
 
 macro_rules! A {
-    [$reg:ident @ $core:ident] => {{
-        let Some(val) = $core.a($reg) else {
-            return ExecStep::NextFail;
-        };
-        val
-    }};
+    [$reg:ident @ $core:ident] => {
+        checked!($core.a($reg))
+    };
     [$a:ident : $idx:ident @ $core:ident] => {{
-        let Some(val) = $core.a(RegA::with($a.a(), $idx)) else {
-            return ExecStep::NextFail;
-        };
-        val
+        checked!($core.a(RegA::with($a, $idx.into())))
     }};
 }
 
@@ -52,6 +46,15 @@ macro_rules! check {
     }};
 }
 
+macro_rules! checked {
+    ($core:ident . $op:ident($($arg:expr),*)) => {{
+        let Some(val) = $core.$op( $( $arg ),* ) else {
+            return ExecStep::NextFail;
+        };
+        val
+    }};
+}
+
 impl<Id: SiteId> Instruction<Id> for FieldInstr {
     type Context<'ctx> = ();
 
@@ -59,76 +62,47 @@ impl<Id: SiteId> Instruction<Id> for FieldInstr {
 
     fn dst_regs(&self) -> BTreeSet<Reg> { todo!() }
 
-    fn op_data_size(&self) -> u16 { todo!() }
+    fn op_data_bytes(&self) -> u16 { todo!() }
 
-    fn ext_data_size(&self) -> u16 { todo!() }
+    fn ext_data_bytes(&self) -> u16 { todo!() }
 
-    fn exec(&self, core: &mut AluCore<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
-        #[inline]
-        fn add_mod(a: u128, b: u128, order: impl Into<u128>) -> Option<(u128, bool)> {
-            let order = order.into();
-            if a >= order || b >= order {
-                return None;
-            }
-            let (mut res, overflow) = a.overflowing_add(b);
-            if overflow {
-                res = res + u128::MAX - order;
-            }
-            Some((res, overflow))
-        }
+    fn complexity(&self) -> u64 {
+        // Double the default complexity since each instruction performs two operations (and each arithmetic
+        // operations is x10 of move operation).
+        Instruction::<Id>::base_complexity(self) * 20
+    }
 
+    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
         match *self {
-            FieldInstr::IncMod { src_dst, val, order } => {
+            FieldInstr::IncMod { src_dst, val } => {
                 let src = A![src_dst @ core];
-                let res = add_mod(src, val as u128, order);
-                let Some((res, overflow)) = res else {
-                    return ExecStep::NextFail;
-                };
-                core.set_co(overflow);
+                let val = val as u128;
+                let res = checked!(core.add_mod(src, val));
                 core.set_a(src_dst, res);
             }
-            FieldInstr::DecMod { src_dst, val, order } => {
+            FieldInstr::DecMod { src_dst, val } => {
                 let src = A![src_dst @ core];
-                // negate val
-                let val = order.to_u128() - val as u128;
-                let res = add_mod(src, val, order);
-                let Some((res, overflow)) = res else {
-                    return ExecStep::NextFail;
-                };
-                core.set_co(overflow);
+                let val = val as u128;
+                let val = checked!(core.neg_mod(val));
+                let res = checked!(core.add_mod(src, val));
                 core.set_a(src_dst, res);
             }
-            FieldInstr::AddMod { src_dst, src, order } => {
-                let src1 = A![src_dst @ core];
-                let src2 = A![src_dst : src @ core];
-                let res = add_mod(src1, src2, order);
-                let Some((res, overflow)) = res else {
-                    return ExecStep::NextFail;
-                };
-                core.set_co(overflow);
+            FieldInstr::NegMod { src_dst } => {
+                let src = A![src_dst @ core];
+                let res = checked!(core.neg_mod(src));
                 core.set_a(src_dst, res);
             }
-            FieldInstr::NegMod { dst, src, order } => {
-                let src = A![dst : src @ core];
-                let order = order.to_u128();
-                check!(src < order);
-                core.set_a(dst, order - src);
+            FieldInstr::AddMod { reg, dst, src1, src2 } => {
+                let src1 = A![reg : src1 @ core];
+                let src2 = A![reg : src2 @ core];
+                let res = checked!(core.add_mod(src1, src2));
+                core.set_a(RegA::with(reg, dst.into()), res);
             }
-            FieldInstr::MulMod { src_dst, src, order } => {
-                let src1 = A![src_dst @ core];
-                let src2 = A![src_dst : src @ core];
-
-                // negate src2
-                let order = order.to_u128();
-                check!(src2 < order);
-                let src2 = order - src2;
-
-                let res = add_mod(src1, src2, order);
-                let Some((res, overflow)) = res else {
-                    return ExecStep::NextFail;
-                };
-                core.set_co(overflow);
-                core.set_a(src_dst, res);
+            FieldInstr::MulMod { reg, dst, src1, src2 } => {
+                let src1 = A![reg : src1 @ core];
+                let src2 = A![reg : src2 @ core];
+                let res = checked!(core.mul_mod(src1, src2));
+                core.set_a(RegA::with(reg, dst.into()), res);
             }
         }
         ExecStep::Next

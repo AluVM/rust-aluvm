@@ -29,10 +29,12 @@ mod bytecode;
 mod arch;
 
 mod alu;
+#[cfg(feature = "GFA")]
 mod gfa;
 
 pub use alu::{CtrlInstr, RegInstr};
 pub use arch::{Instr, InstructionSet, IsaId, ReservedInstr, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
 pub use bytecode::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
-pub use gfa::{FieldInstr, Zp};
+#[cfg(feature = "GFA")]
+pub use gfa::FieldInstr;
 pub use instr::{ExecStep, Instruction};

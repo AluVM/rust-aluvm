@@ -22,7 +22,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use amplify::num::u5;
+use core::fmt::{self, Debug, Display, Formatter};
+use core::str::FromStr;
+
+use amplify::num::{u4, u5};
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
+#[repr(i8)]
+pub enum Status {
+    #[display("ok")]
+    Ok = 0,
+
+    #[display("fail")]
+    Fail = -1,
+}
+
+impl Status {
+    pub fn is_ok(self) -> bool { self == Status::Ok }
+}
+
+pub trait SiteId: Copy + Ord + Debug + Display + FromStr {}
+
+/// Location inside the instruction sequence which can be executed by the core.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub struct Site<Id: SiteId> {
+    pub prog_id: Id,
+    pub offset: u16,
+}
+
+impl<Id: SiteId> Site<Id> {
+    #[inline]
+    pub fn new(prog_id: Id, offset: u16) -> Self { Self { prog_id, offset } }
+}
+
+impl<Id: SiteId> Display for Site<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { write!(f, "{}:{:04X}.h", self.prog_id, self.offset) }
+}
 
 #[allow(dead_code)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
@@ -61,6 +96,47 @@ pub(super) enum Idx16 {
     E = 0xE,
     #[display(":F")]
     F = 0xF,
+}
+
+impl Idx16 {
+    pub const ALL: [Self; 16] = [
+        Self::L1,
+        Self::L2,
+        Self::L3,
+        Self::L4,
+        Self::L5,
+        Self::L6,
+        Self::L7,
+        Self::L8,
+        Self::L9,
+        Self::L10,
+        Self::A,
+        Self::B,
+        Self::C,
+        Self::D,
+        Self::E,
+        Self::F,
+    ];
+
+    pub(super) fn from_expected(val: usize) -> Self {
+        for i in Self::ALL {
+            if i as usize == val {
+                return i;
+            }
+        }
+        panic!("invalid 4-bit integer index represented in a usize value")
+    }
+}
+
+impl From<u4> for Idx16 {
+    fn from(idx: u4) -> Self {
+        for i in Self::ALL {
+            if i as u8 == idx.to_u8() {
+                return i;
+            }
+        }
+        unreachable!()
+    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]

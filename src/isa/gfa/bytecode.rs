@@ -24,6 +24,8 @@
 
 use std::ops::RangeInclusive;
 
+use amplify::num::u1;
+
 use super::FieldInstr;
 use crate::core::SiteId;
 use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
@@ -35,7 +37,34 @@ impl<Id: SiteId> Bytecode<Id> for FieldInstr {
 
     fn encode_operands<W>(&self, writer: &mut W) -> Result<(), W::Error>
     where W: BytecodeWrite<Id> {
-        todo!()
+        match *self {
+            FieldInstr::IncMod { src_dst, val } => {
+                writer.write_u8(src_dst.to_u8())?;
+                writer.write_u8(val)?;
+            }
+            FieldInstr::DecMod { src_dst, val } => {
+                writer.write_u8(src_dst.to_u8())?;
+                writer.write_u8(val)?;
+            }
+            FieldInstr::NegMod { src_dst } => {
+                writer.write_u8(src_dst.to_u8())?;
+            }
+            FieldInstr::AddMod { reg, dst, src1, src2 } => {
+                writer.write_u1(u1::ZERO)?;
+                writer.write_u3(reg.to_u3())?;
+                writer.write_u4(dst.to_u4())?;
+                writer.write_u4(src1.to_u4())?;
+                writer.write_u4(src2.to_u4())?;
+            }
+            FieldInstr::MulMod { reg, dst, src1, src2 } => {
+                writer.write_u1(u1::ONE)?;
+                writer.write_u3(reg.to_u3())?;
+                writer.write_u4(dst.to_u4())?;
+                writer.write_u4(src1.to_u4())?;
+                writer.write_u4(src2.to_u4())?;
+            }
+        }
+        Ok(())
     }
 
     fn decode_operands<R>(reader: &mut R, opcode: u8) -> Result<Self, CodeEofError>

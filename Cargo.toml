@@ -1,7 +1,7 @@
 [package]
 name = "aluvm"
 description = "Functional registry-based RISC virtual machine"
-version = "0.12.0-alpha.1"
+version = "0.12.0-nightly-zkaluvm.1"
 authors = ["Dr Maxim Orlovsky <orlovsky@ubideco.org>"]
 repository = "https://github.com/aluvm/rust-aluvm"
 homepage = "https://aluvm.org"
@@ -32,12 +32,9 @@ serde = { version = "1", optional = true }
 
 [features]
 default = []
-all = [
-    "stl", "log", "armor",
-    # Instruction set architecture extensions
-    # "a1024", "array", "str", "float", "sha", "secp256k1", "curve25519",
-    "serde"
-]
+# `all` must exclude specific ISA, which may be in a conflict with each other
+# The consumer of the library is expected to add required ISA manually
+all = ["stl", "log", "armor", "serde"]
 
 armor = ["dep:ascii-armor"]
 stl = ["strict_types/armor"]
@@ -46,10 +43,19 @@ alloc = ["amplify/alloc"]
 serde = ["dep:serde", "amplify/serde", "strict_encoding/serde"]
 
 # Instruction set architecture extensions
-# a1024 = []
-# array = []
-# str = []
-# float = ["amplify/apfloat", "half"]
+zk-aluvm = ["GFA"] # Feature ensuring zk-AluVM configuration excluding all zk-incompatible features
+A64 = []
+A128 = ["A64"]
+# A256 = ["A128"]
+# A512 = ["A512"]
+# A1024 = ["A1024"]
+GFA = []
+STR = []
+# ARRAY = []
+# FL64 = []
+# FL80 = ["FL64", "amplify/apfloat"]
+# FLQTR = ["FL80"]
+# FLOCT = ["FLOCT"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"
