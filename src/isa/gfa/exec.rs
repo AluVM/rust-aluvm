@@ -117,7 +117,7 @@ impl<Id: SiteId> Instruction<Id> for FieldInstr {
         Instruction::<Id>::base_complexity(self) * 20
     }
 
-    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+    fn exec(&self, core: &mut Core<Id>, _: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
         match *self {
             FieldInstr::IncMod { src_dst, val } => {
                 let src = A![src_dst @ core];

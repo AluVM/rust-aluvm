@@ -56,7 +56,7 @@ impl<Id: SiteId> Site<Id> {
 }
 
 impl<Id: SiteId> Display for Site<Id> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { write!(f, "{}:{:04X}.h", self.prog_id, self.offset) }
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { write!(f, "{}@{:04X}:h", self.prog_id, self.offset) }
 }
 
 #[allow(dead_code)]
@@ -178,7 +178,7 @@ pub(super) enum Idx32 {
 
     #[display(".g")]
     Sg = 0x10,
-    #[display(".h")]
+    #[display(":h")]
     Sh = 0x11,
     #[display(".k")]
     Sk = 0x12,

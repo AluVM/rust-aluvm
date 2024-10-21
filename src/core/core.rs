@@ -24,6 +24,8 @@
 
 use core::fmt::{self, Debug, Formatter};
 
+use amplify::confinement::ConfinedVec;
+
 use super::{Site, SiteId, Status};
 #[cfg(feature = "GFA")]
 use crate::core::gfa::Fq;
@@ -35,7 +37,7 @@ pub const CALL_STACK_SIZE_MAX: u16 = 0xFF;
 
 /// Registers of a single CPU/VM core.
 #[derive(Clone)]
-pub struct Core<Id: SiteId> {
+pub struct Core<Id: SiteId, const CALL_STACK_SIZE: usize = { CALL_STACK_SIZE_MAX as usize }> {
     #[cfg(feature = "GFA")]
     /// Finite field order.
     pub(super) fq: Fq,
@@ -51,7 +53,6 @@ pub struct Core<Id: SiteId> {
     // ============================================================================================
     // Arithmetic integer registers (A1024 ISA extension).
 
-    //pub(super) a128: [Option<u128>; 32],
     //pub(super) a256: [Option<u256>; 32],
     //pub(super) a512: [Option<u512>; 32],
     //pub(super) a1024: Box<[Option<u1024>; 32]>,
@@ -144,10 +145,7 @@ pub struct Core<Id: SiteId> {
     ///
     /// - [`CALL_STACK_SIZE_MAX`] constant
     /// - [`Core::cp`] register
-    pub(super) cs: Vec<Site<Id>>,
-
-    /// Defines "top" of the call stack.
-    pub(super) cp: u16,
+    pub(super) cs: ConfinedVec<Site<Id>, 0, CALL_STACK_SIZE>,
 }
 
 /// Configuration for [`Core`] initialization.
@@ -157,8 +155,6 @@ pub struct CoreConfig {
     pub halt: bool,
     /// Initial value for the [`Core::cl`] flag.
     pub complexity_lim: Option<u64>,
-    /// Size of the call stack in the [`Core::cs`] register.
-    pub call_stack_size: u16,
     #[cfg(feature = "GFA")]
     /// Order of the finite field for modulo arithmetics.
     pub field_order: Fq,
@@ -168,36 +164,37 @@ impl Default for CoreConfig {
     /// Sets
     /// - [`CoreConfig::halt`] to `true`,
     /// - [`CoreConfig::complexity_lim`] to `None`
-    /// - [`CoreConfig::call_stack_size`] to [`CALL_STACK_SIZE_MAX`],
     /// - [`CoreConfig::field_order`] to [`Fq::F1137119`] (if `GFA` feature is set).
     ///
     /// # See also
     ///
     /// - [`CoreConfig::halt`]
     /// - [`CoreConfig::complexity_lim`]
-    /// - [`CoreConfig::call_stack_size`]
     /// - [`CoreConfig::field_order`]
     fn default() -> Self {
         CoreConfig {
             halt: true,
             complexity_lim: None,
-            call_stack_size: CALL_STACK_SIZE_MAX,
             #[cfg(feature = "GFA")]
             field_order: Fq::F1137119,
         }
     }
 }
 
-impl<Id: SiteId> Core<Id> {
+impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
     /// Initializes registers. Sets `st0` to `true`, counters to zero, call stack to empty and the
     /// rest of registers to `None` value.
     ///
     /// An alias for [`AluCore::with`]`(`[`CoreConfig::default()`]`)`.
     #[inline]
-    pub fn new() -> Self { Core::with(default!()) }
+    pub fn new() -> Self {
+        assert!(CALL_STACK_SIZE <= CALL_STACK_SIZE_MAX as usize, "Call stack size is too large");
+        Core::with(default!())
+    }
 
     /// Initializes registers using a configuration object [`CoreConfig`].
     pub fn with(config: CoreConfig) -> Self {
+        assert!(CALL_STACK_SIZE <= CALL_STACK_SIZE_MAX as usize, "Call stack size is too large");
         Core {
             #[cfg(feature = "GFA")]
             fq: config.field_order,
@@ -216,22 +213,21 @@ impl<Id: SiteId> Core<Id> {
             cy: 0,
             ca: 0,
             cl: config.complexity_lim,
-            cs: Vec::with_capacity(config.call_stack_size as usize),
-            cp: 0,
+            cs: ConfinedVec::with_capacity(CALL_STACK_SIZE),
         }
     }
 }
 
 /// Microcode for flag registers.
-impl<Id: SiteId> Core<Id> {
+impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
     /// Return whether check register `ck` was set to a failed state for at least once.
     pub fn had_failed(&self) -> bool { self.cf == Status::Fail }
 
     /// Return complexity limit value.
-    pub fn cl(&self) -> Option<u64> { return self.cl; }
+    pub fn cl(&self) -> Option<u64> { self.cl }
 }
 
-impl<Id: SiteId> Debug for Core<Id> {
+impl<Id: SiteId, const CALL_STACK_SIZE: usize> Debug for Core<Id, CALL_STACK_SIZE> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let (sect, reg, val, reset) =
             if f.alternate() { ("\x1B[0;4;1m", "\x1B[0;1m", "\x1B[0;32m", "\x1B[0m") } else { ("", "", "", "") };
@@ -240,7 +236,7 @@ impl<Id: SiteId> Debug for Core<Id> {
         write!(f, "{reg}ch{reset} {val}{}, ", self.ch)?;
         write!(f, "{reg}ck{reset} {val}{}, ", self.ck)?;
         write!(f, "{reg}cf{reset} {val}{}, ", self.cf)?;
-        write!(f, "{reg}ct{reset} {val}{}, ", self.co)?;
+        write!(f, "{reg}co{reset} {val}{}, ", self.co)?;
         write!(f, "{reg}cy{reset} {val}{}, ", self.cy)?;
         write!(f, "{reg}ca{reset} {val}{}, ", self.ca)?;
         let cl = self
@@ -248,10 +244,10 @@ impl<Id: SiteId> Debug for Core<Id> {
             .map(|v| v.to_string())
             .unwrap_or_else(|| "~".to_string());
         write!(f, "{reg}cl{reset} {val}{cl}, ")?;
-        write!(f, "{reg}cp{reset} {val}{}, ", self.cp)?;
+        write!(f, "{reg}cp{reset} {val}{}, ", self.cp())?;
         write!(f, "\n{reg}cs{reset} {val}")?;
-        for p in 0..=self.cp {
-            write!(f, "{}   ", self.cs[p as usize])?;
+        for item in &self.cs {
+            write!(f, "{}   ", item)?;
         }
         writeln!(f)?;
 

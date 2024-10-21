@@ -28,7 +28,9 @@ use amplify::confinement::TinyOrdSet;
 use strict_encoding::stl::AlphaCapsNum;
 use strict_encoding::RString;
 
-use super::{CtrlInstr, FieldInstr, Instruction, RegInstr};
+#[cfg(feature = "GFA")]
+use super::FieldInstr;
+use super::{CtrlInstr, Instruction, RegInstr};
 use crate::core::SiteId;
 use crate::stl::LIB_NAME_ALUVM;
 
@@ -82,7 +84,7 @@ pub trait InstructionSet<Id: SiteId>: Debug + Display {
 
 /// Reserved instruction, which equal to [`ControlFlowOp::Fail`].
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Default)]
-#[display("halt    {0:#02X}.h")]
+#[display("halt    {0:#02X}:h")]
 pub struct ReservedInstr(/** Reserved instruction op code value */ pub(super) u8);
 
 /// Complete AluVM ISA.
@@ -95,15 +97,16 @@ pub enum Instr<Id: SiteId, Ext: InstructionSet<Id> = ReservedInstr> {
     /// Register manipulation instructions.
     Reg(RegInstr),
 
-    /// Arithmetic instructions for natural numbers.
-    An(FieldInstr),
+    #[cfg(feature = "GFA")]
+    /// Arithmetic instructions for finite fields (Galois fields).
+    GFqA(FieldInstr),
 
     // #[cfg(feature = "str")]
     // Str(array::instr::StrInstr),
     /// Reserved instruction for future use in core `ALU` ISAs.
     Reserved(ReservedInstr),
 
-    /// Other ISA extensions.
+    /// Other ISA extensions, defined externally.
     Ext(Ext),
 }
 
@@ -115,7 +118,9 @@ impl<Id: SiteId> InstructionSet<Id> for ReservedInstr {
     type Instr = Self;
 }
 
-impl<Id: SiteId, Ext: InstructionSet<Id>> InstructionSet<Id> for Instr<Id, Ext> {
+impl<'ctx, Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id, Context<'ctx> = ()>> InstructionSet<Id>
+    for Instr<Id, Ext>
+{
     const ISA: &'static str = ISA_ALU64;
     const ISA_EXT: &'static [&'static str] = &[ISA_AN];
     const HAS_EXT: bool = true;

@@ -22,9 +22,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::core::SiteId;
-use crate::regs::A;
+use crate::core::{RegA, SiteId};
 use crate::Site;
+
+/// Value read from data segment during bytecode deserialization, which may be absent there.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+pub enum MaybeU128 {
+    #[display("{0:X}:h")]
+    U128(u128),
+
+    #[display(":nodata")]
+    NoData,
+}
 
 /// Control flow instructions.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
@@ -38,48 +47,48 @@ pub enum CtrlInstr<Id: SiteId> {
     #[display("chk")]
     Chk,
 
+    /// Set `ck` register to a failed state.
+    #[display("put     ck, :fail")]
+    FailCk,
+
+    /// Reset `ck` register.
+    #[display("put     ck, :ok")]
+    RsetCk,
+
     /// Invert `co` register.
     #[display("not     co")]
     NotCo,
 
-    /// Set `ck` register to a failed state.
-    #[display("put     ck, fail")]
-    FailCk,
-
-    /// Reset `ck` register.
-    #[display("put     ck, ok")]
-    OkCk,
-
     /// Jump to location (unconditionally).
-    #[display("jmp     {pos:04x}.h")]
+    #[display("jmp     {pos:04X}:h")]
     Jmp { pos: u16 },
 
     /// Jump to location if `co` is true.
-    #[display("jif     co, {pos:04x}.h")]
+    #[display("jif     co, {pos:04X}:h")]
     JifCo { pos: u16 },
 
     /// Jump to location if `ck` is in a failed state.
-    #[display("jif     ck, {pos:04x}.h")]
+    #[display("jif     ck, {pos:04X}:h")]
     JifCk { pos: u16 },
 
     /// Relative jump.
-    #[display("jmp     {pos:+03x}.h")]
-    Shift { pos: i8 },
+    #[display("jmp     {shift:+03X}:h")]
+    Shift { shift: i8 },
 
     /// Relative jump if `co` is true.
-    #[display("jif     co, {pos:+03x}.h")]
-    ShIfCo { pos: i8 },
+    #[display("jif     co, {shift:+03X}:h")]
+    ShIfCo { shift: i8 },
 
     /// Relative jump if `ck` is in a failed state.
-    #[display("jif     ck, {pos:+03x}.h")]
-    ShIfCk { pos: i8 },
+    #[display("jif     ck, {shift:+03X}:h")]
+    ShIfCk { shift: i8 },
 
     /// External jump.
     #[display("jmp     {site}")]
     Exec { site: Site<Id> },
 
     /// Subroutine call.
-    #[display("call    {pos:04x}.h")]
+    #[display("call    {pos:04X}:h")]
     Fn { pos: u16 },
 
     /// External subroutine call.
@@ -101,26 +110,26 @@ pub enum CtrlInstr<Id: SiteId> {
 pub enum RegInstr {
     /// Clear register (sets to an undefined state).
     #[display("clr     {dst}")]
-    Clr { dst: A },
+    Clr { dst: RegA },
 
     /// Put a constant value to a register,
-    #[display("put     {dst}, {val:x}.h")]
-    Put { dst: A, val: u64 },
+    #[display("put     {dst}, {val}")]
+    Put { dst: RegA, val: MaybeU128 },
 
     /// Put a constant value to a register if it doesn't contain data,
-    #[display("pif     {dst}, {val:x}.h")]
-    Pif { dst: A, val: u64 },
+    #[display("pif     {dst}, {val}")]
+    Pif { dst: RegA, val: MaybeU128 },
 
     /// Test whether a register is set.
     #[display("test    {src}")]
-    Test { src: A },
+    Test { src: RegA },
 
     /// Copy source to destination.
     ///
     /// If `src` and `dst` have a different bit dimension, the value is extended with zeros (as
     /// unsigned little-endian integer).
     #[display("cpy     {dst}, {src}")]
-    Cpy { dst: A, src: A },
+    Cpy { dst: RegA, src: RegA },
 
     /// Swap values of two registers.
     ///
@@ -128,12 +137,12 @@ pub enum RegInstr {
     /// extended with zeros (as unsigned little-endian integer) and the value of larger-sized
     /// register is divided by the modulo (the most significant bits get dropped).
     #[display("swp     {src_dst1}, {src_dst2}")]
-    Swp { src_dst1: A, src_dst2: A },
+    Swp { src_dst1: RegA, src_dst2: RegA },
 
     /// Check whether value of two registers is equal.
     ///
     /// If the registers have a different bit dimension, performs unsigned integer comparison using
     /// little-endian encoding.
     #[display("eq      {src1}, {src2}")]
-    Eq { src1: A, src2: A },
+    Eq { src1: RegA, src2: RegA },
 }

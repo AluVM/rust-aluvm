@@ -27,6 +27,7 @@ use core::fmt::Debug;
 use amplify::num::{u3, u4, u5};
 
 use crate::core::{Core, Idx16, Idx32, SiteId, Status};
+use crate::Site;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 pub enum A {
@@ -196,7 +197,7 @@ impl IdxA {
 }
 
 /// Microcode for flag registers.
-impl<Id: SiteId> Core<Id> {
+impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
     /// Read overflow/carry flag.
     pub fn co(&self) -> bool { self.co }
 
@@ -211,6 +212,22 @@ impl<Id: SiteId> Core<Id> {
 
     /// Reset `ck` register.
     pub fn reset_ck(&mut self) { self.ck = Status::Ok }
+
+    /// Return size of the call stack.
+    pub fn cp(&self) -> u16 { self.cs.len() as u16 }
+
+    /// Push a location to a call stack.
+    ///
+    /// # Returns
+    ///
+    /// Top of the call stack.
+    pub fn push_cs(&mut self, from: Site<Id>) -> Option<u16> {
+        self.cs.push(from).ok()?;
+        Some(self.cp())
+    }
+
+    /// Pops a call stack item.
+    pub fn pop_cs(&mut self) -> Option<Site<Id>> { self.cs.pop() }
 
     /// Accumulate complexity value.
     ///

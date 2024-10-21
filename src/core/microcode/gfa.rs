@@ -38,7 +38,7 @@ pub enum Fq {
     F1137119,
     #[display("F1289", alt = "2^128-9")]
     F1289,
-    #[display("{0:x}.h")]
+    #[display("{0:X}:h")]
     Other(u128),
 }
 

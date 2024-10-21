@@ -29,7 +29,7 @@ use core::iter;
 use crate::core::{Core, IdxA, Reg, RegA, SiteId};
 
 /// Microcode for arithmetic registers.
-impl<Id: SiteId> Core<Id> {
+impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
     pub fn get(&self, reg: Reg) -> Option<u128> {
         match reg {
             Reg::A(a) => match a {
@@ -52,6 +52,16 @@ impl<Id: SiteId> Core<Id> {
         }
     }
 
+    pub fn clr_a(&mut self, reg: RegA) -> bool {
+        match reg {
+            RegA::A8(idx) => self.clr_a8(idx),
+            RegA::A16(idx) => self.clr_a16(idx),
+            RegA::A32(idx) => self.clr_a32(idx),
+            RegA::A64(idx) => self.clr_a64(idx),
+            RegA::A128(idx) => self.clr_a128(idx),
+        }
+    }
+
     pub fn set_a(&mut self, reg: RegA, val: u128) -> bool {
         match reg {
             RegA::A8(idx) => self.set_a8(idx, val as u8),
@@ -59,6 +69,26 @@ impl<Id: SiteId> Core<Id> {
             RegA::A32(idx) => self.set_a32(idx, val as u32),
             RegA::A64(idx) => self.set_a64(idx, val as u64),
             RegA::A128(idx) => self.set_a128(idx, val),
+        }
+    }
+
+    pub fn take_a(&mut self, reg: RegA) -> Option<u128> {
+        match reg {
+            RegA::A8(idx) => self.take_a8(idx).map(u128::from),
+            RegA::A16(idx) => self.take_a16(idx).map(u128::from),
+            RegA::A32(idx) => self.take_a32(idx).map(u128::from),
+            RegA::A64(idx) => self.take_a64(idx).map(u128::from),
+            RegA::A128(idx) => self.take_a128(idx),
+        }
+    }
+
+    pub fn swp_a(&mut self, reg: RegA, val: u128) -> Option<u128> {
+        match reg {
+            RegA::A8(idx) => self.swp_a8(idx, val as u8).map(u128::from),
+            RegA::A16(idx) => self.swp_a16(idx, val as u16).map(u128::from),
+            RegA::A32(idx) => self.swp_a32(idx, val as u32).map(u128::from),
+            RegA::A64(idx) => self.swp_a64(idx, val as u64).map(u128::from),
+            RegA::A128(idx) => self.swp_a128(idx, val),
         }
     }
 
