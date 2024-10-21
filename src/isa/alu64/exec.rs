@@ -24,7 +24,7 @@
 
 use std::collections::BTreeSet;
 
-use super::{ArithmInstr, CtrlInstr, RegInstr};
+use super::{CtrlInstr, FieldInstr, RegInstr};
 use crate::core::{AluCore, Reg, Site};
 use crate::isa::{ExecStep, Instr, Instruction, InstructionSet, ReservedInstr};
 
@@ -92,7 +92,7 @@ impl Instruction for RegInstr {
     }
 }
 
-impl Instruction for ArithmInstr {
+impl Instruction for FieldInstr {
     type Context<'ctx> = ();
 
     fn src_regs(&self) -> BTreeSet<Reg> { todo!() }

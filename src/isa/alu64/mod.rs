@@ -28,4 +28,4 @@ mod bytecode;
 mod instr;
 mod exec;
 
-pub use instr::{ArithmInstr, CtrlInstr, RegInstr};
+pub use instr::{CtrlInstr, FieldInstr, RegInstr};

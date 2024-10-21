@@ -24,7 +24,7 @@
 
 use core::ops::RangeInclusive;
 
-use super::{ArithmInstr, CtrlInstr, RegInstr};
+use super::{CtrlInstr, FieldInstr, RegInstr};
 use crate::isa::bytecode::CodeEofError;
 use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, Instr, InstructionSet, ReservedInstr};
 
@@ -104,7 +104,7 @@ impl<Id> Bytecode<Id> for RegInstr {
     }
 }
 
-impl<Id> Bytecode<Id> for ArithmInstr {
+impl<Id> Bytecode<Id> for FieldInstr {
     fn op_range() -> RangeInclusive<u8> { todo!() }
 
     fn opcode_byte(&self) -> u8 { todo!() }

@@ -28,7 +28,7 @@ use amplify::confinement::TinyOrdSet;
 use strict_encoding::stl::AlphaCapsNum;
 use strict_encoding::RString;
 
-use super::{ArithmInstr, CtrlInstr, Instruction, RegInstr};
+use super::{CtrlInstr, FieldInstr, Instruction, RegInstr};
 use crate::stl::LIB_NAME_ALUVM;
 
 pub const ISA_ID_MAX_LEN: usize = 16;
@@ -95,7 +95,7 @@ pub enum Instr<Ext: InstructionSet = ReservedInstr> {
     Reg(RegInstr),
 
     /// Arithmetic instructions for natural numbers.
-    An(ArithmInstr),
+    An(FieldInstr),
 
     // #[cfg(feature = "str")]
     // Str(array::instr::StrInstr),
