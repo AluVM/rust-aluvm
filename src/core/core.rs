@@ -26,7 +26,7 @@ use core::fmt::{self, Debug, Formatter};
 
 use super::{Site, SiteId, Status};
 #[cfg(feature = "GFA")]
-use crate::core::gfa::Zp;
+use crate::core::gfa::Fq;
 
 /// Maximal size of call stack.
 ///
@@ -38,7 +38,7 @@ pub const CALL_STACK_SIZE_MAX: u16 = 0xFF;
 pub struct Core<Id: SiteId> {
     #[cfg(feature = "GFA")]
     /// Finite field order.
-    pub(super) zp: Zp,
+    pub(super) fq: Fq,
 
     // ============================================================================================
     // Arithmetic integer registers (ALU64 ISA).
@@ -161,7 +161,7 @@ pub struct CoreConfig {
     pub call_stack_size: u16,
     #[cfg(feature = "GFA")]
     /// Order of the finite field for modulo arithmetics.
-    pub field_order: Zp,
+    pub field_order: Fq,
 }
 
 impl Default for CoreConfig {
@@ -169,7 +169,7 @@ impl Default for CoreConfig {
     /// - [`CoreConfig::halt`] to `true`,
     /// - [`CoreConfig::complexity_lim`] to `None`
     /// - [`CoreConfig::call_stack_size`] to [`CALL_STACK_SIZE_MAX`],
-    /// - [`CoreConfig::field_order`] to [`Zp::F1137119`] (if `GFA` feature is set).
+    /// - [`CoreConfig::field_order`] to [`Fq::F1137119`] (if `GFA` feature is set).
     ///
     /// # See also
     ///
@@ -183,7 +183,7 @@ impl Default for CoreConfig {
             complexity_lim: None,
             call_stack_size: CALL_STACK_SIZE_MAX,
             #[cfg(feature = "GFA")]
-            field_order: Zp::F1137119,
+            field_order: Fq::F1137119,
         }
     }
 }
@@ -200,7 +200,7 @@ impl<Id: SiteId> Core<Id> {
     pub fn with(config: CoreConfig) -> Self {
         Core {
             #[cfg(feature = "GFA")]
-            zp: config.field_order,
+            fq: config.field_order,
             a8: Default::default(),
             a16: Default::default(),
             a32: Default::default(),

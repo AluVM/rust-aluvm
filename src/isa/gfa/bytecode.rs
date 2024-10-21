@@ -27,13 +27,30 @@ use std::ops::RangeInclusive;
 use amplify::num::u1;
 
 use super::FieldInstr;
-use crate::core::SiteId;
+use crate::core::{IdxAl, RegA, SiteId, A};
 use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
 
-impl<Id: SiteId> Bytecode<Id> for FieldInstr {
-    fn op_range() -> RangeInclusive<u8> { todo!() }
+impl FieldInstr {
+    const START: u8 = 64;
+    const END: u8 = Self::START + Self::ADD_MUL;
+    const INC_MOD: u8 = 0;
+    const DEC_MOD: u8 = 1;
+    const NEG_MOD: u8 = 2;
+    const ADD_MUL: u8 = 3;
+}
 
-    fn opcode_byte(&self) -> u8 { todo!() }
+impl<Id: SiteId> Bytecode<Id> for FieldInstr {
+    fn op_range() -> RangeInclusive<u8> { Self::START..=Self::END }
+
+    fn opcode_byte(&self) -> u8 {
+        Self::START
+            + match *self {
+                FieldInstr::IncMod { .. } => Self::INC_MOD,
+                FieldInstr::DecMod { .. } => Self::DEC_MOD,
+                FieldInstr::NegMod { .. } => Self::NEG_MOD,
+                FieldInstr::AddMod { .. } | FieldInstr::MulMod { .. } => Self::ADD_MUL,
+            }
+    }
 
     fn encode_operands<W>(&self, writer: &mut W) -> Result<(), W::Error>
     where W: BytecodeWrite<Id> {
@@ -72,6 +89,34 @@ impl<Id: SiteId> Bytecode<Id> for FieldInstr {
         Self: Sized,
         R: BytecodeRead<Id>,
     {
-        todo!()
+        Ok(match opcode - Self::START {
+            Self::INC_MOD => {
+                let src_dst = RegA::from(reader.read_u8()?);
+                let val = reader.read_u8()?;
+                FieldInstr::IncMod { src_dst, val }
+            }
+            Self::DEC_MOD => {
+                let src_dst = RegA::from(reader.read_u8()?);
+                let val = reader.read_u8()?;
+                FieldInstr::IncMod { src_dst, val }
+            }
+            Self::NEG_MOD => {
+                let src_dst = RegA::from(reader.read_u8()?);
+                FieldInstr::NegMod { src_dst }
+            }
+            Self::ADD_MUL => {
+                let subop = reader.read_u1()?;
+                let reg = A::from(reader.read_u3()?);
+                let dst = IdxAl::from(reader.read_u4()?);
+                let src1 = IdxAl::from(reader.read_u4()?);
+                let src2 = IdxAl::from(reader.read_u4()?);
+                match subop {
+                    u1::ZERO => FieldInstr::AddMod { reg, dst, src1, src2 },
+                    u1::ONE => FieldInstr::MulMod { reg, dst, src1, src2 },
+                    _ => unreachable!(),
+                }
+            }
+            _ => unreachable!(),
+        })
     }
 }

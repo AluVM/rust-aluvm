@@ -132,6 +132,14 @@ impl RegA {
     }
 }
 
+impl From<u8> for RegA {
+    fn from(val: u8) -> Self {
+        let a = u3::with(val >> 5);
+        let idx = u5::with(val & 0x1F);
+        RegA::with(A::from(a), IdxA::from(idx))
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[display(inner)]
 pub struct IdxA(Idx32);

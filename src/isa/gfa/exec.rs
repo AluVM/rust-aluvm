@@ -58,13 +58,58 @@ macro_rules! checked {
 impl<Id: SiteId> Instruction<Id> for FieldInstr {
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Reg> { todo!() }
+    fn src_regs(&self) -> BTreeSet<Reg> {
+        match *self {
+            FieldInstr::IncMod { src_dst, val: _ }
+            | FieldInstr::DecMod { src_dst, val: _ }
+            | FieldInstr::NegMod { src_dst } => {
+                bset![src_dst.into()]
+            }
+            FieldInstr::AddMod {
+                reg,
+                dst,
+                src1: _,
+                src2: _,
+            }
+            | FieldInstr::MulMod {
+                reg,
+                dst,
+                src1: _,
+                src2: _,
+            } => bset![RegA::with(reg, dst.into()).into()],
+        }
+    }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> { todo!() }
+    fn dst_regs(&self) -> BTreeSet<Reg> {
+        match *self {
+            FieldInstr::IncMod { src_dst, val: _ }
+            | FieldInstr::DecMod { src_dst, val: _ }
+            | FieldInstr::NegMod { src_dst } => {
+                bset![src_dst.into()]
+            }
+            FieldInstr::AddMod {
+                reg,
+                dst: _,
+                src1,
+                src2,
+            }
+            | FieldInstr::MulMod {
+                reg,
+                dst: _,
+                src1,
+                src2,
+            } => bset![RegA::with(reg, src1.into()).into(), RegA::with(reg, src2.into()).into()],
+        }
+    }
 
-    fn op_data_bytes(&self) -> u16 { todo!() }
+    fn op_data_bytes(&self) -> u16 {
+        match self {
+            FieldInstr::IncMod { .. } | FieldInstr::DecMod { .. } => 1,
+            FieldInstr::NegMod { .. } | FieldInstr::AddMod { .. } | FieldInstr::MulMod { .. } => 0,
+        }
+    }
 
-    fn ext_data_bytes(&self) -> u16 { todo!() }
+    fn ext_data_bytes(&self) -> u16 { 0 }
 
     fn complexity(&self) -> u64 {
         // Double the default complexity since each instruction performs two operations (and each arithmetic

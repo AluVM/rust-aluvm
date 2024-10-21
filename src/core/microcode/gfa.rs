@@ -31,7 +31,7 @@ const F1289: u128 = u128::MAX - 8; // it should be 9, but `u128::MAX` is 2^128-1
 
 /// Finite field orders.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
-pub enum Zp {
+pub enum Fq {
     #[display("M31", alt = "2^31-1")]
     M31, // 2^31-1
     #[display("F1137119", alt = "1+11*37*2^119")]
@@ -42,29 +42,29 @@ pub enum Zp {
     Other(u128),
 }
 
-impl From<Zp> for u128 {
-    fn from(zp: Zp) -> Self { zp.to_u128() }
+impl From<Fq> for u128 {
+    fn from(fq: Fq) -> Self { fq.to_u128() }
 }
 
-impl Zp {
+impl Fq {
     pub fn to_u128(self) -> u128 {
         match self {
-            Zp::M31 => M31,
-            Zp::F1137119 => F1137119,
-            Zp::F1289 => F1289,
-            Zp::Other(val) => val,
+            Fq::M31 => M31,
+            Fq::F1137119 => F1137119,
+            Fq::F1289 => F1289,
+            Fq::Other(val) => val,
         }
     }
 }
 
 /// Microcode for finite field arithmetics.
 impl<Id: SiteId> Core<Id> {
-    pub fn zp(&self) -> Zp { self.zp }
-    pub fn zp_u128(&self) -> u128 { self.zp.to_u128() }
+    pub fn fq(&self) -> Fq { self.fq }
+    pub fn fq_u128(&self) -> u128 { self.fq.to_u128() }
 
     #[inline]
     pub fn add_mod(&mut self, a: u128, b: u128) -> Option<u128> {
-        let order = self.zp.to_u128();
+        let order = self.fq.to_u128();
         if a >= order || b >= order {
             return None;
         }
@@ -81,7 +81,7 @@ impl<Id: SiteId> Core<Id> {
 
     #[inline]
     pub fn mul_mod(&mut self, a: u128, b: u128) -> Option<u128> {
-        let order = self.zp.to_u128();
+        let order = self.fq.to_u128();
         if a >= order || b >= order {
             return None;
         }
@@ -93,7 +93,7 @@ impl<Id: SiteId> Core<Id> {
     }
 
     fn mul_mod_int(&mut self, a: u128, b: u128) -> (u128, bool) {
-        let order = self.zp.to_u128();
+        let order = self.fq.to_u128();
         let (mut res, overflow) = a.overflowing_mul(b);
         if overflow {
             let rem = u128::MAX - order;
@@ -104,7 +104,7 @@ impl<Id: SiteId> Core<Id> {
 
     #[inline]
     pub fn neg_mod(&self, a: u128) -> Option<u128> {
-        let order = self.zp_u128();
+        let order = self.fq.to_u128();
         if a >= order {
             return None;
         }
