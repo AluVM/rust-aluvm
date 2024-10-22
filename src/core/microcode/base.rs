@@ -202,13 +202,23 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
     pub fn co(&self) -> bool { self.co }
 
     /// Set overflow/carry flag to a value.
-    pub fn set_co(&mut self, co: bool) { self.co = co }
+    pub fn set_co(&mut self, co: bool) { self.co = co; }
+
+    /// Return whether check register `ck` was set to a failed state for at least once.
+    pub fn cf(&self) -> u64 { self.cf }
 
     /// Return whether check register `ck` was set to a failed state for at least once.
     pub fn ck(&self) -> Status { self.ck }
 
     /// Set `ck` register to a failed state.
-    pub fn fail_ck(&mut self) { self.ck = Status::Fail }
+    ///
+    /// Returns whether further execution should be stopped (i.e. `ch` register value).
+    #[must_use]
+    pub fn fail_ck(&mut self) -> bool {
+        self.ck = Status::Fail;
+        self.cf += 1;
+        self.ch
+    }
 
     /// Reset `ck` register.
     pub fn reset_ck(&mut self) { self.ck = Status::Ok }
@@ -228,6 +238,9 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
 
     /// Pops a call stack item.
     pub fn pop_cs(&mut self) -> Option<Site<Id>> { self.cs.pop() }
+
+    /// Return complexity limit value.
+    pub fn cl(&self) -> Option<u64> { self.cl }
 
     /// Accumulate complexity value.
     ///

@@ -129,7 +129,11 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
                     return ExecStep::Stop;
                 }
             }
-            CtrlInstr::FailCk => core.fail_ck(),
+            CtrlInstr::FailCk => {
+                if core.fail_ck() {
+                    return ExecStep::Stop;
+                }
+            }
             CtrlInstr::RsetCk => {
                 core.set_co(core.ck() == Status::Fail);
                 core.reset_ck()
@@ -209,7 +213,9 @@ impl<Id: SiteId> Instruction<Id> for RegInstr {
                 dst: _,
                 val: MaybeU128::NoData,
             } => {
-                core.fail_ck();
+                if core.fail_ck() {
+                    return ExecStep::Stop;
+                }
             }
             RegInstr::Put {
                 dst,

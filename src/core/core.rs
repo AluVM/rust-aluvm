@@ -89,14 +89,14 @@ pub struct Core<Id: SiteId, const CALL_STACK_SIZE: usize = { CALL_STACK_SIZE_MAX
 
     // --------------------------------------------------------------------------------------------
     // Control flow registers
-    /// Halt register. If set to `true`, halts program when `ck` is set to `true` for the first
-    /// time.
+    /// Halt register. If set to `true`, halts program when `ck` is set to [`Status::Failed`] for
+    /// the first time.
     ///
     /// # See also
     ///
     /// - [`Core::ck`] register
     /// - [`Core::cf`] register
-    ch: bool,
+    pub(super) ch: bool,
 
     /// Check register, which is set on any failure (accessing register in `None` state, zero
     /// division etc.). Can be reset.
@@ -107,13 +107,13 @@ pub struct Core<Id: SiteId, const CALL_STACK_SIZE: usize = { CALL_STACK_SIZE_MAX
     /// - [`Core::cf`] register
     pub(super) ck: Status,
 
-    /// Failure register, which is set on the first time `ck` is set, and can't be reset.
+    /// Failure register, which counts how many times `ck` was set, and can't be reset.
     ///
     /// # See also
     ///
     /// - [`Core::ch`] register
     /// - [`Core::ck`] register
-    cf: Status,
+    pub(super) cf: u64,
 
     /// Test register, which acts as boolean test result (also a carry flag).
     pub(super) co: bool,
@@ -137,7 +137,7 @@ pub struct Core<Id: SiteId, const CALL_STACK_SIZE: usize = { CALL_STACK_SIZE_MAX
     ///
     /// If this register has a value set, once [`Core::ca`] will reach this value the VM will
     /// stop program execution setting `ck` to `false`.
-    cl: Option<u64>,
+    pub(super) cl: Option<u64>,
 
     /// Call stack.
     ///
@@ -208,7 +208,7 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
             //b: Default::default(),
             ch: config.halt,
             ck: Status::Ok,
-            cf: Status::Ok,
+            cf: 0,
             co: false,
             cy: 0,
             ca: 0,
@@ -216,15 +216,6 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
             cs: ConfinedVec::with_capacity(CALL_STACK_SIZE),
         }
     }
-}
-
-/// Microcode for flag registers.
-impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
-    /// Return whether check register `ck` was set to a failed state for at least once.
-    pub fn had_failed(&self) -> bool { self.cf == Status::Fail }
-
-    /// Return complexity limit value.
-    pub fn cl(&self) -> Option<u64> { self.cl }
 }
 
 impl<Id: SiteId, const CALL_STACK_SIZE: usize> Debug for Core<Id, CALL_STACK_SIZE> {
