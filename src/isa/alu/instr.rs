@@ -35,6 +35,15 @@ pub enum MaybeU128 {
     NoData,
 }
 
+impl From<Option<u128>> for MaybeU128 {
+    fn from(value: Option<u128>) -> Self {
+        match value {
+            None => MaybeU128::NoData,
+            Some(val) => MaybeU128::U128(val),
+        }
+    }
+}
+
 /// Control flow instructions.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
 #[display(inner)]
@@ -47,6 +56,10 @@ pub enum CtrlInstr<Id: SiteId> {
     #[display("chk")]
     Chk,
 
+    /// Invert `co` register.
+    #[display("not     co")]
+    NotCo,
+
     /// Set `ck` register to a failed state.
     #[display("put     ck, :fail")]
     FailCk,
@@ -54,10 +67,6 @@ pub enum CtrlInstr<Id: SiteId> {
     /// Reset `ck` register.
     #[display("put     ck, :ok")]
     RsetCk,
-
-    /// Invert `co` register.
-    #[display("not     co")]
-    NotCo,
 
     /// Jump to location (unconditionally).
     #[display("jmp     {pos:04X}:h")]
@@ -73,15 +82,15 @@ pub enum CtrlInstr<Id: SiteId> {
 
     /// Relative jump.
     #[display("jmp     {shift:+03X}:h")]
-    Shift { shift: i8 },
+    Sh { shift: i8 },
 
     /// Relative jump if `co` is true.
     #[display("jif     co, {shift:+03X}:h")]
-    ShIfCo { shift: i8 },
+    ShNe { shift: i8 },
 
     /// Relative jump if `ck` is in a failed state.
     #[display("jif     ck, {shift:+03X}:h")]
-    ShIfCk { shift: i8 },
+    ShFail { shift: i8 },
 
     /// External jump.
     #[display("jmp     {site}")]

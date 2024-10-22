@@ -29,32 +29,6 @@ use crate::core::{Reg, RegA, SiteId};
 use crate::isa::{ExecStep, Instruction};
 use crate::{Core, Site};
 
-macro_rules! A {
-    [$reg:ident @ $core:ident] => {
-        checked!($core.a($reg))
-    };
-    [$a:ident : $idx:ident @ $core:ident] => {{
-        checked!($core.a(RegA::with($a, $idx.into())))
-    }};
-}
-
-macro_rules! check {
-    ($condition:expr) => {{
-        if !($condition) {
-            return ExecStep::NextFail;
-        }
-    }};
-}
-
-macro_rules! checked {
-    ($core:ident . $op:ident($($arg:expr),*)) => {{
-        let Some(val) = $core.$op( $( $arg ),* ) else {
-            return ExecStep::NextFail;
-        };
-        val
-    }};
-}
-
 impl<Id: SiteId> Instruction<Id> for FieldInstr {
     type Context<'ctx> = ();
 

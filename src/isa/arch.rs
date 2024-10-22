@@ -26,7 +26,7 @@ use core::fmt::{Debug, Display};
 
 use amplify::confinement::TinyOrdSet;
 use strict_encoding::stl::AlphaCapsNum;
-use strict_encoding::RString;
+use strict_encoding::{RString, StrictDumb};
 
 #[cfg(feature = "GFA")]
 use super::FieldInstr;
@@ -51,10 +51,14 @@ macro_rules! isa {
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref, Display, FromStr)]
-#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
-#[strict_type(lib = LIB_NAME_ALUVM, dumb = { Self::from("DUMB") })]
+#[derive(StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = LIB_NAME_ALUVM)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(transparent))]
 pub struct IsaId(RString<AlphaCapsNum, AlphaCapsNum, 1, ISA_ID_MAX_LEN>);
+
+impl StrictDumb for IsaId {
+    fn strict_dumb() -> Self { Self::from("DUMB") }
+}
 
 impl From<&'static str> for IsaId {
     fn from(id: &'static str) -> Self { Self(RString::from(id)) }

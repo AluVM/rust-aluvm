@@ -22,21 +22,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! AluVM instruction set architecture.
+macro_rules! A {
+    [$reg:ident @ $core:ident] => {
+        checked!($core.a($reg))
+    };
+    [$a:ident : $idx:ident @ $core:ident] => {{
+        checked!($core.a(RegA::with($a, $idx.into())))
+    }};
+}
 
-#[macro_use]
-mod macros;
-mod instr;
-mod bytecode;
-mod arch;
-
-mod alu;
-#[cfg(feature = "GFA")]
-mod gfa;
-
-pub use alu::{CtrlInstr, RegInstr};
-pub use arch::{Instr, InstructionSet, IsaId, ReservedInstr, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
-pub use bytecode::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
-#[cfg(feature = "GFA")]
-pub use gfa::FieldInstr;
-pub use instr::{ExecStep, Instruction};
+macro_rules! checked {
+    ($core:ident . $op:ident($($arg:expr),*)) => {{
+        let Some(val) = $core.$op( $( $arg ),* ) else {
+            return ExecStep::NextFail;
+        };
+        val
+    }};
+}

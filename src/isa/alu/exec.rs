@@ -146,15 +146,15 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
                     return ExecStep::Jump(pos);
                 }
             }
-            CtrlInstr::Shift { shift } => {
+            CtrlInstr::Sh { shift } => {
                 return shift_jump(shift);
             }
-            CtrlInstr::ShIfCo { shift } => {
+            CtrlInstr::ShNe { shift } => {
                 if core.co() {
                     return shift_jump(shift);
                 }
             }
-            CtrlInstr::ShIfCk { shift } => {
+            CtrlInstr::ShFail { shift } => {
                 if core.ck() == Status::Fail {
                     return shift_jump(shift);
                 }
