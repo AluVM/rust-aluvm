@@ -22,6 +22,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[allow(unused_macros)]
 macro_rules! A {
     [$reg:ident @ $core:ident] => {
         checked!($core.a($reg))
@@ -31,6 +32,7 @@ macro_rules! A {
     }};
 }
 
+#[allow(unused_macros)]
 macro_rules! checked {
     ($core:ident . $op:ident($($arg:expr),*)) => {{
         let Some(val) = $core.$op( $( $arg ),* ) else {

@@ -29,6 +29,8 @@ mod microcode;
 mod regs;
 
 pub use self::core::{Core, CoreConfig, CALL_STACK_SIZE_MAX};
-pub use self::microcode::{gfa, IdxA, IdxAl, Reg, RegA, A};
+#[cfg(feature = "GFA")]
+pub use self::microcode::gfa;
+pub use self::microcode::{IdxA, IdxAl, Reg, RegA, A};
 pub(self) use self::regs::{Idx16, Idx32};
 pub use self::regs::{Site, SiteId, Status};

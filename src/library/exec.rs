@@ -22,6 +22,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(feature = "log")]
 use baid64::DisplayBaid64;
 
 use super::{Lib, Marshaller};

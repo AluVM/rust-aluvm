@@ -22,7 +22,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
 use aluvm::stl;
 use strict_types::typelib::parse_args;
 
@@ -44,6 +43,3 @@ fn main() {
         )
         .expect("unable to write to the file");
 }
-*/
-
-fn main() {}

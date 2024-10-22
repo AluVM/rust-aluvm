@@ -1,10 +1,10 @@
 {-
-  Id: stl:YnA1fyHl-46C2hsC-tZPxn60-w1jLk5Y-rDTjRmy-xo!5xjY#congo-archive-folio
+  Id: stl:HIDoKU!H-cbRHAes-mcK9au9-ZsHd2rh-oIrJyrD-YHEQyB4#gilbert-pattern-studio
   Name: AluVM
   Version: 0.1.0
-  Description: AluVM data type library
+  Description: AluVM data type lib-old
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
-  Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
+  Copyright (C) 2023-2024 UBIDECO Labs. All rights reserved.
   License: Apache-2.0
 -}
 
@@ -12,29 +12,23 @@
 typelib AluVM
 
 import Std#ralph-blue-lucky
-  use AlphaCaps#picnic-soprano-aurora
   use AlphaCapsNum#aladdin-zebra-marble
 
 
-@mnemonic(taboo-olympic-cloud)
-data IsaName           : Std.AlphaCaps, [Std.AlphaCapsNum ^ 1..0x7]
+@mnemonic(mobile-letter-absorb)
+data IsaId             : Std.AlphaCapsNum, [Std.AlphaCapsNum ^ ..0xf]
 
-@mnemonic(freedom-ship-canal)
-data IsaSeg            : {IsaName ^ ..0x40}
-
-@mnemonic(bernard-igor-version)
-data Lib               : isae IsaSeg
+@mnemonic(fiber-balsa-benefit)
+data Lib               : isa IsaId
+                       , isae {IsaId ^ ..0xff}
                        , code [Byte]
                        , data [Byte]
-                       , libs LibSeg
+                       , libs {LibId ^ ..0xff}
 
 @mnemonic(germany-culture-olivia)
 data LibId             : [Byte ^ 32]
 
-@mnemonic(gilbert-tomato-caesar)
-data LibSeg            : {LibId ^ ..0xff}
-
-@mnemonic(chance-agent-ivory)
-data LibSite           : lib LibId, pos U16
+@mnemonic(friend-beatles-carlo)
+data LibSite           : libId LibId, offset U16
 
 
