@@ -22,12 +22,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod lib;
-#[cfg(feature = "armor")]
-pub mod armor;
-mod assembler;
-mod marshaller;
-mod exec;
+#[cfg(feature = "GFA")]
+pub mod gfa;
+mod alu128;
+mod base;
 
-pub use lib::{Lib, LibId, LibSite, LibsSeg};
-pub use marshaller::{MarshallError, Marshaller};
+pub use base::{IdxA, IdxAl, Reg, RegA, A};

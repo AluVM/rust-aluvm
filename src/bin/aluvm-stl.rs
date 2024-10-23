@@ -6,9 +6,8 @@
 // Written in 2021-2024 by
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
+// Copyright (C) 2021-2024 UBIDECO Labs,
+//     Laboratories for Distributed and Cognitive Computing, Switzerland.
 //     All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,9 +35,9 @@ fn main() {
             "0.1.0",
             Some(
                 "
-  Description: AluVM data type library
+  Description: AluVM data type lib-old
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
-  Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
+  Copyright (C) 2023-2024 UBIDECO Labs. All rights reserved.
   License: Apache-2.0",
             ),
         )
