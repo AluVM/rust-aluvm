@@ -157,7 +157,7 @@ mod vm;
 pub mod stl;
 
 pub mod regs {
-    pub use crate::core::*;
+    pub use crate::core::{IdxA, IdxAl, Reg, RegA, Status, A, CALL_STACK_SIZE_MAX};
 }
 
 pub use isa::{IsaId, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
@@ -168,4 +168,4 @@ pub use library::{Lib, LibId, LibSite};
 pub use paste::paste;
 pub use vm::Vm;
 
-pub use self::core::{Core, Site, CALL_STACK_SIZE_MAX};
+pub use self::core::{gfa, Core, CoreConfig, Site, SiteId};
