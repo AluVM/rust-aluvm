@@ -144,6 +144,8 @@
 
 #[macro_use]
 extern crate alloc;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+extern crate alloc as std;
 
 #[macro_use]
 extern crate amplify;
