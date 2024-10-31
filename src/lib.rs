@@ -134,9 +134,16 @@
 //!
 //! [AluVM]: https://github.com/AluVM/aluvm-spec
 
+#![allow(clippy::bool_assert_comparison)]
+
 // TODO: Extend the list of features not compatible with zk-aluvm as they appear.
 #[cfg(all(feature = "zk-aluvm", any(feature = "A64", feature = "STR")))]
 compile_error!("zk-AluVM is incompatible with any ISA extensions other then GFA");
+
+#[macro_use]
+extern crate alloc;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+extern crate alloc as std;
 
 #[macro_use]
 extern crate amplify;
