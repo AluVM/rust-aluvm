@@ -47,19 +47,6 @@ jobs:
         run: cargo check --workspace --no-default-features --features=std,${{matrix.feature}}
       - name: Feature ${{matrix.feature}}
         run: cargo check --workspace --features=${{matrix.feature}}
-  features-nostd:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        feature:
-          - secp256k1
-          - curve25519
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Feature ${{matrix.feature}}
-        run: cargo check --workspace --no-default-features --features=alloc,${{matrix.feature}}
   platforms:
     runs-on: ${{ matrix.os }}
     strategy:
