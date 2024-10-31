@@ -34,7 +34,7 @@ use crate::library::{Lib, LibId, LibSite};
 use crate::reg::CoreRegs;
 
 /// Alu virtual machine providing single-core execution environment
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Vm<Isa = Instr<ReservedOp>>
 where Isa: InstructionSet
 {

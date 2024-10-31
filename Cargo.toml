@@ -1,13 +1,13 @@
 [package]
 name = "aluvm"
 description = "Functional registry-based RISC virtual machine"
-version = "0.11.0-beta.8"
+version = "0.11.0-beta.9"
 authors = ["Dr Maxim Orlovsky <orlovsky@ubideco.org>"]
 repository = "https://github.com/aluvm/rust-aluvm"
 homepage = "https://aluvm.org"
 keywords = ["virtual-machine", "emulator", "functional", "risc", "edge-computing"]
 categories = ["no-std", "embedded", "compilers", "cryptography", "emulators"]
-rust-version = "1.76.0" # Due to ascii-armor
+rust-version = "1.77.0"
 edition = "2021"
 license = "Apache-2.0"
 readme = "README.md"
@@ -26,11 +26,11 @@ ascii-armor = { version = "0.7.2", optional = true }
 baid64 = "0.2.2"
 paste = "1"
 strict_encoding = { version = "2.7.0", default-features = false, features = ["float", "derive"] }
-strict_types = { version = "2.7.0", optional = true }
+strict_types = { version = "2.7.2", optional = true }
 sha2 = "0.10.8"
 blake3 = "1.5.4"
 ripemd = "0.1.3"
-secp256k1 = { version = "0.29.0", optional = true, features = ["global-context"] }
+secp256k1 = { version = "0.30.0", optional = true, features = ["global-context"] }
 curve25519-dalek = { version = "3.2.1", optional = true }
 half = "2.4.1" # Required to maintain MSRV
 serde_crate = { package = "serde", version = "1", optional = true }

@@ -136,8 +136,7 @@
 //!
 //! [AluVM]: https://github.com/internet2-org/aluvm-spec
 
-// TODO: Remove this once MSRV >= 1.62
-#![allow(clippy::unnecessary_lazy_evaluations)]
+#![allow(clippy::bool_assert_comparison)]
 
 // TODO(#6) Complete string operations
 // TODO(#7) Complete assembly compiler for string operations
@@ -145,6 +144,8 @@
 
 #[macro_use]
 extern crate alloc;
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+extern crate alloc as std;
 
 #[macro_use]
 extern crate amplify;

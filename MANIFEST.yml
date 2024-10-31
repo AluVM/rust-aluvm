@@ -3,7 +3,7 @@ Type: Library
 Kind: Free software
 License: Apache-2.0
 Language: Rust
-Compiler: 1.76
+Compiler: 1.78
 Author: Maxim Orlovsky
 Maintained: UBIDECO Labs, Institute for Deterministic and Cognitive Computing, Switzerland
 Maintainers:
