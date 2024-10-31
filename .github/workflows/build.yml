@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Platform ${{matrix.os}}
-        run: cargo check --workspace --all-features # we skip test targets here to be sure that the main library can be built
+        run: cargo check --workspace --all-features # we skip test targets here to be sure that the main lib-old can be built
   toolchains:
     runs-on: ubuntu-latest
     strategy:

@@ -6,9 +6,8 @@
 // Written in 2021-2024 by
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
+// Copyright (C) 2021-2024 UBIDECO Labs,
+//     Laboratories for Distributed and Cognitive Computing, Switzerland.
 //     All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,10 +29,9 @@
     unused_mut,
     unused_imports,
     dead_code,
-    missing_docs
+    // missing_docs
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-#![cfg_attr(not(feature = "std"), no_std)]
 
 //! Rust implementation of AluVM (arithmetic logic unit virtual machine) and assembler from Alu
 //! Assembly language into bytecode.
@@ -69,7 +67,7 @@
 //! * Data segment is always signed;
 //! * Code commits to the used ISA extensions;
 //! * Libraries identified by the signature;
-//! * Code does not runs if not all libraries are present;
+//! * Code does not run if not all libraries are present;
 //!
 //! ![Comparison table](doc/comparison.png)
 //!
@@ -80,7 +78,7 @@
 //!
 //! ### Instruction opcodes
 //!
-//! You will find all opcode implementation details documented in [`crate::isa::Instr`] API docs.
+//! You will find all opcode implementation details documented in [`isa::Instr`] API docs.
 //!
 //! - RISC: only 256 instructions
 //! - 3 families of core instructions:
@@ -134,13 +132,13 @@
 //! - Call stack register (cs0), 3*2^16 bits (192kB block)
 //! - Call stack pointer register (cp0), 16 bits
 //!
-//! [AluVM]: https://github.com/internet2-org/aluvm-spec
+//! [AluVM]: https://github.com/AluVM/aluvm-spec
 
 #![allow(clippy::bool_assert_comparison)]
 
-// TODO(#6) Complete string operations
-// TODO(#7) Complete assembly compiler for string operations
-// TODO(#8) Implement operations on Edwards curves
+// TODO: Extend the list of features not compatible with zk-aluvm as they appear.
+#[cfg(all(feature = "zk-aluvm", any(feature = "A64", feature = "STR")))]
+compile_error!("zk-AluVM is incompatible with any ISA extensions other then GFA");
 
 #[macro_use]
 extern crate alloc;
@@ -150,27 +148,31 @@ extern crate alloc as std;
 #[macro_use]
 extern crate amplify;
 #[macro_use]
-extern crate strict_encoding;
+extern crate strict_types;
+#[macro_use]
+extern crate commit_verify;
 #[cfg(feature = "serde")]
 #[macro_use]
-extern crate serde_crate as serde;
-extern crate core;
+extern crate serde;
 
-pub mod data;
+mod core;
 #[macro_use]
 pub mod isa;
-pub mod library;
-pub mod reg;
+mod library;
+mod vm;
 #[cfg(feature = "stl")]
 pub mod stl;
-mod vm;
 
-pub use isa::Isa;
-#[cfg(feature = "ascii-armor")]
-pub use library::LibArmorError;
+pub mod regs {
+    pub use crate::core::{IdxA, IdxAl, Reg, RegA, Status, A, CALL_STACK_SIZE_MAX};
+}
+
+pub use isa::{IsaId, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
+#[cfg(feature = "armor")]
+pub use library::armor::LibArmorError;
+pub use library::{Lib, LibId, LibSite};
 #[doc(hidden)]
 pub use paste::paste;
 pub use vm::Vm;
 
-/// Struct types library name.
-pub const LIB_NAME_ALUVM: &str = "AluVM";
+pub use self::core::{gfa, Core, CoreConfig, Site, SiteId};

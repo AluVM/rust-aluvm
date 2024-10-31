@@ -6,9 +6,8 @@
 // Written in 2021-2024 by
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
+// Copyright (C) 2021-2024 UBIDECO Labs,
+//     Laboratories for Distributed and Cognitive Computing, Switzerland.
 //     All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,19 +22,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Strict types library generator methods.
+//! Strict types lib-old generator methods.
 
 use core::convert::TryFrom;
 
 use strict_types::typelib::{CompileError, LibBuilder};
 use strict_types::TypeLib;
 
-use crate::library::{Lib, LibSite};
-use crate::LIB_NAME_ALUVM;
+use crate::{Lib, LibSite};
 
-/// Strict type id for the library providing data types from this crate.
-pub const LIB_ID_ALUVM: &str =
-    "stl:YnA1fyHl-46C2hsC-tZPxn60-w1jLk5Y-rDTjRmy-xo!5xjY#congo-archive-folio";
+pub const LIB_NAME_ALUVM: &str = "AluVM";
+/// Strict type id for the lib-old providing data types from this crate.
+pub const LIB_ID_ALUVM: &str = "stl:YnA1fyHl-46C2hsC-tZPxn60-w1jLk5Y-rDTjRmy-xo!5xjY#congo-archive-folio";
 
 fn _aluvm_stl() -> Result<TypeLib, CompileError> {
     LibBuilder::new(libname!(LIB_NAME_ALUVM), tiny_bset! {
@@ -47,8 +45,8 @@ fn _aluvm_stl() -> Result<TypeLib, CompileError> {
     .compile()
 }
 
-/// Generates strict type library providing data types from this crate.
-pub fn aluvm_stl() -> TypeLib { _aluvm_stl().expect("invalid strict type AluVM library") }
+/// Generates strict type lib-old providing data types from this crate.
+pub fn aluvm_stl() -> TypeLib { _aluvm_stl().expect("invalid strict type AluVM lib-old") }
 
 #[cfg(test)]
 mod test {
