@@ -34,10 +34,11 @@ serde = { version = "1", optional = true }
 default = []
 # `all` must exclude specific ISA, which may be in a conflict with each other
 # The consumer of the library is expected to add required ISA manually
-all = ["stl", "log", "armor", "serde"]
+all = ["std", "stl", "log", "armor", "serde"]
 
-armor = ["dep:ascii-armor"]
-stl = ["strict_types/armor"]
+std = []
+armor = ["dep:ascii-armor", "strict_types/armor"]
+stl = ["armor", "strict_types"]
 log = []
 alloc = ["amplify/alloc"]
 serde = ["dep:serde", "amplify/serde", "strict_encoding/serde"]

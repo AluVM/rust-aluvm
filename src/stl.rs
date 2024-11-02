@@ -31,7 +31,6 @@ use strict_types::TypeLib;
 
 use crate::{Lib, LibSite};
 
-pub const LIB_NAME_ALUVM: &str = "AluVM";
 /// Strict type id for the lib-old providing data types from this crate.
 pub const LIB_ID_ALUVM: &str = "stl:YnA1fyHl-46C2hsC-tZPxn60-w1jLk5Y-rDTjRmy-xo!5xjY#congo-archive-folio";
 

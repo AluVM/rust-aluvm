@@ -33,8 +33,7 @@ use commit_verify::{CommitId, CommitmentId, Digest, Sha256};
 use strict_encoding::{StrictDeserialize, StrictSerialize};
 
 use crate::core::SiteId;
-use crate::stl::LIB_NAME_ALUVM;
-use crate::{IsaId, Site};
+use crate::{IsaId, Site, LIB_NAME_ALUVM};
 
 pub const LIB_ID_TAG: &'static str = "urn:ubideco:aluvm:lib:v01#241020";
 
@@ -164,10 +163,10 @@ mod test {
     #[test]
     fn lib_id_display() {
         let id = Lib::strict_dumb().lib_id();
-        assert_eq!(format!("{id}"), "alu:650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4#plasma-tunnel-mama");
-        assert_eq!(format!("{id:-}"), "650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4#plasma-tunnel-mama");
-        assert_eq!(format!("{id:#}"), "alu:650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4");
-        assert_eq!(format!("{id:-#}"), "650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4");
+        assert_eq!(format!("{id}"), "alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality");
+        assert_eq!(format!("{id:-}"), "5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality");
+        assert_eq!(format!("{id:#}"), "alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q");
+        assert_eq!(format!("{id:-#}"), "5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q");
     }
 
     #[test]
@@ -175,11 +174,14 @@ mod test {
         let id = Lib::strict_dumb().lib_id();
         assert_eq!(
             id,
-            LibId::from_str("alu:650XHPmh-WpXWR5R-Uz4B5jX-jeDqcyr-HXpdZxY-aX9gfO4#plasma-tunnel-mama").unwrap()
+            LibId::from_str("alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality").unwrap()
         );
-        assert_eq!(id, LibId::from_str("alu:650XHPmhWpXWR5RUz4B5jXjeDqcyrHXpdZxYaX9gfO4").unwrap());
-        assert_eq!(id, LibId::from_str("alu:650XHPmhWpXWR5RUz4B5jXjeDqcyrHXpdZxYaX9gfO4#plasma-tunnel-mama").unwrap());
+        assert_eq!(id, LibId::from_str("alu:5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q").unwrap());
+        assert_eq!(
+            id,
+            LibId::from_str("alu:5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q#sponsor-society-quality").unwrap()
+        );
 
-        assert_eq!(id, LibId::from_str("650XHPmhWpXWR5RUz4B5jXjeDqcyrHXpdZxYaX9gfO4").unwrap());
+        assert_eq!(id, LibId::from_str("5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q").unwrap());
     }
 }

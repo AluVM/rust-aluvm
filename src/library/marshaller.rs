@@ -320,7 +320,7 @@ where
     fn read_fixed<N, const LEN: usize>(&mut self, f: impl FnOnce([u8; LEN]) -> N) -> Result<N, CodeEofError> {
         let pos = self.read_word()? as usize;
         let end = pos + LEN;
-        if end >= self.data.as_ref().len() {
+        if end > self.data.as_ref().len() {
             return Err(CodeEofError);
         }
         let mut buf = [0u8; LEN];
@@ -468,7 +468,7 @@ mod tests {
     fn write() {
         let libseg = LibsSeg::default();
         let mut code = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let mut marshaller = Marshaller::with(&mut code, [], &libseg);
+        let mut marshaller = Marshaller::with(&mut code, vec![], &libseg);
         marshaller.write_2bits(u2::with(0b00000011)).unwrap();
         marshaller.write_3bits(u3::with(0b00000101)).unwrap();
         marshaller.write_7bits(u7::with(0b01011111)).unwrap();
@@ -493,19 +493,19 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn write_fail() {
+    fn write_data() {
         let libseg = LibsSeg::default();
         let mut code = [0, 0, 0, 0, 0, 0];
-        let mut marshaller = Marshaller::with(&mut code, [], &libseg);
+        let mut marshaller = Marshaller::with(&mut code, vec![], &libseg);
         marshaller.write_fixed(256u16.to_le_bytes()).unwrap();
+        assert_eq!(marshaller.data, vec![0, 1]);
     }
 
     #[test]
     fn write_eof() {
         let libseg = LibsSeg::default();
         let mut code = [0, 0];
-        let mut marshaller = Marshaller::with(&mut code, [], &libseg);
+        let mut marshaller = Marshaller::with(&mut code, vec![], &libseg);
         marshaller.write_2bits(u2::with(0b00000011)).unwrap();
         marshaller.write_3bits(u3::with(0b00000101)).unwrap();
         marshaller.write_7bits(u7::with(0b01011111)).unwrap();

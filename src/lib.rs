@@ -140,7 +140,6 @@
 #[cfg(all(feature = "zk-aluvm", any(feature = "A64", feature = "STR")))]
 compile_error!("zk-AluVM is incompatible with any ISA extensions other then GFA");
 
-#[macro_use]
 extern crate alloc;
 #[cfg(all(feature = "alloc", not(feature = "std")))]
 extern crate alloc as std;
@@ -148,7 +147,7 @@ extern crate alloc as std;
 #[macro_use]
 extern crate amplify;
 #[macro_use]
-extern crate strict_types;
+extern crate strict_encoding;
 #[macro_use]
 extern crate commit_verify;
 #[cfg(feature = "serde")]
@@ -176,3 +175,5 @@ pub use paste::paste;
 pub use vm::Vm;
 
 pub use self::core::{gfa, Core, CoreConfig, Site, SiteId};
+
+pub const LIB_NAME_ALUVM: &str = "AluVM";
