@@ -123,9 +123,7 @@ impl<Id: SiteId> InstructionSet<Id> for ReservedInstr {
     type Instr = Self;
 }
 
-impl<'ctx, Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id, Context<'ctx> = ()>> InstructionSet<Id>
-    for Instr<Id, Ext>
-{
+impl<'ctx, Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id>> InstructionSet<Id> for Instr<Id, Ext> {
     const ISA: &'static str = ISA_ALU64;
     const ISA_EXT: &'static [&'static str] = &[ISA_AN];
     const HAS_EXT: bool = true;

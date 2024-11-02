@@ -28,8 +28,8 @@ use super::{CtrlInstr, MaybeU128, RegInstr};
 use crate::core::{Core, Reg, Site, SiteId, Status};
 use crate::isa::{ExecStep, Instr, Instruction, InstructionSet, ReservedInstr};
 
-impl<'cx, Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id, Context<'cx> = ()>> Instruction<Id> for Instr<Id, Ext> {
-    type Context<'ctx> = ();
+impl<Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id>> Instruction<Id> for Instr<Id, Ext> {
+    type Context<'ctx> = Ext::Context<'ctx>;
 
     fn src_regs(&self) -> BTreeSet<Reg> {
         match self {
@@ -77,11 +77,11 @@ impl<'cx, Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id, Context<'cx> = (
 
     fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
         match self {
-            Instr::Ctrl(instr) => instr.exec(core, site, context),
-            Instr::Reg(instr) => instr.exec(core, site, context),
+            Instr::Ctrl(instr) => instr.exec(core, site, &()),
+            Instr::Reg(instr) => instr.exec(core, site, &()),
             #[cfg(feature = "GFA")]
-            Instr::GFqA(instr) => instr.exec(core, site, context),
-            Instr::Reserved(instr) => instr.exec(core, site, context),
+            Instr::GFqA(instr) => instr.exec(core, site, &()),
+            Instr::Reserved(instr) => instr.exec(core, site, &()),
             Instr::Ext(instr) => instr.exec(core, site, context),
         }
     }
