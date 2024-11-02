@@ -204,10 +204,13 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
     /// Set overflow/carry flag to a value.
     pub fn set_co(&mut self, co: bool) { self.co = co; }
 
-    /// Return whether check register `ck` was set to a failed state for at least once.
+    /// Return how many times `ck` was set to a failed state.
     pub fn cf(&self) -> u64 { self.cf }
 
-    /// Return whether check register `ck` was set to a failed state for at least once.
+    /// Return `true` if `ck` was in a failed state for at least once.
+    pub fn has_failed(&self) -> bool { self.cf > 0 }
+
+    /// Return whether check register `ck` is in a failed state.
     pub fn ck(&self) -> Status { self.ck }
 
     /// Set `ck` register to a failed state.
