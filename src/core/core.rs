@@ -153,6 +153,7 @@ pub struct Core<Id: SiteId, const CALL_STACK_SIZE: usize = { CALL_STACK_SIZE_MAX
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Debug)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = LIB_NAME_ALUVM)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CoreConfig {
     /// Initial value for the [`Core::ch`] flag.
     pub halt: bool,

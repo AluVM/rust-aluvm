@@ -33,6 +33,7 @@ const F1289: u128 = u128::MAX - 8; // it should be 9, but `u128::MAX` is 2^128-1
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = LIB_NAME_ALUVM, tags = custom)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Fq {
     #[display("M31", alt = "2^31-1")]
     #[strict_type(tag = 31, dumb)]
