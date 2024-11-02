@@ -166,7 +166,7 @@ pub mod regs {
     pub use crate::core::{IdxA, IdxAl, Reg, RegA, Status, A, CALL_STACK_SIZE_MAX};
 }
 
-pub use isa::{IsaId, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
+pub use isa::{IsaId, ISA_ALU128, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
 #[cfg(feature = "armor")]
 pub use library::armor::LibArmorError;
 pub use library::{Lib, LibId, LibSite};

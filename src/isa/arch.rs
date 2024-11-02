@@ -37,6 +37,7 @@ use crate::LIB_NAME_ALUVM;
 pub const ISA_ID_MAX_LEN: usize = 16;
 
 pub const ISA_ALU64: &str = "ALU64";
+pub const ISA_ALU128: &str = "ALU128";
 pub const ISA_AN: &str = "AN"; // Unsigned arithmetics
 
 #[macro_export]

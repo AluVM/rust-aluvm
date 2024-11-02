@@ -29,3 +29,5 @@ mod bytecode;
 mod exec;
 
 pub use instr::FieldInstr;
+
+pub const ISA_GFA128: &str = "GFA128";
