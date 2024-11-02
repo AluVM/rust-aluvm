@@ -174,6 +174,8 @@ pub use library::{Lib, LibId, LibSite};
 pub use paste::paste;
 pub use vm::Vm;
 
-pub use self::core::{gfa, Core, CoreConfig, Site, SiteId};
+#[cfg(feature = "GFA")]
+pub use self::core::gfa;
+pub use self::core::{Core, CoreConfig, Site, SiteId};
 
 pub const LIB_NAME_ALUVM: &str = "AluVM";

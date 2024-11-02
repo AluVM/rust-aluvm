@@ -23,7 +23,7 @@
 // limitations under the License.
 
 use crate::core::SiteId;
-use crate::Core;
+use crate::{Core, LIB_NAME_ALUVM};
 
 const M31: u128 = (1 << 31u128) - 1;
 const F1137119: u128 = 1 + 11 * 37 * (1 << 119u128);
@@ -31,14 +31,23 @@ const F1289: u128 = u128::MAX - 8; // it should be 9, but `u128::MAX` is 2^128-1
 
 /// Finite field orders.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
+#[strict_type(lib = LIB_NAME_ALUVM, tags = custom)]
 pub enum Fq {
     #[display("M31", alt = "2^31-1")]
+    #[strict_type(tag = 31, dumb)]
     M31, // 2^31-1
+
     #[display("F1137119", alt = "1+11*37*2^119")]
+    #[strict_type(tag = 119)]
     F1137119,
+
     #[display("F1289", alt = "2^128-9")]
+    #[strict_type(tag = 128)]
     F1289,
+
     #[display("{0:X}:h")]
+    #[strict_type(tag = 0xFF)]
     Other(u128),
 }
 

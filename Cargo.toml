@@ -38,7 +38,7 @@ all = ["std", "stl", "log", "armor", "serde"]
 
 std = []
 armor = ["dep:ascii-armor", "strict_types/armor"]
-stl = ["armor", "strict_types"]
+stl = ["armor", "strict_types", "GFA"]
 log = []
 alloc = ["amplify/alloc"]
 serde = ["dep:serde", "amplify/serde", "strict_encoding/serde"]

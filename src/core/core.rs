@@ -29,6 +29,7 @@ use amplify::confinement::ConfinedVec;
 use super::{Site, SiteId, Status};
 #[cfg(feature = "GFA")]
 use crate::core::gfa::Fq;
+use crate::LIB_NAME_ALUVM;
 
 /// Maximal size of call stack.
 ///
@@ -150,6 +151,8 @@ pub struct Core<Id: SiteId, const CALL_STACK_SIZE: usize = { CALL_STACK_SIZE_MAX
 
 /// Configuration for [`Core`] initialization.
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Debug)]
+#[derive(StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = LIB_NAME_ALUVM)]
 pub struct CoreConfig {
     /// Initial value for the [`Core::ch`] flag.
     pub halt: bool,
