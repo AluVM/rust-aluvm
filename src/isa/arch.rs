@@ -32,7 +32,7 @@ use strict_encoding::{RString, StrictDumb};
 use super::FieldInstr;
 use super::{CtrlInstr, Instruction, RegInstr};
 use crate::core::SiteId;
-use crate::stl::LIB_NAME_ALUVM;
+use crate::LIB_NAME_ALUVM;
 
 pub const ISA_ID_MAX_LEN: usize = 16;
 

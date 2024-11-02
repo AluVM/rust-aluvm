@@ -30,7 +30,7 @@ const F1137119: u128 = 1 + 11 * 37 * (1 << 119u128);
 const F1289: u128 = u128::MAX - 8; // it should be 9, but `u128::MAX` is 2^128-1 and not 2^128
 
 /// Finite field orders.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
 pub enum Fq {
     #[display("M31", alt = "2^31-1")]
     M31, // 2^31-1
