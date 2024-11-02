@@ -220,6 +220,17 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
             cs: ConfinedVec::with_capacity(CALL_STACK_SIZE),
         }
     }
+
+    pub fn reset(&mut self) {
+        let mut new = Self::new();
+        #[cfg(feature = "GFA")]
+        {
+            new.fq = self.fq;
+        }
+        new.ch = self.ch;
+        new.cl = self.cl;
+        *self = new;
+    }
 }
 
 impl<Id: SiteId, const CALL_STACK_SIZE: usize> Debug for Core<Id, CALL_STACK_SIZE> {

@@ -36,7 +36,7 @@ pub struct Vm<Isa = Instr<LibId, ReservedInstr>>
 where Isa: InstructionSet<LibId>
 {
     /// A set of registers
-    pub registers: Core<LibId>,
+    pub core: Core<LibId>,
 
     phantom: PhantomData<Isa>,
 }
@@ -48,7 +48,7 @@ where Isa: InstructionSet<LibId>
     /// Constructs new virtual machine instance with default core configuration.
     pub fn new() -> Self {
         Self {
-            registers: Core::new(),
+            core: Core::new(),
             phantom: Default::default(),
         }
     }
@@ -56,10 +56,13 @@ where Isa: InstructionSet<LibId>
     /// Constructs new virtual machine instance with default core configuration.
     pub fn with(config: CoreConfig) -> Self {
         Self {
-            registers: Core::with(config),
+            core: Core::with(config),
             phantom: Default::default(),
         }
     }
+
+    /// Resets all registers of the VM except those which were set up with the config object.
+    pub fn reset(&mut self) { self.core.reset(); }
 
     /// Executes the program starting from the provided entry point.
     ///
@@ -78,13 +81,13 @@ where Isa: InstructionSet<LibId>
         let mut call = Some(entry_point);
         while let Some(ref mut site) = call {
             if let Some(lib) = lib_resolver(site.lib_id) {
-                call = lib.exec::<Isa::Instr>(site.offset, &mut self.registers, context);
+                call = lib.exec::<Isa::Instr>(site.offset, &mut self.core, context);
             } else if let Some(pos) = site.offset.checked_add(1) {
                 site.offset = pos;
             } else {
                 call = None;
             };
         }
-        self.registers.ck()
+        self.core.ck()
     }
 }
