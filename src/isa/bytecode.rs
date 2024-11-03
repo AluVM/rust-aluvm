@@ -25,7 +25,7 @@
 
 //! Instruction serialization and deserialization from bytecode.
 
-#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 use core::ops::RangeInclusive;
 

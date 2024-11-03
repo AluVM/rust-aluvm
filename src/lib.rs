@@ -142,10 +142,11 @@
 // TODO(#7) Complete assembly compiler for string operations
 // TODO(#8) Implement operations on Edwards curves
 
+#[cfg(not(any(feature = "alloc", feature = "std")))]
+compile_error!("either `alloc` or `std` feature must be used");
+
 #[macro_use]
 extern crate alloc;
-#[cfg(all(feature = "alloc", not(feature = "std")))]
-extern crate alloc as std;
 
 #[macro_use]
 extern crate amplify;

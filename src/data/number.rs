@@ -26,9 +26,9 @@
 //! Module defining number layout (integer, signed/unsigned, float etc) and universal in-memory
 //! number representation.
 
-#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[cfg(feature = "alloc")]
 use alloc::format;
-#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[cfg(feature = "alloc")]
 use alloc::string::{String, ToString};
 use core::fmt::{
     self, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, Write,

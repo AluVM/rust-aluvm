@@ -21,7 +21,7 @@ name = "aluvm-stl"
 required-features = ["stl"]
 
 [dependencies]
-amplify = { version = "4.7.0", default-features = false, features = ["apfloat", "derive", "hex"] }
+amplify = { version = "4.8.0", default-features = false, features = ["apfloat", "derive", "hex"] }
 ascii-armor = { version = "0.7.2", optional = true }
 baid64 = "0.2.2"
 paste = "1"
@@ -39,7 +39,7 @@ serde_crate = { package = "serde", version = "1", optional = true }
 default = ["std"]
 all = ["stl", "std", "log", "secp256k1", "curve25519", "serde", "ascii-armor"]
 stl = ["strict_types/armor", "std"]
-std = ["amplify/std"]
+std = ["amplify/std", "alloc"]
 log = ["std"]
 alloc = ["amplify/alloc"]
 curve25519 = ["curve25519-dalek"]
