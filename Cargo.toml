@@ -21,7 +21,7 @@ name = "aluvm-stl"
 required-features = ["stl"]
 
 [dependencies]
-amplify = "4.7.0"
+amplify = { version = "4.7.1", default-features = false, features = ["derive"] }
 ascii-armor = { version = "0.7.2", optional = true }
 baid64 = "0.2.2"
 commit_verify = "0.11.0-beta.8"
@@ -36,7 +36,7 @@ default = []
 # The consumer of the library is expected to add required ISA manually
 all = ["std", "stl", "log", "armor", "serde"]
 
-std = []
+std = ["amplify/std"]
 armor = ["dep:ascii-armor", "strict_types/armor"]
 stl = ["armor", "strict_types", "GFA"]
 log = []
