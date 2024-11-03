@@ -89,7 +89,7 @@ pub trait InstructionSet<Id: SiteId>: Debug + Display {
 
 /// Reserved instruction, which equal to [`ControlFlowOp::Fail`].
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Default)]
-#[display("halt    {0:#02X}:h")]
+#[display("halt    {0:#02X}#h")]
 pub struct ReservedInstr(/** Reserved instruction op code value */ pub(super) u8);
 
 /// Complete AluVM ISA.

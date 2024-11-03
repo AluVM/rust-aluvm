@@ -90,7 +90,7 @@ pub struct Core<Id: SiteId, const CALL_STACK_SIZE: usize = { CALL_STACK_SIZE_MAX
 
     // --------------------------------------------------------------------------------------------
     // Control flow registers
-    /// Halt register. If set to `true`, halts program when `ck` is set to [`Status::Failed`] for
+    /// Halt register. If set to `true`, halts program when `CK` is set to [`Status::Failed`] for
     /// the first time.
     ///
     /// # See also
@@ -108,7 +108,7 @@ pub struct Core<Id: SiteId, const CALL_STACK_SIZE: usize = { CALL_STACK_SIZE_MAX
     /// - [`Core::cf`] register
     pub(super) ck: Status,
 
-    /// Failure register, which counts how many times `ck` was set, and can't be reset.
+    /// Failure register, which counts how many times `CK` was set, and can't be reset.
     ///
     /// # See also
     ///
@@ -137,7 +137,7 @@ pub struct Core<Id: SiteId, const CALL_STACK_SIZE: usize = { CALL_STACK_SIZE_MAX
     /// Complexity limit.
     ///
     /// If this register has a value set, once [`Core::ca`] will reach this value the VM will
-    /// stop program execution setting `ck` to `false`.
+    /// stop program execution setting `CK` to a failure.
     pub(super) cl: Option<u64>,
 
     /// Call stack.
@@ -239,19 +239,19 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Debug for Core<Id, CALL_STACK_SIZ
             if f.alternate() { ("\x1B[0;4;1m", "\x1B[0;1m", "\x1B[0;32m", "\x1B[0m") } else { ("", "", "", "") };
 
         writeln!(f, "{sect}C-regs:{reset}")?;
-        write!(f, "{reg}ch{reset} {val}{}, ", self.ch)?;
-        write!(f, "{reg}ck{reset} {val}{}, ", self.ck)?;
-        write!(f, "{reg}cf{reset} {val}{}, ", self.cf)?;
-        write!(f, "{reg}co{reset} {val}{}, ", self.co)?;
-        write!(f, "{reg}cy{reset} {val}{}, ", self.cy)?;
-        write!(f, "{reg}ca{reset} {val}{}, ", self.ca)?;
+        write!(f, "{reg}CH{reset} {val}{}, ", self.ch)?;
+        write!(f, "{reg}CK{reset} {val}{}, ", self.ck)?;
+        write!(f, "{reg}CF{reset} {val}{}, ", self.cf)?;
+        write!(f, "{reg}CO{reset} {val}{}, ", self.co)?;
+        write!(f, "{reg}CY{reset} {val}{}, ", self.cy)?;
+        write!(f, "{reg}CA{reset} {val}{}, ", self.ca)?;
         let cl = self
             .cl
             .map(|v| v.to_string())
             .unwrap_or_else(|| "~".to_string());
-        write!(f, "{reg}cl{reset} {val}{cl}, ")?;
-        write!(f, "{reg}cp{reset} {val}{}, ", self.cp())?;
-        write!(f, "\n{reg}cs{reset} {val}")?;
+        write!(f, "{reg}CL{reset} {val}{cl}, ")?;
+        write!(f, "{reg}CP{reset} {val}{}, ", self.cp())?;
+        write!(f, "\n{reg}CS{reset} {val}")?;
         for item in &self.cs {
             write!(f, "{}   ", item)?;
         }
@@ -260,7 +260,7 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Debug for Core<Id, CALL_STACK_SIZ
         writeln!(f, "{sect}A-regs:{reset}")?;
         let mut c = 0;
         for (i, v) in self.a_values() {
-            writeln!(f, "{reg}{i}{reset} {val}{v:X}{reset}h")?;
+            writeln!(f, "{reg}{i}{reset} {val}{v:X}{reset}#h")?;
             c += 1;
         }
         if c > 0 {

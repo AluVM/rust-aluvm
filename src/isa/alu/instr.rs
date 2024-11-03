@@ -28,7 +28,7 @@ use crate::Site;
 /// Value read from data segment during bytecode deserialization, which may be absent there.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 pub enum MaybeU128 {
-    #[display("{0:X}:h")]
+    #[display("{0:X}#h")]
     U128(u128),
 
     #[display(":nodata")]
@@ -52,44 +52,44 @@ pub enum CtrlInstr<Id: SiteId> {
     #[display("nop")]
     Nop,
 
-    /// Test ck value, terminates if in failed state.
+    /// Test `CK` value, terminates if in failed state.
     #[display("chk")]
     Chk,
 
-    /// Invert `co` register.
-    #[display("not     co")]
+    /// Invert `CO` register.
+    #[display("not     CO")]
     NotCo,
 
-    /// Set `ck` register to a failed state.
-    #[display("put     ck, :fail")]
+    /// Set `CK` register to a failed state.
+    #[display("put     CK, :fail")]
     FailCk,
 
-    /// Reset `ck` register.
-    #[display("put     ck, :ok")]
+    /// Reset `CK` register.
+    #[display("put     CK, :ok")]
     RsetCk,
 
     /// Jump to location (unconditionally).
-    #[display("jmp     {pos:04X}:h")]
+    #[display("jmp     {pos:04X}#h")]
     Jmp { pos: u16 },
 
-    /// Jump to location if `co` is true.
-    #[display("jif     co, {pos:04X}:h")]
+    /// Jump to location if `CO` is true.
+    #[display("jif     CO, {pos:04X}#h")]
     JifCo { pos: u16 },
 
     /// Jump to location if `ck` is in a failed state.
-    #[display("jif     ck, {pos:04X}:h")]
+    #[display("jif     CK, {pos:04X}#h")]
     JifCk { pos: u16 },
 
     /// Relative jump.
-    #[display("jmp     {shift:+03X}:h")]
+    #[display("jmp     {shift:+03X}#h")]
     Sh { shift: i8 },
 
-    /// Relative jump if `co` is true.
-    #[display("jif     co, {shift:+03X}:h")]
+    /// Relative jump if `CO` is true.
+    #[display("jif     CO, {shift:+03X}#h")]
     ShNe { shift: i8 },
 
-    /// Relative jump if `ck` is in a failed state.
-    #[display("jif     ck, {shift:+03X}:h")]
+    /// Relative jump if `CK` is in a failed state.
+    #[display("jif     CK, {shift:+03X}#h")]
     ShFail { shift: i8 },
 
     /// External jump.
@@ -97,7 +97,7 @@ pub enum CtrlInstr<Id: SiteId> {
     Exec { site: Site<Id> },
 
     /// Subroutine call.
-    #[display("call    {pos:04X}:h")]
+    #[display("call    {pos:04X}#h")]
     Fn { pos: u16 },
 
     /// External subroutine call.

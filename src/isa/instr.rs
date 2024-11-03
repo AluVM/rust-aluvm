@@ -30,22 +30,22 @@ use crate::core::{Core, Reg, Site, SiteId};
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ExecStep<Site> {
-    /// Stop program execution
+    /// Stop program execution.
     Stop,
 
-    /// Stop and fail program execution
-    StopFail,
+    /// Set `CK` to `Fail` and halt the program execution.
+    FailHalt,
 
-    /// Move to the next instruction
+    /// Move to the next instruction.
     Next,
 
-    /// Move to the next instruction and set `ck` to `Fail`.
-    NextFail,
+    /// Move to the next instruction and set `CK` to `Fail`.
+    FailContinue,
 
-    /// Jump to the offset from the origin
+    /// Jump to the offset from the origin.
     Jump(u16),
 
-    /// Jump to another code fragment
+    /// Jump to another code fragment.
     Call(Site),
 }
 

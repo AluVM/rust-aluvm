@@ -47,7 +47,7 @@ pub enum Fq {
     #[strict_type(tag = 128)]
     F1289,
 
-    #[display("{0:X}:h")]
+    #[display("{0:X}#h")]
     #[strict_type(tag = 0xFF)]
     Other(u128),
 }

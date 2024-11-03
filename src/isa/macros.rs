@@ -36,7 +36,7 @@ macro_rules! A {
 macro_rules! checked {
     ($core:ident . $op:ident($($arg:expr),*)) => {{
         let Some(val) = $core.$op( $( $arg ),* ) else {
-            return ExecStep::NextFail;
+            return $crate::ExecStep::FailContinue;
         };
         val
     }};

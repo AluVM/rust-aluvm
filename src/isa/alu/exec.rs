@@ -100,7 +100,7 @@ impl<Id: SiteId> Instruction<Id> for ReservedInstr {
 
     fn complexity(&self) -> u64 { u64::MAX }
 
-    fn exec(&self, _: &mut Core<Id>, _: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> { ExecStep::StopFail }
+    fn exec(&self, _: &mut Core<Id>, _: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> { ExecStep::FailHalt }
 }
 
 impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
@@ -117,7 +117,7 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
     fn exec(&self, core: &mut Core<Id>, current: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
         let shift_jump = |shift: i8| {
             let Some(pos) = current.offset.checked_add_signed(shift as i16) else {
-                return ExecStep::StopFail;
+                return ExecStep::FailHalt;
             };
             return ExecStep::Jump(pos);
         };
@@ -167,13 +167,13 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
             CtrlInstr::Fn { pos } => {
                 return match core.push_cs(current) {
                     Some(_) => ExecStep::Jump(pos),
-                    None => ExecStep::StopFail,
+                    None => ExecStep::FailHalt,
                 }
             }
             CtrlInstr::Call { site } => {
                 return match core.push_cs(current) {
                     Some(_) => ExecStep::Call(site),
-                    None => ExecStep::StopFail,
+                    None => ExecStep::FailHalt,
                 }
             }
             CtrlInstr::Ret => {

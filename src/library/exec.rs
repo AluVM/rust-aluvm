@@ -91,7 +91,7 @@ impl Lib {
                 }
                 if ck0 != registers.ck() {
                     let c = if registers.ck().is_ok() { g } else { r };
-                    eprint!(" {d}ck {z}{c}{}{z}, ", registers.ck());
+                    eprint!(" {d}CK {z}{c}{}{z}, ", registers.ck());
                 }
 
                 ck0 = registers.ck();
@@ -107,14 +107,14 @@ impl Lib {
                     #[cfg(feature = "log")]
                     {
                         let c = if registers.ck().is_ok() { g } else { r };
-                        eprintln!("execution stopped; {d}ck {z}{c}{}{z}", registers.ck());
+                        eprintln!("execution stopped; {d}CK {z}{c}{}{z}", registers.ck());
                     }
                     return None;
                 }
-                ExecStep::StopFail => {
+                ExecStep::FailHalt => {
                     let _ = registers.fail_ck();
                     #[cfg(feature = "log")]
-                    eprintln!("halting, {d}ck{z} is set to {r}false{z}");
+                    eprintln!("halting, {d}CK{z} is set to {r}false{z}");
                     return None;
                 }
                 ExecStep::Next => {
@@ -122,14 +122,14 @@ impl Lib {
                     eprintln!();
                     continue;
                 }
-                ExecStep::NextFail => {
+                ExecStep::FailContinue => {
                     if registers.fail_ck() {
                         #[cfg(feature = "log")]
-                        eprintln!("halting, {d}ck{z} is set to {r}false{z} and {d}ch{z} is {r}true{z}");
+                        eprintln!("halting, {d}CK{z} is set to {r}false{z} and {d}ch{z} is {r}true{z}");
                         return None;
                     }
                     #[cfg(feature = "log")]
-                    eprintln!("failing, {d}ck{z} is set to {r}false{z}");
+                    eprintln!("failing, {d}CK{z} is set to {r}false{z}");
                     continue;
                 }
                 ExecStep::Jump(pos) => {
@@ -138,7 +138,7 @@ impl Lib {
                     if marshaller.seek(pos).is_err() {
                         let _ = registers.fail_ck();
                         #[cfg(feature = "log")]
-                        eprintln!("jump to non-existing offset; halting, {d}ck{z} is set to {r}fail{z}");
+                        eprintln!("jump to non-existing offset; halting, {d}CK{z} is set to {r}fail{z}");
                         return None;
                     }
                 }

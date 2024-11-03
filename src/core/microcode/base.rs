@@ -213,7 +213,7 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
     /// Return whether check register `ck` is in a failed state.
     pub fn ck(&self) -> Status { self.ck }
 
-    /// Set `ck` register to a failed state.
+    /// Set `CK` register to a failed state.
     ///
     /// Returns whether further execution should be stopped (i.e. `ch` register value).
     #[must_use]
@@ -223,7 +223,7 @@ impl<Id: SiteId, const CALL_STACK_SIZE: usize> Core<Id, CALL_STACK_SIZE> {
         self.ch
     }
 
-    /// Reset `ck` register.
+    /// Reset `CK` register.
     pub fn reset_ck(&mut self) { self.ck = Status::Ok }
 
     /// Return size of the call stack.

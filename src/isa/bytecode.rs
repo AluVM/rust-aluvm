@@ -139,7 +139,7 @@ pub trait BytecodeRead<Id: SiteId> {
     ///
     /// # Returns
     ///
-    /// Resulting data type and a flag for `ck` registry indicating whether it was possible to read
+    /// Resulting data type and a flag for `CK` registry indicating whether it was possible to read
     /// all the data.
     fn read_fixed<N, const LEN: usize>(&mut self, f: impl FnOnce([u8; LEN]) -> N) -> Result<N, CodeEofError>;
 
@@ -147,7 +147,7 @@ pub trait BytecodeRead<Id: SiteId> {
     ///
     /// # Returns
     ///
-    /// Resulting data type and a flag for `ck` registry indicating whether it was possible to read
+    /// Resulting data type and a flag for `CK` registry indicating whether it was possible to read
     /// all the data.
     fn read_bytes(&mut self) -> Result<(SmallBlob, bool), CodeEofError>;
 
