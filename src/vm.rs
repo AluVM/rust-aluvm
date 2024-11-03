@@ -25,7 +25,7 @@
 
 //! Alu virtual machine
 
-#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 
