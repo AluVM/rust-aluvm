@@ -22,7 +22,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::BTreeSet;
+use alloc::collections::BTreeSet;
 
 use super::{CtrlInstr, MaybeU128, RegInstr};
 use crate::core::{Core, Reg, Site, SiteId, Status};

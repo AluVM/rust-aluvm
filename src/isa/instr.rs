@@ -22,8 +22,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::collections::BTreeSet;
 use core::fmt::{Debug, Display};
-use std::collections::BTreeSet;
 
 use crate::core::{Core, Reg, Site, SiteId};
 

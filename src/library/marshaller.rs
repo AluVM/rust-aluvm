@@ -22,8 +22,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::fmt;
-use std::fmt::{Debug, Formatter};
+use core::fmt::{self, Debug, Formatter};
 
 use amplify::confinement::SmallBlob;
 use amplify::num::{u1, u2, u3, u4, u5, u6, u7};
