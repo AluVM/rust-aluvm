@@ -141,7 +141,7 @@ impl From<u8> for RegA {
     }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(inner)]
 pub struct IdxA(Idx32);
 
@@ -156,7 +156,7 @@ impl From<u5> for IdxA {
     fn from(idx: u5) -> Self { Self(Idx32::from(idx)) }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(inner)]
 pub struct IdxAl(Idx16);
 

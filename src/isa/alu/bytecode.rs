@@ -132,8 +132,8 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
             CtrlInstr::FailCk => Self::FAIL,
             CtrlInstr::RsetCk => Self::RSET,
             CtrlInstr::Jmp { .. } => Self::JMP,
-            CtrlInstr::JifCo { .. } => Self::JIFNE,
-            CtrlInstr::JifCk { .. } => Self::JIFAIL,
+            CtrlInstr::JiNe { .. } => Self::JIFNE,
+            CtrlInstr::JiFail { .. } => Self::JIFAIL,
             CtrlInstr::Sh { .. } => Self::SH,
             CtrlInstr::ShNe { .. } => Self::SHNE,
             CtrlInstr::ShFail { .. } => Self::SHFAIL,
@@ -156,7 +156,7 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
             | CtrlInstr::Ret
             | CtrlInstr::Stop => {}
 
-            CtrlInstr::Jmp { pos } | CtrlInstr::JifCo { pos } | CtrlInstr::JifCk { pos } | CtrlInstr::Fn { pos } => {
+            CtrlInstr::Jmp { pos } | CtrlInstr::JiNe { pos } | CtrlInstr::JiFail { pos } | CtrlInstr::Fn { pos } => {
                 writer.write_fixed(pos.to_le_bytes())?
             }
             CtrlInstr::Sh { shift } | CtrlInstr::ShNe { shift } | CtrlInstr::ShFail { shift } => {
@@ -188,10 +188,10 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
             Self::JMP => CtrlInstr::Jmp {
                 pos: reader.read_fixed(u16::from_le_bytes)?,
             },
-            Self::JIFNE => CtrlInstr::JifCo {
+            Self::JIFNE => CtrlInstr::JiNe {
                 pos: reader.read_fixed(u16::from_le_bytes)?,
             },
-            Self::JIFAIL => CtrlInstr::JifCk {
+            Self::JIFAIL => CtrlInstr::JiFail {
                 pos: reader.read_fixed(u16::from_le_bytes)?,
             },
             Self::FN => CtrlInstr::Fn {

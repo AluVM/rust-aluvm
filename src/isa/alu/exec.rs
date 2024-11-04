@@ -113,7 +113,7 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
     fn op_data_bytes(&self) -> u16 {
         match self {
             CtrlInstr::Nop | CtrlInstr::Chk | CtrlInstr::NotCo | CtrlInstr::FailCk | CtrlInstr::RsetCk => 0,
-            CtrlInstr::Jmp { .. } | CtrlInstr::JifCo { .. } | CtrlInstr::JifCk { .. } => 2,
+            CtrlInstr::Jmp { .. } | CtrlInstr::JiNe { .. } | CtrlInstr::JiFail { .. } => 2,
             CtrlInstr::Sh { .. } | CtrlInstr::ShNe { .. } | CtrlInstr::ShFail { .. } => 1,
             CtrlInstr::Exec { .. } => 0,
             CtrlInstr::Fn { .. } => 2,
@@ -125,7 +125,7 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
     fn ext_data_bytes(&self) -> u16 {
         match self {
             CtrlInstr::Nop | CtrlInstr::Chk | CtrlInstr::NotCo | CtrlInstr::FailCk | CtrlInstr::RsetCk => 0,
-            CtrlInstr::Jmp { .. } | CtrlInstr::JifCo { .. } | CtrlInstr::JifCk { .. } => 0,
+            CtrlInstr::Jmp { .. } | CtrlInstr::JiNe { .. } | CtrlInstr::JiFail { .. } => 0,
             CtrlInstr::Sh { .. } | CtrlInstr::ShNe { .. } | CtrlInstr::ShFail { .. } => 0,
             CtrlInstr::Exec { .. } => 32,
             CtrlInstr::Fn { .. } => 0,
@@ -160,12 +160,12 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
             }
             CtrlInstr::NotCo => core.set_co(!core.co()),
             CtrlInstr::Jmp { pos } => return ExecStep::Jump(pos),
-            CtrlInstr::JifCo { pos } => {
+            CtrlInstr::JiNe { pos } => {
                 if core.co() {
                     return ExecStep::Jump(pos);
                 }
             }
-            CtrlInstr::JifCk { pos } => {
+            CtrlInstr::JiFail { pos } => {
                 if core.ck() == Status::Fail {
                     return ExecStep::Jump(pos);
                 }

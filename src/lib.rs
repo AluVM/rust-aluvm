@@ -161,7 +161,7 @@ mod vm;
 pub mod stl;
 
 pub mod regs {
-    pub use crate::core::{IdxA, IdxAl, Reg, RegA, Status, A, CALL_STACK_SIZE_MAX};
+    pub use crate::core::{Idx16, Idx32, IdxA, IdxAl, Reg, RegA, Status, A, CALL_STACK_SIZE_MAX};
 }
 
 pub use isa::{ExecStep, IsaId, ISA_ALU128, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};

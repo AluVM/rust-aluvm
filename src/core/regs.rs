@@ -62,7 +62,7 @@ impl<Id: SiteId> Display for Site<Id> {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[repr(u8)]
-pub(super) enum Idx16 {
+pub enum Idx16 {
     #[display(":1")]
     L1 = 0,
     #[display(":2")]
@@ -141,7 +141,7 @@ impl From<u4> for Idx16 {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[repr(u8)]
-pub(super) enum Idx32 {
+pub enum Idx32 {
     #[display(":1")]
     L1 = 0,
     #[display(":2")]

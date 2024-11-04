@@ -74,11 +74,11 @@ pub enum CtrlInstr<Id: SiteId> {
 
     /// Jump to location if `CO` is true.
     #[display("jif     CO, {pos:04X}#h")]
-    JifCo { pos: u16 },
+    JiNe { pos: u16 },
 
     /// Jump to location if `ck` is in a failed state.
     #[display("jif     CK, {pos:04X}#h")]
-    JifCk { pos: u16 },
+    JiFail { pos: u16 },
 
     /// Relative jump.
     #[display("jmp     {shift:+03X}#h")]
