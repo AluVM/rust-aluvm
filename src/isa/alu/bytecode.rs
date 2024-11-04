@@ -109,7 +109,7 @@ impl<Id: SiteId> CtrlInstr<Id> {
     const FAIL: u8 = 3;
     const RSET: u8 = 4;
     const JMP: u8 = 5;
-    const JIFNE: u8 = 6;
+    const JINE: u8 = 6;
     const JIFAIL: u8 = 7;
     const SH: u8 = 8;
     const SHNE: u8 = 9;
@@ -132,7 +132,7 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
             CtrlInstr::FailCk => Self::FAIL,
             CtrlInstr::RsetCk => Self::RSET,
             CtrlInstr::Jmp { .. } => Self::JMP,
-            CtrlInstr::JiNe { .. } => Self::JIFNE,
+            CtrlInstr::JiNe { .. } => Self::JINE,
             CtrlInstr::JiFail { .. } => Self::JIFAIL,
             CtrlInstr::Sh { .. } => Self::SH,
             CtrlInstr::ShNe { .. } => Self::SHNE,
@@ -157,10 +157,10 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
             | CtrlInstr::Stop => {}
 
             CtrlInstr::Jmp { pos } | CtrlInstr::JiNe { pos } | CtrlInstr::JiFail { pos } | CtrlInstr::Fn { pos } => {
-                writer.write_fixed(pos.to_le_bytes())?
+                writer.write_word(pos)?
             }
             CtrlInstr::Sh { shift } | CtrlInstr::ShNe { shift } | CtrlInstr::ShFail { shift } => {
-                writer.write_fixed(shift.to_le_bytes())?
+                writer.write_byte(shift.to_le_bytes()[0])?
             }
             CtrlInstr::Call { site } | CtrlInstr::Exec { site } => {
                 let site = Site::new(site.prog_id, site.offset);
@@ -186,26 +186,26 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
             Self::STOP => Self::Stop,
 
             Self::JMP => CtrlInstr::Jmp {
-                pos: reader.read_fixed(u16::from_le_bytes)?,
+                pos: reader.read_word()?,
             },
-            Self::JIFNE => CtrlInstr::JiNe {
-                pos: reader.read_fixed(u16::from_le_bytes)?,
+            Self::JINE => CtrlInstr::JiNe {
+                pos: reader.read_word()?,
             },
             Self::JIFAIL => CtrlInstr::JiFail {
-                pos: reader.read_fixed(u16::from_le_bytes)?,
+                pos: reader.read_word()?,
             },
             Self::FN => CtrlInstr::Fn {
-                pos: reader.read_fixed(u16::from_le_bytes)?,
+                pos: reader.read_word()?,
             },
 
             Self::SH => CtrlInstr::Sh {
-                shift: reader.read_fixed(i8::from_le_bytes)?,
+                shift: i8::from_le_bytes([reader.read_byte()?]),
             },
             Self::SHNE => CtrlInstr::ShNe {
-                shift: reader.read_fixed(i8::from_le_bytes)?,
+                shift: i8::from_le_bytes([reader.read_byte()?]),
             },
             Self::SHFAIL => CtrlInstr::ShFail {
-                shift: reader.read_fixed(i8::from_le_bytes)?,
+                shift: i8::from_le_bytes([reader.read_byte()?]),
             },
 
             Self::CALL => {
@@ -341,5 +341,146 @@ impl<Id: SiteId> Bytecode<Id> for RegInstr {
             }
             _ => unreachable!(),
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use core::str::FromStr;
+
+    use amplify::confinement::SmallBlob;
+
+    use super::*;
+    use crate::library::{LibId, LibsSeg, Marshaller};
+    use crate::{_a_idx, a};
+
+    const LIB_ID: &str = "5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q";
+
+    fn roundtrip(instr: impl Into<Instr<LibId>>, bytecode: impl AsRef<[u8]>) -> SmallBlob {
+        let instr = instr.into();
+        let mut libs = LibsSeg::new();
+        libs.push(LibId::from_str(LIB_ID).unwrap()).unwrap();
+        let mut marshaller = Marshaller::new(&libs);
+        instr.encode_instr(&mut marshaller).unwrap();
+        let (code, data) = marshaller.finish();
+        assert_eq!(code.as_slice(), bytecode.as_ref());
+        let mut marshaller = Marshaller::with(code, data, &libs);
+        let decoded = Instr::<LibId>::decode_instr(&mut marshaller).unwrap();
+        assert_eq!(decoded, instr);
+        marshaller.into_code_data().1
+    }
+
+    #[test]
+    fn nop() { roundtrip(CtrlInstr::Nop, [CtrlInstr::<LibId>::NOP]); }
+    #[test]
+    fn chk() { roundtrip(CtrlInstr::Chk, [CtrlInstr::<LibId>::CHK]); }
+    #[test]
+    fn not_co() { roundtrip(CtrlInstr::NotCo, [CtrlInstr::<LibId>::NOCO]); }
+    #[test]
+    fn fail_ck() { roundtrip(CtrlInstr::FailCk, [CtrlInstr::<LibId>::FAIL]); }
+    #[test]
+    fn reset_ck() { roundtrip(CtrlInstr::RsetCk, [CtrlInstr::<LibId>::RSET]); }
+
+    #[test]
+    fn jmp() { roundtrip(CtrlInstr::Jmp { pos: 0x75AE }, [CtrlInstr::<LibId>::JMP, 0xAE, 0x75]); }
+    #[test]
+    fn jine() { roundtrip(CtrlInstr::JiNe { pos: 0x75AE }, [CtrlInstr::<LibId>::JINE, 0xAE, 0x75]); }
+    #[test]
+    fn jifail() { roundtrip(CtrlInstr::JiFail { pos: 0x75AE }, [CtrlInstr::<LibId>::JIFAIL, 0xAE, 0x75]); }
+
+    #[test]
+    fn sh() { roundtrip(CtrlInstr::Sh { shift: -0x5 }, [CtrlInstr::<LibId>::SH, 255 - 5 + 1]); }
+    #[test]
+    fn shne() { roundtrip(CtrlInstr::ShNe { shift: -0x5 }, [CtrlInstr::<LibId>::SHNE, 255 - 5 + 1]); }
+    #[test]
+    fn shfail() { roundtrip(CtrlInstr::ShFail { shift: -0x5 }, [CtrlInstr::<LibId>::SHFAIL, 255 - 5 + 1]); }
+
+    #[test]
+    fn exec() {
+        let lib_id = LibId::from_str(LIB_ID).unwrap();
+        roundtrip(
+            CtrlInstr::Exec {
+                site: Site::new(lib_id, 0x69AB),
+            },
+            [CtrlInstr::<LibId>::EXEC, 0x00, 0xAB, 0x69],
+        );
+    }
+    #[test]
+    fn func() { roundtrip(CtrlInstr::Fn { pos: 0x75AE }, [CtrlInstr::<LibId>::FN, 0xAE, 0x75]); }
+    #[test]
+    fn call() {
+        let lib_id = LibId::from_str(LIB_ID).unwrap();
+        roundtrip(
+            CtrlInstr::Call {
+                site: Site::new(lib_id, 0x69AB),
+            },
+            [CtrlInstr::<LibId>::CALL, 0x00, 0xAB, 0x69],
+        );
+    }
+
+    #[test]
+    fn ret() { roundtrip(CtrlInstr::Ret, [CtrlInstr::<LibId>::RET]); }
+    #[test]
+    fn stop() { roundtrip(CtrlInstr::Stop, [CtrlInstr::<LibId>::STOP]); }
+
+    #[test]
+    fn clr() { roundtrip(RegInstr::Clr { dst: a![A128:A] }, [RegInstr::CLR, 0b1000_1010]); }
+    #[test]
+    fn test() { roundtrip(RegInstr::Test { src: a![A16:3] }, [RegInstr::TEST, 0b0010_0010]); }
+
+    #[test]
+    fn put() {
+        let pos = 0xdeadcafebeefc0fe;
+        let data = roundtrip(
+            RegInstr::Put {
+                dst: a![A64.x],
+                val: MaybeU128::U128(pos),
+            },
+            [RegInstr::PUT, 0b0111_1101, 0, 0],
+        );
+        assert_eq!(data.as_slice(), &pos.to_le_bytes());
+    }
+    #[test]
+    fn pif() {
+        let pos = 0xdeadcafebeefc0fe;
+        let data = roundtrip(
+            RegInstr::Pif {
+                dst: a![A64.x],
+                val: MaybeU128::U128(pos),
+            },
+            [RegInstr::PIF, 0b0111_1101, 0, 0],
+        );
+        assert_eq!(data.as_slice(), &pos.to_le_bytes());
+    }
+
+    #[test]
+    fn cpy() {
+        roundtrip(
+            RegInstr::Cpy {
+                dst: a![A32:7],
+                src: a![A32:E],
+            },
+            [RegInstr::CPY, 0b0100_0110, 0b0100_1110],
+        );
+    }
+    #[test]
+    fn swp() {
+        roundtrip(
+            RegInstr::Swp {
+                src_dst1: a![A32:7],
+                src_dst2: a![A32:E],
+            },
+            [RegInstr::SWP, 0b0100_0110, 0b0100_1110],
+        );
+    }
+    #[test]
+    fn eq() {
+        roundtrip(
+            RegInstr::Eq {
+                src1: a![A32:7],
+                src2: a![A32:E],
+            },
+            [RegInstr::EQ, 0b0100_0110, 0b0100_1110],
+        );
     }
 }

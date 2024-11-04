@@ -53,7 +53,7 @@ macro_rules! aluasm {
         #[cfg(feature = "GFA")]
         use $crate::isa::FieldInstr;
         use $crate::regs::{IdxA, RegA, Reg, IdxAl, A, Idx32, Idx16};
-        use $crate::{_a, _a_idx, paste};
+        use $crate::{a, _a_idx, paste};
         $crate::aluasm_isa! { ReservedInstr => $( $tt )+ }
     } }};
 }
@@ -237,191 +237,191 @@ macro_rules! instr {
 
     // Clear
     (clr $A:ident : $idx:literal) => {
-        Instr::Reg(RegInstr::Clr { dst: _a!($A : $idx) })
+        Instr::Reg(RegInstr::Clr { dst: a!($A : $idx) })
     };
     (clr $A:ident : $idx:ident) => {
-        Instr::Reg(RegInstr::Clr { dst: _a!($A : $idx) })
+        Instr::Reg(RegInstr::Clr { dst: a!($A : $idx) })
     };
     (clr $A:ident . $idx:ident) => {
-        Instr::Reg(RegInstr::Clr { dst: _a!($A . $idx) })
+        Instr::Reg(RegInstr::Clr { dst: a!($A . $idx) })
     };
 
     // Test
     (test $A:ident : $idx:literal) => {
-        Instr::Reg(RegInstr::Test { dst: _a!($A : $idx) })
+        Instr::Reg(RegInstr::Test { dst: a!($A : $idx) })
     };
     (test $A:ident : $idx:ident) => {
-        Instr::Reg(RegInstr::Test { dst: _a!($A : $idx) })
+        Instr::Reg(RegInstr::Test { dst: a!($A : $idx) })
     };
     (test $A:ident . $idx:ident) => {
-        Instr::Reg(RegInstr::Test { dst: _a!($A . $idx) })
+        Instr::Reg(RegInstr::Test { dst: a!($A . $idx) })
     };
 
     // Put
     (put $A:ident : $idx:literal, $val:literal) => {
-        Instr::Reg(RegInstr::Put { dst: _a!($A : $idx), val: $val })
+        Instr::Reg(RegInstr::Put { dst: a!($A : $idx), val: $val })
     };
     (put $A:ident : $idx:ident, $val:literal) => {
-        Instr::Reg(RegInstr::Put { dst: _a!($A : $idx), val: $val })
+        Instr::Reg(RegInstr::Put { dst: a!($A : $idx), val: $val })
     };
     (put $A:ident . $idx:ident, $val:literal) => {
-        Instr::Reg(RegInstr::Put { dst: _a!($A . $idx), val: $val })
+        Instr::Reg(RegInstr::Put { dst: a!($A . $idx), val: $val })
     };
     (put $A:ident : $idx:literal, $val:literal #h) => {
-        Instr::Reg(RegInstr::Put { dst: _a!($A : $idx), val: from_hex!(u128, $val) })
+        Instr::Reg(RegInstr::Put { dst: a!($A : $idx), val: from_hex!(u128, $val) })
     };
     (put $A:ident : $idx:ident, $val:literal #h) => {
-        Instr::Reg(RegInstr::Put { dst: _a!($A : $idx), val: from_hex!(u128, $val) })
+        Instr::Reg(RegInstr::Put { dst: a!($A : $idx), val: from_hex!(u128, $val) })
     };
     (put $A:ident . $idx:ident, $val:literal #h) => {
-        Instr::Reg(RegInstr::Put { dst: _a!($A . $idx), val: from_hex!(u128, $val) })
+        Instr::Reg(RegInstr::Put { dst: a!($A . $idx), val: from_hex!(u128, $val) })
     };
 
     // Put if
     (pif $A:ident : $idx:literal, $val:literal) => {
-        Instr::Reg(RegInstr::Pif { dst: _a!($A : $idx), val: $val.into() })
+        Instr::Reg(RegInstr::Pif { dst: a!($A : $idx), val: $val.into() })
     };
     (pif $A:ident : $idx:ident, $val:literal) => {
-        Instr::Reg(RegInstr::Pif { dst: _a!($A : $idx), val: $val.into() })
+        Instr::Reg(RegInstr::Pif { dst: a!($A : $idx), val: $val.into() })
     };
     (pif $A:ident . $idx:ident, $val:literal) => {
-        Instr::Reg(RegInstr::Pif { dst: _a!($A . $idx), val: $val.into() })
+        Instr::Reg(RegInstr::Pif { dst: a!($A . $idx), val: $val.into() })
     };
     (pif $A:ident : $idx:literal, $val:literal #h) => {
-        Instr::Reg(RegInstr::Pif { dst: _a!($A : $idx), val: from_hex!(u128, $val).into() })
+        Instr::Reg(RegInstr::Pif { dst: a!($A : $idx), val: from_hex!(u128, $val).into() })
     };
     (pif $A:ident : $idx:ident, $val:literal #h) => {
-        Instr::Reg(RegInstr::Pif { dst: _a!($A : $idx), val: from_hex!(u128, $val).into() })
+        Instr::Reg(RegInstr::Pif { dst: a!($A : $idx), val: from_hex!(u128, $val).into() })
     };
     (pif $A:ident . $idx:ident, $val:literal #h) => {
-        Instr::Reg(RegInstr::Pif { dst: _a!($A . $idx), val: from_hex!(u128, $val).into() })
+        Instr::Reg(RegInstr::Pif { dst: a!($A . $idx), val: from_hex!(u128, $val).into() })
     };
 
     // Copy
     (cpy $D:ident : $dst:literal, $S:ident : $src:literal) => {
-        Instr::Reg(RegInstr::Cpy { dst: _a!($D : $dst), src: _a!($S : $src) })
+        Instr::Reg(RegInstr::Cpy { dst: a!($D : $dst), src: a!($S : $src) })
     };
     (cpy $D:ident : $dst:ident, $S:ident : $src:literal) => {
-        Instr::Reg(RegInstr::Cpy { dst: _a!($D : $dst), src: _a!($S : $src) })
+        Instr::Reg(RegInstr::Cpy { dst: a!($D : $dst), src: a!($S : $src) })
     };
     (cpy $D:ident . $dst:ident, $S:ident : $src:literal) => {
-        Instr::Reg(RegInstr::Cpy { dst: _a!($D . $dst), src: _a!($S : $src) })
+        Instr::Reg(RegInstr::Cpy { dst: a!($D . $dst), src: a!($S : $src) })
     };
     (cpy $D:ident : $dst:literal, $S:ident : $src:ident) => {
-        Instr::Reg(RegInstr::Cpy { dst: _a!($D : $dst), src: _a!($S : $src) })
+        Instr::Reg(RegInstr::Cpy { dst: a!($D : $dst), src: a!($S : $src) })
     };
     (cpy $D:ident : $dst:ident, $S:ident : $src:ident) => {
-        Instr::Reg(RegInstr::Cpy { dst: _a!($D : $dst), src: _a!($S : $src) })
+        Instr::Reg(RegInstr::Cpy { dst: a!($D : $dst), src: a!($S : $src) })
     };
     (cpy $D:ident . $dst:ident, $S:ident : $src:ident) => {
-        Instr::Reg(RegInstr::Cpy { dst: _a!($D . $dst), src: _a!($S : $src) })
+        Instr::Reg(RegInstr::Cpy { dst: a!($D . $dst), src: a!($S : $src) })
     };
     (cpy $D:ident : $dst:literal, $S:ident . $src:ident) => {
-        Instr::Reg(RegInstr::Cpy { dst: _a!($D : $dst), src: _a!($S . $src) })
+        Instr::Reg(RegInstr::Cpy { dst: a!($D : $dst), src: a!($S . $src) })
     };
     (cpy $D:ident : $dst:ident, $S:ident . $src:ident) => {
-        Instr::Reg(RegInstr::Cpy { dst: _a!($D : $dst), src: _a!($S . $src) })
+        Instr::Reg(RegInstr::Cpy { dst: a!($D : $dst), src: a!($S . $src) })
     };
     (cpy $D:ident . $dst:ident, $S:ident . $src:ident) => {
-        Instr::Reg(RegInstr::Cpy { dst: _a!($D . $dst), src: _a!($S . $src) })
+        Instr::Reg(RegInstr::Cpy { dst: a!($D . $dst), src: a!($S . $src) })
     };
 
     // Swap
     (swp $D:ident : $dst:literal, $S:ident : $src:literal) => {
-        Instr::Reg(RegInstr::Swp { src_dst1: _a!($D : $dst), src_dst2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Swp { src_dst1: a!($D : $dst), src_dst2: a!($S : $src) })
     };
     (swp $D:ident : $dst:ident, $S:ident : $src:literal) => {
-        Instr::Reg(RegInstr::Swp { src_dst1: _a!($D : $dst), src_dst2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Swp { src_dst1: a!($D : $dst), src_dst2: a!($S : $src) })
     };
     (swp $D:ident . $dst:ident, $S:ident : $src:literal) => {
-        Instr::Reg(RegInstr::Swp { src_dst1: _a!($D . $dst), src_dst2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Swp { src_dst1: a!($D . $dst), src_dst2: a!($S : $src) })
     };
     (swp $D:ident : $dst:literal, $S:ident : $src:ident) => {
-        Instr::Reg(RegInstr::Swp { src_dst1: _a!($D : $dst), src_dst2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Swp { src_dst1: a!($D : $dst), src_dst2: a!($S : $src) })
     };
     (swp $D:ident : $dst:ident, $S:ident : $src:ident) => {
-        Instr::Reg(RegInstr::Swp { src_dst1: _a!($D : $dst), src_dst2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Swp { src_dst1: a!($D : $dst), src_dst2: a!($S : $src) })
     };
     (swp $D:ident . $dst:ident, $S:ident : $src:ident) => {
-        Instr::Reg(RegInstr::Swp { src_dst1: _a!($D . $dst), src_dst2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Swp { src_dst1: a!($D . $dst), src_dst2: a!($S : $src) })
     };
     (swp $D:ident : $dst:literal, $S:ident . $src:ident) => {
-        Instr::Reg(RegInstr::Swp { src_dst1: _a!($D : $dst), src_dst2: _a!($S . $src) })
+        Instr::Reg(RegInstr::Swp { src_dst1: a!($D : $dst), src_dst2: a!($S . $src) })
     };
     (swp $D:ident : $dst:ident, $S:ident . $src:ident) => {
-        Instr::Reg(RegInstr::Swp { src_dst1: _a!($D : $dst), src_dst2: _a!($S . $src) })
+        Instr::Reg(RegInstr::Swp { src_dst1: a!($D : $dst), src_dst2: a!($S . $src) })
     };
     (swp $D:ident . $dst:ident, $S:ident . $src:ident) => {
-        Instr::Reg(RegInstr::Swp { src_dst1: _a!($D . $dst), src_dst2: _a!($S . $src) })
+        Instr::Reg(RegInstr::Swp { src_dst1: a!($D . $dst), src_dst2: a!($S . $src) })
     };
 
     // Equals
     (eq $D:ident : $dst:literal, $S:ident : $src:literal) => {
-        Instr::Reg(RegInstr::Eq { src1: _a!($D : $dst), src2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Eq { src1: a!($D : $dst), src2: a!($S : $src) })
     };
     (eq $D:ident : $dst:ident, $S:ident : $src:literal) => {
-        Instr::Reg(RegInstr::Eq { src1: _a!($D : $dst), src2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Eq { src1: a!($D : $dst), src2: a!($S : $src) })
     };
     (eq $D:ident . $dst:ident, $S:ident : $src:literal) => {
-        Instr::Reg(RegInstr::Eq { src1: _a!($D . $dst), src2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Eq { src1: a!($D . $dst), src2: a!($S : $src) })
     };
     (eq $D:ident : $dst:literal, $S:ident : $src:ident) => {
-        Instr::Reg(RegInstr::Eq { src1: _a!($D : $dst), src2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Eq { src1: a!($D : $dst), src2: a!($S : $src) })
     };
     (eq $D:ident : $dst:ident, $S:ident : $src:ident) => {
-        Instr::Reg(RegInstr::Eq { src1: _a!($D : $dst), src2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Eq { src1: a!($D : $dst), src2: a!($S : $src) })
     };
     (eq $D:ident . $dst:ident, $S:ident : $src:ident) => {
-        Instr::Reg(RegInstr::Eq { src1: _a!($D . $dst), src2: _a!($S : $src) })
+        Instr::Reg(RegInstr::Eq { src1: a!($D . $dst), src2: a!($S : $src) })
     };
     (eq $D:ident : $dst:literal, $S:ident . $src:ident) => {
-        Instr::Reg(RegInstr::Eq { src1: _a!($D : $dst), src2: _a!($S . $src) })
+        Instr::Reg(RegInstr::Eq { src1: a!($D : $dst), src2: a!($S . $src) })
     };
     (eq $D:ident : $dst:ident, $S:ident . $src:ident) => {
-        Instr::Reg(RegInstr::Eq { src1: _a!($D : $dst), src2: _a!($S . $src) })
+        Instr::Reg(RegInstr::Eq { src1: a!($D : $dst), src2: a!($S . $src) })
     };
     (eq $D:ident . $dst:ident, $S:ident . $src:ident) => {
-        Instr::Reg(RegInstr::Eq { src1: _a!($D . $dst), src2: _a!($S . $src) })
+        Instr::Reg(RegInstr::Eq { src1: a!($D . $dst), src2: a!($S . $src) })
     };
 
     // Modulo-increment
     (incmod $A:ident : $idx:literal, $val:literal) => {
         #[cfg(feature = "GFA")]
-        Instr::GFqA(FieldInstr::IncMod { src_dst: _a!($A : $idx), val: $val })
+        Instr::GFqA(FieldInstr::IncMod { src_dst: a!($A : $idx), val: $val })
     };
     (incmod $A:ident : $idx:ident, $val:literal) => {
         #[cfg(feature = "GFA")]
-        Instr::GFqA(FieldInstr::IncMod { src_dst: _a!($A : $idx), val: $val })
+        Instr::GFqA(FieldInstr::IncMod { src_dst: a!($A : $idx), val: $val })
     };
     (incmod $A:ident . $idx:ident, $val:literal) => {
         #[cfg(feature = "GFA")]
-        Instr::GFqA(FieldInstr::IncMod { src_dst: _a!($A . $idx), val: $val })
+        Instr::GFqA(FieldInstr::IncMod { src_dst: a!($A . $idx), val: $val })
     };
     // Modulo-decrement
     (decmod $A:ident : $idx:literal, $val:literal) => {
         #[cfg(feature = "GFA")]
-        Instr::GFqA(FieldInstr::DecMod { src_dst: _a!($A : $idx), val: $val })
+        Instr::GFqA(FieldInstr::DecMod { src_dst: a!($A : $idx), val: $val })
     };
     (decmod $A:ident : $idx:ident, $val:literal) => {
         #[cfg(feature = "GFA")]
-        Instr::GFqA(FieldInstr::DecMod { src_dst: _a!($A : $idx), val: $val })
+        Instr::GFqA(FieldInstr::DecMod { src_dst: a!($A : $idx), val: $val })
     };
     (decmod $A:ident . $idx:ident, $val:literal) => {
         #[cfg(feature = "GFA")]
-        Instr::GFqA(FieldInstr::DecMod { src_dst: _a!($A . $idx), val: $val })
+        Instr::GFqA(FieldInstr::DecMod { src_dst: a!($A . $idx), val: $val })
     };
     // Modulo-negate
     (negmod $A:ident : $idx:literal) => {
         #[cfg(feature = "GFA")]
-        Instr::GFqA(FieldInstr::NegMod { src_dst: _a!($A : $idx) })
+        Instr::GFqA(FieldInstr::NegMod { src_dst: a!($A : $idx) })
     };
     (negmod $A:ident : $idx:ident) => {
         #[cfg(feature = "GFA")]
-        Instr::GFqA(FieldInstr::NegMod { src_dst: _a!($A : $idx) })
+        Instr::GFqA(FieldInstr::NegMod { src_dst: a!($A : $idx) })
     };
     (negmod $A:ident . $idx:ident) => {
         #[cfg(feature = "GFA")]
-        Instr::GFqA(FieldInstr::NegMod { src_dst: _a!($A . $idx) })
+        Instr::GFqA(FieldInstr::NegMod { src_dst: a!($A . $idx) })
     };
     // Modulo-add
     (addmod A128 : $dst:literal, A128 : $src1:literal, A128 : $src2:literal) => {
@@ -456,16 +456,15 @@ macro_rules! instr {
 }
 
 #[macro_export]
-#[doc(hidden)]
-macro_rules! _a {
+macro_rules! a {
     ($A:ident : $idx:literal) => {
-RegA::$A(_a_idx!(: $idx))
+$crate::regs::RegA::$A(_a_idx!(: $idx))
     };
     ($A:ident : $idx:ident) => {
-RegA::$A(_a_idx!(: $idx))
+$crate::regs::RegA::$A(_a_idx!(: $idx))
     };
     ($A:ident. $idx:ident) => {
-RegA::$A(_a_idx!(. $idx))
+$crate::regs::RegA::$A(_a_idx!(. $idx))
     };
 }
 
@@ -473,12 +472,12 @@ RegA::$A(_a_idx!(. $idx))
 #[doc(hidden)]
 macro_rules! _a_idx {
     (: $idx:literal) => {
-        IdxA::from(paste! { Idx32 :: [< L $idx >] })
+        $crate::regs::IdxA::from($crate::paste! { $crate::regs::Idx32 :: [< L $idx >] })
     };
     (: $idx:ident) => {
-        IdxA::from(Idx32::$idx)
+        $crate::regs::IdxA::from($crate::regs::Idx32::$idx)
     };
     (. $idx:ident) => {
-        IdxA::from(paste! { Idx32 :: [< S $idx >] })
+        $crate::regs::IdxA::from($crate::paste! { $crate::regs::Idx32 :: [< S $idx >] })
     };
 }

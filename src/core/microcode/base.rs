@@ -129,7 +129,7 @@ impl RegA {
     pub fn to_u8(&self) -> u8 {
         let a = self.a().to_u3().to_u8();
         let idx = self.idx().to_u5().to_u8();
-        a << 5 + idx
+        (a << 5) + idx
     }
 }
 

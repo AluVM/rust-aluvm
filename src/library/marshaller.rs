@@ -109,6 +109,13 @@ where Self: 'a
     }
 }
 
+impl<'a> Marshaller<'a, SmallBlob, SmallBlob>
+where Self: 'a
+{
+    #[cfg(test)]
+    pub fn into_code_data(self) -> (SmallBlob, SmallBlob) { (self.bytecode, self.data) }
+}
+
 impl<'a, C, D> Marshaller<'a, C, D>
 where
     C: AsRef<[u8]>,
@@ -182,7 +189,7 @@ where
 
 impl<'a, C, D> Marshaller<'a, C, D>
 where
-    C: AsRef<[u8]> + AsMut<[u8]>,
+    C: AsRef<[u8]> + AsMut<[u8]> + Extend<u8>,
     D: AsRef<[u8]>,
     Self: 'a,
 {
@@ -191,8 +198,11 @@ where
         let value = ((value as u64) << (self.bit_pos.to_u8())).to_le_bytes();
         let n_bytes = (cnt + self.bit_pos.to_u8() + 7) / 8;
         for i in 0..n_bytes {
-            if self.is_eof() {
+            if self.bytecode.as_ref().len() >= u16::MAX as usize {
                 return Err(CodeEofError);
+            }
+            if self.is_eof() {
+                self.bytecode.extend([0]);
             }
             let byte_pos = self.byte_pos as usize;
             let bit_pos = self.bit_pos.to_u8();
@@ -346,7 +356,7 @@ where
 
 impl<'a, C, D> BytecodeWrite<LibId> for Marshaller<'a, C, D>
 where
-    C: AsRef<[u8]> + AsMut<[u8]>,
+    C: AsRef<[u8]> + AsMut<[u8]> + Extend<u8>,
     D: AsRef<[u8]> + AsMut<[u8]> + Extend<u8>,
     Self: 'a,
 {
@@ -466,8 +476,7 @@ mod tests {
     #[test]
     fn write() {
         let libseg = LibsSeg::default();
-        let mut code = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let mut marshaller = Marshaller::with(&mut code, vec![], &libseg);
+        let mut marshaller = Marshaller::with(vec![], vec![], &libseg);
         marshaller.write_2bits(u2::with(0b00000011)).unwrap();
         marshaller.write_3bits(u3::with(0b00000101)).unwrap();
         marshaller.write_7bits(u7::with(0b01011111)).unwrap();
@@ -478,8 +487,8 @@ mod tests {
         marshaller.write_word(two_bytes).unwrap();
         let number = 255u8;
         marshaller.write_fixed(255u8.to_le_bytes()).unwrap();
+        let (code, data) = marshaller.finish();
 
-        let data = marshaller.data;
         let mut marshaller = Marshaller::with(code, data, &libseg);
         assert_eq!(marshaller.read_2bits().unwrap().to_u8(), 0b00000011);
         assert_eq!(marshaller.read_3bits().unwrap().to_u8(), 0b00000101);
@@ -494,8 +503,7 @@ mod tests {
     #[test]
     fn write_data() {
         let libseg = LibsSeg::default();
-        let mut code = [0, 0, 0, 0, 0, 0];
-        let mut marshaller = Marshaller::with(&mut code, vec![], &libseg);
+        let mut marshaller = Marshaller::with(vec![], vec![], &libseg);
         marshaller.write_fixed(256u16.to_le_bytes()).unwrap();
         assert_eq!(marshaller.data, vec![0, 1]);
     }
@@ -503,11 +511,13 @@ mod tests {
     #[test]
     fn write_eof() {
         let libseg = LibsSeg::default();
-        let mut code = [0, 0];
-        let mut marshaller = Marshaller::with(&mut code, vec![], &libseg);
+        let mut marshaller = Marshaller::with(vec![0x00; 0xFFFD], vec![], &libseg);
+        marshaller.seek(0xFFFD).unwrap_err();
+        marshaller.byte_pos = 0xFFFD;
         marshaller.write_2bits(u2::with(0b00000011)).unwrap();
         marshaller.write_3bits(u3::with(0b00000101)).unwrap();
         marshaller.write_7bits(u7::with(0b01011111)).unwrap();
-        assert!(marshaller.write_byte(0b11100111).is_err());
+        marshaller.write_byte(0b11100111).unwrap_err();
+        assert_eq!(&marshaller.bytecode[0xFFFD..], &[0b11110111, 0b1011]);
     }
 }

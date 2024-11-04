@@ -93,22 +93,26 @@ pub trait InstructionSet<Id: SiteId>: Debug + Display {
 pub struct ReservedInstr(/** Reserved instruction op code value */ pub(super) u8);
 
 /// Complete AluVM ISA.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Display, From)]
 #[display(inner)]
 pub enum Instr<Id: SiteId, Ext: InstructionSet<Id> = ReservedInstr> {
     /// Control flow instructions.
+    #[from]
     Ctrl(CtrlInstr<Id>),
 
     /// Register manipulation instructions.
+    #[from]
     Reg(RegInstr),
 
     #[cfg(feature = "GFA")]
     /// Arithmetic instructions for finite fields (Galois fields).
+    #[from]
     GFqA(FieldInstr),
 
     // #[cfg(feature = "str")]
     // Str(array::instr::StrInstr),
     /// Reserved instruction for future use in core `ALU` ISAs.
+    #[from]
     Reserved(ReservedInstr),
 
     /// Other ISA extensions, defined externally.
