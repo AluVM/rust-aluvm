@@ -50,8 +50,10 @@
 macro_rules! aluasm {
     ($( $tt:tt )+) => {{ #[allow(unused_imports)] {
         use $crate::isa::{Instr, CtrlInstr, RegInstr, ReservedInstr};
+        #[cfg(feature = "GFA")]
+        use $crate::isa::FieldInstr;
         use $crate::regs::{IdxA, RegA, Reg, IdxAl, A, Idx32, Idx16};
-        use $crate::{_a, paste};
+        use $crate::{_a, _a_idx, paste};
         $crate::aluasm_isa! { ReservedInstr => $( $tt )+ }
     } }};
 }
@@ -382,6 +384,72 @@ macro_rules! instr {
         Instr::Reg(RegInstr::Eq { src1: _a!($D . $dst), src2: _a!($S . $src) })
     };
 
+    // Modulo-increment
+    (incmod $A:ident : $idx:literal, $val:literal) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::IncMod { src_dst: _a!($A : $idx), val: $val })
+    };
+    (incmod $A:ident : $idx:ident, $val:literal) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::IncMod { src_dst: _a!($A : $idx), val: $val })
+    };
+    (incmod $A:ident . $idx:ident, $val:literal) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::IncMod { src_dst: _a!($A . $idx), val: $val })
+    };
+    // Modulo-decrement
+    (decmod $A:ident : $idx:literal, $val:literal) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::DecMod { src_dst: _a!($A : $idx), val: $val })
+    };
+    (decmod $A:ident : $idx:ident, $val:literal) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::DecMod { src_dst: _a!($A : $idx), val: $val })
+    };
+    (decmod $A:ident . $idx:ident, $val:literal) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::DecMod { src_dst: _a!($A . $idx), val: $val })
+    };
+    // Modulo-negate
+    (negmod $A:ident : $idx:literal) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::NegMod { src_dst: _a!($A : $idx) })
+    };
+    (negmod $A:ident : $idx:ident) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::NegMod { src_dst: _a!($A : $idx) })
+    };
+    (negmod $A:ident . $idx:ident) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::NegMod { src_dst: _a!($A . $idx) })
+    };
+    // Modulo-add
+    (addmod A128 : $dst:literal, A128 : $src1:literal, A128 : $src2:literal) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::AddMod { reg: A::A128, dst: _a_idx!(:$dst), src1: _a_idx!(:$src1), src2: _a_idx!(:$src2) })
+    };
+    (addmod A128 : $dst:ident, A128 : $src1:ident, A128 : $src2:ident) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::AddMod { reg: A::A128, dst: _a_idx!(:$dst), src1: _a_idx!(:$src1), src2: _a_idx!(:$src2) })
+    };
+    (addmod A128 . $dst:ident, A128 . $src1:ident, A128 . $src2:ident) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::AddMod { reg: A::A128, dst: _a_idx!(.$dst), src1: _a_idx!(.$src1), src2: _a_idx!(.$src2) })
+    };
+    // Modulo-multiply
+    (mulmod A128 : $dst:literal, A128 : $src1:literal, A128 : $src2:literal) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::MulMod { reg: A::A128, dst: _a_idx!(:$dst), src1: _a_idx!(:$src1), src2: _a_idx!(:$src2) })
+    };
+    (mulmod A128 : $dst:ident, A128 : $src1:ident, A128 : $src2:ident) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::MulMod { reg: A::A128, dst: _a_idx!(:$dst), src1: _a_idx!(:$src1), src2: _a_idx!(:$src2) })
+    };
+    (mulmod A128 . $dst:ident, A128 . $src1:ident, A128 . $src2:ident) => {
+        #[cfg(feature = "GFA")]
+        Instr::GFqA(FieldInstr::MulMod { reg: A::A128, dst: _a_idx!(.$dst), src1: _a_idx!(.$src1), src2: _a_idx!(.$src2) })
+    };
+
     { $($tt:tt)+ } => {
         Instr::Reserved(isa_instr! { $( $tt )+ })
     };
@@ -391,12 +459,26 @@ macro_rules! instr {
 #[doc(hidden)]
 macro_rules! _a {
     ($A:ident : $idx:literal) => {
-        RegA::$A(IdxA::from(paste! { Idx32 :: [< L $idx >] }))
+RegA::$A(_a_idx!(: $idx))
     };
     ($A:ident : $idx:ident) => {
-        RegA::$A(IdxA::from(Idx32::$idx))
+RegA::$A(_a_idx!(: $idx))
     };
     ($A:ident. $idx:ident) => {
-        RegA::$A(IdxA::from(paste! { Idx32 :: [< S $idx >] }))
+RegA::$A(_a_idx!(. $idx))
+    };
+}
+
+#[macro_export]
+#[doc(hidden)]
+macro_rules! _a_idx {
+    (: $idx:literal) => {
+        IdxA::from(paste! { Idx32 :: [< L $idx >] })
+    };
+    (: $idx:ident) => {
+        IdxA::from(Idx32::$idx)
+    };
+    (. $idx:ident) => {
+        IdxA::from(paste! { Idx32 :: [< S $idx >] })
     };
 }
