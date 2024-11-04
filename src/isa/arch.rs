@@ -7,7 +7,7 @@
 //     Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
 // Copyright (C) 2021-2024 UBIDECO Labs,
-//     Laboratories for Distributed and Cognitive Computing, Switzerland.
+//     Institute for Distributed and Cognitive Computing, Switzerland.
 //     All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
