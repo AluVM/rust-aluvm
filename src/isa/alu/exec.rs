@@ -110,9 +110,29 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
 
     fn dst_regs(&self) -> BTreeSet<Reg> { none!() }
 
-    fn op_data_bytes(&self) -> u16 { todo!() }
+    fn op_data_bytes(&self) -> u16 {
+        match self {
+            CtrlInstr::Nop | CtrlInstr::Chk | CtrlInstr::NotCo | CtrlInstr::FailCk | CtrlInstr::RsetCk => 0,
+            CtrlInstr::Jmp { .. } | CtrlInstr::JifCo { .. } | CtrlInstr::JifCk { .. } => 2,
+            CtrlInstr::Sh { .. } | CtrlInstr::ShNe { .. } | CtrlInstr::ShFail { .. } => 1,
+            CtrlInstr::Exec { .. } => 0,
+            CtrlInstr::Fn { .. } => 2,
+            CtrlInstr::Call { .. } => 0,
+            CtrlInstr::Ret | CtrlInstr::Stop => 0,
+        }
+    }
 
-    fn ext_data_bytes(&self) -> u16 { todo!() }
+    fn ext_data_bytes(&self) -> u16 {
+        match self {
+            CtrlInstr::Nop | CtrlInstr::Chk | CtrlInstr::NotCo | CtrlInstr::FailCk | CtrlInstr::RsetCk => 0,
+            CtrlInstr::Jmp { .. } | CtrlInstr::JifCo { .. } | CtrlInstr::JifCk { .. } => 0,
+            CtrlInstr::Sh { .. } | CtrlInstr::ShNe { .. } | CtrlInstr::ShFail { .. } => 0,
+            CtrlInstr::Exec { .. } => 32,
+            CtrlInstr::Fn { .. } => 0,
+            CtrlInstr::Call { .. } => 32,
+            CtrlInstr::Ret | CtrlInstr::Stop => 0,
+        }
+    }
 
     fn exec(&self, core: &mut Core<Id>, current: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
         let shift_jump = |shift: i8| {
@@ -191,13 +211,43 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
 impl<Id: SiteId> Instruction<Id> for RegInstr {
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Reg> { todo!() }
+    fn src_regs(&self) -> BTreeSet<Reg> {
+        match *self {
+            RegInstr::Clr { dst: _ } => bset![],
+            RegInstr::Put { dst: _, val: _ } => bset![],
+            RegInstr::Pif { dst: _, val: _ } => bset![],
+            RegInstr::Test { src } => bset![src.into()],
+            RegInstr::Cpy { dst: _, src } => bset![src.into()],
+            RegInstr::Swp { src_dst1, src_dst2 } => bset![src_dst1.into(), src_dst2.into()],
+            RegInstr::Eq { src1, src2 } => bset![src1.into(), src2.into()],
+        }
+    }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> { todo!() }
+    fn dst_regs(&self) -> BTreeSet<Reg> {
+        match *self {
+            RegInstr::Clr { dst } | RegInstr::Put { dst, val: _ } | RegInstr::Pif { dst, val: _ } => bset![dst.into()],
+            RegInstr::Test { src: _ } => bset![],
+            RegInstr::Cpy { dst, src: _ } => bset![dst.into()],
+            RegInstr::Swp { src_dst1, src_dst2 } => bset![src_dst1.into(), src_dst2.into()],
+            RegInstr::Eq { src1: _, src2: _ } => bset![],
+        }
+    }
 
-    fn op_data_bytes(&self) -> u16 { todo!() }
+    fn op_data_bytes(&self) -> u16 {
+        match *self {
+            RegInstr::Clr { .. } => 0,
+            RegInstr::Put { .. } | RegInstr::Pif { .. } => 0,
+            RegInstr::Test { .. } | RegInstr::Cpy { .. } | RegInstr::Swp { .. } | RegInstr::Eq { .. } => 0,
+        }
+    }
 
-    fn ext_data_bytes(&self) -> u16 { todo!() }
+    fn ext_data_bytes(&self) -> u16 {
+        match *self {
+            RegInstr::Clr { .. } => 0,
+            RegInstr::Put { .. } | RegInstr::Pif { .. } => 16,
+            RegInstr::Test { .. } | RegInstr::Cpy { .. } | RegInstr::Swp { .. } | RegInstr::Eq { .. } => 0,
+        }
+    }
 
     fn exec(&self, core: &mut Core<Id>, _: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
         match *self {
