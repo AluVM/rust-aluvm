@@ -27,6 +27,10 @@ use core::str::FromStr;
 
 use crate::core::CoreExt;
 
+pub trait Register: Copy + Debug + Display {
+    fn bytes(self) -> u16;
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 #[repr(i8)]
 pub enum Status {

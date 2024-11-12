@@ -28,7 +28,6 @@ use strict_encoding::{DeserializeError, StrictDeserialize, StrictSerialize};
 
 use super::*;
 
-const ASCII_ARMOR_ISA: &str = "ISA";
 const ASCII_ARMOR_ISAE: &str = "ISA-Extensions";
 const ASCII_ARMOR_DEPENDENCY: &str = "Dependency";
 
@@ -56,7 +55,6 @@ impl AsciiArmor for Lib {
     fn ascii_armored_headers(&self) -> Vec<ArmorHeader> {
         let mut headers = vec![
             ArmorHeader::new(ASCII_ARMOR_ID, self.lib_id().to_string()),
-            ArmorHeader::new(ASCII_ARMOR_ISA, self.isa.to_string()),
             ArmorHeader::new(ASCII_ARMOR_ISAE, self.isae_string()),
         ];
         for dep in &self.libs {

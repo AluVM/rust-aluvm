@@ -38,7 +38,7 @@ impl Lib {
     pub fn exec<Instr>(
         &self,
         entrypoint: u16,
-        registers: &mut Core<LibId>,
+        registers: &mut Core<LibId, Instr::Core>,
         context: &Instr::Context<'_>,
     ) -> Option<LibSite>
     where

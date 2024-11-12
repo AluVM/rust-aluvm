@@ -27,13 +27,13 @@
 use core::marker::PhantomData;
 
 use crate::core::{Core, CoreConfig, CoreExt, Status};
-use crate::isa::{Bytecode, Instr, Instruction, InstructionSet, ReservedInstr};
+use crate::isa::{Instr, Instruction, ReservedInstr};
 use crate::library::{Lib, LibId, LibSite};
 
 /// Alu virtual machine providing single-core execution environment
 #[derive(Clone, Debug)]
 pub struct Vm<Isa = Instr<LibId, ReservedInstr>>
-where Isa: InstructionSet<LibId>
+where Isa: Instruction<LibId>
 {
     /// A set of registers
     pub core: Core<LibId, Isa::Core>,
@@ -43,7 +43,7 @@ where Isa: InstructionSet<LibId>
 
 /// Runtime for program execution.
 impl<Isa> Vm<Isa>
-where Isa: InstructionSet<LibId>
+where Isa: Instruction<LibId>
 {
     /// Constructs new virtual machine instance with default core configuration.
     pub fn new() -> Self {
@@ -73,15 +73,12 @@ where Isa: InstructionSet<LibId>
         &mut self,
         entry_point: LibSite,
         lib_resolver: impl Fn(LibId) -> Option<&'prog Lib>,
-        context: &<Isa::Instr as Instruction<LibId>>::Context<'_>,
-    ) -> Status
-    where
-        Isa::Instr: Bytecode<LibId>,
-    {
+        context: &Isa::Context<'_>,
+    ) -> Status {
         let mut call = Some(entry_point);
         while let Some(ref mut site) = call {
             if let Some(lib) = lib_resolver(site.lib_id) {
-                call = lib.exec::<Isa::Instr>(site.offset, &mut self.core, context);
+                call = lib.exec::<Isa>(site.offset, &mut self.core, context);
             } else if let Some(pos) = site.offset.checked_add(1) {
                 site.offset = pos;
             } else {

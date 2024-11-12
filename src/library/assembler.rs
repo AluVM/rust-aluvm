@@ -25,7 +25,7 @@
 use amplify::confinement::{self, TinyOrdSet};
 
 use super::{Lib, LibId, MarshallError, Marshaller};
-use crate::isa::{Bytecode, BytecodeRead, CodeEofError, InstructionSet};
+use crate::isa::{BytecodeRead, CodeEofError, Instruction};
 
 /// Errors while assembling lib-old from the instruction set.
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug, Display, Error, From)]
@@ -42,11 +42,8 @@ pub enum AssemblerError {
 
 impl Lib {
     /// Assembles library from the provided instructions by encoding them into bytecode.
-    pub fn assemble<Isa>(code: &[Isa::Instr]) -> Result<Lib, AssemblerError>
-    where
-        Isa: InstructionSet<LibId>,
-        Isa::Instr: Bytecode<LibId>,
-    {
+    pub fn assemble<Isa>(code: &[Isa]) -> Result<Lib, AssemblerError>
+    where Isa: Instruction<LibId> {
         let call_sites = code.iter().filter_map(|instr| instr.external_ref());
         let libs_segment = TinyOrdSet::try_from_iter(call_sites)?;
 
@@ -65,30 +62,24 @@ impl Lib {
     }
 
     /// Disassembles library into a set of instructions.
-    pub fn disassemble<Isa>(&self) -> Result<Vec<Isa::Instr>, CodeEofError>
-    where
-        Isa: InstructionSet<LibId>,
-        Isa::Instr: Bytecode<LibId>,
-    {
+    pub fn disassemble<Isa>(&self) -> Result<Vec<Isa>, CodeEofError>
+    where Isa: Instruction<LibId> {
         let mut code = Vec::new();
         let mut reader = Marshaller::with(&self.code, &self.data, &self.libs);
         while !reader.is_eof() {
-            code.push(Isa::Instr::decode_instr(&mut reader)?);
+            code.push(Isa::decode_instr(&mut reader)?);
         }
         Ok(code)
     }
 
     /// Disassembles library into a set of instructions and offsets and prints it to the writer.
     pub fn print_disassemble<Isa>(&self, mut writer: impl std::io::Write) -> Result<(), std::io::Error>
-    where
-        Isa: InstructionSet<LibId>,
-        Isa::Instr: Bytecode<LibId>,
-    {
+    where Isa: Instruction<LibId> {
         let mut reader = Marshaller::with(&self.code, &self.data, &self.libs);
         while !reader.is_eof() {
             let pos = reader.offset().0 as usize;
             write!(writer, "@x{pos:06X}: ")?;
-            match Isa::Instr::decode_instr(&mut reader) {
+            match Isa::decode_instr(&mut reader) {
                 Ok(instr) => writeln!(writer, "{instr}")?,
                 Err(_) => writeln!(writer, "; <incomplete instruction>")?,
             }

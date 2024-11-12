@@ -168,6 +168,6 @@ pub use library::{Lib, LibId, LibSite};
 pub use paste::paste;
 pub use vm::Vm;
 
-pub use self::core::{Core, CoreConfig, CoreExt, NoExt, Site, SiteId};
+pub use self::core::{Core, CoreConfig, CoreExt, NoExt, Register, Site, SiteId};
 
 pub const LIB_NAME_ALUVM: &str = "AluVM";

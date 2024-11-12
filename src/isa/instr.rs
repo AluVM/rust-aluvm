@@ -25,7 +25,11 @@
 use alloc::collections::BTreeSet;
 use core::fmt::{Debug, Display};
 
-use crate::core::{Core, Reg, Site, SiteId};
+use amplify::confinement::TinyOrdSet;
+
+use crate::core::{Core, Register, Site, SiteId};
+use crate::isa::Bytecode;
+use crate::{CoreExt, IsaId};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -50,28 +54,43 @@ pub enum ExecStep<Site> {
 }
 
 /// Trait for instructions
-pub trait Instruction<Id: SiteId>: Display + Debug {
+pub trait Instruction<Id: SiteId>: Display + Debug + Bytecode<Id> {
+    const ISA_EXT: &'static [&'static str];
+    const HAS_EXT: bool;
+
+    type Reg: Register;
+    type Core: CoreExt;
+    type Ext: Instruction<Id>;
     /// Context: external data which are accessible to the ISA.
     type Context<'ctx>;
 
+    fn isa_ext() -> TinyOrdSet<IsaId> {
+        let iter = Self::ISA_EXT.into_iter().copied().map(IsaId::from);
+        if Self::HAS_EXT {
+            TinyOrdSet::from_iter_checked(iter.chain(Self::Ext::isa_ext()))
+        } else {
+            TinyOrdSet::from_iter_checked(iter)
+        }
+    }
+
     /// Lists all registers which are used by the instruction.
-    fn regs(&self) -> BTreeSet<Reg> {
+    fn regs(&self) -> BTreeSet<Self::Reg> {
         let mut regs = self.src_regs();
         regs.extend(self.dst_regs());
         regs
     }
 
     /// List of registers which value is taken into the account by the instruction.
-    fn src_regs(&self) -> BTreeSet<Reg>;
+    fn src_regs(&self) -> BTreeSet<Self::Reg>;
 
     /// List of registers which value may be changed by the instruction.
-    fn dst_regs(&self) -> BTreeSet<Reg>;
+    fn dst_regs(&self) -> BTreeSet<Self::Reg>;
 
     /// The number of bytes in the source registers.
-    fn src_reg_bytes(&self) -> u16 { self.src_regs().into_iter().map(Reg::bytes).sum() }
+    fn src_reg_bytes(&self) -> u16 { self.src_regs().into_iter().map(Self::Reg::bytes).sum() }
 
     /// The number of bytes in the destination registers.
-    fn dst_reg_bytes(&self) -> u16 { self.dst_regs().into_iter().map(Reg::bytes).sum() }
+    fn dst_reg_bytes(&self) -> u16 { self.dst_regs().into_iter().map(Self::Reg::bytes).sum() }
 
     /// The size of the data coming as an instruction operands (i.e. except data coming from
     /// registers or read from outside the instruction operands).
@@ -106,5 +125,5 @@ pub trait Instruction<Id: SiteId>: Display + Debug {
     /// # Returns
     ///
     /// Returns whether further execution should be stopped.
-    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>>;
+    fn exec(&self, core: &mut Core<Id, Self::Core>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>>;
 }

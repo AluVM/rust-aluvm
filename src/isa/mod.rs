@@ -34,6 +34,6 @@ mod alu;
 mod masm;
 
 pub use alu::CtrlInstr;
-pub use arch::{Instr, InstructionSet, IsaId, ReservedInstr, ISA_ID_MAX_LEN};
+pub use arch::{Instr, IsaId, ReservedInstr, ISA_ID_MAX_LEN};
 pub use bytecode::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
 pub use instr::{ExecStep, Instruction};

@@ -27,10 +27,10 @@ use core::ops::RangeInclusive;
 use super::CtrlInstr;
 use crate::core::SiteId;
 use crate::isa::bytecode::CodeEofError;
-use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, Instr, InstructionSet, ReservedInstr};
+use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, Instr, Instruction, ReservedInstr};
 use crate::Site;
 
-impl<Id: SiteId, Ext: InstructionSet<Id> + Bytecode<Id>> Bytecode<Id> for Instr<Id, Ext> {
+impl<Id: SiteId, Ext: Instruction<Id>> Bytecode<Id> for Instr<Id, Ext> {
     fn op_range() -> RangeInclusive<u8> { 0..=0xFF }
 
     fn opcode_byte(&self) -> u8 {

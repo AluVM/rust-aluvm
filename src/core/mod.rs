@@ -29,4 +29,4 @@ mod microcode;
 mod util;
 
 pub use self::core::{Core, CoreConfig, CoreExt, CALL_STACK_SIZE_MAX};
-pub use self::util::{NoExt, Site, SiteId, Status};
+pub use self::util::{NoExt, Register, Site, SiteId, Status};

@@ -26,12 +26,13 @@ use alloc::collections::BTreeSet;
 
 use super::CtrlInstr;
 use crate::core::{Core, Site, SiteId, Status};
-use crate::isa::{ExecStep, Instr, Instruction, InstructionSet, ReservedInstr};
+use crate::isa::{ExecStep, Instr, Instruction, ReservedInstr};
+use crate::NoExt;
 
-impl<Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id>> Instruction<Id> for Instr<Id, Ext> {
+impl<Id: SiteId, Ext: Instruction<Id>> Instruction<Id> for Instr<Id, Ext> {
     type Context<'ctx> = Ext::Context<'ctx>;
 
-    fn src_regs(&self) -> BTreeSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<Self::Reg> {
         match self {
             Instr::Ctrl(instr) => instr.src_regs(),
             Instr::Reserved(instr) => Instruction::<Id>::src_regs(instr),
@@ -39,7 +40,7 @@ impl<Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id>> Instruction<Id> for 
         }
     }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<Self::Reg> {
         match self {
             Instr::Ctrl(instr) => instr.dst_regs(),
             Instr::Reserved(instr) => Instruction::<Id>::dst_regs(instr),
@@ -63,7 +64,7 @@ impl<Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id>> Instruction<Id> for 
         }
     }
 
-    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+    fn exec(&self, core: &mut Core<Id, Self::Core>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
         match self {
             Instr::Ctrl(instr) => instr.exec(core, site, &()),
             Instr::Reserved(instr) => instr.exec(core, site, &()),
@@ -73,11 +74,16 @@ impl<Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id>> Instruction<Id> for 
 }
 
 impl<Id: SiteId> Instruction<Id> for ReservedInstr {
+    const ISA_EXT: &'static [&'static str] = &[];
+    const HAS_EXT: bool = false;
+
+    type Core = NoExt;
+    type Ext = Self;
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Reg> { none!() }
+    fn src_regs(&self) -> BTreeSet<Self::Reg> { none!() }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> { none!() }
+    fn dst_regs(&self) -> BTreeSet<Self::Reg> { none!() }
 
     fn op_data_bytes(&self) -> u16 { none!() }
 
@@ -85,15 +91,22 @@ impl<Id: SiteId> Instruction<Id> for ReservedInstr {
 
     fn complexity(&self) -> u64 { u64::MAX }
 
-    fn exec(&self, _: &mut Core<Id>, _: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> { ExecStep::FailHalt }
+    fn exec(&self, _: &mut Core<Id, Self::Core>, _: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+        ExecStep::FailHalt
+    }
 }
 
 impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
+    const ISA_EXT: &'static [&'static str] = &[];
+    const HAS_EXT: bool = true;
+
+    type Core = NoExt;
+    type Ext = ReservedInstr;
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Reg> { none!() }
+    fn src_regs(&self) -> BTreeSet<Self::Reg> { none!() }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> { none!() }
+    fn dst_regs(&self) -> BTreeSet<Self::Reg> { none!() }
 
     fn op_data_bytes(&self) -> u16 {
         match self {
@@ -119,7 +132,7 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
         }
     }
 
-    fn exec(&self, core: &mut Core<Id>, current: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+    fn exec(&self, core: &mut Core<Id, Self::Core>, current: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
         let shift_jump = |shift: i8| {
             let Some(pos) = current.offset.checked_add_signed(shift as i16) else {
                 return ExecStep::FailHalt;
