@@ -28,17 +28,11 @@ use amplify::confinement::TinyOrdSet;
 use strict_encoding::stl::AlphaCapsNum;
 use strict_encoding::{RString, StrictDumb};
 
-#[cfg(feature = "GFA")]
-use super::FieldInstr;
-use super::{CtrlInstr, Instruction, RegInstr};
-use crate::core::SiteId;
-use crate::LIB_NAME_ALUVM;
+use super::{CtrlInstr, Instruction};
+use crate::core::{CoreExt, SiteId};
+use crate::{NoExt, LIB_NAME_ALUVM};
 
 pub const ISA_ID_MAX_LEN: usize = 16;
-
-pub const ISA_ALU64: &str = "ALU64";
-pub const ISA_ALU128: &str = "ALU128";
-pub const ISA_AN: &str = "AN"; // Unsigned arithmetics
 
 #[macro_export]
 macro_rules! isa {
@@ -66,20 +60,16 @@ impl From<&'static str> for IsaId {
 }
 
 pub trait InstructionSet<Id: SiteId>: Debug + Display {
-    const ISA: &'static str;
     const ISA_EXT: &'static [&'static str];
     const HAS_EXT: bool;
+
+    type Core: CoreExt;
     type Ext: InstructionSet<Id>;
     type Instr: Instruction<Id>;
-
-    fn isa_id() -> IsaId { IsaId::from(Self::ISA) }
 
     fn isa_ext() -> TinyOrdSet<IsaId> {
         let iter = Self::ISA_EXT.into_iter().copied().map(IsaId::from);
         if Self::HAS_EXT {
-            if Self::ISA != <Self::Ext as InstructionSet<Id>>::ISA {
-                panic!("extension base ISA {} is not {}", <Self::Ext as InstructionSet<Id>>::ISA, Self::ISA);
-            }
             TinyOrdSet::from_iter_checked(iter.chain(Self::Ext::isa_ext()))
         } else {
             TinyOrdSet::from_iter_checked(iter)
@@ -100,15 +90,6 @@ pub enum Instr<Id: SiteId, Ext: InstructionSet<Id> = ReservedInstr> {
     #[from]
     Ctrl(CtrlInstr<Id>),
 
-    /// Register manipulation instructions.
-    #[from]
-    Reg(RegInstr),
-
-    #[cfg(feature = "GFA")]
-    /// Arithmetic instructions for finite fields (Galois fields).
-    #[from]
-    GFqA(FieldInstr),
-
     // #[cfg(feature = "str")]
     // Str(array::instr::StrInstr),
     /// Reserved instruction for future use in core `ALU` ISAs.
@@ -120,17 +101,19 @@ pub enum Instr<Id: SiteId, Ext: InstructionSet<Id> = ReservedInstr> {
 }
 
 impl<Id: SiteId> InstructionSet<Id> for ReservedInstr {
-    const ISA: &'static str = ISA_ALU64;
     const ISA_EXT: &'static [&'static str] = &[];
     const HAS_EXT: bool = false;
+
+    type Core = NoExt;
     type Ext = Self;
     type Instr = Self;
 }
 
 impl<'ctx, Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id>> InstructionSet<Id> for Instr<Id, Ext> {
-    const ISA: &'static str = ISA_ALU64;
-    const ISA_EXT: &'static [&'static str] = &[ISA_AN];
+    const ISA_EXT: &'static [&'static str] = &[];
     const HAS_EXT: bool = true;
+
+    type Core = NoExt;
     type Ext = ReservedInstr;
     type Instr = Self;
 }

@@ -26,7 +26,7 @@
 
 use core::marker::PhantomData;
 
-use crate::core::{Core, CoreConfig, Status};
+use crate::core::{Core, CoreConfig, CoreExt, Status};
 use crate::isa::{Bytecode, Instr, Instruction, InstructionSet, ReservedInstr};
 use crate::library::{Lib, LibId, LibSite};
 
@@ -36,7 +36,7 @@ pub struct Vm<Isa = Instr<LibId, ReservedInstr>>
 where Isa: InstructionSet<LibId>
 {
     /// A set of registers
-    pub core: Core<LibId>,
+    pub core: Core<LibId, Isa::Core>,
 
     phantom: PhantomData<Isa>,
 }
@@ -54,9 +54,9 @@ where Isa: InstructionSet<LibId>
     }
 
     /// Constructs new virtual machine instance with default core configuration.
-    pub fn with(config: CoreConfig) -> Self {
+    pub fn with(config: CoreConfig, cx_config: <Isa::Core as CoreExt>::Config) -> Self {
         Self {
-            core: Core::with(config),
+            core: Core::with(config, cx_config),
             phantom: Default::default(),
         }
     }

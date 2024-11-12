@@ -136,10 +136,6 @@
 
 #![allow(clippy::bool_assert_comparison)]
 
-// TODO: Extend the list of features not compatible with zk-aluvm as they appear.
-#[cfg(all(feature = "zk-aluvm", any(feature = "A64", feature = "STR")))]
-compile_error!("zk-AluVM is incompatible with any ISA extensions other then GFA");
-
 extern crate alloc;
 
 #[macro_use]
@@ -161,10 +157,10 @@ mod vm;
 pub mod stl;
 
 pub mod regs {
-    pub use crate::core::{Idx16, Idx32, IdxA, IdxAl, Reg, RegA, Status, A, CALL_STACK_SIZE_MAX};
+    pub use crate::core::{Status, CALL_STACK_SIZE_MAX};
 }
 
-pub use isa::{ExecStep, IsaId, ISA_ALU128, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
+pub use isa::{ExecStep, IsaId, ISA_ID_MAX_LEN};
 #[cfg(feature = "armor")]
 pub use library::armor::LibArmorError;
 pub use library::{Lib, LibId, LibSite};
@@ -172,8 +168,6 @@ pub use library::{Lib, LibId, LibSite};
 pub use paste::paste;
 pub use vm::Vm;
 
-#[cfg(feature = "GFA")]
-pub use self::core::gfa;
-pub use self::core::{Core, CoreConfig, Site, SiteId};
+pub use self::core::{Core, CoreConfig, CoreExt, NoExt, Site, SiteId};
 
 pub const LIB_NAME_ALUVM: &str = "AluVM";

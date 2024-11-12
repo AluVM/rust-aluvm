@@ -29,7 +29,7 @@ use core::ops::RangeInclusive;
 use amplify::confinement::SmallBlob;
 use amplify::num::{u1, u2, u3, u4, u5, u6, u7};
 
-use crate::core::{IdxA, RegA, SiteId, A};
+use crate::core::SiteId;
 
 /// Non-failing byte encoding for the instruction set.
 ///
@@ -100,18 +100,6 @@ pub trait BytecodeRead<Id: SiteId> {
     fn is_eof(&self) -> bool;
     /// Peek a single byte without moving cursor.
     fn peek_byte(&self) -> Result<u8, CodeEofError>;
-
-    fn read_reg_a(&mut self) -> Result<RegA, CodeEofError> {
-        let a = A::from(self.read_3bits()?);
-        let idx = IdxA::from(self.read_5bits()?);
-        Ok(RegA::with(a, idx))
-    }
-    fn read_pair_a(&mut self) -> Result<(A, IdxA, IdxA), CodeEofError> {
-        let a = A::from(self.read_3bits()?);
-        let idx1 = IdxA::from(self.read_5bits()?);
-        let idx2 = IdxA::from(self.read_5bits()?);
-        Ok((a, idx1, idx2))
-    }
 
     /// Read single bit as a bool value.
     fn read_bool(&mut self) -> Result<bool, CodeEofError> { Ok(self.read_1bit()? == u1::ONE) }

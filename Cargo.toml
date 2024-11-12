@@ -34,29 +34,14 @@ serde = { version = "1", optional = true }
 default = []
 # `all` must exclude specific ISA, which may be in a conflict with each other
 # The consumer of the library is expected to add required ISA manually
-all = ["std", "stl", "log", "armor", "serde", "zk-aluvm"]
+all = ["std", "stl", "log", "armor", "serde"]
 
 std = ["amplify/std"]
 armor = ["dep:ascii-armor", "strict_types/armor"]
-stl = ["armor", "strict_types", "GFA"]
+stl = ["armor", "strict_types"]
 log = []
 alloc = ["amplify/alloc"]
 serde = ["dep:serde", "amplify/serde", "strict_encoding/serde"]
-
-# Instruction set architecture extensions
-zk-aluvm = ["GFA"] # Feature ensuring zk-AluVM configuration excluding all zk-incompatible features
-A64 = []
-A128 = ["A64"]
-# A256 = ["A128"]
-# A512 = ["A512"]
-# A1024 = ["A1024"]
-GFA = []
-STR = []
-# ARRAY = []
-# FL64 = []
-# FL80 = ["FL64", "amplify/apfloat"]
-# FLQTR = ["FL80"]
-# FLOCT = ["FLOCT"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"

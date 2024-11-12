@@ -28,4 +28,4 @@ mod bytecode;
 mod instr;
 mod exec;
 
-pub use instr::{CtrlInstr, MaybeU128, RegInstr};
+pub use instr::CtrlInstr;

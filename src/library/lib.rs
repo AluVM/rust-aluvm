@@ -109,7 +109,6 @@ pub type LibsSeg = TinyOrdSet<LibId>;
 #[commit_encode(id = LibId, strategy = strict)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Lib {
-    pub isa: IsaId,
     pub isae: TinyOrdSet<IsaId>,
     pub code: SmallBlob,
     pub data: SmallBlob,
@@ -133,11 +132,9 @@ impl Lib {
 
 impl Display for Lib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "ISA:  {}", self.isa)?;
-        writeln!(f, "{}", self.isae_string())?;
-
-        write!(f, "CODE: {:x}", self.code)?;
-        write!(f, "DATA: {:x}", self.data)?;
+        writeln!(f, "ISAE:  {}", self.isae_string())?;
+        writeln!(f, "CODE: {:x}", self.code)?;
+        writeln!(f, "DATA: {:x}", self.data)?;
         if self.libs.len() > 0 {
             writeln!(
                 f,

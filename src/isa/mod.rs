@@ -31,13 +31,9 @@ mod bytecode;
 mod arch;
 
 mod alu;
-#[cfg(feature = "GFA")]
-mod gfa;
 mod masm;
 
-pub use alu::{CtrlInstr, RegInstr};
-pub use arch::{Instr, InstructionSet, IsaId, ReservedInstr, ISA_ALU128, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
+pub use alu::CtrlInstr;
+pub use arch::{Instr, InstructionSet, IsaId, ReservedInstr, ISA_ID_MAX_LEN};
 pub use bytecode::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
-#[cfg(feature = "GFA")]
-pub use gfa::{FieldInstr, ISA_GFA128};
 pub use instr::{ExecStep, Instruction};

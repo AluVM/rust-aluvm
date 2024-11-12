@@ -24,11 +24,9 @@
 
 use core::ops::RangeInclusive;
 
-use super::{CtrlInstr, MaybeU128, RegInstr};
-use crate::core::{RegA, SiteId, A};
+use super::CtrlInstr;
+use crate::core::SiteId;
 use crate::isa::bytecode::CodeEofError;
-#[cfg(feature = "GFA")]
-use crate::isa::FieldInstr;
 use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, Instr, InstructionSet, ReservedInstr};
 use crate::Site;
 
@@ -38,9 +36,6 @@ impl<Id: SiteId, Ext: InstructionSet<Id> + Bytecode<Id>> Bytecode<Id> for Instr<
     fn opcode_byte(&self) -> u8 {
         match self {
             Instr::Ctrl(instr) => instr.opcode_byte(),
-            Instr::Reg(instr) => Bytecode::<Id>::opcode_byte(instr),
-            #[cfg(feature = "GFA")]
-            Instr::GFqA(instr) => Bytecode::<Id>::opcode_byte(instr),
             Instr::Reserved(instr) => Bytecode::<Id>::opcode_byte(instr),
             Instr::Ext(instr) => instr.opcode_byte(),
         }
@@ -50,9 +45,6 @@ impl<Id: SiteId, Ext: InstructionSet<Id> + Bytecode<Id>> Bytecode<Id> for Instr<
     where W: BytecodeWrite<Id> {
         match self {
             Instr::Ctrl(instr) => instr.encode_operands(writer),
-            Instr::Reg(instr) => instr.encode_operands(writer),
-            #[cfg(feature = "GFA")]
-            Instr::GFqA(instr) => instr.encode_operands(writer),
             Instr::Reserved(instr) => instr.encode_operands(writer),
             Instr::Ext(instr) => instr.encode_operands(writer),
         }
@@ -66,13 +58,6 @@ impl<Id: SiteId, Ext: InstructionSet<Id> + Bytecode<Id>> Bytecode<Id> for Instr<
         match opcode {
             op if CtrlInstr::<Id>::op_range().contains(&op) => {
                 CtrlInstr::<Id>::decode_operands(reader, op).map(Self::Ctrl)
-            }
-            op if <RegInstr as Bytecode<Id>>::op_range().contains(&op) => {
-                <RegInstr as Bytecode<Id>>::decode_operands(reader, op).map(Self::Reg)
-            }
-            #[cfg(feature = "GFA")]
-            op if <FieldInstr as Bytecode<Id>>::op_range().contains(&op) => {
-                <FieldInstr as Bytecode<Id>>::decode_operands(reader, op).map(Self::GFqA)
             }
             0x80..=0xFF => Ext::decode_operands(reader, opcode).map(Self::Ext),
             _ => ReservedInstr::decode_operands(reader, opcode).map(Self::Reserved),
@@ -226,124 +211,6 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
     }
 }
 
-impl RegInstr {
-    const START: u8 = 16;
-    const END: u8 = Self::START + Self::EQ;
-
-    const CLR: u8 = 16;
-    const PUT: u8 = 17;
-    const PIF: u8 = 18;
-    const TEST: u8 = 19;
-    const CPY: u8 = 20;
-    const SWP: u8 = 21;
-    const EQ: u8 = 22;
-}
-
-impl<Id: SiteId> Bytecode<Id> for RegInstr {
-    fn op_range() -> RangeInclusive<u8> { Self::START..=Self::END }
-
-    fn opcode_byte(&self) -> u8 {
-        match self {
-            RegInstr::Clr { .. } => Self::CLR,
-            RegInstr::Put { .. } => Self::PUT,
-            RegInstr::Pif { .. } => Self::PIF,
-            RegInstr::Test { .. } => Self::TEST,
-            RegInstr::Cpy { .. } => Self::CPY,
-            RegInstr::Swp { .. } => Self::SWP,
-            RegInstr::Eq { .. } => Self::EQ,
-        }
-    }
-
-    fn encode_operands<W>(&self, writer: &mut W) -> Result<(), W::Error>
-    where W: BytecodeWrite<Id> {
-        match *self {
-            RegInstr::Clr { dst } => {
-                writer.write_byte(dst.to_u8())?;
-            }
-            RegInstr::Put { dst, val } | RegInstr::Pif { dst, val } => {
-                writer.write_byte(dst.to_u8())?;
-                let MaybeU128::U128(val) = val else {
-                    panic!("an attempt to serialize program with missed data");
-                };
-                match dst.a() {
-                    A::A8 => writer.write_byte(val as u8)?,
-                    A::A16 => writer.write_word(val as u16)?,
-                    A::A32 => writer.write_fixed(val.to_le_bytes())?,
-                    A::A64 => writer.write_fixed(val.to_le_bytes())?,
-                    A::A128 => writer.write_fixed(val.to_le_bytes())?,
-                }
-            }
-            RegInstr::Test { src } => {
-                writer.write_byte(src.to_u8())?;
-            }
-            RegInstr::Cpy { dst, src } => {
-                writer.write_byte(dst.to_u8())?;
-                writer.write_byte(src.to_u8())?;
-            }
-            RegInstr::Swp { src_dst1, src_dst2 } => {
-                writer.write_byte(src_dst1.to_u8())?;
-                writer.write_byte(src_dst2.to_u8())?;
-            }
-            RegInstr::Eq { src1, src2 } => {
-                writer.write_byte(src1.to_u8())?;
-                writer.write_byte(src2.to_u8())?;
-            }
-        }
-        Ok(())
-    }
-
-    fn decode_operands<R>(reader: &mut R, opcode: u8) -> Result<Self, CodeEofError>
-    where
-        Self: Sized,
-        R: BytecodeRead<Id>,
-    {
-        Ok(match opcode {
-            RegInstr::CLR => {
-                let dst = RegA::from(reader.read_byte()?);
-                RegInstr::Clr { dst }
-            }
-            RegInstr::PUT | RegInstr::PIF => {
-                let dst = RegA::from(reader.read_byte()?);
-                let val = match dst.a() {
-                    A::A8 => reader.read_byte().map(|v| v as u128),
-                    A::A16 => reader.read_word().map(|v| v as u128),
-                    A::A32 => reader.read_fixed(u32::from_le_bytes).map(|v| v as u128),
-                    A::A64 => reader.read_fixed(u64::from_le_bytes).map(|v| v as u128),
-                    A::A128 => reader.read_fixed(u128::from_le_bytes),
-                }
-                .ok()
-                .into();
-
-                if opcode == RegInstr::PUT {
-                    RegInstr::Put { dst, val }
-                } else {
-                    RegInstr::Pif { dst, val }
-                }
-            }
-            RegInstr::TEST => {
-                let src = RegA::from(reader.read_byte()?);
-                RegInstr::Test { src }
-            }
-            RegInstr::CPY => {
-                let dst = RegA::from(reader.read_byte()?);
-                let src = RegA::from(reader.read_byte()?);
-                RegInstr::Cpy { dst, src }
-            }
-            RegInstr::SWP => {
-                let src_dst1 = RegA::from(reader.read_byte()?);
-                let src_dst2 = RegA::from(reader.read_byte()?);
-                RegInstr::Swp { src_dst1, src_dst2 }
-            }
-            RegInstr::EQ => {
-                let src1 = RegA::from(reader.read_byte()?);
-                let src2 = RegA::from(reader.read_byte()?);
-                RegInstr::Eq { src1, src2 }
-            }
-            _ => unreachable!(),
-        })
-    }
-}
-
 #[cfg(test)]
 mod test {
     use core::str::FromStr;
@@ -352,7 +219,6 @@ mod test {
 
     use super::*;
     use crate::library::{LibId, LibsSeg, Marshaller};
-    use crate::{_a_idx, a};
 
     const LIB_ID: &str = "5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q";
 
@@ -422,65 +288,4 @@ mod test {
     fn ret() { roundtrip(CtrlInstr::Ret, [CtrlInstr::<LibId>::RET]); }
     #[test]
     fn stop() { roundtrip(CtrlInstr::Stop, [CtrlInstr::<LibId>::STOP]); }
-
-    #[test]
-    fn clr() { roundtrip(RegInstr::Clr { dst: a![A128:A] }, [RegInstr::CLR, 0b1000_1010]); }
-    #[test]
-    fn test() { roundtrip(RegInstr::Test { src: a![A16:3] }, [RegInstr::TEST, 0b0010_0010]); }
-
-    #[test]
-    fn put() {
-        let pos = 0xdeadcafebeefc0fe;
-        let data = roundtrip(
-            RegInstr::Put {
-                dst: a![A64.x],
-                val: MaybeU128::U128(pos),
-            },
-            [RegInstr::PUT, 0b0111_1101, 0, 0],
-        );
-        assert_eq!(data.as_slice(), &pos.to_le_bytes());
-    }
-    #[test]
-    fn pif() {
-        let pos = 0xdeadcafebeefc0fe;
-        let data = roundtrip(
-            RegInstr::Pif {
-                dst: a![A64.x],
-                val: MaybeU128::U128(pos),
-            },
-            [RegInstr::PIF, 0b0111_1101, 0, 0],
-        );
-        assert_eq!(data.as_slice(), &pos.to_le_bytes());
-    }
-
-    #[test]
-    fn cpy() {
-        roundtrip(
-            RegInstr::Cpy {
-                dst: a![A32:7],
-                src: a![A32:E],
-            },
-            [RegInstr::CPY, 0b0100_0110, 0b0100_1110],
-        );
-    }
-    #[test]
-    fn swp() {
-        roundtrip(
-            RegInstr::Swp {
-                src_dst1: a![A32:7],
-                src_dst2: a![A32:E],
-            },
-            [RegInstr::SWP, 0b0100_0110, 0b0100_1110],
-        );
-    }
-    #[test]
-    fn eq() {
-        roundtrip(
-            RegInstr::Eq {
-                src1: a![A32:7],
-                src2: a![A32:E],
-            },
-            [RegInstr::EQ, 0b0100_0110, 0b0100_1110],
-        );
-    }
 }

@@ -57,7 +57,6 @@ impl Lib {
         let (code_segment, data_segment) = writer.finish();
 
         Ok(Lib {
-            isa: Isa::isa_id(),
             isae: Isa::isa_ext(),
             libs: libs_segment,
             code: code_segment,

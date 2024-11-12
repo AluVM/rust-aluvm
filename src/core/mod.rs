@@ -26,10 +26,7 @@
 
 mod core;
 mod microcode;
-mod regs;
+mod util;
 
-pub use self::core::{Core, CoreConfig, CALL_STACK_SIZE_MAX};
-#[cfg(feature = "GFA")]
-pub use self::microcode::gfa;
-pub use self::microcode::{IdxA, IdxAl, Reg, RegA, A};
-pub use self::regs::{Idx16, Idx32, Site, SiteId, Status};
+pub use self::core::{Core, CoreConfig, CoreExt, CALL_STACK_SIZE_MAX};
+pub use self::util::{NoExt, Site, SiteId, Status};
