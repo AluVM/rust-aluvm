@@ -76,7 +76,7 @@ impl Lib {
                 eprint!("{m}{}@x{pos:06X}:{z} {: <32}; ", lib_ref, instr.to_string());
                 for reg in instr.src_regs() {
                     let val = registers.get(reg);
-                    eprint!("{d}{reg} {z}{w}{}{z}, ", val.as_ref().map(u128::to_string).unwrap_or(s!("")));
+                    eprint!("{d}{reg} {z}{w}{}{z}, ", val);
                 }
             }
 
@@ -87,7 +87,7 @@ impl Lib {
                 eprint!("-> ");
                 for reg in instr.dst_regs() {
                     let val = registers.get(reg);
-                    eprint!("{g}{reg} {y}{}{z}, ", val.as_ref().map(u128::to_string).unwrap_or(s!("")));
+                    eprint!("{g}{reg} {y}{}{z}, ", val);
                 }
                 if ck0 != registers.ck() {
                     let c = if registers.ck().is_ok() { g } else { r };

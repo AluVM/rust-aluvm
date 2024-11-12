@@ -24,11 +24,37 @@
 
 use core::fmt::{self, Debug, Display, Formatter};
 use core::str::FromStr;
+use std::cmp::Ordering;
 
 use crate::core::CoreExt;
 
-pub trait Register: Copy + Debug + Display {
+pub trait Register: Copy + Ord + Debug + Display {
+    type Value: Copy + Debug + Display;
     fn bytes(self) -> u16;
+}
+
+#[derive(Debug)]
+pub enum NoRegs {}
+impl Clone for NoRegs {
+    fn clone(&self) -> Self { unreachable!() }
+}
+impl Copy for NoRegs {}
+impl PartialEq for NoRegs {
+    fn eq(&self, _: &Self) -> bool { unreachable!() }
+}
+impl Eq for NoRegs {}
+impl Ord for NoRegs {
+    fn cmp(&self, _: &Self) -> Ordering { unreachable!() }
+}
+impl PartialOrd for NoRegs {
+    fn partial_cmp(&self, _: &Self) -> Option<Ordering> { unreachable!() }
+}
+impl Display for NoRegs {
+    fn fmt(&self, _: &mut Formatter<'_>) -> fmt::Result { unreachable!() }
+}
+impl Register for NoRegs {
+    type Value = u8;
+    fn bytes(self) -> u16 { unreachable!() }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
@@ -67,9 +93,12 @@ impl<Id: SiteId> Display for Site<Id> {
 pub struct NoExt;
 
 impl CoreExt for NoExt {
+    type Reg = NoRegs;
     type Config = ();
 
     fn with(_config: Self::Config) -> Self { NoExt }
+
+    fn get(&self, _reg: Self::Reg) -> <Self::Reg as Register>::Value { 0 }
 
     fn reset(&mut self) {}
 }

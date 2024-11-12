@@ -27,7 +27,7 @@ use core::fmt::{self, Debug, Formatter};
 use amplify::confinement::ConfinedVec;
 
 use super::{Site, SiteId, Status};
-use crate::LIB_NAME_ALUVM;
+use crate::{Register, LIB_NAME_ALUVM};
 
 /// Maximal size of call stack.
 ///
@@ -35,9 +35,11 @@ use crate::LIB_NAME_ALUVM;
 pub const CALL_STACK_SIZE_MAX: u16 = 0xFF;
 
 pub trait CoreExt: Clone + Debug {
+    type Reg: Register;
     type Config: Default;
 
     fn with(config: Self::Config) -> Self;
+    fn get(&self, reg: Self::Reg) -> <Self::Reg as Register>::Value;
     fn reset(&mut self);
 }
 

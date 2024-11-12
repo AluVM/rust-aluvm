@@ -27,7 +27,7 @@ use core::fmt::Debug;
 use strict_encoding::stl::AlphaCapsNum;
 use strict_encoding::{RString, StrictDumb};
 
-use super::{CtrlInstr, Instruction};
+use super::CtrlInstr;
 use crate::core::SiteId;
 use crate::LIB_NAME_ALUVM;
 
@@ -66,7 +66,7 @@ pub struct ReservedInstr(/** Reserved instruction op code value */ pub(super) u8
 /// Complete AluVM ISA.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Display, From)]
 #[display(inner)]
-pub enum Instr<Id: SiteId, Ext: Instruction<Id> = ReservedInstr> {
+pub enum Instr<Id: SiteId> {
     /// Control flow instructions.
     #[from]
     Ctrl(CtrlInstr<Id>),
@@ -76,7 +76,4 @@ pub enum Instr<Id: SiteId, Ext: Instruction<Id> = ReservedInstr> {
     /// Reserved instruction for future use in core `ALU` ISAs.
     #[from]
     Reserved(ReservedInstr),
-
-    /// Other ISA extensions, defined externally.
-    Ext(Ext),
 }

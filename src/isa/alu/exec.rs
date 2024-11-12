@@ -25,26 +25,26 @@
 use alloc::collections::BTreeSet;
 
 use super::CtrlInstr;
-use crate::core::{Core, Site, SiteId, Status};
+use crate::core::{Core, NoExt, NoRegs, Site, SiteId, Status};
 use crate::isa::{ExecStep, Instr, Instruction, ReservedInstr};
-use crate::NoExt;
 
-impl<Id: SiteId, Ext: Instruction<Id>> Instruction<Id> for Instr<Id, Ext> {
-    type Context<'ctx> = Ext::Context<'ctx>;
+impl<Id: SiteId> Instruction<Id> for Instr<Id> {
+    const ISA_EXT: &'static [&'static str] = &[];
 
-    fn src_regs(&self) -> BTreeSet<Self::Reg> {
+    type Core = NoExt;
+    type Context<'ctx> = ();
+
+    fn src_regs(&self) -> BTreeSet<NoRegs> {
         match self {
             Instr::Ctrl(instr) => instr.src_regs(),
             Instr::Reserved(instr) => Instruction::<Id>::src_regs(instr),
-            Instr::Ext(instr) => instr.src_regs(),
         }
     }
 
-    fn dst_regs(&self) -> BTreeSet<Self::Reg> {
+    fn dst_regs(&self) -> BTreeSet<NoRegs> {
         match self {
             Instr::Ctrl(instr) => instr.dst_regs(),
             Instr::Reserved(instr) => Instruction::<Id>::dst_regs(instr),
-            Instr::Ext(instr) => instr.dst_regs(),
         }
     }
 
@@ -52,7 +52,6 @@ impl<Id: SiteId, Ext: Instruction<Id>> Instruction<Id> for Instr<Id, Ext> {
         match self {
             Instr::Ctrl(instr) => instr.op_data_bytes(),
             Instr::Reserved(instr) => Instruction::<Id>::op_data_bytes(instr),
-            Instr::Ext(instr) => instr.op_data_bytes(),
         }
     }
 
@@ -60,30 +59,26 @@ impl<Id: SiteId, Ext: Instruction<Id>> Instruction<Id> for Instr<Id, Ext> {
         match self {
             Instr::Ctrl(instr) => instr.ext_data_bytes(),
             Instr::Reserved(instr) => Instruction::<Id>::ext_data_bytes(instr),
-            Instr::Ext(instr) => instr.ext_data_bytes(),
         }
     }
 
-    fn exec(&self, core: &mut Core<Id, Self::Core>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+    fn exec(&self, core: &mut Core<Id, Self::Core>, site: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
         match self {
             Instr::Ctrl(instr) => instr.exec(core, site, &()),
             Instr::Reserved(instr) => instr.exec(core, site, &()),
-            Instr::Ext(instr) => instr.exec(core, site, context),
         }
     }
 }
 
 impl<Id: SiteId> Instruction<Id> for ReservedInstr {
     const ISA_EXT: &'static [&'static str] = &[];
-    const HAS_EXT: bool = false;
 
     type Core = NoExt;
-    type Ext = Self;
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Self::Reg> { none!() }
+    fn src_regs(&self) -> BTreeSet<NoRegs> { none!() }
 
-    fn dst_regs(&self) -> BTreeSet<Self::Reg> { none!() }
+    fn dst_regs(&self) -> BTreeSet<NoRegs> { none!() }
 
     fn op_data_bytes(&self) -> u16 { none!() }
 
@@ -98,15 +93,13 @@ impl<Id: SiteId> Instruction<Id> for ReservedInstr {
 
 impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
     const ISA_EXT: &'static [&'static str] = &[];
-    const HAS_EXT: bool = true;
 
     type Core = NoExt;
-    type Ext = ReservedInstr;
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Self::Reg> { none!() }
+    fn src_regs(&self) -> BTreeSet<NoRegs> { none!() }
 
-    fn dst_regs(&self) -> BTreeSet<Self::Reg> { none!() }
+    fn dst_regs(&self) -> BTreeSet<NoRegs> { none!() }
 
     fn op_data_bytes(&self) -> u16 {
         match self {

@@ -56,41 +56,44 @@ pub enum ExecStep<Site> {
 /// Trait for instructions
 pub trait Instruction<Id: SiteId>: Display + Debug + Bytecode<Id> {
     const ISA_EXT: &'static [&'static str];
-    const HAS_EXT: bool;
 
-    type Reg: Register;
     type Core: CoreExt;
-    type Ext: Instruction<Id>;
     /// Context: external data which are accessible to the ISA.
     type Context<'ctx>;
 
     fn isa_ext() -> TinyOrdSet<IsaId> {
         let iter = Self::ISA_EXT.into_iter().copied().map(IsaId::from);
-        if Self::HAS_EXT {
-            TinyOrdSet::from_iter_checked(iter.chain(Self::Ext::isa_ext()))
-        } else {
-            TinyOrdSet::from_iter_checked(iter)
-        }
+        TinyOrdSet::from_iter_checked(iter)
     }
 
     /// Lists all registers which are used by the instruction.
-    fn regs(&self) -> BTreeSet<Self::Reg> {
+    fn regs(&self) -> BTreeSet<<Self::Core as CoreExt>::Reg> {
         let mut regs = self.src_regs();
         regs.extend(self.dst_regs());
         regs
     }
 
     /// List of registers which value is taken into the account by the instruction.
-    fn src_regs(&self) -> BTreeSet<Self::Reg>;
+    fn src_regs(&self) -> BTreeSet<<Self::Core as CoreExt>::Reg>;
 
     /// List of registers which value may be changed by the instruction.
-    fn dst_regs(&self) -> BTreeSet<Self::Reg>;
+    fn dst_regs(&self) -> BTreeSet<<Self::Core as CoreExt>::Reg>;
 
     /// The number of bytes in the source registers.
-    fn src_reg_bytes(&self) -> u16 { self.src_regs().into_iter().map(Self::Reg::bytes).sum() }
+    fn src_reg_bytes(&self) -> u16 {
+        self.src_regs()
+            .into_iter()
+            .map(<Self::Core as CoreExt>::Reg::bytes)
+            .sum()
+    }
 
     /// The number of bytes in the destination registers.
-    fn dst_reg_bytes(&self) -> u16 { self.dst_regs().into_iter().map(Self::Reg::bytes).sum() }
+    fn dst_reg_bytes(&self) -> u16 {
+        self.dst_regs()
+            .into_iter()
+            .map(<Self::Core as CoreExt>::Reg::bytes)
+            .sum()
+    }
 
     /// The size of the data coming as an instruction operands (i.e. except data coming from
     /// registers or read from outside the instruction operands).

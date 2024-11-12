@@ -23,7 +23,7 @@
 // limitations under the License.
 
 use crate::core::{Core, CoreExt, SiteId, Status};
-use crate::Site;
+use crate::{Register, Site};
 
 /// Microcode for flag registers.
 impl<Id: SiteId, Cx: CoreExt, const CALL_STACK_SIZE: usize> Core<Id, Cx, CALL_STACK_SIZE> {
@@ -83,4 +83,6 @@ impl<Id: SiteId, Cx: CoreExt, const CALL_STACK_SIZE: usize> Core<Id, Cx, CALL_ST
         self.ca = self.ca.saturating_add(complexity);
         self.cl().map(|lim| self.ca >= lim).unwrap_or_default()
     }
+
+    pub fn get(&self, reg: Cx::Reg) -> <Cx::Reg as Register>::Value { self.cx.get(reg) }
 }

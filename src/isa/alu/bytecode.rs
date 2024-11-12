@@ -27,17 +27,16 @@ use core::ops::RangeInclusive;
 use super::CtrlInstr;
 use crate::core::SiteId;
 use crate::isa::bytecode::CodeEofError;
-use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, Instr, Instruction, ReservedInstr};
+use crate::isa::{Bytecode, BytecodeRead, BytecodeWrite, Instr, ReservedInstr};
 use crate::Site;
 
-impl<Id: SiteId, Ext: Instruction<Id>> Bytecode<Id> for Instr<Id, Ext> {
+impl<Id: SiteId> Bytecode<Id> for Instr<Id> {
     fn op_range() -> RangeInclusive<u8> { 0..=0xFF }
 
     fn opcode_byte(&self) -> u8 {
         match self {
             Instr::Ctrl(instr) => instr.opcode_byte(),
             Instr::Reserved(instr) => Bytecode::<Id>::opcode_byte(instr),
-            Instr::Ext(instr) => instr.opcode_byte(),
         }
     }
 
@@ -46,7 +45,6 @@ impl<Id: SiteId, Ext: Instruction<Id>> Bytecode<Id> for Instr<Id, Ext> {
         match self {
             Instr::Ctrl(instr) => instr.encode_operands(writer),
             Instr::Reserved(instr) => instr.encode_operands(writer),
-            Instr::Ext(instr) => instr.encode_operands(writer),
         }
     }
 
@@ -59,7 +57,6 @@ impl<Id: SiteId, Ext: Instruction<Id>> Bytecode<Id> for Instr<Id, Ext> {
             op if CtrlInstr::<Id>::op_range().contains(&op) => {
                 CtrlInstr::<Id>::decode_operands(reader, op).map(Self::Ctrl)
             }
-            0x80..=0xFF => Ext::decode_operands(reader, opcode).map(Self::Ext),
             _ => ReservedInstr::decode_operands(reader, opcode).map(Self::Reserved),
         }
     }

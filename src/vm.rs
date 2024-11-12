@@ -27,12 +27,12 @@
 use core::marker::PhantomData;
 
 use crate::core::{Core, CoreConfig, CoreExt, Status};
-use crate::isa::{Instr, Instruction, ReservedInstr};
+use crate::isa::{Instr, Instruction};
 use crate::library::{Lib, LibId, LibSite};
 
 /// Alu virtual machine providing single-core execution environment
 #[derive(Clone, Debug)]
-pub struct Vm<Isa = Instr<LibId, ReservedInstr>>
+pub struct Vm<Isa = Instr<LibId>>
 where Isa: Instruction<LibId>
 {
     /// A set of registers
