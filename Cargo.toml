@@ -32,8 +32,6 @@ serde = { version = "1", optional = true }
 
 [features]
 default = []
-# `all` must exclude specific ISA, which may be in a conflict with each other
-# The consumer of the library is expected to add required ISA manually
 all = ["std", "stl", "log", "armor", "serde"]
 
 std = ["amplify/std"]

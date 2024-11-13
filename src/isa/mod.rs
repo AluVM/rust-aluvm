@@ -30,10 +30,10 @@ mod instr;
 mod bytecode;
 mod arch;
 
-mod alu;
+mod ctrl;
 mod masm;
 
-pub use alu::CtrlInstr;
 pub use arch::{Instr, IsaId, ReservedInstr, ISA_ID_MAX_LEN};
 pub use bytecode::{Bytecode, BytecodeRead, BytecodeWrite, CodeEofError};
+pub use ctrl::CtrlInstr;
 pub use instr::{ExecStep, Instruction};

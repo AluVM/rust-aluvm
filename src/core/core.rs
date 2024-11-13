@@ -39,7 +39,15 @@ pub trait CoreExt: Clone + Debug {
     type Config: Default;
 
     fn with(config: Self::Config) -> Self;
+
     fn get(&self, reg: Self::Reg) -> Option<<Self::Reg as Register>::Value>;
+    fn clr(&mut self, reg: Self::Reg) -> Option<<Self::Reg as Register>::Value>;
+    fn set(
+        &mut self,
+        reg: Self::Reg,
+        val: <Self::Reg as Register>::Value,
+    ) -> Option<<Self::Reg as Register>::Value>;
+
     fn reset(&mut self);
 }
 
