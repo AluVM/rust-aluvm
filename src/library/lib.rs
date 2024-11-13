@@ -3,24 +3,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 use core::fmt;
 use core::fmt::{Display, Formatter};
@@ -87,12 +87,7 @@ pub struct LibSite {
 }
 
 impl From<Site<LibId>> for LibSite {
-    fn from(site: Site<LibId>) -> Self {
-        Self {
-            lib_id: site.prog_id,
-            offset: site.offset,
-        }
-    }
+    fn from(site: Site<LibId>) -> Self { Self { lib_id: site.prog_id, offset: site.offset } }
 }
 
 impl LibSite {
@@ -160,8 +155,14 @@ mod test {
     #[test]
     fn lib_id_display() {
         let id = Lib::strict_dumb().lib_id();
-        assert_eq!(format!("{id}"), "alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality");
-        assert_eq!(format!("{id:-}"), "5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality");
+        assert_eq!(
+            format!("{id}"),
+            "alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality"
+        );
+        assert_eq!(
+            format!("{id:-}"),
+            "5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality"
+        );
         assert_eq!(format!("{id:#}"), "alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q");
         assert_eq!(format!("{id:-#}"), "5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q");
     }
@@ -171,12 +172,18 @@ mod test {
         let id = Lib::strict_dumb().lib_id();
         assert_eq!(
             id,
-            LibId::from_str("alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality").unwrap()
+            LibId::from_str(
+                "alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality"
+            )
+            .unwrap()
         );
         assert_eq!(id, LibId::from_str("alu:5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q").unwrap());
         assert_eq!(
             id,
-            LibId::from_str("alu:5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q#sponsor-society-quality").unwrap()
+            LibId::from_str(
+                "alu:5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q#sponsor-society-quality"
+            )
+            .unwrap()
         );
 
         assert_eq!(id, LibId::from_str("5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q").unwrap());

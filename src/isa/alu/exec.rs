@@ -3,24 +3,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 use alloc::collections::BTreeSet;
 
@@ -62,7 +62,12 @@ impl<Id: SiteId> Instruction<Id> for Instr<Id> {
         }
     }
 
-    fn exec(&self, core: &mut Core<Id, Self::Core>, site: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+    fn exec(
+        &self,
+        core: &mut Core<Id, Self::Core>,
+        site: Site<Id>,
+        _: &Self::Context<'_>,
+    ) -> ExecStep<Site<Id>> {
         match self {
             Instr::Ctrl(instr) => instr.exec(core, site, &()),
             Instr::Reserved(instr) => instr.exec(core, site, &()),
@@ -86,7 +91,12 @@ impl<Id: SiteId> Instruction<Id> for ReservedInstr {
 
     fn complexity(&self) -> u64 { u64::MAX }
 
-    fn exec(&self, _: &mut Core<Id, Self::Core>, _: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+    fn exec(
+        &self,
+        _: &mut Core<Id, Self::Core>,
+        _: Site<Id>,
+        _: &Self::Context<'_>,
+    ) -> ExecStep<Site<Id>> {
         ExecStep::FailHalt
     }
 }
@@ -103,7 +113,11 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
 
     fn op_data_bytes(&self) -> u16 {
         match self {
-            CtrlInstr::Nop | CtrlInstr::Chk | CtrlInstr::NotCo | CtrlInstr::FailCk | CtrlInstr::RsetCk => 0,
+            CtrlInstr::Nop
+            | CtrlInstr::Chk
+            | CtrlInstr::NotCo
+            | CtrlInstr::FailCk
+            | CtrlInstr::RsetCk => 0,
             CtrlInstr::Jmp { .. } | CtrlInstr::JiNe { .. } | CtrlInstr::JiFail { .. } => 2,
             CtrlInstr::Sh { .. } | CtrlInstr::ShNe { .. } | CtrlInstr::ShFail { .. } => 1,
             CtrlInstr::Exec { .. } => 0,
@@ -115,7 +129,11 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
 
     fn ext_data_bytes(&self) -> u16 {
         match self {
-            CtrlInstr::Nop | CtrlInstr::Chk | CtrlInstr::NotCo | CtrlInstr::FailCk | CtrlInstr::RsetCk => 0,
+            CtrlInstr::Nop
+            | CtrlInstr::Chk
+            | CtrlInstr::NotCo
+            | CtrlInstr::FailCk
+            | CtrlInstr::RsetCk => 0,
             CtrlInstr::Jmp { .. } | CtrlInstr::JiNe { .. } | CtrlInstr::JiFail { .. } => 0,
             CtrlInstr::Sh { .. } | CtrlInstr::ShNe { .. } | CtrlInstr::ShFail { .. } => 0,
             CtrlInstr::Exec { .. } => 32,
@@ -125,7 +143,12 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
         }
     }
 
-    fn exec(&self, core: &mut Core<Id, Self::Core>, current: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+    fn exec(
+        &self,
+        core: &mut Core<Id, Self::Core>,
+        current: Site<Id>,
+        _: &Self::Context<'_>,
+    ) -> ExecStep<Site<Id>> {
         let shift_jump = |shift: i8| {
             let Some(pos) = current.offset.checked_add_signed(shift as i16) else {
                 return ExecStep::FailHalt;

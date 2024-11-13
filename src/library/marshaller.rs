@@ -3,24 +3,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 use core::fmt::{self, Debug, Formatter};
 
@@ -129,13 +129,7 @@ where
     /// If the length of the bytecode or data segment exceeds 0xFF.
     #[inline]
     pub fn with(bytecode: C, data: D, libs: &'a LibsSeg) -> Self {
-        Self {
-            bytecode,
-            byte_pos: 0,
-            bit_pos: u3::MIN,
-            data,
-            libs,
-        }
+        Self { bytecode, byte_pos: 0, bit_pos: u3::MIN, data, libs }
     }
 
     /// Returns the current offset of the marshaller
@@ -176,7 +170,11 @@ where
     }
 
     fn inc_bytes(&mut self, byte_count: u16) -> Result<(), CodeEofError> {
-        assert_eq!(self.bit_pos.to_u8(), 0, "attempt to access (multiple) bytes at a non-byte aligned position");
+        assert_eq!(
+            self.bit_pos.to_u8(),
+            0,
+            "attempt to access (multiple) bytes at a non-byte aligned position"
+        );
         self._inc_bytes_inner(byte_count)
     }
 
@@ -326,7 +324,10 @@ where
         Ok(res)
     }
 
-    fn read_fixed<N, const LEN: usize>(&mut self, f: impl FnOnce([u8; LEN]) -> N) -> Result<N, CodeEofError> {
+    fn read_fixed<N, const LEN: usize>(
+        &mut self,
+        f: impl FnOnce([u8; LEN]) -> N,
+    ) -> Result<N, CodeEofError> {
         let pos = self.read_word()? as usize;
         let end = pos + LEN;
         if end > self.data.as_ref().len() {
@@ -351,7 +352,9 @@ where
         Ok(self.libs.iter().nth(pos).copied().unwrap_or_default())
     }
 
-    fn check_aligned(&self) { debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are read") }
+    fn check_aligned(&self) {
+        debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are read")
+    }
 }
 
 impl<'a, C, D> BytecodeWrite<LibId> for Marshaller<'a, C, D>
@@ -434,7 +437,9 @@ where
         self.write_byte(pos as u8)
     }
 
-    fn check_aligned(&self) { debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are written") }
+    fn check_aligned(&self) {
+        debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are written")
+    }
 }
 
 #[cfg(test)]

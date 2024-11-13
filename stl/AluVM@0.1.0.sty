@@ -1,10 +1,12 @@
 {-
-  Id: stl:6zoWugNN-OFLZ3EI-6zpe17N-RH2LF2s-c4TwsHe-453X7jU#journal-basil-virus
+  Id: stl:zkW0z6BJ-O8DoUgR-47B0fPf-diV1Rzs-XpiHP5n-FE~MRiE#yogurt-cricket-frog
   Name: AluVM
   Version: 0.1.0
-  Description: AluVM data type lib-old
+  Description: AluVM data type library
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
-  Copyright (C) 2023-2024 UBIDECO Labs. All rights reserved.
+  Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+                          Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+  Copyright (C) 2021-2025 Dr Maxim Orlovsky.
   License: Apache-2.0
 -}
 
@@ -16,23 +18,14 @@ import Std#ralph-blue-lucky
   use AlphaCapsNum#aladdin-zebra-marble
 
 
-@mnemonic(cecilia-perform-marvin)
-data CoreConfig        : halt Std.Bool
-                       , complexityLim U64?
-                       , fieldOrder Fq
-
-@mnemonic(gamma-shine-rabbit)
-data Fq                : m31#31 ()
-                       | f1137119#119 ()
-                       | f1289#128 ()
-                       | other#255 U128
+@mnemonic(ventura-ibiza-special)
+data CoreConfig        : halt Std.Bool, complexityLim U64?
 
 @mnemonic(mobile-letter-absorb)
 data IsaId             : Std.AlphaCapsNum, [Std.AlphaCapsNum ^ ..0xf]
 
-@mnemonic(fiber-balsa-benefit)
-data Lib               : isa IsaId
-                       , isae {IsaId ^ ..0xff}
+@mnemonic(pinball-legend-camel)
+data Lib               : isae {IsaId ^ ..0xff}
                        , code [Byte]
                        , data [Byte]
                        , libs {LibId ^ ..0xff}

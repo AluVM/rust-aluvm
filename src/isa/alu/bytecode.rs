@@ -3,24 +3,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 use core::ops::RangeInclusive;
 
@@ -138,9 +138,10 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
             | CtrlInstr::Ret
             | CtrlInstr::Stop => {}
 
-            CtrlInstr::Jmp { pos } | CtrlInstr::JiNe { pos } | CtrlInstr::JiFail { pos } | CtrlInstr::Fn { pos } => {
-                writer.write_word(pos)?
-            }
+            CtrlInstr::Jmp { pos }
+            | CtrlInstr::JiNe { pos }
+            | CtrlInstr::JiFail { pos }
+            | CtrlInstr::Fn { pos } => writer.write_word(pos)?,
             CtrlInstr::Sh { shift } | CtrlInstr::ShNe { shift } | CtrlInstr::ShFail { shift } => {
                 writer.write_byte(shift.to_le_bytes()[0])?
             }
@@ -167,28 +168,14 @@ impl<Id: SiteId> Bytecode<Id> for CtrlInstr<Id> {
             Self::RET => Self::Ret,
             Self::STOP => Self::Stop,
 
-            Self::JMP => CtrlInstr::Jmp {
-                pos: reader.read_word()?,
-            },
-            Self::JINE => CtrlInstr::JiNe {
-                pos: reader.read_word()?,
-            },
-            Self::JIFAIL => CtrlInstr::JiFail {
-                pos: reader.read_word()?,
-            },
-            Self::FN => CtrlInstr::Fn {
-                pos: reader.read_word()?,
-            },
+            Self::JMP => CtrlInstr::Jmp { pos: reader.read_word()? },
+            Self::JINE => CtrlInstr::JiNe { pos: reader.read_word()? },
+            Self::JIFAIL => CtrlInstr::JiFail { pos: reader.read_word()? },
+            Self::FN => CtrlInstr::Fn { pos: reader.read_word()? },
 
-            Self::SH => CtrlInstr::Sh {
-                shift: i8::from_le_bytes([reader.read_byte()?]),
-            },
-            Self::SHNE => CtrlInstr::ShNe {
-                shift: i8::from_le_bytes([reader.read_byte()?]),
-            },
-            Self::SHFAIL => CtrlInstr::ShFail {
-                shift: i8::from_le_bytes([reader.read_byte()?]),
-            },
+            Self::SH => CtrlInstr::Sh { shift: i8::from_le_bytes([reader.read_byte()?]) },
+            Self::SHNE => CtrlInstr::ShNe { shift: i8::from_le_bytes([reader.read_byte()?]) },
+            Self::SHFAIL => CtrlInstr::ShFail { shift: i8::from_le_bytes([reader.read_byte()?]) },
 
             Self::CALL => {
                 let prog_id = reader.read_ref()?;
@@ -247,38 +234,46 @@ mod test {
     #[test]
     fn jmp() { roundtrip(CtrlInstr::Jmp { pos: 0x75AE }, [CtrlInstr::<LibId>::JMP, 0xAE, 0x75]); }
     #[test]
-    fn jine() { roundtrip(CtrlInstr::JiNe { pos: 0x75AE }, [CtrlInstr::<LibId>::JINE, 0xAE, 0x75]); }
+    fn jine() {
+        roundtrip(CtrlInstr::JiNe { pos: 0x75AE }, [CtrlInstr::<LibId>::JINE, 0xAE, 0x75]);
+    }
     #[test]
-    fn jifail() { roundtrip(CtrlInstr::JiFail { pos: 0x75AE }, [CtrlInstr::<LibId>::JIFAIL, 0xAE, 0x75]); }
+    fn jifail() {
+        roundtrip(CtrlInstr::JiFail { pos: 0x75AE }, [CtrlInstr::<LibId>::JIFAIL, 0xAE, 0x75]);
+    }
 
     #[test]
     fn sh() { roundtrip(CtrlInstr::Sh { shift: -0x5 }, [CtrlInstr::<LibId>::SH, 255 - 5 + 1]); }
     #[test]
-    fn shne() { roundtrip(CtrlInstr::ShNe { shift: -0x5 }, [CtrlInstr::<LibId>::SHNE, 255 - 5 + 1]); }
+    fn shne() {
+        roundtrip(CtrlInstr::ShNe { shift: -0x5 }, [CtrlInstr::<LibId>::SHNE, 255 - 5 + 1]);
+    }
     #[test]
-    fn shfail() { roundtrip(CtrlInstr::ShFail { shift: -0x5 }, [CtrlInstr::<LibId>::SHFAIL, 255 - 5 + 1]); }
+    fn shfail() {
+        roundtrip(CtrlInstr::ShFail { shift: -0x5 }, [CtrlInstr::<LibId>::SHFAIL, 255 - 5 + 1]);
+    }
 
     #[test]
     fn exec() {
         let lib_id = LibId::from_str(LIB_ID).unwrap();
-        roundtrip(
-            CtrlInstr::Exec {
-                site: Site::new(lib_id, 0x69AB),
-            },
-            [CtrlInstr::<LibId>::EXEC, 0x00, 0xAB, 0x69],
-        );
+        roundtrip(CtrlInstr::Exec { site: Site::new(lib_id, 0x69AB) }, [
+            CtrlInstr::<LibId>::EXEC,
+            0x00,
+            0xAB,
+            0x69,
+        ]);
     }
     #[test]
     fn func() { roundtrip(CtrlInstr::Fn { pos: 0x75AE }, [CtrlInstr::<LibId>::FN, 0xAE, 0x75]); }
     #[test]
     fn call() {
         let lib_id = LibId::from_str(LIB_ID).unwrap();
-        roundtrip(
-            CtrlInstr::Call {
-                site: Site::new(lib_id, 0x69AB),
-            },
-            [CtrlInstr::<LibId>::CALL, 0x00, 0xAB, 0x69],
-        );
+        roundtrip(CtrlInstr::Call { site: Site::new(lib_id, 0x69AB) }, [
+            CtrlInstr::<LibId>::CALL,
+            0x00,
+            0xAB,
+            0x69,
+        ]);
     }
 
     #[test]
