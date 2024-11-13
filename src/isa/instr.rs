@@ -3,75 +3,97 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Laboratories for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
+use alloc::collections::BTreeSet;
 use core::fmt::{Debug, Display};
-use std::collections::BTreeSet;
 
-use crate::core::{Core, Reg, Site, SiteId};
+use amplify::confinement::TinyOrdSet;
+
+use crate::core::{Core, Register, Site, SiteId};
+use crate::isa::Bytecode;
+use crate::{CoreExt, IsaId};
 
 /// Turing machine movement after instruction execution
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ExecStep<Site> {
-    /// Stop program execution
+    /// Stop program execution.
     Stop,
 
-    /// Stop and fail program execution
-    StopFail,
+    /// Set `CK` to `Fail` and halt the program execution.
+    FailHalt,
 
-    /// Move to the next instruction
+    /// Move to the next instruction.
     Next,
 
-    /// Move to the next instruction and set `ck` to `Fail`.
-    NextFail,
+    /// Move to the next instruction and set `CK` to `Fail`.
+    FailContinue,
 
-    /// Jump to the offset from the origin
+    /// Jump to the offset from the origin.
     Jump(u16),
 
-    /// Jump to another code fragment
+    /// Jump to another code fragment.
     Call(Site),
 }
 
 /// Trait for instructions
-pub trait Instruction<Id: SiteId>: Display + Debug {
+pub trait Instruction<Id: SiteId>: Display + Debug + Bytecode<Id> {
+    const ISA_EXT: &'static [&'static str];
+
+    type Core: CoreExt;
     /// Context: external data which are accessible to the ISA.
     type Context<'ctx>;
 
+    fn isa_ext() -> TinyOrdSet<IsaId> {
+        let iter = Self::ISA_EXT.into_iter().copied().map(IsaId::from);
+        TinyOrdSet::from_iter_checked(iter)
+    }
+
     /// Lists all registers which are used by the instruction.
-    fn regs(&self) -> BTreeSet<Reg> {
+    fn regs(&self) -> BTreeSet<<Self::Core as CoreExt>::Reg> {
         let mut regs = self.src_regs();
         regs.extend(self.dst_regs());
         regs
     }
 
     /// List of registers which value is taken into the account by the instruction.
-    fn src_regs(&self) -> BTreeSet<Reg>;
+    fn src_regs(&self) -> BTreeSet<<Self::Core as CoreExt>::Reg>;
 
     /// List of registers which value may be changed by the instruction.
-    fn dst_regs(&self) -> BTreeSet<Reg>;
+    fn dst_regs(&self) -> BTreeSet<<Self::Core as CoreExt>::Reg>;
 
     /// The number of bytes in the source registers.
-    fn src_reg_bytes(&self) -> u16 { self.src_regs().into_iter().map(Reg::bytes).sum() }
+    fn src_reg_bytes(&self) -> u16 {
+        self.src_regs()
+            .into_iter()
+            .map(<Self::Core as CoreExt>::Reg::bytes)
+            .sum()
+    }
 
     /// The number of bytes in the destination registers.
-    fn dst_reg_bytes(&self) -> u16 { self.dst_regs().into_iter().map(Reg::bytes).sum() }
+    fn dst_reg_bytes(&self) -> u16 {
+        self.dst_regs()
+            .into_iter()
+            .map(<Self::Core as CoreExt>::Reg::bytes)
+            .sum()
+    }
 
     /// The size of the data coming as an instruction operands (i.e. except data coming from
     /// registers or read from outside the instruction operands).
@@ -106,5 +128,10 @@ pub trait Instruction<Id: SiteId>: Display + Debug {
     /// # Returns
     ///
     /// Returns whether further execution should be stopped.
-    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>>;
+    fn exec(
+        &self,
+        core: &mut Core<Id, Self::Core>,
+        site: Site<Id>,
+        context: &Self::Context<'_>,
+    ) -> ExecStep<Site<Id>>;
 }

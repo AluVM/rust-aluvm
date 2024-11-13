@@ -3,24 +3,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Laboratories for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 use core::error::Error;
 use core::fmt::Debug;
@@ -29,7 +29,7 @@ use core::ops::RangeInclusive;
 use amplify::confinement::SmallBlob;
 use amplify::num::{u1, u2, u3, u4, u5, u6, u7};
 
-use crate::core::{IdxA, RegA, SiteId, A};
+use crate::core::SiteId;
 
 /// Non-failing byte encoding for the instruction set.
 ///
@@ -101,18 +101,6 @@ pub trait BytecodeRead<Id: SiteId> {
     /// Peek a single byte without moving cursor.
     fn peek_byte(&self) -> Result<u8, CodeEofError>;
 
-    fn read_reg_a(&mut self) -> Result<RegA, CodeEofError> {
-        let a = A::from(self.read_3bits()?);
-        let idx = IdxA::from(self.read_5bits()?);
-        Ok(RegA::with(a, idx))
-    }
-    fn read_pair_a(&mut self) -> Result<(A, IdxA, IdxA), CodeEofError> {
-        let a = A::from(self.read_3bits()?);
-        let idx1 = IdxA::from(self.read_5bits()?);
-        let idx2 = IdxA::from(self.read_5bits()?);
-        Ok((a, idx1, idx2))
-    }
-
     /// Read single bit as a bool value.
     fn read_bool(&mut self) -> Result<bool, CodeEofError> { Ok(self.read_1bit()? == u1::ONE) }
     /// Read single bit.
@@ -139,15 +127,18 @@ pub trait BytecodeRead<Id: SiteId> {
     ///
     /// # Returns
     ///
-    /// Resulting data type and a flag for `ck` registry indicating whether it was possible to read
+    /// Resulting data type and a flag for `CK` registry indicating whether it was possible to read
     /// all the data.
-    fn read_fixed<N, const LEN: usize>(&mut self, f: impl FnOnce([u8; LEN]) -> N) -> Result<N, CodeEofError>;
+    fn read_fixed<N, const LEN: usize>(
+        &mut self,
+        f: impl FnOnce([u8; LEN]) -> N,
+    ) -> Result<N, CodeEofError>;
 
     /// Read variable-length byte string.
     ///
     /// # Returns
     ///
-    /// Resulting data type and a flag for `ck` registry indicating whether it was possible to read
+    /// Resulting data type and a flag for `CK` registry indicating whether it was possible to read
     /// all the data.
     fn read_bytes(&mut self) -> Result<(SmallBlob, bool), CodeEofError>;
 

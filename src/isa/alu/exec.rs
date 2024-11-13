@@ -3,96 +3,87 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Laboratories for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
-use std::collections::BTreeSet;
+use alloc::collections::BTreeSet;
 
-use super::{CtrlInstr, MaybeU128, RegInstr};
-use crate::core::{Core, Reg, Site, SiteId, Status};
-use crate::isa::{ExecStep, Instr, Instruction, InstructionSet, ReservedInstr};
+use super::CtrlInstr;
+use crate::core::{Core, NoExt, NoRegs, Site, SiteId, Status};
+use crate::isa::{ExecStep, Instr, Instruction, ReservedInstr};
 
-impl<'cx, Id: SiteId, Ext: InstructionSet<Id> + Instruction<Id, Context<'cx> = ()>> Instruction<Id> for Instr<Id, Ext> {
+impl<Id: SiteId> Instruction<Id> for Instr<Id> {
+    const ISA_EXT: &'static [&'static str] = &[];
+
+    type Core = NoExt;
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Reg> {
+    fn src_regs(&self) -> BTreeSet<NoRegs> {
         match self {
             Instr::Ctrl(instr) => instr.src_regs(),
-            Instr::Reg(instr) => Instruction::<Id>::src_regs(instr),
-            #[cfg(feature = "GFA")]
-            Instr::GFqA(instr) => Instruction::<Id>::src_regs(instr),
             Instr::Reserved(instr) => Instruction::<Id>::src_regs(instr),
-            Instr::Ext(instr) => instr.src_regs(),
         }
     }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> {
+    fn dst_regs(&self) -> BTreeSet<NoRegs> {
         match self {
             Instr::Ctrl(instr) => instr.dst_regs(),
-            Instr::Reg(instr) => Instruction::<Id>::dst_regs(instr),
-            #[cfg(feature = "GFA")]
-            Instr::GFqA(instr) => Instruction::<Id>::dst_regs(instr),
             Instr::Reserved(instr) => Instruction::<Id>::dst_regs(instr),
-            Instr::Ext(instr) => instr.dst_regs(),
         }
     }
 
     fn op_data_bytes(&self) -> u16 {
         match self {
             Instr::Ctrl(instr) => instr.op_data_bytes(),
-            Instr::Reg(instr) => Instruction::<Id>::op_data_bytes(instr),
-            #[cfg(feature = "GFA")]
-            Instr::GFqA(instr) => Instruction::<Id>::op_data_bytes(instr),
             Instr::Reserved(instr) => Instruction::<Id>::op_data_bytes(instr),
-            Instr::Ext(instr) => instr.op_data_bytes(),
         }
     }
 
     fn ext_data_bytes(&self) -> u16 {
         match self {
             Instr::Ctrl(instr) => instr.ext_data_bytes(),
-            Instr::Reg(instr) => Instruction::<Id>::ext_data_bytes(instr),
-            #[cfg(feature = "GFA")]
-            Instr::GFqA(instr) => Instruction::<Id>::ext_data_bytes(instr),
             Instr::Reserved(instr) => Instruction::<Id>::ext_data_bytes(instr),
-            Instr::Ext(instr) => instr.ext_data_bytes(),
         }
     }
 
-    fn exec(&self, core: &mut Core<Id>, site: Site<Id>, context: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+    fn exec(
+        &self,
+        core: &mut Core<Id, Self::Core>,
+        site: Site<Id>,
+        _: &Self::Context<'_>,
+    ) -> ExecStep<Site<Id>> {
         match self {
-            Instr::Ctrl(instr) => instr.exec(core, site, context),
-            Instr::Reg(instr) => instr.exec(core, site, context),
-            #[cfg(feature = "GFA")]
-            Instr::GFqA(instr) => instr.exec(core, site, context),
-            Instr::Reserved(instr) => instr.exec(core, site, context),
-            Instr::Ext(instr) => instr.exec(core, site, context),
+            Instr::Ctrl(instr) => instr.exec(core, site, &()),
+            Instr::Reserved(instr) => instr.exec(core, site, &()),
         }
     }
 }
 
 impl<Id: SiteId> Instruction<Id> for ReservedInstr {
+    const ISA_EXT: &'static [&'static str] = &[];
+
+    type Core = NoExt;
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Reg> { none!() }
+    fn src_regs(&self) -> BTreeSet<NoRegs> { none!() }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> { none!() }
+    fn dst_regs(&self) -> BTreeSet<NoRegs> { none!() }
 
     fn op_data_bytes(&self) -> u16 { none!() }
 
@@ -100,24 +91,67 @@ impl<Id: SiteId> Instruction<Id> for ReservedInstr {
 
     fn complexity(&self) -> u64 { u64::MAX }
 
-    fn exec(&self, _: &mut Core<Id>, _: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> { ExecStep::StopFail }
+    fn exec(
+        &self,
+        _: &mut Core<Id, Self::Core>,
+        _: Site<Id>,
+        _: &Self::Context<'_>,
+    ) -> ExecStep<Site<Id>> {
+        ExecStep::FailHalt
+    }
 }
 
 impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
+    const ISA_EXT: &'static [&'static str] = &[];
+
+    type Core = NoExt;
     type Context<'ctx> = ();
 
-    fn src_regs(&self) -> BTreeSet<Reg> { none!() }
+    fn src_regs(&self) -> BTreeSet<NoRegs> { none!() }
 
-    fn dst_regs(&self) -> BTreeSet<Reg> { none!() }
+    fn dst_regs(&self) -> BTreeSet<NoRegs> { none!() }
 
-    fn op_data_bytes(&self) -> u16 { todo!() }
+    fn op_data_bytes(&self) -> u16 {
+        match self {
+            CtrlInstr::Nop
+            | CtrlInstr::Chk
+            | CtrlInstr::NotCo
+            | CtrlInstr::FailCk
+            | CtrlInstr::RsetCk => 0,
+            CtrlInstr::Jmp { .. } | CtrlInstr::JiNe { .. } | CtrlInstr::JiFail { .. } => 2,
+            CtrlInstr::Sh { .. } | CtrlInstr::ShNe { .. } | CtrlInstr::ShFail { .. } => 1,
+            CtrlInstr::Exec { .. } => 0,
+            CtrlInstr::Fn { .. } => 2,
+            CtrlInstr::Call { .. } => 0,
+            CtrlInstr::Ret | CtrlInstr::Stop => 0,
+        }
+    }
 
-    fn ext_data_bytes(&self) -> u16 { todo!() }
+    fn ext_data_bytes(&self) -> u16 {
+        match self {
+            CtrlInstr::Nop
+            | CtrlInstr::Chk
+            | CtrlInstr::NotCo
+            | CtrlInstr::FailCk
+            | CtrlInstr::RsetCk => 0,
+            CtrlInstr::Jmp { .. } | CtrlInstr::JiNe { .. } | CtrlInstr::JiFail { .. } => 0,
+            CtrlInstr::Sh { .. } | CtrlInstr::ShNe { .. } | CtrlInstr::ShFail { .. } => 0,
+            CtrlInstr::Exec { .. } => 32,
+            CtrlInstr::Fn { .. } => 0,
+            CtrlInstr::Call { .. } => 32,
+            CtrlInstr::Ret | CtrlInstr::Stop => 0,
+        }
+    }
 
-    fn exec(&self, core: &mut Core<Id>, current: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
+    fn exec(
+        &self,
+        core: &mut Core<Id, Self::Core>,
+        current: Site<Id>,
+        _: &Self::Context<'_>,
+    ) -> ExecStep<Site<Id>> {
         let shift_jump = |shift: i8| {
             let Some(pos) = current.offset.checked_add_signed(shift as i16) else {
-                return ExecStep::StopFail;
+                return ExecStep::FailHalt;
             };
             return ExecStep::Jump(pos);
         };
@@ -140,12 +174,12 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
             }
             CtrlInstr::NotCo => core.set_co(!core.co()),
             CtrlInstr::Jmp { pos } => return ExecStep::Jump(pos),
-            CtrlInstr::JifCo { pos } => {
+            CtrlInstr::JiNe { pos } => {
                 if core.co() {
                     return ExecStep::Jump(pos);
                 }
             }
-            CtrlInstr::JifCk { pos } => {
+            CtrlInstr::JiFail { pos } => {
                 if core.ck() == Status::Fail {
                     return ExecStep::Jump(pos);
                 }
@@ -167,13 +201,13 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
             CtrlInstr::Fn { pos } => {
                 return match core.push_cs(current) {
                     Some(_) => ExecStep::Jump(pos),
-                    None => ExecStep::StopFail,
+                    None => ExecStep::FailHalt,
                 }
             }
             CtrlInstr::Call { site } => {
                 return match core.push_cs(current) {
                     Some(_) => ExecStep::Call(site),
-                    None => ExecStep::StopFail,
+                    None => ExecStep::FailHalt,
                 }
             }
             CtrlInstr::Ret => {
@@ -183,80 +217,6 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
                 }
             }
             CtrlInstr::Stop => return ExecStep::Stop,
-        }
-        ExecStep::Next
-    }
-}
-
-impl<Id: SiteId> Instruction<Id> for RegInstr {
-    type Context<'ctx> = ();
-
-    fn src_regs(&self) -> BTreeSet<Reg> { todo!() }
-
-    fn dst_regs(&self) -> BTreeSet<Reg> { todo!() }
-
-    fn op_data_bytes(&self) -> u16 { todo!() }
-
-    fn ext_data_bytes(&self) -> u16 { todo!() }
-
-    fn exec(&self, core: &mut Core<Id>, _: Site<Id>, _: &Self::Context<'_>) -> ExecStep<Site<Id>> {
-        match *self {
-            RegInstr::Clr { dst } => {
-                let was_set = core.clr_a(dst);
-                core.set_co(was_set);
-            }
-            RegInstr::Put {
-                dst: _,
-                val: MaybeU128::NoData,
-            }
-            | RegInstr::Pif {
-                dst: _,
-                val: MaybeU128::NoData,
-            } => {
-                if core.fail_ck() {
-                    return ExecStep::Stop;
-                }
-            }
-            RegInstr::Put {
-                dst,
-                val: MaybeU128::U128(val),
-            } => {
-                let was_set = core.set_a(dst, val);
-                core.set_co(was_set);
-            }
-            RegInstr::Pif {
-                dst,
-                val: MaybeU128::U128(val),
-            } => {
-                if core.a(dst).is_none() {
-                    let was_set = core.set_a(dst, val);
-                    core.set_co(was_set);
-                }
-            }
-            RegInstr::Test { src } => {
-                let was_set = core.a(src).is_some();
-                core.set_co(was_set);
-            }
-            RegInstr::Cpy { dst, src } => {
-                let was_set = match core.a(src) {
-                    None => core.clr_a(dst),
-                    Some(val) => core.set_a(dst, val),
-                };
-                core.set_co(was_set);
-            }
-            RegInstr::Swp { src_dst1, src_dst2 } => match core.take_a(src_dst1) {
-                Some(a) => {
-                    core.swp_a(src_dst2, a).map(|b| core.set_a(src_dst1, b));
-                }
-                None => {
-                    core.clr_a(src_dst1);
-                }
-            },
-            RegInstr::Eq { src1, src2 } => {
-                let a = core.a(src1);
-                let b = core.a(src2);
-                core.set_co(a == b);
-            }
         }
         ExecStep::Next
     }

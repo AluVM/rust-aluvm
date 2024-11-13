@@ -3,24 +3,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Laboratories for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 #[cfg(feature = "log")]
 use baid64::DisplayBaid64;
@@ -38,15 +38,22 @@ impl Lib {
     pub fn exec<Instr>(
         &self,
         entrypoint: u16,
-        registers: &mut Core<LibId>,
+        registers: &mut Core<LibId, Instr::Core>,
         context: &Instr::Context<'_>,
     ) -> Option<LibSite>
     where
         Instr: Instruction<LibId> + Bytecode<LibId>,
     {
         #[cfg(feature = "log")]
-        let (m, w, d, g, r, y, z) =
-            ("\x1B[0;35m", "\x1B[1;1m", "\x1B[0;37;2m", "\x1B[0;32m", "\x1B[0;31m", "\x1B[0;33m", "\x1B[0m");
+        let (m, w, d, g, r, y, z) = (
+            "\x1B[0;35m",
+            "\x1B[1;1m",
+            "\x1B[0;37;2m",
+            "\x1B[0;32m",
+            "\x1B[0;31m",
+            "\x1B[0;33m",
+            "\x1B[0m",
+        );
 
         let mut marshaller = Marshaller::with(&self.code, &self.data, &self.libs);
         let lib_id = self.lib_id();
@@ -76,7 +83,7 @@ impl Lib {
                 eprint!("{m}{}@x{pos:06X}:{z} {: <32}; ", lib_ref, instr.to_string());
                 for reg in instr.src_regs() {
                     let val = registers.get(reg);
-                    eprint!("{d}{reg} {z}{w}{}{z}, ", val.as_ref().map(u128::to_string).unwrap_or(s!("")));
+                    eprint!("{d}{reg} {z}{w}{}{z}, ", val);
                 }
             }
 
@@ -87,11 +94,11 @@ impl Lib {
                 eprint!("-> ");
                 for reg in instr.dst_regs() {
                     let val = registers.get(reg);
-                    eprint!("{g}{reg} {y}{}{z}, ", val.as_ref().map(u128::to_string).unwrap_or(s!("")));
+                    eprint!("{g}{reg} {y}{}{z}, ", val);
                 }
                 if ck0 != registers.ck() {
                     let c = if registers.ck().is_ok() { g } else { r };
-                    eprint!(" {d}ck {z}{c}{}{z}, ", registers.ck());
+                    eprint!(" {d}CK {z}{c}{}{z}, ", registers.ck());
                 }
 
                 ck0 = registers.ck();
@@ -107,14 +114,14 @@ impl Lib {
                     #[cfg(feature = "log")]
                     {
                         let c = if registers.ck().is_ok() { g } else { r };
-                        eprintln!("execution stopped; {d}ck {z}{c}{}{z}", registers.ck());
+                        eprintln!("execution stopped; {d}CK {z}{c}{}{z}", registers.ck());
                     }
                     return None;
                 }
-                ExecStep::StopFail => {
+                ExecStep::FailHalt => {
                     let _ = registers.fail_ck();
                     #[cfg(feature = "log")]
-                    eprintln!("halting, {d}ck{z} is set to {r}false{z}");
+                    eprintln!("halting, {d}CK{z} is set to {r}false{z}");
                     return None;
                 }
                 ExecStep::Next => {
@@ -122,14 +129,16 @@ impl Lib {
                     eprintln!();
                     continue;
                 }
-                ExecStep::NextFail => {
+                ExecStep::FailContinue => {
                     if registers.fail_ck() {
                         #[cfg(feature = "log")]
-                        eprintln!("halting, {d}ck{z} is set to {r}false{z} and {d}ch{z} is {r}true{z}");
+                        eprintln!(
+                            "halting, {d}CK{z} is set to {r}false{z} and {d}ch{z} is {r}true{z}"
+                        );
                         return None;
                     }
                     #[cfg(feature = "log")]
-                    eprintln!("failing, {d}ck{z} is set to {r}false{z}");
+                    eprintln!("failing, {d}CK{z} is set to {r}false{z}");
                     continue;
                 }
                 ExecStep::Jump(pos) => {
@@ -138,7 +147,9 @@ impl Lib {
                     if marshaller.seek(pos).is_err() {
                         let _ = registers.fail_ck();
                         #[cfg(feature = "log")]
-                        eprintln!("jump to non-existing offset; halting, {d}ck{z} is set to {r}fail{z}");
+                        eprintln!(
+                            "jump to non-existing offset; halting, {d}CK{z} is set to {r}fail{z}"
+                        );
                         return None;
                     }
                 }

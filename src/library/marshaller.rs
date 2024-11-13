@@ -3,27 +3,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Laboratories for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
-use core::fmt;
-use std::fmt::{Debug, Formatter};
+use core::fmt::{self, Debug, Formatter};
 
 use amplify::confinement::SmallBlob;
 use amplify::num::{u1, u2, u3, u4, u5, u6, u7};
@@ -110,6 +109,13 @@ where Self: 'a
     }
 }
 
+impl<'a> Marshaller<'a, SmallBlob, SmallBlob>
+where Self: 'a
+{
+    #[cfg(test)]
+    pub fn into_code_data(self) -> (SmallBlob, SmallBlob) { (self.bytecode, self.data) }
+}
+
 impl<'a, C, D> Marshaller<'a, C, D>
 where
     C: AsRef<[u8]>,
@@ -123,13 +129,7 @@ where
     /// If the length of the bytecode or data segment exceeds 0xFF.
     #[inline]
     pub fn with(bytecode: C, data: D, libs: &'a LibsSeg) -> Self {
-        Self {
-            bytecode,
-            byte_pos: 0,
-            bit_pos: u3::MIN,
-            data,
-            libs,
-        }
+        Self { bytecode, byte_pos: 0, bit_pos: u3::MIN, data, libs }
     }
 
     /// Returns the current offset of the marshaller
@@ -170,7 +170,11 @@ where
     }
 
     fn inc_bytes(&mut self, byte_count: u16) -> Result<(), CodeEofError> {
-        assert_eq!(self.bit_pos.to_u8(), 0, "attempt to access (multiple) bytes at a non-byte aligned position");
+        assert_eq!(
+            self.bit_pos.to_u8(),
+            0,
+            "attempt to access (multiple) bytes at a non-byte aligned position"
+        );
         self._inc_bytes_inner(byte_count)
     }
 
@@ -183,7 +187,7 @@ where
 
 impl<'a, C, D> Marshaller<'a, C, D>
 where
-    C: AsRef<[u8]> + AsMut<[u8]>,
+    C: AsRef<[u8]> + AsMut<[u8]> + Extend<u8>,
     D: AsRef<[u8]>,
     Self: 'a,
 {
@@ -192,8 +196,11 @@ where
         let value = ((value as u64) << (self.bit_pos.to_u8())).to_le_bytes();
         let n_bytes = (cnt + self.bit_pos.to_u8() + 7) / 8;
         for i in 0..n_bytes {
-            if self.is_eof() {
+            if self.bytecode.as_ref().len() >= u16::MAX as usize {
                 return Err(CodeEofError);
+            }
+            if self.is_eof() {
+                self.bytecode.extend([0]);
             }
             let byte_pos = self.byte_pos as usize;
             let bit_pos = self.bit_pos.to_u8();
@@ -317,10 +324,13 @@ where
         Ok(res)
     }
 
-    fn read_fixed<N, const LEN: usize>(&mut self, f: impl FnOnce([u8; LEN]) -> N) -> Result<N, CodeEofError> {
+    fn read_fixed<N, const LEN: usize>(
+        &mut self,
+        f: impl FnOnce([u8; LEN]) -> N,
+    ) -> Result<N, CodeEofError> {
         let pos = self.read_word()? as usize;
         let end = pos + LEN;
-        if end >= self.data.as_ref().len() {
+        if end > self.data.as_ref().len() {
             return Err(CodeEofError);
         }
         let mut buf = [0u8; LEN];
@@ -342,12 +352,14 @@ where
         Ok(self.libs.iter().nth(pos).copied().unwrap_or_default())
     }
 
-    fn check_aligned(&self) { debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are read") }
+    fn check_aligned(&self) {
+        debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are read")
+    }
 }
 
 impl<'a, C, D> BytecodeWrite<LibId> for Marshaller<'a, C, D>
 where
-    C: AsRef<[u8]> + AsMut<[u8]>,
+    C: AsRef<[u8]> + AsMut<[u8]> + Extend<u8>,
     D: AsRef<[u8]> + AsMut<[u8]> + Extend<u8>,
     Self: 'a,
 {
@@ -425,7 +437,9 @@ where
         self.write_byte(pos as u8)
     }
 
-    fn check_aligned(&self) { debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are written") }
+    fn check_aligned(&self) {
+        debug_assert_eq!(self.bit_pos, u3::ZERO, "not all instruction operands are written")
+    }
 }
 
 #[cfg(test)]
@@ -467,8 +481,7 @@ mod tests {
     #[test]
     fn write() {
         let libseg = LibsSeg::default();
-        let mut code = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let mut marshaller = Marshaller::with(&mut code, [], &libseg);
+        let mut marshaller = Marshaller::with(vec![], vec![], &libseg);
         marshaller.write_2bits(u2::with(0b00000011)).unwrap();
         marshaller.write_3bits(u3::with(0b00000101)).unwrap();
         marshaller.write_7bits(u7::with(0b01011111)).unwrap();
@@ -479,8 +492,8 @@ mod tests {
         marshaller.write_word(two_bytes).unwrap();
         let number = 255u8;
         marshaller.write_fixed(255u8.to_le_bytes()).unwrap();
+        let (code, data) = marshaller.finish();
 
-        let data = marshaller.data;
         let mut marshaller = Marshaller::with(code, data, &libseg);
         assert_eq!(marshaller.read_2bits().unwrap().to_u8(), 0b00000011);
         assert_eq!(marshaller.read_3bits().unwrap().to_u8(), 0b00000101);
@@ -493,22 +506,23 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn write_fail() {
+    fn write_data() {
         let libseg = LibsSeg::default();
-        let mut code = [0, 0, 0, 0, 0, 0];
-        let mut marshaller = Marshaller::with(&mut code, [], &libseg);
+        let mut marshaller = Marshaller::with(vec![], vec![], &libseg);
         marshaller.write_fixed(256u16.to_le_bytes()).unwrap();
+        assert_eq!(marshaller.data, vec![0, 1]);
     }
 
     #[test]
     fn write_eof() {
         let libseg = LibsSeg::default();
-        let mut code = [0, 0];
-        let mut marshaller = Marshaller::with(&mut code, [], &libseg);
+        let mut marshaller = Marshaller::with(vec![0x00; 0xFFFD], vec![], &libseg);
+        marshaller.seek(0xFFFD).unwrap_err();
+        marshaller.byte_pos = 0xFFFD;
         marshaller.write_2bits(u2::with(0b00000011)).unwrap();
         marshaller.write_3bits(u3::with(0b00000101)).unwrap();
         marshaller.write_7bits(u7::with(0b01011111)).unwrap();
-        assert!(marshaller.write_byte(0b11100111).is_err());
+        marshaller.write_byte(0b11100111).unwrap_err();
+        assert_eq!(&marshaller.bytecode[0xFFFD..], &[0b11110111, 0b1011]);
     }
 }

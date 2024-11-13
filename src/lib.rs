@@ -3,24 +3,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2024 UBIDECO Labs,
-//     Laboratories for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 #![deny(
     non_upper_case_globals,
@@ -136,19 +136,12 @@
 
 #![allow(clippy::bool_assert_comparison)]
 
-// TODO: Extend the list of features not compatible with zk-aluvm as they appear.
-#[cfg(all(feature = "zk-aluvm", any(feature = "A64", feature = "STR")))]
-compile_error!("zk-AluVM is incompatible with any ISA extensions other then GFA");
-
-#[macro_use]
 extern crate alloc;
-#[cfg(all(feature = "alloc", not(feature = "std")))]
-extern crate alloc as std;
 
 #[macro_use]
 extern crate amplify;
 #[macro_use]
-extern crate strict_types;
+extern crate strict_encoding;
 #[macro_use]
 extern crate commit_verify;
 #[cfg(feature = "serde")]
@@ -164,10 +157,10 @@ mod vm;
 pub mod stl;
 
 pub mod regs {
-    pub use crate::core::{IdxA, IdxAl, Reg, RegA, Status, A, CALL_STACK_SIZE_MAX};
+    pub use crate::core::{Status, CALL_STACK_SIZE_MAX};
 }
 
-pub use isa::{IsaId, ISA_ALU64, ISA_AN, ISA_ID_MAX_LEN};
+pub use isa::{ExecStep, IsaId, ISA_ID_MAX_LEN};
 #[cfg(feature = "armor")]
 pub use library::armor::LibArmorError;
 pub use library::{Lib, LibId, LibSite};
@@ -175,4 +168,6 @@ pub use library::{Lib, LibId, LibSite};
 pub use paste::paste;
 pub use vm::Vm;
 
-pub use self::core::{gfa, Core, CoreConfig, Site, SiteId};
+pub use self::core::{Core, CoreConfig, CoreExt, NoExt, NoRegs, Register, Site, SiteId};
+
+pub const LIB_NAME_ALUVM: &str = "AluVM";
