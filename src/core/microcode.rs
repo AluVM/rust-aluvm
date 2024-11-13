@@ -84,5 +84,5 @@ impl<Id: SiteId, Cx: CoreExt, const CALL_STACK_SIZE: usize> Core<Id, Cx, CALL_ST
         self.cl().map(|lim| self.ca >= lim).unwrap_or_default()
     }
 
-    pub fn get(&self, reg: Cx::Reg) -> <Cx::Reg as Register>::Value { self.cx.get(reg) }
+    pub fn get(&self, reg: Cx::Reg) -> Option<<Cx::Reg as Register>::Value> { self.cx.get(reg) }
 }

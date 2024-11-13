@@ -100,7 +100,7 @@ impl CoreExt for NoExt {
 
     fn with(_config: Self::Config) -> Self { NoExt }
 
-    fn get(&self, _reg: Self::Reg) -> <Self::Reg as Register>::Value { 0 }
+    fn get(&self, _reg: Self::Reg) -> Option<<Self::Reg as Register>::Value> { None }
 
     fn reset(&mut self) {}
 }

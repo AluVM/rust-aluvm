@@ -82,8 +82,12 @@ impl Lib {
             {
                 eprint!("{m}{}@x{pos:06X}:{z} {: <32}; ", lib_ref, instr.to_string());
                 for reg in instr.src_regs() {
-                    let val = registers.get(reg);
-                    eprint!("{d}{reg} {z}{w}{}{z}, ", val);
+                    eprint!("{d}{reg} {z}");
+                    if let Some(val) = registers.get(reg) {
+                        eprint!("{w}{}{z}, ", val);
+                    } else {
+                        eprint!("{g}~{z}, ");
+                    }
                 }
             }
 
@@ -93,8 +97,12 @@ impl Lib {
             {
                 eprint!("-> ");
                 for reg in instr.dst_regs() {
-                    let val = registers.get(reg);
-                    eprint!("{g}{reg} {y}{}{z}, ", val);
+                    eprint!("{g}{reg} {z}");
+                    if let Some(val) = registers.get(reg) {
+                        eprint!("{y}{}{z}, ", val);
+                    } else {
+                        eprint!("{g}~{z}, ");
+                    }
                 }
                 if ck0 != registers.ck() {
                     let c = if registers.ck().is_ok() { g } else { r };
