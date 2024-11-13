@@ -22,7 +22,6 @@
 // or implied. See the License for the specific language governing permissions and limitations under
 // the License.
 
-use core::error::Error;
 use core::fmt::Debug;
 use core::ops::RangeInclusive;
 
@@ -156,7 +155,7 @@ pub trait BytecodeRead<Id: SiteId> {
 
 /// Writer converting instructions into a bytecode.
 pub trait BytecodeWrite<Id: SiteId> {
-    type Error: Error;
+    type Error: Debug;
 
     /// Write a single bit from a bool value.
     fn write_bool(&mut self, data: bool) -> Result<(), Self::Error> {
