@@ -64,7 +64,7 @@ impl From<&'static str> for IsaId {
 pub struct ReservedInstr(/** Reserved instruction op code value */ pub(super) u8);
 
 /// Complete AluVM ISA.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Display, From)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Display, From)]
 #[display(inner)]
 pub enum Instr<Id: SiteId> {
     /// Control flow instructions.
