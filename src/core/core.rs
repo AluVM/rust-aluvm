@@ -213,3 +213,34 @@ impl<Id: SiteId, Cx: CoreExt, const CALL_STACK_SIZE: usize> Debug
         Debug::fmt(&self.cx, f)
     }
 }
+
+impl<Id: SiteId, Cx: CoreExt, const CALL_STACK_SIZE: usize> Core<Id, Cx, CALL_STACK_SIZE> {
+    pub fn from<Cx2: CoreExt>(core: Core<Id, Cx2, CALL_STACK_SIZE>) -> Self
+    where Cx: From<Cx2> {
+        Core {
+            ch: core.ch,
+            ck: core.ck,
+            cf: core.cf,
+            co: core.co,
+            cy: core.cy,
+            ca: core.ca,
+            cl: core.cl,
+            cs: core.cs,
+            cx: core.cx.into(),
+        }
+    }
+
+    pub fn extend<Cx2: CoreExt>(self, cx: Cx2) -> Core<Id, Cx2, CALL_STACK_SIZE> {
+        Core {
+            ch: self.ch,
+            ck: self.ck,
+            cf: self.cf,
+            co: self.co,
+            cy: self.cy,
+            ca: self.ca,
+            cl: self.cl,
+            cs: self.cs,
+            cx,
+        }
+    }
+}
