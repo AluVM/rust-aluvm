@@ -192,19 +192,19 @@ impl<Id: SiteId, Cx: CoreExt, const CALL_STACK_SIZE: usize> Debug
         };
 
         writeln!(f, "{sect}C-regs:{reset}")?;
-        write!(f, "{reg}CH{reset} {val}{}, ", self.ch)?;
-        write!(f, "{reg}CK{reset} {val}{}, ", self.ck)?;
-        write!(f, "{reg}CF{reset} {val}{}, ", self.cf)?;
-        write!(f, "{reg}CO{reset} {val}{}, ", self.co)?;
-        write!(f, "{reg}CY{reset} {val}{}, ", self.cy)?;
-        write!(f, "{reg}CA{reset} {val}{}, ", self.ca)?;
+        write!(f, "{reg}CH{reset} {val}{}{reset}, ", self.ch)?;
+        write!(f, "{reg}CK{reset} {val}{}{reset}, ", self.ck)?;
+        write!(f, "{reg}CF{reset} {val}{}{reset}, ", self.cf)?;
+        write!(f, "{reg}CO{reset} {val}{}{reset}, ", self.co)?;
+        write!(f, "{reg}CY{reset} {val}{}{reset}, ", self.cy)?;
+        write!(f, "{reg}CA{reset} {val}{}{reset}, ", self.ca)?;
         let cl = self
             .cl
             .map(|v| v.to_string())
             .unwrap_or_else(|| "~".to_string());
-        write!(f, "{reg}CL{reset} {val}{cl}, ")?;
-        write!(f, "{reg}CP{reset} {val}{}, ", self.cp())?;
-        write!(f, "\n{reg}CS{reset} {val}")?;
+        write!(f, "{reg}CL{reset} {val}{cl}{reset}, ")?;
+        write!(f, "{reg}CP{reset} {val}{}{reset}, ", self.cp())?;
+        write!(f, "\n{reg}CS{reset} {val}{reset}")?;
         for item in &self.cs {
             write!(f, "{}   ", item)?;
         }
