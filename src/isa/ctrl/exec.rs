@@ -120,9 +120,9 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
             | CtrlInstr::RsetCk => 0,
             CtrlInstr::Jmp { .. } | CtrlInstr::JiNe { .. } | CtrlInstr::JiFail { .. } => 2,
             CtrlInstr::Sh { .. } | CtrlInstr::ShNe { .. } | CtrlInstr::ShFail { .. } => 1,
-            CtrlInstr::Exec { .. } => 0,
+            CtrlInstr::Exec { .. } => 2,
             CtrlInstr::Fn { .. } => 2,
-            CtrlInstr::Call { .. } => 0,
+            CtrlInstr::Call { .. } => 2,
             CtrlInstr::Ret | CtrlInstr::Stop => 0,
         }
     }
