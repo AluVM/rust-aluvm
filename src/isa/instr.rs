@@ -130,8 +130,8 @@ pub trait Instruction<Id: SiteId>: Display + Debug + Bytecode<Id> {
     /// Returns whether further execution should be stopped.
     fn exec(
         &self,
-        core: &mut Core<Id, Self::Core>,
         site: Site<Id>,
-        context: &Self::Context<'_>,
+        core: &mut Core<Id, Self::Core>,
+        context: &mut Self::Context<'_>,
     ) -> ExecStep<Site<Id>>;
 }

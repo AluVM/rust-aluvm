@@ -39,7 +39,7 @@ impl Lib {
         &self,
         entrypoint: u16,
         registers: &mut Core<LibId, Instr::Core>,
-        context: &Instr::Context<'_>,
+        context: &mut Instr::Context<'_>,
     ) -> Option<LibSite>
     where
         Instr: Instruction<LibId> + Bytecode<LibId>,
@@ -91,7 +91,7 @@ impl Lib {
                 }
             }
 
-            let next = instr.exec(registers, Site::new(lib_id, pos), context);
+            let next = instr.exec(Site::new(lib_id, pos), registers, context);
 
             #[cfg(feature = "log")]
             {
