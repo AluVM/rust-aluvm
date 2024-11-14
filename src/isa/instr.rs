@@ -132,6 +132,6 @@ pub trait Instruction<Id: SiteId>: Display + Debug + Bytecode<Id> {
         &self,
         site: Site<Id>,
         core: &mut Core<Id, Self::Core>,
-        context: &mut Self::Context<'_>,
+        context: &Self::Context<'_>,
     ) -> ExecStep<Site<Id>>;
 }

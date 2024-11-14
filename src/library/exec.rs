@@ -39,7 +39,7 @@ impl Lib {
         &self,
         entrypoint: u16,
         registers: &mut Core<LibId, Instr::Core>,
-        context: &mut Instr::Context<'_>,
+        context: &Instr::Context<'_>,
     ) -> Option<LibSite>
     where
         Instr: Instruction<LibId> + Bytecode<LibId>,

@@ -67,7 +67,7 @@ where Isa: Instruction<LibId>
     pub fn exec<'prog>(
         &mut self,
         entry_point: LibSite,
-        context: &mut Isa::Context<'_>,
+        context: &Isa::Context<'_>,
         lib_resolver: impl Fn(LibId) -> Option<&'prog Lib>,
     ) -> Status {
         let mut call = Some(entry_point);
