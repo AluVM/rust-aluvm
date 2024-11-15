@@ -32,16 +32,14 @@
 /// use aluvm::{aluasm, Lib, LibId, LibSite, Vm};
 ///
 /// let code = aluasm! {
-///     nop                     ;
-///     clr     A8:5            ;
-///     clr     A16:B           ;
-///     clr     A32.g           ;
-///     cpy     A64:C, A64.h    ;
+///     nop                ;
+///     put     CK, :ok    ;
+///     chk                ;
 /// };
 ///
 /// let lib = Lib::assemble::<Instr<LibId>>(&code).unwrap();
 /// let mut vm = Vm::<Instr<LibId>>::new();
-/// match vm.exec(LibSite::new(lib.lib_id(), 0), |_| Some(&lib), &()) {
+/// match vm.exec(LibSite::new(lib.lib_id(), 0), &(), |_| Some(&lib)) {
 ///     Status::Ok => println!("success"),
 ///     Status::Fail => println!("failure"),
 /// }
@@ -49,20 +47,16 @@
 #[macro_export]
 macro_rules! aluasm {
     ($( $tt:tt )+) => {{ #[allow(unused_imports)] {
-        use $crate::isa::{Instr, CtrlInstr, RegInstr, ReservedInstr};
-        #[cfg(feature = "GFA")]
-        use $crate::isa::FieldInstr;
-        use $crate::regs::{IdxA, RegA, Reg, IdxAl, A, Idx32, Idx16};
-        use $crate::{a, _a_idx, paste};
-        $crate::aluasm_isa! { ReservedInstr => $( $tt )+ }
+        use $crate::isa::{Instr, CtrlInstr,  ReservedInstr};
+        $crate::aluasm_isa! { $( $tt )+ }
     } }};
 }
 
 #[doc(hidden)]
 #[macro_export]
 macro_rules! aluasm_isa {
-    ($isa:ty => $( $tt:tt )+) => {{
-        let mut code: Vec<Instr<$crate::LibId, $isa>> = vec![];
+    ($( $tt:tt )+) => {{
+        let mut code: Vec<Instr<$crate::LibId>> = vec![];
         #[allow(unreachable_code)] {
             $crate::aluasm_inner! { code => $( $tt )+ }
         }
@@ -78,6 +72,11 @@ macro_rules! aluasm_inner {
     // no operands
     { $code:ident => $op:ident ; $($tt:tt)* } => {
         $code.push($crate::instr!{ $op });
+        $crate::aluasm_inner! { $code => $( $tt )* }
+    };
+    // special type
+    { $code:ident => $op:ident $reg:ident, :$val:ident ; $($tt:tt)* } => {
+        $code.push($crate::instr!{ $op $reg, :$val });
         $crate::aluasm_inner! { $code => $( $tt )* }
     };
     // operand is an external jump to a named location in library literal

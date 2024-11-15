@@ -157,14 +157,14 @@ mod test {
         let id = Lib::strict_dumb().lib_id();
         assert_eq!(
             format!("{id}"),
-            "alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality"
+            "alu:uZkzX1J9-i5EvGTf-J1TB79p-OBvKq5x-1U2n4qd-8Nso3Ag#reunion-cable-tractor"
         );
         assert_eq!(
             format!("{id:-}"),
-            "5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality"
+            "uZkzX1J9-i5EvGTf-J1TB79p-OBvKq5x-1U2n4qd-8Nso3Ag#reunion-cable-tractor"
         );
-        assert_eq!(format!("{id:#}"), "alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q");
-        assert_eq!(format!("{id:-#}"), "5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q");
+        assert_eq!(format!("{id:#}"), "alu:uZkzX1J9-i5EvGTf-J1TB79p-OBvKq5x-1U2n4qd-8Nso3Ag");
+        assert_eq!(format!("{id:-#}"), "uZkzX1J9-i5EvGTf-J1TB79p-OBvKq5x-1U2n4qd-8Nso3Ag");
     }
 
     #[test]
@@ -173,19 +173,19 @@ mod test {
         assert_eq!(
             id,
             LibId::from_str(
-                "alu:5iMb1eHJ-bN5BOe6-9RvBjYL-jF1ELjj-VV7c8Bm-WvFen1Q#sponsor-society-quality"
+                "alu:uZkzX1J9-i5EvGTf-J1TB79p-OBvKq5x-1U2n4qd-8Nso3Ag#reunion-cable-tractor"
             )
             .unwrap()
         );
-        assert_eq!(id, LibId::from_str("alu:5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q").unwrap());
+        assert_eq!(id, LibId::from_str("alu:uZkzX1J9i5EvGTfJ1TB79pOBvKq5x1U2n4qd8Nso3Ag").unwrap());
         assert_eq!(
             id,
             LibId::from_str(
-                "alu:5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q#sponsor-society-quality"
+                "alu:uZkzX1J9i5EvGTfJ1TB79pOBvKq5x1U2n4qd8Nso3Ag#reunion-cable-tractor"
             )
             .unwrap()
         );
 
-        assert_eq!(id, LibId::from_str("5iMb1eHJbN5BOe69RvBjYLjF1ELjjVV7c8BmWvFen1Q").unwrap());
+        assert_eq!(id, LibId::from_str("uZkzX1J9i5EvGTfJ1TB79pOBvKq5x1U2n4qd8Nso3Ag").unwrap());
     }
 }
