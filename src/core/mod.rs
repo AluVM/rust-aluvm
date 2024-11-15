@@ -24,6 +24,7 @@
 
 //! AluVM registers system
 
+#[allow(clippy::module_inception)]
 mod core;
 mod microcode;
 mod util;

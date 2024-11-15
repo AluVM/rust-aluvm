@@ -31,7 +31,7 @@ use crate::isa::{Instr, Instruction};
 use crate::library::{Lib, LibId, LibSite};
 
 /// Alu virtual machine providing single-core execution environment
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Vm<Isa = Instr<LibId>>
 where Isa: Instruction<LibId>
 {

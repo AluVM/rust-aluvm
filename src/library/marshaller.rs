@@ -423,7 +423,7 @@ where
         if len >= u16::MAX as usize {
             return Err(MarshallError::DataExceedsLimit(len));
         }
-        let offset = self.write_unique(&data)?;
+        let offset = self.write_unique(data)?;
         self.write_word(offset)?;
         self.write_word(len as u16)
     }

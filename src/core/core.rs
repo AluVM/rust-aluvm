@@ -126,9 +126,9 @@ pub struct Core<
 #[strict_type(lib = LIB_NAME_ALUVM)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CoreConfig {
-    /// Initial value for the [`Core::ch`] flag.
+    /// Initial value for the `CH` register.
     pub halt: bool,
-    /// Initial value for the [`Core::cl`] flag.
+    /// Initial value for the `CL` register.
     pub complexity_lim: Option<u64>,
 }
 
@@ -141,15 +141,20 @@ impl Default for CoreConfig {
     ///
     /// - [`CoreConfig::halt`]
     /// - [`CoreConfig::complexity_lim`]
-    /// - [`CoreConfig::field_order`]
     fn default() -> Self { CoreConfig { halt: true, complexity_lim: None } }
+}
+
+impl<Id: SiteId, Cx: CoreExt, const CALL_STACK_SIZE: usize> Default
+    for Core<Id, Cx, CALL_STACK_SIZE>
+{
+    fn default() -> Self { Core::new() }
 }
 
 impl<Id: SiteId, Cx: CoreExt, const CALL_STACK_SIZE: usize> Core<Id, Cx, CALL_STACK_SIZE> {
     /// Initializes registers. Sets `st0` to `true`, counters to zero, call stack to empty and the
     /// rest of registers to `None` value.
     ///
-    /// An alias for [`AluCore::with`]`(`[`CoreConfig::default()`]`)`.
+    /// An alias for [`Core::with`]`(`[`CoreConfig::default()`]`)`.
     #[inline]
     pub fn new() -> Self {
         assert!(CALL_STACK_SIZE <= CALL_STACK_SIZE_MAX as usize, "Call stack size is too large");

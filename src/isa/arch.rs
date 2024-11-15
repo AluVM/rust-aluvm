@@ -58,7 +58,7 @@ impl From<&'static str> for IsaId {
     fn from(id: &'static str) -> Self { Self(RString::from(id)) }
 }
 
-/// Reserved instruction, which equal to [`ControlFlowOp::Fail`].
+/// Reserved instruction, which equal to [`crate::ExecStep::FailHalt`].
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display, Default)]
 #[display("halt    {0:#02X}#h")]
 pub struct ReservedInstr(/** Reserved instruction op code value */ pub(super) u8);

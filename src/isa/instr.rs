@@ -62,7 +62,7 @@ pub trait Instruction<Id: SiteId>: Display + Debug + Bytecode<Id> {
     type Context<'ctx>;
 
     fn isa_ext() -> TinyOrdSet<IsaId> {
-        let iter = Self::ISA_EXT.into_iter().copied().map(IsaId::from);
+        let iter = Self::ISA_EXT.iter().copied().map(IsaId::from);
         TinyOrdSet::from_iter_checked(iter)
     }
 

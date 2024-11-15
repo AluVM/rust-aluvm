@@ -35,10 +35,12 @@ pub trait Register: Copy + Ord + Debug + Display {
 
 #[derive(Debug)]
 pub enum NoRegs {}
+#[allow(clippy::non_canonical_clone_impl)]
 impl Clone for NoRegs {
     fn clone(&self) -> Self { unreachable!() }
 }
 impl Copy for NoRegs {}
+#[allow(clippy::non_canonical_clone_impl)]
 impl PartialEq for NoRegs {
     fn eq(&self, _: &Self) -> bool { unreachable!() }
 }
@@ -46,6 +48,7 @@ impl Eq for NoRegs {}
 impl Ord for NoRegs {
     fn cmp(&self, _: &Self) -> Ordering { unreachable!() }
 }
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for NoRegs {
     fn partial_cmp(&self, _: &Self) -> Option<Ordering> { unreachable!() }
 }

@@ -69,8 +69,8 @@ impl<Id: SiteId> Instruction<Id> for Instr<Id> {
         _: &Self::Context<'_>,
     ) -> ExecStep<Site<Id>> {
         match self {
-            Instr::Ctrl(instr) => instr.exec(site, core, &mut ()),
-            Instr::Reserved(instr) => instr.exec(site, core, &mut ()),
+            Instr::Ctrl(instr) => instr.exec(site, core, &()),
+            Instr::Reserved(instr) => instr.exec(site, core, &()),
         }
     }
 }
@@ -153,7 +153,7 @@ impl<Id: SiteId> Instruction<Id> for CtrlInstr<Id> {
             let Some(pos) = current.offset.checked_add_signed(shift as i16) else {
                 return ExecStep::FailHalt;
             };
-            return ExecStep::Jump(pos);
+            ExecStep::Jump(pos)
         };
 
         match *self {

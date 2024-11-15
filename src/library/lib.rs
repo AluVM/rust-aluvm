@@ -35,7 +35,7 @@ use strict_encoding::{StrictDeserialize, StrictSerialize};
 use crate::core::SiteId;
 use crate::{IsaId, Site, LIB_NAME_ALUVM};
 
-pub const LIB_ID_TAG: &'static str = "urn:ubideco:aluvm:lib:v01#241020";
+pub const LIB_ID_TAG: &str = "urn:ubideco:aluvm:lib:v01#241020";
 
 /// Unique identifier for an AluVM library.
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default, Debug, From)]
