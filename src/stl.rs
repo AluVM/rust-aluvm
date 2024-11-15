@@ -22,9 +22,7 @@
 // or implied. See the License for the specific language governing permissions and limitations under
 // the License.
 
-//! Strict types lib-old generator methods.
-
-use core::convert::TryFrom;
+//! Strict types library generator methods.
 
 use strict_types::typelib::{CompileError, LibBuilder};
 use strict_types::TypeLib;
