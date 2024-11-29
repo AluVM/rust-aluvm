@@ -31,7 +31,7 @@ use crate::{CoreConfig, Lib, LibSite, LIB_NAME_ALUVM};
 
 /// Strict type id for the lib-old providing data types from this crate.
 pub const LIB_ID_ALUVM: &str =
-    "stl:zkW0z6BJ-O8DoUgR-47B0fPf-diV1Rzs-XpiHP5n-FE~MRiE#yogurt-cricket-frog";
+    "stl:t1kptI_t-R8Ei0Wa-e0m53SK-toGi5AC-si8GK5F-MbQp588#reward-accent-swim";
 
 fn _aluvm_stl() -> Result<TypeLib, CompileError> {
     LibBuilder::new(libname!(LIB_NAME_ALUVM), tiny_bset! {
