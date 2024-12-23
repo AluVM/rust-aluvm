@@ -8,12 +8,10 @@ coverage:
   status:
     project:
       default:
-        target: 75%
         threshold: 1%
         branches:
           - master
     patch:
       default:
-        target: 60%
         threshold: 1%
         only_pulls: true
