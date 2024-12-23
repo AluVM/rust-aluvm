@@ -22,12 +22,12 @@
 // or implied. See the License for the specific language governing permissions and limitations under
 // the License.
 
-mod lib;
-#[cfg(feature = "armor")]
-pub mod armor;
-mod assembler;
-mod marshaller;
-mod exec;
+//! AluVM registers system
 
-pub use lib::{Lib, LibId, LibSite, LibsSeg};
-pub use marshaller::{MarshallError, Marshaller};
+#[allow(clippy::module_inception)]
+mod core;
+mod microcode;
+mod util;
+
+pub use self::core::{Core, CoreConfig, CoreExt, CALL_STACK_SIZE_MAX};
+pub use self::util::{NoExt, NoRegs, Register, Site, SiteId, Status};

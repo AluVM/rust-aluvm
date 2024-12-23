@@ -3,39 +3,35 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 //! Strict types library generator methods.
-
-use core::convert::TryFrom;
 
 use strict_types::typelib::{CompileError, LibBuilder};
 use strict_types::TypeLib;
 
-use crate::library::{Lib, LibSite};
-use crate::LIB_NAME_ALUVM;
+use crate::{CoreConfig, Lib, LibSite, LIB_NAME_ALUVM};
 
-/// Strict type id for the library providing data types from this crate.
+/// Strict type id for the lib-old providing data types from this crate.
 pub const LIB_ID_ALUVM: &str =
-    "stl:YnA1fyHl-46C2hsC-tZPxn60-w1jLk5Y-rDTjRmy-xo!5xjY#congo-archive-folio";
+    "stl:t1kptI_t-R8Ei0Wa-e0m53SK-toGi5AC-si8GK5F-MbQp588#reward-accent-swim";
 
 fn _aluvm_stl() -> Result<TypeLib, CompileError> {
     LibBuilder::new(libname!(LIB_NAME_ALUVM), tiny_bset! {
@@ -44,11 +40,12 @@ fn _aluvm_stl() -> Result<TypeLib, CompileError> {
     })
     .transpile::<LibSite>()
     .transpile::<Lib>()
+    .transpile::<CoreConfig>()
     .compile()
 }
 
-/// Generates strict type library providing data types from this crate.
-pub fn aluvm_stl() -> TypeLib { _aluvm_stl().expect("invalid strict type AluVM library") }
+/// Generates strict type lib-old providing data types from this crate.
+pub fn aluvm_stl() -> TypeLib { _aluvm_stl().expect("invalid strict type AluVM lib-old") }
 
 #[cfg(test)]
 mod test {

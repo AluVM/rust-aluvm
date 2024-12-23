@@ -5,12 +5,12 @@ on:
     branches:
       - master
     tags:
-      - 'v[0-9]+\.*'
+      - 'v[0-9]+.*'
   pull_request:
     branches:
       - master
       - develop
-      - 'v[0-9]+.[0-9]+'
+      - 'v[0-9]+.?*'
 
 env:
   CARGO_TERM_COLOR: always
@@ -35,9 +35,7 @@ jobs:
       matrix:
         feature:
           - log
-          - ascii-armor
-          - secp256k1
-          - curve25519
+          - armor
           - serde
           - stl
     steps:
@@ -47,19 +45,6 @@ jobs:
         run: cargo check --workspace --no-default-features --features=std,${{matrix.feature}}
       - name: Feature ${{matrix.feature}}
         run: cargo check --workspace --features=${{matrix.feature}}
-  features-nostd:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        feature:
-          - secp256k1
-          - curve25519
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Feature ${{matrix.feature}}
-        run: cargo check --workspace --no-default-features --features=alloc,${{matrix.feature}}
   platforms:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -76,7 +61,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: [ nightly, beta, stable, 1.77.0 ]
+        toolchain: [ nightly, beta, stable, 1.81.0 ]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master

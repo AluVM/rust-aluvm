@@ -22,12 +22,10 @@
 // or implied. See the License for the specific language governing permissions and limitations under
 // the License.
 
-mod lib;
-#[cfg(feature = "armor")]
-pub mod armor;
-mod assembler;
-mod marshaller;
+//! ALU64 instruction set architecture.
+
+mod bytecode;
+mod instr;
 mod exec;
 
-pub use lib::{Lib, LibId, LibSite, LibsSeg};
-pub use marshaller::{MarshallError, Marshaller};
+pub use instr::CtrlInstr;

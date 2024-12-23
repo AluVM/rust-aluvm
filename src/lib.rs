@@ -3,25 +3,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2021-2024 by
-//     Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2021-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2021-2022 LNP/BP Standards Association. All rights reserved.
-// Copyright (C) 2023-2024 UBIDECO Labs,
-//     Institute for Distributed and Cognitive Computing, Switzerland.
-//     All rights reserved.
+// Copyright (C) 2021-2024 LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2024-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2021-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 #![deny(
     non_upper_case_globals,
@@ -30,10 +29,9 @@
     unused_mut,
     unused_imports,
     dead_code,
-    missing_docs
+    // missing_docs
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-#![cfg_attr(not(feature = "std"), no_std)]
 
 //! Rust implementation of AluVM (arithmetic logic unit virtual machine) and assembler from Alu
 //! Assembly language into bytecode.
@@ -69,7 +67,7 @@
 //! * Data segment is always signed;
 //! * Code commits to the used ISA extensions;
 //! * Libraries identified by the signature;
-//! * Code does not runs if not all libraries are present;
+//! * Code does not run if not all libraries are present;
 //!
 //! ![Comparison table](doc/comparison.png)
 //!
@@ -80,7 +78,7 @@
 //!
 //! ### Instruction opcodes
 //!
-//! You will find all opcode implementation details documented in [`crate::isa::Instr`] API docs.
+//! You will find all opcode implementation details documented in [`isa::Instr`] API docs.
 //!
 //! - RISC: only 256 instructions
 //! - 3 families of core instructions:
@@ -134,44 +132,42 @@
 //! - Call stack register (cs0), 3*2^16 bits (192kB block)
 //! - Call stack pointer register (cp0), 16 bits
 //!
-//! [AluVM]: https://github.com/internet2-org/aluvm-spec
+//! [AluVM]: https://github.com/AluVM/aluvm-spec
 
 #![allow(clippy::bool_assert_comparison)]
 
-// TODO(#6) Complete string operations
-// TODO(#7) Complete assembly compiler for string operations
-// TODO(#8) Implement operations on Edwards curves
-
-#[cfg(not(any(feature = "alloc", feature = "std")))]
-compile_error!("either `alloc` or `std` feature must be used");
-
-#[macro_use]
 extern crate alloc;
 
 #[macro_use]
 extern crate amplify;
 #[macro_use]
 extern crate strict_encoding;
+#[macro_use]
+extern crate commit_verify;
 #[cfg(feature = "serde")]
 #[macro_use]
-extern crate serde_crate as serde;
-extern crate core;
+extern crate serde;
 
-pub mod data;
+mod core;
 #[macro_use]
 pub mod isa;
-pub mod library;
-pub mod reg;
+mod library;
+mod vm;
 #[cfg(feature = "stl")]
 pub mod stl;
-mod vm;
 
-pub use isa::Isa;
-#[cfg(feature = "ascii-armor")]
-pub use library::LibArmorError;
+pub mod regs {
+    pub use crate::core::{Status, CALL_STACK_SIZE_MAX};
+}
+
+pub use isa::{ExecStep, IsaId, ISA_ID_MAX_LEN};
+#[cfg(feature = "armor")]
+pub use library::armor::LibArmorError;
+pub use library::{Lib, LibId, LibSite};
 #[doc(hidden)]
 pub use paste::paste;
 pub use vm::Vm;
 
-/// Struct types library name.
+pub use self::core::{Core, CoreConfig, CoreExt, NoExt, NoRegs, Register, Site, SiteId};
+
 pub const LIB_NAME_ALUVM: &str = "AluVM";
